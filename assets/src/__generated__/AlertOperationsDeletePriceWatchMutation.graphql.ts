@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b2d382aa43c96c59399bd1429a069399>>
+ * @generated SignedSource<<3aada89b2473b8592b7d9ae835143143>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -14,10 +14,10 @@ export type AlertOperationsDeletePriceWatchMutation$variables = {
 };
 export type AlertOperationsDeletePriceWatchMutation$data = {
   readonly deletePriceWatch: {
-    readonly deletedWatchId: string | null | undefined;
+    readonly deletedWatchId: string | null;
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
   };

@@ -74,7 +74,7 @@ export function CompareProductList({
   fragmentProducts,
   loaderData,
 }: {
-  fragmentProducts: ReadonlyArray<CompareProductFragmentRef | null | undefined>;
+  fragmentProducts: ReadonlyArray<CompareProductFragmentRef | null>;
   loaderData: Extract<CompareRouteLoaderData, { status: "ready" }>;
 }) {
   const fragmentsBySlug = new Map(
@@ -154,9 +154,7 @@ function CompareProductCard({
       <h2 {...props(styles.productTitle)}>{product.name}</h2>
       <p {...props(styles.metadata)}>{product.brand?.name ?? "Unknown brand"}</p>
       <p {...props(styles.metadata)}>{product.slug}</p>
-      <CompareProductDescription
-        description={typeof product.description === "string" ? product.description : null}
-      />
+      <CompareProductDescription description={product.description} />
       <ProductAttributeList
         attributes={product.currentAttributes}
         emptyMessage="No product attributes available yet."
@@ -181,6 +179,6 @@ function CompareProductSummaryCard({ product }: { product: CompareProductSummary
   );
 }
 
-function CompareProductDescription({ description }: { description: string | null | undefined }) {
+function CompareProductDescription({ description }: { description: string | null }) {
   return description ? <p>{description}</p> : null;
 }

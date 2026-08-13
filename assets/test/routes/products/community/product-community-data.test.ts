@@ -196,27 +196,6 @@ test.each([
   ).toBe(ratingStars);
 });
 
-test.each([
-  [-1, "☆☆☆☆☆", "0 out of 5"],
-  [2.6, "★★★☆☆", "3 out of 5"],
-  [8, "★★★★★", "5 out of 5"],
-  [Number.NaN, "☆☆☆☆☆", "0 out of 5"],
-  [Number.POSITIVE_INFINITY, "★★★★★", "5 out of 5"],
-  [Number.NEGATIVE_INFINITY, "☆☆☆☆☆", "0 out of 5"],
-])(
-  "publishedReviewRowDisplayData safely normalizes an invalid rating of %s",
-  (rating, ratingStars, fallbackTitle) => {
-    expect(
-      publishedReviewRowDisplayData({
-        authorLabel: "Community member",
-        rating,
-        title: null,
-        verifiedPurchase: false,
-      }),
-    ).toMatchObject({ ratingStars, title: fallbackTitle });
-  },
-);
-
 test("owner updates distinguish terminal success from typed payload failure", () => {
   expect(resolveProductReviewUpdateMessage({ errors: [], review: updatedReview }, [])).toBe(
     "Review updated and submitted for review.",

@@ -143,7 +143,9 @@ const READY_LOADER_DATA = {
   specMode: "shared",
   slugs: [DESK_LAMP.slug],
   query: deskLampCompareQueryDescriptor,
-  offerContexts: {},
+  offerContexts: {
+    [DESK_LAMP.id]: { productId: DESK_LAMP.id, status: "unavailable" },
+  },
   products: [
     {
       id: DESK_LAMP.id,
@@ -161,7 +163,9 @@ const SECOND_READY_LOADER_DATA = {
   specMode: "shared",
   slugs: [DESK_CHAIR.slug],
   query: deskChairCompareQueryDescriptor,
-  offerContexts: {},
+  offerContexts: {
+    [DESK_CHAIR.id]: { productId: DESK_CHAIR.id, status: "unavailable" },
+  },
   products: [
     {
       id: DESK_CHAIR.id,

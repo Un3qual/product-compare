@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<5363d0f9f038773c94da6e3c712b1293>>
+ * @generated SignedSource<<641da005208338e9eae1cbd2f2df6913>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,7 +10,7 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type CompareProductPickerBoundaryQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
 };
 export type CompareProductPickerBoundaryQuery$data = {
@@ -20,17 +20,17 @@ export type CompareProductPickerBoundaryQuery$data = {
         readonly brand: {
           readonly id: string;
           readonly name: string;
-        } | null | undefined;
+        } | null;
         readonly id: string;
         readonly name: string;
         readonly slug: string;
       };
     }>;
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
     };
-  } | null | undefined;
+  } | null;
 };
 export type CompareProductPickerBoundaryQuery = {
   response: CompareProductPickerBoundaryQuery$data;

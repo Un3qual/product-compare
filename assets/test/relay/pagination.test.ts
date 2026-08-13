@@ -1,7 +1,6 @@
 import { nextPageCursor } from "../../src/relay/pagination";
 
 test.each([
-  [undefined, null],
   [null, null],
   [{ endCursor: "cursor-2", hasNextPage: false }, null],
   [{ endCursor: null, hasNextPage: true }, null],

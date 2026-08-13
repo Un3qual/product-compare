@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<31bc2fb275012210b1beb7bb73e00f48>>
+ * @generated SignedSource<<0552706fffd7c45952eddacc7db7058c>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,11 +10,11 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type UpdatePriceWatchInput = {
-  cooldownSeconds?: number | null | undefined;
-  enabled?: boolean | null | undefined;
+  cooldownSeconds?: number | null;
+  enabled?: boolean | null;
   id: string;
-  percentageDrop?: string | null | undefined;
-  targetAmount?: string | null | undefined;
+  percentageDrop?: string | null;
+  targetAmount?: string | null;
 };
 export type AlertOperationsUpdatePriceWatchMutation$variables = {
   input: UpdatePriceWatchInput;
@@ -23,13 +23,13 @@ export type AlertOperationsUpdatePriceWatchMutation$data = {
   readonly updatePriceWatch: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly watch: {
       readonly enabled: boolean;
       readonly id: string;
-    } | null | undefined;
+    } | null;
   };
 };
 export type AlertOperationsUpdatePriceWatchMutation = {

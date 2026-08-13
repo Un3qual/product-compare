@@ -35,15 +35,13 @@ const merchantDirectoryRouteQuery = graphql`
   }
 `;
 
-export type MerchantDirectoryPagination = MerchantPagination;
-
 export type MerchantDirectoryLoaderData =
   | {
       status: "ready";
-      pagination: MerchantDirectoryPagination;
+      pagination: MerchantPagination;
       query: RelayRouteQueryDescriptor<MerchantDirectoryRouteQuery["variables"]>;
     }
-  | { status: "error"; pagination: MerchantDirectoryPagination };
+  | { status: "error"; pagination: MerchantPagination };
 
 export function MerchantDirectoryRoute() {
   const loaderData = useLoaderData<typeof merchantDirectoryLoader>() as MerchantDirectoryLoaderData;
@@ -95,7 +93,7 @@ function MerchantDirectoryPanel({
   pagination,
   query,
 }: {
-  pagination: MerchantDirectoryPagination;
+  pagination: MerchantPagination;
   query: Extract<MerchantDirectoryLoaderData, { status: "ready" }>["query"];
 }) {
   const queryRef = useRoutePreloadedQuery<MerchantDirectoryRouteQuery>(

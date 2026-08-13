@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9c59277c1d997d5b41ccf7ce2606db4e>>
+ * @generated SignedSource<<a984543b40839ceee1ba65869743b75e>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -13,9 +13,9 @@ import { FragmentRefs } from "relay-runtime";
 export type ProductCommunityOperationsQuery$variables = {
   answerFirst: number;
   questionFirst: number;
-  questionsAfter?: string | null | undefined;
+  questionsAfter?: string | null;
   reviewFirst: number;
-  reviewsAfter?: string | null | undefined;
+  reviewsAfter?: string | null;
   slug: string;
 };
 export type ProductCommunityOperationsQuery$data = {
@@ -24,7 +24,7 @@ export type ProductCommunityOperationsQuery$data = {
     readonly questions: {
       readonly edges: ReadonlyArray<{
         readonly node: {
-          readonly acceptedAnswerId: string | null | undefined;
+          readonly acceptedAnswerId: string | null;
           readonly answers: {
             readonly edges: ReadonlyArray<{
               readonly node: {
@@ -33,7 +33,7 @@ export type ProductCommunityOperationsQuery$data = {
               };
             }>;
             readonly pageInfo: {
-              readonly endCursor: string | null | undefined;
+              readonly endCursor: string | null;
               readonly hasNextPage: boolean;
             };
           };
@@ -42,12 +42,12 @@ export type ProductCommunityOperationsQuery$data = {
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
       };
     };
     readonly reviewSummary: {
-      readonly averageRating: string | null | undefined;
+      readonly averageRating: string | null;
       readonly count: number;
     };
     readonly reviews: {
@@ -58,7 +58,7 @@ export type ProductCommunityOperationsQuery$data = {
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
       };
     };
@@ -76,7 +76,7 @@ export type ProductCommunityOperationsQuery$data = {
         readonly " $fragmentSpreads": FragmentRefs<"ProductCommunityItems_review">;
       }>;
     };
-  } | null | undefined;
+  } | null;
 };
 export type ProductCommunityOperationsQuery = {
   response: ProductCommunityOperationsQuery$data;

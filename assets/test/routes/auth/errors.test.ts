@@ -96,9 +96,8 @@ test("invalid token mutation errors use the shared token field shape", () => {
   });
 });
 
-test("global mutation errors retain missing, null, blank, and unknown fields", () => {
+test("global mutation errors retain null, blank, and unknown fields", () => {
   const errors = [
-    { code: "MISSING", field: undefined, message: "Missing field." },
     { code: "NULL", field: null, message: "Null field." },
     { code: "BLANK", field: "", message: "Blank field." },
     { code: "UNKNOWN", field: "username", message: "Unknown field." },
@@ -106,7 +105,6 @@ test("global mutation errors retain missing, null, blank, and unknown fields", (
   ];
 
   expect(selectGlobalMutationErrors(errors, ["email", "password"])).toEqual([
-    { code: "MISSING", field: undefined, message: "Missing field." },
     { code: "NULL", field: null, message: "Null field." },
     { code: "BLANK", field: "", message: "Blank field." },
     { code: "UNKNOWN", field: "username", message: "Unknown field." },

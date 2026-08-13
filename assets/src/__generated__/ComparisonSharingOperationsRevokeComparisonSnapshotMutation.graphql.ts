@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<7dfe5a7acae919e9e1672338249d163e>>
+ * @generated SignedSource<<b3445053c63deb5ef034fcfc9c65f711>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -16,10 +16,10 @@ export type ComparisonSharingOperationsRevokeComparisonSnapshotMutation$data = {
   readonly revokeComparisonSnapshot: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
-    readonly revokedSnapshotId: string | null | undefined;
+    readonly revokedSnapshotId: string | null;
   };
 };
 export type ComparisonSharingOperationsRevokeComparisonSnapshotMutation = {

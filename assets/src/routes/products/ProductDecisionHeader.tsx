@@ -103,7 +103,7 @@ export function ProductDecisionHeader({ product }: { product: Product }) {
         <div {...props(styles.fact, styles.borderedFact)}>
           <span {...props(styles.factLabel)}>Price freshness</span>
           <strong {...props(styles.factValue)}>
-            {freshestOffer && typeof freshestOffer.observedAt === "string" ? (
+            {freshestOffer?.observedAt ? (
               <RelativeDateTime
                 prefix="Observed"
                 referenceTime={String(product.offerTruth.asOf)}
@@ -135,10 +135,8 @@ function currentPrice(currencySummaries: Product["offerTruth"]["currencySummarie
   if (currencySummaries.length > 1) return `Prices in ${currencySummaries.length} currencies`;
 
   const [summary] = currencySummaries;
-  const price = summary.bestOffer?.landedPrice;
-  return price === null || price === undefined
-    ? "No comparable price"
-    : `${String(price)} ${summary.currency}`;
+  const price = summary.bestOffer?.landedPrice ?? null;
+  return price === null ? "No comparable price" : `${price} ${summary.currency}`;
 }
 
 function currentOffer(currencySummaries: Product["offerTruth"]["currencySummaries"]) {

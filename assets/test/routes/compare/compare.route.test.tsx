@@ -7,6 +7,7 @@ import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "r
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import {
   MAX_COMPARE_PRODUCTS,
+  type CompareProductSummary,
   type CompareRouteLoaderData,
 } from "../../../src/routes/compare/compare-route-data";
 import {
@@ -97,6 +98,21 @@ const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRouteError = vi.mocked(useRouteError);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
+type CompareTestAttribute = {
+  attributeId?: string;
+  code: string;
+  displayName: string;
+  dataType?: string;
+  valueText: string;
+  sortOrder?: number | null;
+  groupLabel?: string | null;
+  isRequired?: boolean;
+  numericValue?: string | null;
+  booleanValue?: boolean | null;
+  enumOptionId?: string | null;
+  unitSymbol?: string | null;
+};
+
 type CompareTestProduct = {
   id: string;
   name: string;
@@ -106,20 +122,11 @@ type CompareTestProduct = {
     id: string;
     name: string;
   };
-  currentAttributes: ReadonlyArray<{
-    attributeId?: string;
-    code: string;
-    displayName: string;
-    dataType: string;
-    valueText: string;
-    sortOrder?: number | null;
-    groupLabel?: string | null;
-    isRequired?: boolean;
-    numericValue?: string | null;
-    booleanValue?: boolean | null;
-    enumOptionId?: string | null;
-    unitSymbol?: string | null;
-  }>;
+  currentAttributes: ReadonlyArray<CompareTestAttribute>;
+};
+
+type CompareTestProductSummary = Omit<CompareProductSummary, "currentAttributes"> & {
+  currentAttributes: ReadonlyArray<CompareTestAttribute>;
 };
 
 type CompareOfferTestNode = {
@@ -392,19 +399,29 @@ const buildProductSummary = (product: CompareTestProduct) => ({
   slug: product.slug,
   description: product.description,
   brandName: product.brand.name,
-  currentAttributes: product.currentAttributes.map((attribute) => ({
-    attributeId: attribute.attributeId,
-    code: attribute.code,
-    displayName: attribute.displayName,
-    valueText: attribute.valueText,
-    sortOrder: attribute.sortOrder,
-    groupLabel: attribute.groupLabel,
-    isRequired: attribute.isRequired,
-    numericValue: attribute.numericValue,
-    booleanValue: attribute.booleanValue,
-    enumOptionId: attribute.enumOptionId,
-    unitSymbol: attribute.unitSymbol,
-  })),
+  currentAttributes: product.currentAttributes.map(completeAttributeSummary),
+});
+
+const completeProductSummary = (product: CompareTestProductSummary): CompareProductSummary => ({
+  ...product,
+  currentAttributes: product.currentAttributes.map(completeAttributeSummary),
+});
+
+const completeProductSummaries = (products: readonly CompareTestProductSummary[]) =>
+  products.map(completeProductSummary);
+
+const completeAttributeSummary = (attribute: CompareTestAttribute) => ({
+  attributeId: attribute.attributeId ?? `attribute-${attribute.code}`,
+  code: attribute.code,
+  displayName: attribute.displayName,
+  valueText: attribute.valueText,
+  sortOrder: attribute.sortOrder ?? null,
+  groupLabel: attribute.groupLabel ?? null,
+  isRequired: attribute.isRequired ?? false,
+  numericValue: attribute.numericValue ?? null,
+  booleanValue: attribute.booleanValue ?? null,
+  enumOptionId: attribute.enumOptionId ?? null,
+  unitSymbol: attribute.unitSymbol ?? null,
 });
 
 const buildSavedProducts = (slugs: string[]) =>
@@ -453,20 +470,29 @@ const buildFetchedSavedComparisonPage = (
   dispose: vi.fn(),
 });
 
-const buildReadyCompareLoaderData = (
-  overrides: Partial<Extract<CompareRouteLoaderData, { status: "ready" }>> = {},
-) => ({
-  status: "ready" as const,
-  specMode: "shared" as const,
-  slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-  query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
-  offerContexts: buildDefaultOfferContexts(),
-  products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)],
-  ...overrides,
-});
+type ReadyCompareLoaderData = Extract<CompareRouteLoaderData, { status: "ready" }>;
+type ReadyCompareLoaderDataOverrides = Omit<Partial<ReadyCompareLoaderData>, "products"> & {
+  products?: ReadonlyArray<CompareTestProductSummary>;
+};
+
+const buildReadyCompareLoaderData = (overrides: ReadyCompareLoaderDataOverrides = {}) => {
+  const { products, ...otherOverrides } = overrides;
+
+  return {
+    status: "ready" as const,
+    specMode: "shared" as const,
+    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
+    query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
+    offerContexts: buildDefaultOfferContexts(),
+    products: products
+      ? products.map(completeProductSummary)
+      : [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)],
+    ...otherOverrides,
+  };
+};
 
 function renderRelativeLoadedPriceCells(
-  overrides: Partial<Extract<CompareRouteLoaderData, { status: "ready" }>>,
+  overrides: ReadyCompareLoaderDataOverrides,
 ) {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData(overrides));
   renderCompareRoute();
@@ -505,7 +531,7 @@ beforeEach(() => {
 test("comparison matrix directly renders ordered rows, missing values, and the selected mode", () => {
   render(
     <CompareSpecificationMatrix
-      products={[
+      products={completeProductSummaries([
         {
           ...buildProductSummary(DETAIL_PRODUCT),
           currentAttributes: [
@@ -534,7 +560,7 @@ test("comparison matrix directly renders ordered rows, missing values, and the s
             },
           ],
         },
-      ]}
+      ])}
       specMode="all"
     />,
   );
@@ -567,7 +593,7 @@ test("comparison matrix uses product ordering when the environment default is Sw
   try {
     render(
       <CompareSpecificationMatrix
-        products={[
+        products={completeProductSummaries([
           {
             ...buildProductSummary(DETAIL_PRODUCT),
             currentAttributes: [
@@ -582,7 +608,7 @@ test("comparison matrix uses product ordering when the environment default is Sw
               { code: "accent", displayName: "Älg", valueText: "2" },
             ],
           },
-        ]}
+        ])}
         specMode="all"
       />,
     );

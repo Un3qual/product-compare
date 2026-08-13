@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4c3bedf863a92ca3b17cd7fd2cbeb379>>
+ * @generated SignedSource<<cacd8cb5a830b64ee043df9885b6b72c>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -13,11 +13,11 @@ export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "RE
 import { FragmentRefs } from "relay-runtime";
 export type ProductCommunityItems_review$data = {
   readonly authorLabel: string;
-  readonly body: string | null | undefined;
+  readonly body: string | null;
   readonly id: string;
   readonly moderationStatus: CommunityModerationStatus;
   readonly rating: number;
-  readonly title: string | null | undefined;
+  readonly title: string | null;
   readonly verifiedPurchase: boolean;
   readonly viewerCanEdit: boolean;
   readonly viewerCanRemove: boolean;

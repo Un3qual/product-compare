@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e7b03adb4caa08e6e67e6d52b2c58159>>
+ * @generated SignedSource<<a522d142cffa5920291c87da5a807a36>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -25,10 +25,10 @@ export type SharedComparisonRouteQuery$data = {
         }>;
         readonly valueText: string;
       }>;
-      readonly brandName: string | null | undefined;
-      readonly description: string | null | undefined;
+      readonly brandName: string | null;
+      readonly description: string | null;
       readonly id: string;
-      readonly modelNumber: string | null | undefined;
+      readonly modelNumber: string | null;
       readonly name: string;
       readonly offers: ReadonlyArray<{
         readonly currency: string;
@@ -47,18 +47,18 @@ export type SharedComparisonRouteQuery$data = {
         readonly productName: string;
         readonly reasons: ReadonlyArray<string>;
       }>;
-      readonly winnerProductId: string | null | undefined;
+      readonly winnerProductId: string | null;
     };
     readonly seo: {
       readonly canonicalPath: string;
       readonly description: string;
-      readonly imageUrl: string | null | undefined;
+      readonly imageUrl: string | null;
       readonly indexable: boolean;
-      readonly structuredData: string | null | undefined;
+      readonly structuredData: string | null;
       readonly title: string;
     };
-    readonly title: string | null | undefined;
-  } | null | undefined;
+    readonly title: string | null;
+  } | null;
 };
 export type SharedComparisonRouteQuery = {
   response: SharedComparisonRouteQuery$data;

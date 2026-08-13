@@ -69,6 +69,7 @@ export function LogoutRoute() {
         { label: "Back to sign in", to: "/auth/login" },
         { label: "Browse products", to: "/products" },
       ]}
+      successMessage={null}
       title="Sign out"
     >
       <form onSubmit={handleSubmit}>

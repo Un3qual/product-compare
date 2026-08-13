@@ -91,7 +91,7 @@ function projectProduct(product: SharedComparisonProductInput) {
     description: nonBlankText(product.description),
     brandModelLabel: modelNumber ? `${brandName} · ${modelNumber}` : brandName,
     attributes: product.attributes.map((attribute) => {
-      const sourceName = nonBlankText(attribute.evidence[0]?.sourceName);
+      const sourceName = nonBlankText(attribute.evidence[0]?.sourceName ?? null);
 
       return {
         key: attribute.claimId,
@@ -117,6 +117,6 @@ function projectProduct(product: SharedComparisonProductInput) {
   };
 }
 
-function nonBlankText(value: string | null | undefined) {
+function nonBlankText(value: string | null) {
   return value?.trim() ? value : null;
 }

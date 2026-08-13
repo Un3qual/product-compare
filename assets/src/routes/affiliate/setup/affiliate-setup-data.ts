@@ -30,15 +30,17 @@ type CouponPayload = AffiliateSetupOperationsCreateCouponMutation["response"]["c
 type AffiliateMutationErrors = NonNullable<NetworkPayload>["errors"];
 type Coupon = NonNullable<NonNullable<CouponPayload>["coupon"]>;
 
-export type AffiliateCouponResultCopyFact = Pick<Coupon, "discountType"> &
-  Partial<Pick<Coupon, "currency" | "discountValue">>;
+export type AffiliateCouponResultCopyFact = Pick<
+  Coupon,
+  "currency" | "discountType" | "discountValue"
+>;
 
 export function resolveAffiliateNetworkMutationOutcome(
   payload: NetworkPayload,
   graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return resolveAffiliateSetupMutationOutcome(
-    payload?.network,
+    payload?.network ?? null,
     payload?.errors ?? [],
     graphQLErrors,
   );
@@ -49,7 +51,7 @@ export function resolveAffiliateProgramMutationOutcome(
   graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return resolveAffiliateSetupMutationOutcome(
-    payload?.program,
+    payload?.program ?? null,
     payload?.errors ?? [],
     graphQLErrors,
   );
@@ -59,7 +61,11 @@ export function resolveAffiliateLinkMutationOutcome(
   payload: LinkPayload,
   graphQLErrors: MutationGraphQLErrors = null,
 ) {
-  return resolveAffiliateSetupMutationOutcome(payload?.link, payload?.errors ?? [], graphQLErrors);
+  return resolveAffiliateSetupMutationOutcome(
+    payload?.link ?? null,
+    payload?.errors ?? [],
+    graphQLErrors,
+  );
 }
 
 export function resolveAffiliateCouponMutationOutcome(
@@ -67,15 +73,13 @@ export function resolveAffiliateCouponMutationOutcome(
   graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return resolveAffiliateSetupMutationOutcome(
-    payload?.coupon,
+    payload?.coupon ?? null,
     payload?.errors ?? [],
     graphQLErrors,
   );
 }
 
-export function buildMerchantChoices(
-  merchants: MerchantChoiceConnection | null | undefined,
-): MerchantChoice[] {
+export function buildMerchantChoices(merchants: MerchantChoiceConnection | null) {
   if (!merchants) {
     return [];
   }
@@ -183,11 +187,11 @@ export function couponDiscountText(coupon: AffiliateCouponResultCopyFact) {
   }
 }
 
-function couponDiscountValue(discountValue: string | null | undefined) {
+function couponDiscountValue(discountValue: Coupon["discountValue"]) {
   return discountValue ?? null;
 }
 
-function amountCouponDiscountText(value: string | null, currency: string | null | undefined) {
+function amountCouponDiscountText(value: string | null, currency: Coupon["currency"]) {
   return value && currency ? `${value} ${currency}` : null;
 }
 
@@ -218,7 +222,7 @@ function optionalDateTimeString(formValues: AffiliateSetupFormValues, name: stri
 }
 
 function resolveAffiliateSetupMutationOutcome<T extends object>(
-  result: T | null | undefined,
+  result: T | null,
   errors: AffiliateMutationErrors,
   graphQLErrors: MutationGraphQLErrors,
 ) {

@@ -9,7 +9,6 @@ test("normalizes trimmed, blank, and missing reset tokens", () => {
   expect(normalizeResetPasswordToken("  reset-token  ")).toBe("reset-token");
   expect(normalizeResetPasswordToken("   ")).toBe("");
   expect(normalizeResetPasswordToken(null)).toBe("");
-  expect(normalizeResetPasswordToken()).toBe("");
 });
 
 test("owns the exact missing-token error and preserves its identity", () => {

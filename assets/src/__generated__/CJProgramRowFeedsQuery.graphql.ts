@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a983db5075adf6937aa11b6a3324af9a>>
+ * @generated SignedSource<<ec5e21f478e83f4e89f4225dc928422d>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,7 +11,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type CJProgramRowFeedsQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
   id: string;
 };
@@ -25,12 +25,12 @@ export type CJProgramRowFeedsQuery$data = {
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
         readonly hasPreviousPage: boolean;
       };
     };
-  } | null | undefined;
+  } | null;
 };
 export type CJProgramRowFeedsQuery = {
   response: CJProgramRowFeedsQuery$data;

@@ -124,7 +124,7 @@ export function ProductOfferPanel({
   referenceTime,
   selectedCompareSlugs,
 }: {
-  connection: ProductOfferPanel_connection$key | null | undefined;
+  connection: ProductOfferPanel_connection$key | null;
   offersAfter: string | null;
   priceTrendSeries: readonly ProductPriceTrendCurrency[];
   productSlug: string;

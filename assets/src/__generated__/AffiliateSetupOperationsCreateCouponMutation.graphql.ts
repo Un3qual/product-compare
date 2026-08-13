@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<1e2974a226ce312e517bae3f2542b0c3>>
+ * @generated SignedSource<<c4cf38ba7dbe4949d2e0f70ffeb5dad6>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,17 +11,17 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type CouponDiscountType = "AMOUNT" | "FREE_SHIPPING" | "OTHER" | "PERCENT" | "%future added value";
 export type CreateCouponInput = {
-  affiliateNetworkId?: string | null | undefined;
-  artifactId?: string | null | undefined;
+  affiliateNetworkId?: string | null;
+  artifactId?: string | null;
   code: string;
-  currency?: string | null | undefined;
-  description?: string | null | undefined;
+  currency?: string | null;
+  description?: string | null;
   discountType: CouponDiscountType;
-  discountValue?: string | null | undefined;
+  discountValue?: string | null;
   merchantId: string;
-  terms?: string | null | undefined;
-  validFrom?: string | null | undefined;
-  validTo?: string | null | undefined;
+  terms?: string | null;
+  validFrom?: string | null;
+  validTo?: string | null;
 };
 export type AffiliateSetupOperationsCreateCouponMutation$variables = {
   input: CreateCouponInput;
@@ -29,22 +29,22 @@ export type AffiliateSetupOperationsCreateCouponMutation$variables = {
 export type AffiliateSetupOperationsCreateCouponMutation$data = {
   readonly createCoupon: {
     readonly coupon: {
-      readonly affiliateNetworkId: string | null | undefined;
+      readonly affiliateNetworkId: string | null;
       readonly code: string;
-      readonly currency: string | null | undefined;
+      readonly currency: string | null;
       readonly discountType: CouponDiscountType;
-      readonly discountValue: string | null | undefined;
+      readonly discountValue: string | null;
       readonly id: string;
       readonly merchantId: string;
-      readonly validFrom: string | null | undefined;
-      readonly validTo: string | null | undefined;
-    } | null | undefined;
+      readonly validFrom: string | null;
+      readonly validTo: string | null;
+    } | null;
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
-  } | null | undefined;
+  } | null;
 };
 export type AffiliateSetupOperationsCreateCouponMutation = {
   response: AffiliateSetupOperationsCreateCouponMutation$data;

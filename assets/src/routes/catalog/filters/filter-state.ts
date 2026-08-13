@@ -1,4 +1,5 @@
 import type {
+  BrowseRouteQuery,
   ProductBooleanFilterInput,
   ProductEnumFilterInput,
   ProductFiltersInput,
@@ -12,9 +13,9 @@ export interface CatalogFilters {
   typeTaxonId?: string;
   includeTypeDescendants?: boolean;
   useCaseTaxonIds: string[];
-  numeric: CatalogNumericFilter[];
-  booleans: CatalogBooleanFilter[];
-  enums: CatalogEnumFilter[];
+  numeric: ProductNumericFilterInput[];
+  booleans: ProductBooleanFilterInput[];
+  enums: ProductEnumFilterInput[];
 }
 
 export const CATALOG_PRODUCT_SORTS = [
@@ -27,37 +28,32 @@ export const CATALOG_PRODUCT_SORTS = [
 
 export type CatalogProductSort = Exclude<ProductSort, "%future added value">;
 
-export type CatalogNumericFilter = ProductNumericFilterInput;
-export type CatalogBooleanFilter = ProductBooleanFilterInput;
-export type CatalogEnumFilter = ProductEnumFilterInput;
+type ProductFilterMetadata = BrowseRouteQuery["response"]["productFilterMetadata"];
+type TypeOption = ProductFilterMetadata["typeOptions"][number];
+type UseCaseOption = ProductFilterMetadata["useCaseOptions"][number];
+type NumericFilterMetadata = ProductFilterMetadata["numericFilters"][number];
+type BooleanFilterMetadata = ProductFilterMetadata["booleanFilters"][number];
+type EnumFilterMetadata = ProductFilterMetadata["enumFilters"][number];
+type EnumFilterOption = EnumFilterMetadata["options"][number];
 
-export interface CatalogFilterOptionMetadata {
-  id: string;
-  label: string;
-  selected: boolean;
-}
-
-export interface CatalogFilterMetadata {
-  typeOptions: readonly CatalogFilterOptionMetadata[];
-  useCaseOptions: readonly CatalogFilterOptionMetadata[];
-  numericFilters: readonly {
-    attributeId: string;
-    displayName: string;
-    selectedMin?: string | null;
-    selectedMax?: string | null;
-    unitSymbol?: string | null;
-  }[];
-  booleanFilters: readonly {
-    attributeId: string;
-    displayName: string;
-    selectedValue?: boolean | null;
-  }[];
-  enumFilters: readonly {
-    attributeId: string;
-    displayName: string;
-    options: readonly CatalogFilterOptionMetadata[];
-  }[];
-}
+export type CatalogFilterMetadata = {
+  typeOptions: ReadonlyArray<Pick<TypeOption, "id" | "label" | "selected">>;
+  useCaseOptions: ReadonlyArray<Pick<UseCaseOption, "id" | "label" | "selected">>;
+  numericFilters: ReadonlyArray<
+    Pick<
+      NumericFilterMetadata,
+      "attributeId" | "displayName" | "selectedMax" | "selectedMin" | "unitSymbol"
+    >
+  >;
+  booleanFilters: ReadonlyArray<
+    Pick<BooleanFilterMetadata, "attributeId" | "displayName" | "selectedValue">
+  >;
+  enumFilters: ReadonlyArray<
+    Pick<EnumFilterMetadata, "attributeId" | "displayName"> & {
+      options: ReadonlyArray<Pick<EnumFilterOption, "id" | "label" | "selected">>;
+    }
+  >;
+};
 
 const NUMERIC_FILTER_PARAM_PATTERN = /^numeric\.(.+)\.(min|max)$/;
 const BOOLEAN_FILTER_PARAM_PATTERN = /^boolean\.(.+)$/;
@@ -123,9 +119,9 @@ interface ParsedDecimalFilterValue {
 }
 
 export function catalogFiltersFromUrl(url: URL): CatalogFilters {
-  const numericFilters = new Map<string, CatalogNumericFilter>();
-  const booleanFilters = new Map<string, CatalogBooleanFilter>();
-  const enumFilters = new Map<string, CatalogEnumFilter>();
+  const numericFilters = new Map<string, ProductNumericFilterInput>();
+  const booleanFilters = new Map<string, ProductBooleanFilterInput>();
+  const enumFilters = new Map<string, ProductEnumFilterInput>();
   const typeTaxonId = nonBlankParam(url, "typeTaxonId");
   const query = catalogSearchQuery(url.searchParams.get("q"));
   const sort = catalogProductSort(url.searchParams.get("sort"), Boolean(query));
@@ -157,7 +153,7 @@ export function catalogFiltersFromUrl(url: URL): CatalogFilters {
 }
 
 function storeNumericFilter(
-  numericFilters: Map<string, CatalogNumericFilter>,
+  numericFilters: Map<string, ProductNumericFilterInput>,
   name: string,
   rawValue: string,
 ) {
@@ -181,7 +177,7 @@ function storeNumericFilter(
 }
 
 function storeBooleanFilter(
-  booleanFilters: Map<string, CatalogBooleanFilter>,
+  booleanFilters: Map<string, ProductBooleanFilterInput>,
   name: string,
   rawValue: string,
 ) {
@@ -201,7 +197,7 @@ function storeBooleanFilter(
 }
 
 function storeEnumFilter(
-  enumFilters: Map<string, CatalogEnumFilter>,
+  enumFilters: Map<string, ProductEnumFilterInput>,
   name: string,
   rawValue: string,
 ) {
@@ -244,8 +240,8 @@ export function catalogFiltersToProductFiltersInput(
   };
 }
 
-export function uniqueCatalogEnumFilters(filters: readonly CatalogEnumFilter[]) {
-  const filtersByAttribute = new Map<string, CatalogEnumFilter>();
+export function uniqueCatalogEnumFilters(filters: readonly ProductEnumFilterInput[]) {
+  const filtersByAttribute = new Map<string, ProductEnumFilterInput>();
 
   for (const filter of filters) {
     filtersByAttribute.set(filter.attributeId, filter);
@@ -265,25 +261,25 @@ export function hasActiveCatalogFilters(filters: CatalogFilters) {
   );
 }
 
-function validCatalogNumericFilters(filters: readonly CatalogNumericFilter[]) {
+function validCatalogNumericFilters(filters: readonly ProductNumericFilterInput[]) {
   return filters
     .filter(hasNumericFilterBound)
     .filter(hasValidNumericBounds)
     .filter(hasOrderedNumericBounds);
 }
 
-function hasNumericFilterBound(filter: CatalogNumericFilter) {
+function hasNumericFilterBound(filter: ProductNumericFilterInput) {
   return filter.min != null || filter.max != null;
 }
 
-function hasValidNumericBounds(filter: CatalogNumericFilter) {
+function hasValidNumericBounds(filter: ProductNumericFilterInput) {
   return (
     (filter.min == null || isValidDecimalFilterValue(filter.min)) &&
     (filter.max == null || isValidDecimalFilterValue(filter.max))
   );
 }
 
-function hasOrderedNumericBounds(filter: CatalogNumericFilter) {
+function hasOrderedNumericBounds(filter: ProductNumericFilterInput) {
   if (filter.min == null || filter.max == null) {
     return true;
   }

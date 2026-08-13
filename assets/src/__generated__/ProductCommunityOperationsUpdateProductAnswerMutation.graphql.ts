@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<73ab973cccb72d26f4feb304fe9e4322>>
+ * @generated SignedSource<<5c15c3bc10e891d0b14fb01f6d58c959>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,7 +11,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
 export type UpdateProductAnswerInput = {
-  body?: string | null | undefined;
+  body?: string | null;
   id: string;
 };
 export type ProductCommunityOperationsUpdateProductAnswerMutation$variables = {
@@ -23,10 +23,10 @@ export type ProductCommunityOperationsUpdateProductAnswerMutation$data = {
       readonly body: string;
       readonly id: string;
       readonly moderationStatus: CommunityModerationStatus;
-    } | null | undefined;
+    } | null;
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
   };

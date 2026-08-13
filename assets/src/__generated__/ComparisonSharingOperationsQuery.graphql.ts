@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e2dbdcc2996849da52b4474b9b09bda7>>
+ * @generated SignedSource<<4660c02daeee741a0fdbc3e08d37c09a>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,7 +10,7 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type ComparisonSharingOperationsQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
 };
 export type ComparisonSharingOperationsQuery$data = {
@@ -20,15 +20,15 @@ export type ComparisonSharingOperationsQuery$data = {
         readonly node: {
           readonly id: string;
           readonly sharePath: string;
-          readonly title: string | null | undefined;
+          readonly title: string | null;
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
       };
     };
-  } | null | undefined;
+  } | null;
 };
 export type ComparisonSharingOperationsQuery = {
   response: ComparisonSharingOperationsQuery$data;

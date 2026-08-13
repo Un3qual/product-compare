@@ -29,12 +29,12 @@ test.each([
   ],
   [
     "hides amount discounts with currency but no value",
-    { discountType: "AMOUNT", currency: "USD" },
+    { discountType: "AMOUNT", currency: "USD", discountValue: null },
     null,
   ],
   [
     "hides amount discounts with a value but no currency",
-    { discountType: "AMOUNT", discountValue: "20.00" },
+    { discountType: "AMOUNT", discountValue: "20.00", currency: null },
     null,
   ],
   [
@@ -54,33 +54,37 @@ test.each([
   ],
   [
     "formats percent discounts with a value",
-    { discountType: "PERCENT", discountValue: "15" },
+    { discountType: "PERCENT", discountValue: "15", currency: null },
     "15% off",
   ],
   [
     "hides percent discounts with a blank value",
-    { discountType: "PERCENT", discountValue: "" },
+    { discountType: "PERCENT", discountValue: "", currency: null },
     null,
   ],
-  ["formats free-shipping discounts", { discountType: "FREE_SHIPPING" }, "Free shipping"],
+  [
+    "formats free-shipping discounts",
+    { discountType: "FREE_SHIPPING", currency: null, discountValue: null },
+    "Free shipping",
+  ],
   [
     "formats other discounts with a value",
-    { discountType: "OTHER", discountValue: "Member reward" },
+    { discountType: "OTHER", discountValue: "Member reward", currency: null },
     "Member reward off",
   ],
   [
     "uses the other discount fallback for a blank value",
-    { discountType: "OTHER", discountValue: "" },
+    { discountType: "OTHER", discountValue: "", currency: null },
     "Other discount",
   ],
   [
     "uses the other discount fallback for a nullish value",
-    { discountType: "OTHER", discountValue: null },
+    { discountType: "OTHER", discountValue: null, currency: null },
     "Other discount",
   ],
   [
     "hides unknown future discount types",
-    { discountType: "%future added value", discountValue: "1" },
+    { discountType: "%future added value", discountValue: "1", currency: null },
     null,
   ],
 ] as const)("couponDiscountText %s", (_description, coupon, expected) => {
@@ -265,7 +269,7 @@ test("affiliate setup mutation outcomes preserve each complete fact and its iden
 test.each([
   [
     "network",
-    () => resolveAffiliateNetworkMutationOutcome(undefined, []),
+    () => resolveAffiliateNetworkMutationOutcome(null, []),
     () => resolveAffiliateNetworkMutationOutcome({ network: null, errors: [MUTATION_ERROR] }, []),
   ],
   [
@@ -275,16 +279,16 @@ test.each([
   ],
   [
     "link",
-    () => resolveAffiliateLinkMutationOutcome(undefined, []),
+    () => resolveAffiliateLinkMutationOutcome(null, []),
     () => resolveAffiliateLinkMutationOutcome({ link: null, errors: [MUTATION_ERROR] }, []),
   ],
   [
     "coupon",
-    () => resolveAffiliateCouponMutationOutcome(undefined, []),
+    () => resolveAffiliateCouponMutationOutcome(null, []),
     () => resolveAffiliateCouponMutationOutcome({ coupon: null, errors: [MUTATION_ERROR] }, []),
   ],
 ] as const)(
-  "%s outcome uses shared errors for missing payloads and null facts",
+  "%s outcome uses shared errors for null payloads and null facts",
   (_kind, resolveMissing, resolveNullFact) => {
     expect(resolveMissing()).toEqual({ error: DEFAULT_MUTATION_ERROR_MESSAGE, result: null });
     expect(resolveNullFact()).toEqual({ error: MUTATION_ERROR.message, result: null });

@@ -7,5 +7,6 @@
     "Date": "string",
     "DateTime": "string",
     "Decimal": "string"
-  }
+  },
+  "typescriptExcludeUndefinedFromNullableUnion": true
 }

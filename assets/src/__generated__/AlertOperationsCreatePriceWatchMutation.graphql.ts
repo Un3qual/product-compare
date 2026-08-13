@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a57eda0be6fd27128501a0010bddd448>>
+ * @generated SignedSource<<0140bf028914d8c28bfb96213eedd854>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,13 +11,13 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type PriceWatchRuleType = "BACK_IN_STOCK" | "NEWLY_AVAILABLE" | "PERCENTAGE_DROP" | "TARGET_PRICE" | "%future added value";
 export type CreatePriceWatchInput = {
-  cooldownSeconds?: number | null | undefined;
+  cooldownSeconds?: number | null;
   currency: string;
-  merchantProductId?: string | null | undefined;
-  percentageDrop?: string | null | undefined;
+  merchantProductId?: string | null;
+  percentageDrop?: string | null;
   productId: string;
   ruleType: PriceWatchRuleType;
-  targetAmount?: string | null | undefined;
+  targetAmount?: string | null;
 };
 export type AlertOperationsCreatePriceWatchMutation$variables = {
   input: CreatePriceWatchInput;
@@ -26,18 +26,18 @@ export type AlertOperationsCreatePriceWatchMutation$data = {
   readonly createPriceWatch: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly watch: {
       readonly currency: string;
       readonly enabled: boolean;
       readonly id: string;
-      readonly percentageDrop: string | null | undefined;
+      readonly percentageDrop: string | null;
       readonly productName: string;
       readonly ruleType: PriceWatchRuleType;
-      readonly targetAmount: string | null | undefined;
-    } | null | undefined;
+      readonly targetAmount: string | null;
+    } | null;
   };
 };
 export type AlertOperationsCreatePriceWatchMutation = {

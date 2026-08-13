@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c5c6c5d02b7e8eafcfe4371cddf5abb3>>
+ * @generated SignedSource<<df8fc865ab4d5ab4754fad759bd8ef2d>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -14,11 +14,11 @@ export type CJProgramWarningCode = "MISSING_ADVERTISER_NAME" | "MISSING_PRODUCT_
 import { FragmentRefs } from "relay-runtime";
 export type CJProgramRow_program$data = {
   readonly advertiserId: string;
-  readonly advertiserName: string | null | undefined;
-  readonly feedCount: number | null | undefined;
+  readonly advertiserName: string | null;
+  readonly feedCount: number | null;
   readonly id: string;
   readonly lastChanged: string;
-  readonly note: string | null | undefined;
+  readonly note: string | null;
   readonly stage: CJProgramStage;
   readonly warningCodes: ReadonlyArray<CJProgramWarningCode>;
   readonly " $fragmentType": "CJProgramRow_program";

@@ -20,14 +20,19 @@ function metadataFixture(): CatalogAdvancedFilterMetadata {
     numericFilters: [
       {
         attributeId: "attr-refresh",
+        code: "refresh-rate",
         displayName: "Refresh Rate",
+        min: null,
+        max: null,
         selectedMin: "120",
         selectedMax: "240",
+        unitSymbol: "Hz",
       },
     ],
     booleanFilters: [
       {
         attributeId: "attr-wireless",
+        code: "wireless",
         displayName: "Wireless",
         trueCount: 5,
         falseCount: 2,
@@ -37,6 +42,7 @@ function metadataFixture(): CatalogAdvancedFilterMetadata {
     enumFilters: [
       {
         attributeId: "attr-color",
+        code: "color",
         displayName: "Color",
         options: [
           { id: "enum-red", label: "Red", count: 2, selected: true, disabled: true },

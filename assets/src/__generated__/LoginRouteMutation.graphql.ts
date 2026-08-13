@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<58c3a2b7187e6ab039843a32d89164cb>>
+ * @generated SignedSource<<2833d8f2720e87fa1b7ba034563f1e46>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -17,14 +17,14 @@ export type LoginRouteMutation$data = {
   readonly login: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly viewer: {
       readonly email: string;
       readonly id: string;
       readonly isOperator: boolean;
-    } | null | undefined;
+    } | null;
   };
 };
 export type LoginRouteMutation = {

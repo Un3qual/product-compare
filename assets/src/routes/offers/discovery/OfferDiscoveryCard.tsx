@@ -421,7 +421,7 @@ export function getOfferDiscoveryCardData(offer: OfferNode) {
 
   return {
     activeCoupons: offer.activeCoupons ?? emptyCouponConnection(),
-    latestPriceLabel: priceLabel(offer.latestPrice?.price, offer.currency) ?? "No latest price.",
+    latestPriceLabel: priceLabel(offer.latestPrice?.price ?? null, offer.currency) ?? "No latest price.",
     merchantDomain: offer.merchant?.domain ?? null,
     priceHistory,
     priceHistoryRows: offerPriceHistoryRows(priceHistory, offer.currency),

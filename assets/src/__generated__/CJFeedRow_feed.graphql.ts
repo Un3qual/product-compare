@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a28e481d15a525f56fac22bab5fd5bed>>
+ * @generated SignedSource<<2314cbea475fa4bde9bc46afa58f6b9c>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,16 +11,16 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type CJFeedRow_feed$data = {
-  readonly advertiserCountry: string | null | undefined;
-  readonly advertiserName: string | null | undefined;
-  readonly currency: string | null | undefined;
-  readonly feedName: string | null | undefined;
+  readonly advertiserCountry: string | null;
+  readonly advertiserName: string | null;
+  readonly currency: string | null;
+  readonly feedName: string | null;
   readonly id: string;
-  readonly language: string | null | undefined;
+  readonly language: string | null;
   readonly lastSeenAt: string;
-  readonly productCount: number | null | undefined;
+  readonly productCount: number | null;
   readonly providerFeedId: string;
-  readonly sourceFeedType: string | null | undefined;
+  readonly sourceFeedType: string | null;
   readonly " $fragmentType": "CJFeedRow_feed";
 };
 export type CJFeedRow_feed$key = {

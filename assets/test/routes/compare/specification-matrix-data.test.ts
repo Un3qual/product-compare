@@ -3,6 +3,10 @@ import {
   type SpecificationMatrixProduct,
 } from "../../../src/routes/compare/specification-matrix-data";
 
+type MatrixAttribute = SpecificationMatrixProduct["currentAttributes"][number];
+type MatrixAttributeFixture = Pick<MatrixAttribute, "code" | "displayName" | "valueText"> &
+  Partial<Omit<MatrixAttribute, "code" | "displayName" | "valueText">>;
+
 test("buildSpecificationMatrixRows preserves first duplicates and stable row ordering", () => {
   const rows = buildSpecificationMatrixRows(
     [
@@ -200,11 +204,21 @@ test("buildSpecificationMatrixRows normalizes decimal exponents within the expan
 
 function matrixProduct(
   id: string,
-  currentAttributes: SpecificationMatrixProduct["currentAttributes"],
+  currentAttributes: readonly MatrixAttributeFixture[],
 ): SpecificationMatrixProduct {
   return {
     id,
     name: `Product ${id}`,
-    currentAttributes,
+    currentAttributes: currentAttributes.map((attribute) => ({
+      ...attribute,
+      attributeId: attribute.attributeId ?? `attribute-${attribute.code}`,
+      booleanValue: attribute.booleanValue ?? null,
+      enumOptionId: attribute.enumOptionId ?? null,
+      groupLabel: attribute.groupLabel ?? null,
+      isRequired: attribute.isRequired ?? false,
+      numericValue: attribute.numericValue ?? null,
+      sortOrder: attribute.sortOrder ?? null,
+      unitSymbol: attribute.unitSymbol ?? null,
+    })),
   };
 }

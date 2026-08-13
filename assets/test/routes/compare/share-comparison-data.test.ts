@@ -107,7 +107,7 @@ test("nextComparisonSnapshotCursor returns a non-empty advancing cursor for a ne
 });
 
 test.each([
-  ["a missing connection", undefined],
+  ["a null connection", null],
   ["a false next-page flag", { pageInfo: { endCursor: "cursor-40", hasNextPage: false } }],
   ["a blank cursor", { pageInfo: { endCursor: "", hasNextPage: true } }],
   ["a whitespace-only cursor", { pageInfo: { endCursor: "   ", hasNextPage: true } }],
@@ -271,7 +271,7 @@ test("snapshotFromNode projects structural source nodes and falls back to an unt
     snapshotFromNode({
       id: "snapshot-1",
       sharePath: "/compare/shared/public-token",
-      title: undefined,
+      title: null,
     }),
   ).toEqual({
     id: "snapshot-1",

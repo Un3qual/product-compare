@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<3b395aa8effb96a640e5b9a945fb503d>>
+ * @generated SignedSource<<38606c2958505f8a4626936e4ba97b6b>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -17,7 +17,7 @@ export type ResetPasswordRouteMutation$data = {
   readonly resetPassword: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly ok: boolean;

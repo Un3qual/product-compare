@@ -4,7 +4,7 @@ import { nextPageCursor } from "$relay/pagination";
 export function catalogBrowsePath(
   filters: CatalogFilters,
   first: number,
-  after?: string | null,
+  after: string | null = null,
   compareSlugs: readonly string[] = [],
 ) {
   const params = new URLSearchParams();

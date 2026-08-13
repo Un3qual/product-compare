@@ -6,7 +6,7 @@ export const RESET_PASSWORD_MISSING_TOKEN_ERROR: MutationError = Object.freeze(
 
 export const CREDENTIAL_RESET_COMPLETION_MESSAGE = "Your password has been updated.";
 
-export function normalizeResetPasswordToken(token?: string | null) {
+export function normalizeResetPasswordToken(token: string | null = null) {
   return token?.trim() ?? "";
 }
 

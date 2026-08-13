@@ -12,9 +12,7 @@ export type VerifyEmailRequestData = {
   readonly token: string;
 };
 
-export function buildVerifyEmailRequestData(
-  rawToken: string | null | undefined,
-): VerifyEmailRequestData {
+export function buildVerifyEmailRequestData(rawToken: string | null): VerifyEmailRequestData {
   const token = normalizeVerifyEmailToken(rawToken);
 
   return {
@@ -24,6 +22,6 @@ export function buildVerifyEmailRequestData(
   };
 }
 
-function normalizeVerifyEmailToken(rawToken: string | null | undefined) {
+function normalizeVerifyEmailToken(rawToken: string | null) {
   return rawToken?.trim() ?? "";
 }

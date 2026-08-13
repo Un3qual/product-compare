@@ -402,7 +402,6 @@ test("resolveApiTokenCredentialMutationOutcome returns a credential for complete
 });
 
 test.each([
-  ["missing", undefined],
   ["null", null],
   ["empty", ""],
 ] as const)(
@@ -533,15 +532,15 @@ test("resolveRevokeApiTokenMutationOutcome keeps complete payload facts successf
 });
 
 test("summarizeMutationApiToken preserves token facts and normalizes nullable fields", () => {
-  expect(summarizeMutationApiToken()).toBeNull();
+  expect(summarizeMutationApiToken(null)).toBeNull();
   expect(
     summarizeMutationApiToken({
       id: "mutation-token",
-      label: undefined,
+      label: null,
       tokenPrefix: "mutation-prefix",
-      lastUsedAt: undefined,
+      lastUsedAt: null,
       expiresAt: null,
-      revokedAt: undefined,
+      revokedAt: null,
       insertedAt: "2026-07-14T00:00:00Z",
     }),
   ).toEqual({
@@ -580,6 +579,7 @@ test("buildApiTokensViewState gives server snapshots precedence over duplicate l
   const staleLocalServerToken = { ...SERVER_TOKEN, label: "Stale local token" };
   const result = buildApiTokensViewState(
     {
+      after: null,
       status: "ready",
       tokens: [SERVER_TOKEN],
       tokenStatus: "all",
@@ -598,7 +598,9 @@ test("buildApiTokensViewState returns stable unauthorized and empty copy", () =>
     statusMessage: "Sign in to manage API tokens.",
     tokens: [],
   });
-  expect(buildApiTokensViewState({ status: "empty", tokens: [], tokenStatus: "all" })).toEqual({
+  expect(
+    buildApiTokensViewState({ after: null, status: "empty", tokens: [], tokenStatus: "all" }),
+  ).toEqual({
     localTokens: [],
     statusMessage: "No API tokens yet.",
     tokens: [],

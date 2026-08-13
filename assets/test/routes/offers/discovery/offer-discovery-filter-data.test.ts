@@ -27,7 +27,7 @@ test.each([
   },
 );
 
-test.each([null, undefined, { __typename: "%other" as const }])(
+test.each([null, { __typename: "%other" as const }])(
   "returns no selected-product context for %j",
   (node) => {
     expect(offerDiscoverySelectedProductContext(node)).toBeNull();

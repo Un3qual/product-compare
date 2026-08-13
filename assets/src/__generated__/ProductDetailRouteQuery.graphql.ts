@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<77fff0e1e2124ff2b65e34e35aa0b60b>>
+ * @generated SignedSource<<fb0114768f2a671e67cba07605c0af0a>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -13,7 +13,7 @@ import { FragmentRefs } from "relay-runtime";
 export type OfferFreshness = "AGING" | "FRESH" | "STALE" | "UNOBSERVED" | "%future added value";
 export type ProductDetailRouteQuery$variables = {
   offerFirst: number;
-  offersAfter?: string | null | undefined;
+  offersAfter?: string | null;
   slug: string;
 };
 export type ProductDetailRouteQuery$data = {
@@ -21,34 +21,34 @@ export type ProductDetailRouteQuery$data = {
     readonly brand: {
       readonly id: string;
       readonly name: string;
-    } | null | undefined;
+    } | null;
     readonly currentAttributes: ReadonlyArray<{
       readonly attributeId: string;
-      readonly booleanValue: boolean | null | undefined;
+      readonly booleanValue: boolean | null;
       readonly code: string;
       readonly dataType: string;
       readonly displayName: string;
-      readonly enumOptionId: string | null | undefined;
-      readonly groupLabel: string | null | undefined;
+      readonly enumOptionId: string | null;
+      readonly groupLabel: string | null;
       readonly isRequired: boolean;
-      readonly numericValue: string | null | undefined;
-      readonly sortOrder: number | null | undefined;
-      readonly unitSymbol: string | null | undefined;
+      readonly numericValue: string | null;
+      readonly sortOrder: number | null;
+      readonly unitSymbol: string | null;
       readonly valueText: string;
     }>;
-    readonly description: string | null | undefined;
+    readonly description: string | null;
     readonly id: string;
     readonly merchantProducts: {
       readonly edges: ReadonlyArray<{
         readonly cursor: string;
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
       };
       readonly " $fragmentSpreads": FragmentRefs<"ProductOfferPanel_connection">;
-    } | null | undefined;
-    readonly modelNumber: string | null | undefined;
+    } | null;
+    readonly modelNumber: string | null;
     readonly name: string;
     readonly offerTruth: {
       readonly asOf: string;
@@ -56,10 +56,10 @@ export type ProductDetailRouteQuery$data = {
         readonly bestOffer: {
           readonly eligible: boolean;
           readonly freshness: OfferFreshness;
-          readonly landedPrice: string | null | undefined;
+          readonly landedPrice: string | null;
           readonly merchantProductId: string;
-          readonly observedAt: string | null | undefined;
-        } | null | undefined;
+          readonly observedAt: string | null;
+        } | null;
         readonly currency: string;
         readonly eligibleOfferCount: number;
       }>;
@@ -88,13 +88,13 @@ export type ProductDetailRouteQuery$data = {
     readonly seo: {
       readonly canonicalPath: string;
       readonly description: string;
-      readonly imageUrl: string | null | undefined;
+      readonly imageUrl: string | null;
       readonly indexable: boolean;
-      readonly structuredData: string | null | undefined;
+      readonly structuredData: string | null;
       readonly title: string;
     };
     readonly slug: string;
-  } | null | undefined;
+  } | null;
 };
 export type ProductDetailRouteQuery = {
   response: ProductDetailRouteQuery$data;

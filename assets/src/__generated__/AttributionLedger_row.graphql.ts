@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<6b9b9db498a3d2db01e2d7ebf8217b16>>
+ * @generated SignedSource<<9d125c66775847c800d29cdebc7de574>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -15,35 +15,35 @@ export type CommerceClickSourceSurface = "API" | "EXTENSION" | "WEB" | "%future 
 export type CommerceConversionStatus = "APPROVED" | "PAID" | "PENDING" | "REVERSED" | "%future added value";
 import { FragmentRefs } from "relay-runtime";
 export type AttributionLedger_row$data = {
-  readonly affiliateNetworkCode: string | null | undefined;
-  readonly affiliateNetworkName: string | null | undefined;
-  readonly affiliateProgramCode: string | null | undefined;
+  readonly affiliateNetworkCode: string | null;
+  readonly affiliateNetworkName: string | null;
+  readonly affiliateProgramCode: string | null;
   readonly anonymousVisitor: boolean;
   readonly clickId: string;
   readonly insertedAt: string;
-  readonly ipAddress: string | null | undefined;
+  readonly ipAddress: string | null;
   readonly linkType: CommerceAttributionLinkType;
   readonly matchedConversions: ReadonlyArray<{
-    readonly affiliateNetworkCode: string | null | undefined;
-    readonly affiliateNetworkName: string | null | undefined;
+    readonly affiliateNetworkCode: string | null;
+    readonly affiliateNetworkName: string | null;
     readonly attributionConfidence: CommerceAttributionConfidence;
-    readonly commissionAmount: string | null | undefined;
+    readonly commissionAmount: string | null;
     readonly currency: string;
-    readonly merchantName: string | null | undefined;
+    readonly merchantName: string | null;
     readonly networkConversionRef: string;
-    readonly orderAmount: string | null | undefined;
-    readonly productName: string | null | undefined;
-    readonly purchasedAt: string | null | undefined;
+    readonly orderAmount: string | null;
+    readonly productName: string | null;
+    readonly purchasedAt: string | null;
     readonly reportedAt: string;
     readonly status: CommerceConversionStatus;
   }>;
   readonly merchantName: string;
-  readonly merchantProductExternalSku: string | null | undefined;
-  readonly productName: string | null | undefined;
-  readonly referrer: string | null | undefined;
+  readonly merchantProductExternalSku: string | null;
+  readonly productName: string | null;
+  readonly referrer: string | null;
   readonly sourceSurface: CommerceClickSourceSurface;
-  readonly userAgent: string | null | undefined;
-  readonly userEmail: string | null | undefined;
+  readonly userAgent: string | null;
+  readonly userEmail: string | null;
   readonly " $fragmentType": "AttributionLedger_row";
 };
 export type AttributionLedger_row$key = {

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a0d6f08103a36a572a998ff79af4e7ac>>
+ * @generated SignedSource<<014d7ddc3a3ff722157b79c16559f9f9>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,7 +11,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type CommunityQuestionAnswersQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
   id: string;
 };
@@ -25,12 +25,12 @@ export type CommunityQuestionAnswersQuery$data = {
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
       };
     };
     readonly id: string;
-  } | null | undefined;
+  } | null;
 };
 export type CommunityQuestionAnswersQuery = {
   response: CommunityQuestionAnswersQuery$data;

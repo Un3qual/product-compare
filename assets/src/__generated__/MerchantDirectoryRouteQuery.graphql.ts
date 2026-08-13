@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<67ad383411744857025a11f163e346ec>>
+ * @generated SignedSource<<a8c8a3bad95994aad4723eaddc24a5d1>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,19 +11,19 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type MerchantDirectoryRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
 };
 export type MerchantDirectoryRouteQuery$data = {
   readonly merchants: {
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
       readonly hasPreviousPage: boolean;
-      readonly startCursor: string | null | undefined;
+      readonly startCursor: string | null;
     };
     readonly " $fragmentSpreads": FragmentRefs<"MerchantDirectoryView_merchants">;
-  } | null | undefined;
+  } | null;
 };
 export type MerchantDirectoryRouteQuery = {
   response: MerchantDirectoryRouteQuery$data;

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a4d3f3aacc303589243f0421836640cf>>
+ * @generated SignedSource<<a2176d8020dec121686d28063f147fa9>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,9 +10,9 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type UpsertAffiliateLinkInput = {
-  affiliateNetworkId?: string | null | undefined;
+  affiliateNetworkId?: string | null;
   affiliateUrl: string;
-  lastVerifiedAt?: string | null | undefined;
+  lastVerifiedAt?: string | null;
   merchantProductId: string;
   originalUrl: string;
 };
@@ -23,18 +23,18 @@ export type AffiliateSetupOperationsUpsertAffiliateLinkMutation$data = {
   readonly upsertAffiliateLink: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly link: {
-      readonly affiliateNetworkId: string | null | undefined;
+      readonly affiliateNetworkId: string | null;
       readonly affiliateUrl: string;
       readonly id: string;
-      readonly lastVerifiedAt: string | null | undefined;
+      readonly lastVerifiedAt: string | null;
       readonly merchantProductId: string;
       readonly originalUrl: string;
-    } | null | undefined;
-  } | null | undefined;
+    } | null;
+  } | null;
 };
 export type AffiliateSetupOperationsUpsertAffiliateLinkMutation = {
   response: AffiliateSetupOperationsUpsertAffiliateLinkMutation$data;

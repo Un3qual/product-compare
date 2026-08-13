@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c31a4df3586291f1e478a6d985df673f>>
+ * @generated SignedSource<<ea53a36048c6dea642d5bab916d5f904>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -13,8 +13,8 @@ export type RecommendationProfile = "BEST_VALUE" | "LOWEST_CURRENT_COST" | "%fut
 export type PublishComparisonSnapshotInput = {
   productIds: ReadonlyArray<string>;
   recommendationProfile: RecommendationProfile;
-  searchIndexable?: boolean | null | undefined;
-  title?: string | null | undefined;
+  searchIndexable?: boolean | null;
+  title?: string | null;
 };
 export type ComparisonSharingOperationsPublishComparisonSnapshotMutation$variables = {
   input: PublishComparisonSnapshotInput;
@@ -23,16 +23,16 @@ export type ComparisonSharingOperationsPublishComparisonSnapshotMutation$data = 
   readonly publishComparisonSnapshot: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
-    readonly sharePath: string | null | undefined;
+    readonly sharePath: string | null;
     readonly snapshot: {
       readonly capturedAt: string;
       readonly id: string;
       readonly searchIndexable: boolean;
-      readonly title: string | null | undefined;
-    } | null | undefined;
+      readonly title: string | null;
+    } | null;
   };
 };
 export type ComparisonSharingOperationsPublishComparisonSnapshotMutation = {

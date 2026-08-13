@@ -443,8 +443,8 @@ function CJProgramFeeds({
   );
 }
 
-function formatFeedCount(feedCount: number | null | undefined) {
-  if (typeof feedCount !== "number") {
+function formatFeedCount(feedCount: number | null) {
+  if (feedCount === null) {
     return "Feed count unavailable";
   }
 

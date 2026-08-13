@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b3107bdbe9b8e88627276edd4b559ff2>>
+ * @generated SignedSource<<52bbdfe88827abe7729a271163dac528>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -13,11 +13,11 @@ import { FragmentRefs } from "relay-runtime";
 export type CJProgramSort = "FEED_COUNT_DESC" | "LAST_CHANGED_DESC" | "NAME_ASC" | "%future added value";
 export type CJProgramStage = "ACCEPTED" | "APPLIED" | "CONSIDERING" | "DECLINED" | "NEW" | "NOT_PURSUING" | "SELECTED" | "%future added value";
 export type CJProgramsRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
   sort: CJProgramSort;
-  stage?: CJProgramStage | null | undefined;
-  unmatchedAfter?: string | null | undefined;
+  stage?: CJProgramStage | null;
+  unmatchedAfter?: string | null;
   unmatchedFirst: number;
 };
 export type CJProgramsRouteQuery$data = {
@@ -38,7 +38,7 @@ export type CJProgramsRouteQuery$data = {
       };
     }>;
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
       readonly hasPreviousPage: boolean;
     };
@@ -51,7 +51,7 @@ export type CJProgramsRouteQuery$data = {
       };
     }>;
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
       readonly hasPreviousPage: boolean;
     };

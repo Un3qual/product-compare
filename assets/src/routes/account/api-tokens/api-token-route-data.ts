@@ -255,7 +255,7 @@ export function resolveRevokeApiTokenMutationOutcome(
   return revokeMutationFailure(payload, graphQLErrors);
 }
 
-export function summarizeMutationApiToken(token?: MutationApiToken | null) {
+export function summarizeMutationApiToken(token: MutationApiToken | null) {
   return token ? normalizeApiToken(token) : null;
 }
 

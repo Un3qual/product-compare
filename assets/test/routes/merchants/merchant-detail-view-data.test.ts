@@ -54,16 +54,16 @@ test("keeps the missing-observation fallback while retaining freshness counts", 
 test("treats undefined Relay nullable fields like their null fallbacks", () => {
   const data = getMerchantDetailViewData(
     buildMerchant({
-      detailSummary: buildSummary({ lastObservedAt: undefined }),
+      detailSummary: buildSummary({ lastObservedAt: null }),
       merchantProducts: buildProducts(
         [
-          buildOffer({ id: "no-product-or-price", product: undefined, latestPrice: undefined }),
+          buildOffer({ id: "no-product-or-price", product: null, latestPrice: null }),
           buildOffer({
             id: "unknown-shipping",
-            latestPrice: buildPrice({ price: "12", shipping: undefined, inStock: undefined }),
+            latestPrice: buildPrice({ price: "12", shipping: null, inStock: null }),
           }),
         ],
-        { hasNextPage: true, endCursor: undefined },
+        { hasNextPage: true, endCursor: null },
       ),
     }),
   );

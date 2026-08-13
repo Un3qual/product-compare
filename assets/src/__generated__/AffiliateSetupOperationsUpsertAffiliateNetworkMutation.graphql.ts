@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<018bf8fa8fc058aea79968782cf6f0b0>>
+ * @generated SignedSource<<adb73f22dab9e741016fc5a8c747aa07>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -19,14 +19,14 @@ export type AffiliateSetupOperationsUpsertAffiliateNetworkMutation$data = {
   readonly upsertAffiliateNetwork: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly network: {
       readonly id: string;
       readonly name: string;
-    } | null | undefined;
-  } | null | undefined;
+    } | null;
+  } | null;
 };
 export type AffiliateSetupOperationsUpsertAffiliateNetworkMutation = {
   response: AffiliateSetupOperationsUpsertAffiliateNetworkMutation$data;

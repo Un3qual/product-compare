@@ -19,7 +19,10 @@ import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Pagination } from "$ui/components/navigation/Pagination";
 import { recoverRouteLoaderError } from "$relay/loader-errors";
-import { merchantPaginationFromUrl } from "../../merchants/pagination";
+import {
+  merchantPaginationFromUrl,
+  type MerchantPagination,
+} from "../../merchants/pagination";
 import { commitRouteMutationPromise } from "$relay/mutations";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
@@ -50,10 +53,7 @@ import {
   resolveAffiliateNetworkMutationOutcome,
   resolveAffiliateProgramMutationOutcome,
 } from "./affiliate-setup-data";
-import {
-  buildAffiliateSetupPaginationData,
-  type AffiliateSetupMerchantPagination,
-} from "./pagination";
+import { buildAffiliateSetupPaginationData } from "./pagination";
 
 const affiliateSetupRouteQuery = graphql`
   query AffiliateSetupRouteQuery($first: Int!, $after: String) {
@@ -80,12 +80,12 @@ const affiliateSetupRouteQuery = graphql`
 export type AffiliateSetupLoaderData =
   | {
       status: "ready";
-      merchantPagination: AffiliateSetupMerchantPagination;
+      merchantPagination: MerchantPagination;
       merchantQuery: RelayRouteQueryDescriptor<AffiliateSetupRouteQuery["variables"]>;
     }
   | {
       status: "error";
-      merchantPagination: AffiliateSetupMerchantPagination;
+      merchantPagination: MerchantPagination;
     };
 
 export async function affiliateSetupLoader({

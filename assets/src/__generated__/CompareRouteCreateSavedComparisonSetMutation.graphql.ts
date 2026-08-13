@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c8b8090995617d0049d104309523f004>>
+ * @generated SignedSource<<e03dd9183327c1342569876e5ecaf9e0>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -20,12 +20,12 @@ export type CompareRouteCreateSavedComparisonSetMutation$data = {
   readonly createSavedComparisonSet: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly savedComparisonSet: {
       readonly id: string;
-    } | null | undefined;
+    } | null;
   };
 };
 export type CompareRouteCreateSavedComparisonSetMutation = {

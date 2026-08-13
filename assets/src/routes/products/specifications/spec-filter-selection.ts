@@ -8,15 +8,17 @@ const CATALOG_PAGE_SIZE = 12;
 export type SpecFilterKind = "boolean" | "enum" | "numeric";
 export type SpecFilterMode = "same" | "at_least" | "at_most";
 
-export type SpecFilterSelection = {
+type SpecFilterSelectionBase = {
   attributeId: string;
   code: string;
   displayName: string;
-  kind: SpecFilterKind;
   mode: SpecFilterMode;
-  unitSymbol?: string;
-  value: boolean | string;
 };
+
+export type SpecFilterSelection =
+  | (SpecFilterSelectionBase & { kind: "boolean"; value: boolean })
+  | (SpecFilterSelectionBase & { kind: "enum"; value: string })
+  | (SpecFilterSelectionBase & { kind: "numeric"; unitSymbol: string | null; value: string });
 
 export function readSpecFilterDraft(storage: Storage, productId: string): SpecFilterSelection[] {
   const value = storage.getItem(STORAGE_KEY);
@@ -41,12 +43,12 @@ export function writeSpecFilterDraft(
 export function catalogPathForSpecSelections(selections: readonly SpecFilterSelection[]) {
   const filters = {
     booleans: selections.flatMap((selection) =>
-      selection.kind === "boolean" && typeof selection.value === "boolean"
+      selection.kind === "boolean"
         ? [{ attributeId: selection.attributeId, value: selection.value }]
         : [],
     ),
     enums: selections.flatMap((selection) =>
-      selection.kind === "enum" && typeof selection.value === "string"
+      selection.kind === "enum"
         ? [{ attributeId: selection.attributeId, enumOptionId: selection.value }]
         : [],
     ),
@@ -58,7 +60,7 @@ export function catalogPathForSpecSelections(selections: readonly SpecFilterSele
 }
 
 function numericCatalogFilter(selection: SpecFilterSelection) {
-  if (selection.kind !== "numeric" || typeof selection.value !== "string") return [];
+  if (selection.kind !== "numeric") return [];
 
   const bound = selection.value;
   const filter =
@@ -87,8 +89,14 @@ function validSelection(value: unknown): value is SpecFilterSelection {
     return false;
   }
 
-  if (value.unitSymbol !== undefined && typeof value.unitSymbol !== "string") return false;
   if (value.kind === "boolean") return typeof value.value === "boolean";
+  if (
+    value.kind === "numeric" &&
+    value.unitSymbol !== null &&
+    typeof value.unitSymbol !== "string"
+  ) {
+    return false;
+  }
   return nonBlankString(value.value);
 }
 

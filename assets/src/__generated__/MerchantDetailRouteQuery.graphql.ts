@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<75f72e9240492b7e8e02169c51013568>>
+ * @generated SignedSource<<78102406e399f6d17994f532f891ddc0>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,7 +10,7 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type MerchantDetailRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
   slug: string;
 };
@@ -22,7 +22,7 @@ export type MerchantDetailRouteQuery$data = {
       readonly distinctProductCount: number;
       readonly eligibleOfferCount: number;
       readonly freshOfferCount: number;
-      readonly lastObservedAt: string | null | undefined;
+      readonly lastObservedAt: string | null;
       readonly observedOfferCount: number;
       readonly staleOfferCount: number;
       readonly unobservedOfferCount: number;
@@ -36,20 +36,20 @@ export type MerchantDetailRouteQuery$data = {
           readonly id: string;
           readonly latestPrice: {
             readonly id: string;
-            readonly inStock: boolean | null | undefined;
+            readonly inStock: boolean | null;
             readonly observedAt: string;
             readonly price: string;
-            readonly shipping: string | null | undefined;
-          } | null | undefined;
+            readonly shipping: string | null;
+          } | null;
           readonly product: {
             readonly id: string;
             readonly name: string;
             readonly slug: string;
-          } | null | undefined;
+          } | null;
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
       };
     };
@@ -57,13 +57,13 @@ export type MerchantDetailRouteQuery$data = {
     readonly seo: {
       readonly canonicalPath: string;
       readonly description: string;
-      readonly imageUrl: string | null | undefined;
+      readonly imageUrl: string | null;
       readonly indexable: boolean;
-      readonly structuredData: string | null | undefined;
+      readonly structuredData: string | null;
       readonly title: string;
     };
     readonly slug: string;
-  } | null | undefined;
+  } | null;
 };
 export type MerchantDetailRouteQuery = {
   response: MerchantDetailRouteQuery$data;

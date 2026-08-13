@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<cddebfb7478d8cf580ef1f249dd95901>>
+ * @generated SignedSource<<fdfe438cda37964618cbf1e38054850e>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -16,7 +16,7 @@ export type VerifyEmailRouteMutation$data = {
   readonly verifyEmail: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly ok: boolean;

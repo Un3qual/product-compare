@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<dd67bf6a81d61377e3e9bbb96b4be5c1>>
+ * @generated SignedSource<<1baa04fef18ec09f9462aad6619fc5bc>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -13,7 +13,7 @@ export type CJProgramStage = "ACCEPTED" | "APPLIED" | "CONSIDERING" | "DECLINED"
 export type UpdateCjProgramInput = {
   expectedChangedAt: string;
   id: string;
-  note?: string | null | undefined;
+  note?: string | null;
   stage: CJProgramStage;
 };
 export type CJProgramRowUpdateCJProgramMutation$variables = {
@@ -23,7 +23,7 @@ export type CJProgramRowUpdateCJProgramMutation$data = {
   readonly updateCjProgram: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
   };

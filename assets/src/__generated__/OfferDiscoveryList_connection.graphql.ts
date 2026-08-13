@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<3763602d36dd412a540696b42399ab47>>
+ * @generated SignedSource<<045a068970a917b52c2472b3a3d53fda>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -20,22 +20,22 @@ export type OfferDiscoveryList_connection$data = {
         readonly pageInfo: {
           readonly hasNextPage: boolean;
         };
-      } | null | undefined;
+      } | null;
       readonly currency: string;
       readonly id: string;
       readonly latestPrice: {
         readonly price: string;
-      } | null | undefined;
+      } | null;
       readonly merchant: {
         readonly id: string;
         readonly name: string;
-      } | null | undefined;
+      } | null;
       readonly url: string;
       readonly " $fragmentSpreads": FragmentRefs<"OfferDiscoveryCard_offer">;
     };
   }>;
   readonly pageInfo: {
-    readonly endCursor: string | null | undefined;
+    readonly endCursor: string | null;
     readonly hasNextPage: boolean;
     readonly hasPreviousPage: boolean;
   };

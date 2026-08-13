@@ -15,13 +15,9 @@ import {
 import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { couponDiscountText } from "./affiliate-setup-data";
+import { couponDiscountText, type MerchantChoice } from "./affiliate-setup-data";
 
-export type MerchantChoice = {
-  domain: string;
-  id: string;
-  name: string;
-};
+export type { MerchantChoice } from "./affiliate-setup-data";
 
 export type NetworkResult = NonNullable<
   NonNullable<

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<57595eb63c6611e9a4627db2005c8beb>>
+ * @generated SignedSource<<6df044a80b79de4525120a8b626bf258>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -15,7 +15,7 @@ export type RootRouteQuery$data = {
     readonly email: string;
     readonly id: string;
     readonly isOperator: boolean;
-  } | null | undefined;
+  } | null;
 };
 export type RootRouteQuery = {
   response: RootRouteQuery$data;

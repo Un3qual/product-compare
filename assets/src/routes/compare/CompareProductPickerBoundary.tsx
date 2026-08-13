@@ -11,6 +11,7 @@ import {
   comparePickerResetToken,
   isComparePickerEmpty,
   nextComparePickerPageCursor,
+  type ComparePickerProduct,
 } from "./compare-picker-data";
 import type { CompareSpecMode } from "./paths";
 import {
@@ -40,10 +41,6 @@ const compareProductPickerQuery = graphql`
     }
   }
 `;
-
-type ComparePickerProduct = NonNullable<
-  CompareProductPickerBoundaryQuery["response"]["products"]
->["edges"][number]["node"];
 
 export function CompareProductPickerBoundary({
   heading = "Choose products",
@@ -97,7 +94,7 @@ function CompareProductPicker({
   );
   const productOptions = appendUniqueComparePickerProducts(loadedProducts, pageProducts);
   const availableProducts = availableComparePickerProducts(productOptions, selectedSlugs);
-  const nextCursor = nextComparePickerPageCursor(productConnection?.pageInfo, after);
+  const nextCursor = nextComparePickerPageCursor(productConnection?.pageInfo ?? null, after);
   const options = buildComparePickerOptions(
     availableProducts,
     selectedSlugs,

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<520b7a9271f8ef16dd61ada44e227384>>
+ * @generated SignedSource<<496d6abd8380fe225b0a5aa2a30aee47>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -23,7 +23,7 @@ export type RecommendationPanelQuery$data = {
       readonly productName: string;
       readonly reasons: ReadonlyArray<string>;
     }>;
-    readonly winnerProductId: string | null | undefined;
+    readonly winnerProductId: string | null;
   };
 };
 export type RecommendationPanelQuery = {

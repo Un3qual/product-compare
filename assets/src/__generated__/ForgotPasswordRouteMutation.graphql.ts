@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b0c0f6138afd46332b1bc429f1345eda>>
+ * @generated SignedSource<<7a0d515252708d2aa731500d0ef00408>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -16,7 +16,7 @@ export type ForgotPasswordRouteMutation$data = {
   readonly forgotPassword: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly ok: boolean;

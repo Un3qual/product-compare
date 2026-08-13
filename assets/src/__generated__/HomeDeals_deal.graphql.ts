@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<071fe88827275711ee4648f5e82596f8>>
+ * @generated SignedSource<<87f5665771a0ac1c16e8cdec196d4559>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -25,7 +25,7 @@ export type HomeDeals_deal$data = {
   };
   readonly reasons: ReadonlyArray<{
     readonly code: HomeDealReasonCode;
-    readonly watchTarget: string | null | undefined;
+    readonly watchTarget: string | null;
   }>;
   readonly " $fragmentType": "HomeDeals_deal";
 };

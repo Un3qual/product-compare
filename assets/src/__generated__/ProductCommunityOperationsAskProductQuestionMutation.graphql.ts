@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<ecc86af046c23156040df2955d8667a2>>
+ * @generated SignedSource<<b8437a5b49bcc7346ef00f1c44aa3f63>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,8 +11,8 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
 export type AskProductQuestionInput = {
-  body?: string | null | undefined;
-  idempotencyKey?: string | null | undefined;
+  body?: string | null;
+  idempotencyKey?: string | null;
   productId: string;
   title: string;
 };
@@ -23,13 +23,13 @@ export type ProductCommunityOperationsAskProductQuestionMutation$data = {
   readonly askProductQuestion: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly question: {
       readonly id: string;
       readonly moderationStatus: CommunityModerationStatus;
-    } | null | undefined;
+    } | null;
   };
 };
 export type ProductCommunityOperationsAskProductQuestionMutation = {

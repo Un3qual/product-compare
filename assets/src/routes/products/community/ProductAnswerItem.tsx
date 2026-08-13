@@ -58,7 +58,7 @@ export function AnswerView({
       <ModerationStatus ownerView={ownerView} status={answer.moderationStatus} />
       <p>{answer.body}</p>
       <p {...props(styles.metadata)}>
-        {acceptedAnswerAuthorLabel(answer.id, acceptedAnswerId, answer.authorLabel)}
+        {acceptedAnswerAuthorLabel(answer.id, acceptedAnswerId ?? null, answer.authorLabel)}
       </p>
       <AnswerEditForm
         answer={answer}

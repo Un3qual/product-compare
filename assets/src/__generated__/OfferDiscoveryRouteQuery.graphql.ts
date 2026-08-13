@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b46a77eb59ed347f5e203822a3638be9>>
+ * @generated SignedSource<<07dcd77ef058ea722b4f585295d12e8e>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,12 +11,12 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type MerchantProductsInput = {
-  activeOnly?: boolean | null | undefined;
-  merchantId?: string | null | undefined;
+  activeOnly?: boolean | null;
+  merchantId?: string | null;
   productId: string;
 };
 export type OfferDiscoveryRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
   input: MerchantProductsInput;
   productId: string;
@@ -24,13 +24,13 @@ export type OfferDiscoveryRouteQuery$variables = {
 export type OfferDiscoveryRouteQuery$data = {
   readonly merchantProducts: {
     readonly " $fragmentSpreads": FragmentRefs<"OfferDiscoveryList_connection">;
-  } | null | undefined;
+  } | null;
   readonly selectedProduct: {
     readonly __typename: "Product";
     readonly brand: {
       readonly id: string;
       readonly name: string;
-    } | null | undefined;
+    } | null;
     readonly id: string;
     readonly name: string;
     readonly slug: string;
@@ -38,7 +38,7 @@ export type OfferDiscoveryRouteQuery$data = {
     // This will never be '%other', but we need some
     // value in case none of the concrete values match.
     readonly __typename: "%other";
-  } | null | undefined;
+  } | null;
 };
 export type OfferDiscoveryRouteQuery = {
   response: OfferDiscoveryRouteQuery$data;

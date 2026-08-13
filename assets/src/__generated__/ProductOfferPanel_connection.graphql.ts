@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c77b24e60634b7ef194b8c5e72025b6d>>
+ * @generated SignedSource<<ce2bcae96263019369d638569e2f518c>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -19,29 +19,29 @@ export type ProductOfferPanel_connection$data = {
           readonly cursor: string;
           readonly node: {
             readonly code: string;
-            readonly currency: string | null | undefined;
-            readonly description: string | null | undefined;
+            readonly currency: string | null;
+            readonly description: string | null;
             readonly discountType: CouponDiscountType;
-            readonly discountValue: string | null | undefined;
-            readonly terms: string | null | undefined;
-            readonly validTo: string | null | undefined;
+            readonly discountValue: string | null;
+            readonly terms: string | null;
+            readonly validTo: string | null;
           };
         }>;
         readonly pageInfo: {
           readonly hasNextPage: boolean;
         };
-      } | null | undefined;
+      } | null;
       readonly currency: string;
       readonly id: string;
       readonly latestPrice: {
         readonly id: string;
         readonly observedAt: string;
         readonly price: string;
-      } | null | undefined;
+      } | null;
       readonly merchant: {
         readonly id: string;
         readonly name: string;
-      } | null | undefined;
+      } | null;
       readonly priceHistory: {
         readonly edges: ReadonlyArray<{
           readonly node: {
@@ -53,12 +53,12 @@ export type ProductOfferPanel_connection$data = {
         readonly pageInfo: {
           readonly hasNextPage: boolean;
         };
-      } | null | undefined;
+      } | null;
       readonly url: string;
     };
   }>;
   readonly pageInfo: {
-    readonly endCursor: string | null | undefined;
+    readonly endCursor: string | null;
     readonly hasNextPage: boolean;
   };
   readonly " $fragmentType": "ProductOfferPanel_connection";

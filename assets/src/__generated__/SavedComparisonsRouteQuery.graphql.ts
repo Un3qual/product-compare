@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<97e820d627f643e9e650ccfe9fe63b62>>
+ * @generated SignedSource<<81368c83fe711be4ebcd52ec0e797b29>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,17 +11,17 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type SavedComparisonsRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
 };
 export type SavedComparisonsRouteQuery$data = {
   readonly mySavedComparisonSets: {
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
     };
     readonly " $fragmentSpreads": FragmentRefs<"SavedComparisonSetList_savedSets">;
-  } | null | undefined;
+  } | null;
 };
 export type SavedComparisonsRouteQuery = {
   response: SavedComparisonsRouteQuery$data;

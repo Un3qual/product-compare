@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<1a97a26a1611356c2cb99a4727f2498e>>
+ * @generated SignedSource<<8422c94fa3c3e74a6e1b7a8c25b3da7e>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -12,16 +12,16 @@ import { ReaderFragment } from 'relay-runtime';
 export type PriceWatchRuleType = "BACK_IN_STOCK" | "NEWLY_AVAILABLE" | "PERCENTAGE_DROP" | "TARGET_PRICE" | "%future added value";
 import { FragmentRefs } from "relay-runtime";
 export type AlertsRoute_watch$data = {
-  readonly baselineLandedPrice: string | null | undefined;
+  readonly baselineLandedPrice: string | null;
   readonly currency: string;
   readonly enabled: boolean;
   readonly id: string;
-  readonly merchantName: string | null | undefined;
-  readonly percentageDrop: string | null | undefined;
+  readonly merchantName: string | null;
+  readonly percentageDrop: string | null;
   readonly productName: string;
   readonly productSlug: string;
   readonly ruleType: PriceWatchRuleType;
-  readonly targetAmount: string | null | undefined;
+  readonly targetAmount: string | null;
   readonly " $fragmentType": "AlertsRoute_watch";
 };
 export type AlertsRoute_watch$key = {

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<8c383b4bc25c90b2d7e8132622525791>>
+ * @generated SignedSource<<8a4ad65075144e969f5b431919ba9c93>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -19,10 +19,10 @@ export type TrackedCommerceClickActionMutation$data = {
   readonly trackCommerceClick: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
-    readonly redirectPath: string | null | undefined;
+    readonly redirectPath: string | null;
   };
 };
 export type TrackedCommerceClickActionMutation = {

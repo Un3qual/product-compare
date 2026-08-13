@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<5f6c26f35ecdff6e1d4c53329f9ebfba>>
+ * @generated SignedSource<<75b3efb6b0d6b7a17f7c53f4d64d47ee>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,35 +10,35 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type RevenueSummaryInput = {
-  currency?: string | null | undefined;
-  from?: string | null | undefined;
-  merchantId?: string | null | undefined;
-  network?: string | null | undefined;
-  productId?: string | null | undefined;
-  to?: string | null | undefined;
+  currency?: string | null;
+  from?: string | null;
+  merchantId?: string | null;
+  network?: string | null;
+  productId?: string | null;
+  to?: string | null;
 };
 export type RevenueSummaryRouteQuery$variables = {
-  input?: RevenueSummaryInput | null | undefined;
+  input?: RevenueSummaryInput | null;
 };
 export type RevenueSummaryRouteQuery$data = {
   readonly revenueSummary: {
     readonly filters: {
-      readonly currency: string | null | undefined;
-      readonly from: string | null | undefined;
-      readonly merchantId: string | null | undefined;
-      readonly network: string | null | undefined;
-      readonly productId: string | null | undefined;
-      readonly to: string | null | undefined;
+      readonly currency: string | null;
+      readonly from: string | null;
+      readonly merchantId: string | null;
+      readonly network: string | null;
+      readonly productId: string | null;
+      readonly to: string | null;
     };
     readonly metrics: {
-      readonly averagePaidPrice: string | null | undefined;
-      readonly clicks: number | null | undefined;
-      readonly commissionRevenue: string | null | undefined;
-      readonly conversions: number | null | undefined;
-      readonly currency: string | null | undefined;
-      readonly grossOrderValue: string | null | undefined;
+      readonly averagePaidPrice: string | null;
+      readonly clicks: number | null;
+      readonly commissionRevenue: string | null;
+      readonly conversions: number | null;
+      readonly currency: string | null;
+      readonly grossOrderValue: string | null;
     };
-  } | null | undefined;
+  } | null;
 };
 export type RevenueSummaryRouteQuery = {
   response: RevenueSummaryRouteQuery$data;

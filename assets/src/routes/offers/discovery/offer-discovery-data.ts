@@ -48,7 +48,10 @@ export function visibleLowestPriceLabel(summary: OfferSnapshotSummary<Renderable
   const lowestPricedOffer = summary.lowestPricedOffer;
 
   return lowestPricedOffer
-    ? priceLabel(lowestPricedOffer.offer.latestPrice?.price, lowestPricedOffer.offer.currency)
+    ? priceLabel(
+        lowestPricedOffer.offer.latestPrice?.price ?? null,
+        lowestPricedOffer.offer.currency,
+      )
     : "No visible prices";
 }
 
@@ -194,11 +197,11 @@ export function priceSortUsesSingleCurrency(offers: ReadonlyArray<RenderableOffe
   );
 }
 
-export function offerMerchantName(merchant: { readonly name: string } | null | undefined) {
+export function offerMerchantName(merchant: OfferListNode["merchant"]) {
   return merchant?.name ?? "Visit offer";
 }
 
-export function priceLabel(price: string | null | undefined, currency: string) {
+export function priceLabel(price: string | null, currency: string) {
   if (!price) {
     return null;
   }

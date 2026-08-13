@@ -212,8 +212,11 @@ function modeLabel(mode: SpecFilterMode) {
 }
 
 function selectionValue(selection: SpecFilterSelection) {
-  const value =
-    typeof selection.value === "boolean" ? (selection.value ? "Yes" : "No") : selection.value;
+  if (selection.kind === "boolean") {
+    return selection.value ? "Yes" : "No";
+  }
 
-  return selection.unitSymbol ? `${value} ${selection.unitSymbol}` : value;
+  return selection.kind === "numeric" && selection.unitSymbol
+    ? `${selection.value} ${selection.unitSymbol}`
+    : selection.value;
 }

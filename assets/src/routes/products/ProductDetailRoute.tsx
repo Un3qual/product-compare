@@ -399,12 +399,12 @@ function partialProductData(error: unknown): ProductDetailResponseWithProduct | 
   const response = error.response;
   if (Array.isArray(response) || !("data" in response)) return null;
 
-  const responseData = response.data as ProductDetailRouteQuery["response"] | null | undefined;
+  const responseData = response.data as ProductDetailRouteQuery["response"] | null;
   return hasProduct(responseData) ? responseData : null;
 }
 
 function hasProduct(
-  productData: ProductDetailRouteQuery["response"] | null | undefined,
+  productData: ProductDetailRouteQuery["response"] | null,
 ): productData is ProductDetailResponseWithProduct {
-  return productData?.product !== null && productData?.product !== undefined;
+  return Boolean(productData?.product);
 }

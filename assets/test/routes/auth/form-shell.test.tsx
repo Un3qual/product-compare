@@ -46,6 +46,7 @@ test("auth global error lists render as valid server markup outside paragraph te
       <AuthFormShell
         description="Recover access."
         errors={[{ code: "INVALID_ARGUMENT", field: null, message: "Reset token is required." }]}
+        successMessage={null}
         title="Reset password"
       >
         <form />

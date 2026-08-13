@@ -1,9 +1,9 @@
 export type SavedComparisonsNavigationStatus = "ready" | "empty" | "unauthorized";
 
 export type SavedComparisonsPaginationInput = {
-  after?: string | null;
-  endCursor?: string | null;
-  hasNextPage?: boolean;
+  after: string | null;
+  endCursor: string | null;
+  hasNextPage: boolean;
   status: SavedComparisonsNavigationStatus;
 };
 

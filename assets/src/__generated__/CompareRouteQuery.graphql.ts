@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<cbacb95df9c53b8dd5ab97220a5c9618>>
+ * @generated SignedSource<<1942c4a0020ab7d883ca9e25bc35febc>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -20,22 +20,22 @@ export type CompareRouteQuery$data = {
     readonly brand: {
       readonly id: string;
       readonly name: string;
-    } | null | undefined;
+    } | null;
     readonly currentAttributes: ReadonlyArray<{
       readonly attributeId: string;
-      readonly booleanValue: boolean | null | undefined;
+      readonly booleanValue: boolean | null;
       readonly code: string;
       readonly dataType: string;
       readonly displayName: string;
-      readonly enumOptionId: string | null | undefined;
-      readonly groupLabel: string | null | undefined;
+      readonly enumOptionId: string | null;
+      readonly groupLabel: string | null;
       readonly isRequired: boolean;
-      readonly numericValue: string | null | undefined;
-      readonly sortOrder: number | null | undefined;
-      readonly unitSymbol: string | null | undefined;
+      readonly numericValue: string | null;
+      readonly sortOrder: number | null;
+      readonly unitSymbol: string | null;
       readonly valueText: string;
     }>;
-    readonly description: string | null | undefined;
+    readonly description: string | null;
     readonly id: string;
     readonly merchantProducts: {
       readonly edges: ReadonlyArray<{
@@ -44,28 +44,28 @@ export type CompareRouteQuery$data = {
             readonly edges: ReadonlyArray<{
               readonly node: {
                 readonly code: string;
-                readonly currency: string | null | undefined;
+                readonly currency: string | null;
                 readonly discountType: CouponDiscountType;
-                readonly discountValue: string | null | undefined;
-                readonly validTo: string | null | undefined;
+                readonly discountValue: string | null;
+                readonly validTo: string | null;
               };
             }>;
             readonly pageInfo: {
               readonly hasNextPage: boolean;
             };
-          } | null | undefined;
+          } | null;
           readonly currency: string;
           readonly id: string;
           readonly latestPrice: {
             readonly id: string;
             readonly observedAt: string;
             readonly price: string;
-          } | null | undefined;
+          } | null;
           readonly merchant: {
             readonly domain: string;
             readonly id: string;
             readonly name: string;
-          } | null | undefined;
+          } | null;
           readonly priceHistory: {
             readonly edges: ReadonlyArray<{
               readonly node: {
@@ -77,18 +77,18 @@ export type CompareRouteQuery$data = {
             readonly pageInfo: {
               readonly hasNextPage: boolean;
             };
-          } | null | undefined;
+          } | null;
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
       };
-    } | null | undefined;
+    } | null;
     readonly name: string;
     readonly slug: string;
     readonly " $fragmentSpreads": FragmentRefs<"CompareProductList_product">;
-  } | null | undefined>;
+  } | null>;
 };
 export type CompareRouteQuery = {
   response: CompareRouteQuery$data;

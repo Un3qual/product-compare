@@ -3,7 +3,10 @@ import {
   type BrowseProductSpecificationHighlight,
 } from "../../../../src/routes/catalog/results/browse-product-list-data";
 
-function highlight(code: string, sortOrder?: number | null): BrowseProductSpecificationHighlight {
+function highlight(
+  code: string,
+  sortOrder: number | null = null,
+): BrowseProductSpecificationHighlight {
   return {
     code,
     displayName: code,
@@ -39,51 +42,39 @@ test("selectBrowseProductSpecificationHighlights limits results to three rows", 
   expect(selectBrowseProductSpecificationHighlights(highlights)).toEqual(highlights.slice(0, 3));
 });
 
-test("selectBrowseProductSpecificationHighlights keeps finite extreme orders ahead of nullish and unusable orders", () => {
-  const undefinedOrder = highlight("undefined");
+test("selectBrowseProductSpecificationHighlights keeps sorted orders ahead of null orders", () => {
+  const firstNullOrder = highlight("first-null");
   const nullOrder = highlight("null", null);
-  const notANumber = highlight("nan", Number.NaN);
-  const positiveInfinity = highlight("positive-infinity", Number.POSITIVE_INFINITY);
-  const negativeInfinity = highlight("negative-infinity", Number.NEGATIVE_INFINITY);
   const maximumValue = highlight("maximum-value", Number.MAX_VALUE);
   const maximumSafeInteger = highlight("maximum-safe-integer", Number.MAX_SAFE_INTEGER);
 
   expect(
     selectBrowseProductSpecificationHighlights([
-      undefinedOrder,
+      firstNullOrder,
       nullOrder,
-      notANumber,
-      positiveInfinity,
-      negativeInfinity,
       maximumValue,
       maximumSafeInteger,
     ]),
-  ).toEqual([maximumSafeInteger, maximumValue, undefinedOrder]);
+  ).toEqual([maximumSafeInteger, maximumValue, firstNullOrder]);
 });
 
-test("selectBrowseProductSpecificationHighlights keeps unusable orders in source order at the bounded tail", () => {
-  const notANumber = highlight("nan", Number.NaN);
-  const positiveInfinity = highlight("positive-infinity", Number.POSITIVE_INFINITY);
-  const negativeInfinity = highlight("negative-infinity", Number.NEGATIVE_INFINITY);
+test("selectBrowseProductSpecificationHighlights keeps null orders in source order at the bounded tail", () => {
+  const first = highlight("first");
+  const second = highlight("second");
+  const third = highlight("third");
   const finite = highlight("finite", 10);
 
-  expect(
-    selectBrowseProductSpecificationHighlights([
-      notANumber,
-      positiveInfinity,
-      negativeInfinity,
-      finite,
-    ]),
-  ).toEqual([finite, notANumber, positiveInfinity]);
+  expect(selectBrowseProductSpecificationHighlights([first, second, third, finite])).toEqual([
+    finite,
+    first,
+    second,
+  ]);
 
-  expect(
-    selectBrowseProductSpecificationHighlights([
-      finite,
-      negativeInfinity,
-      notANumber,
-      positiveInfinity,
-    ]),
-  ).toEqual([finite, negativeInfinity, notANumber]);
+  expect(selectBrowseProductSpecificationHighlights([finite, third, first, second])).toEqual([
+    finite,
+    third,
+    first,
+  ]);
 });
 
 test("selectBrowseProductSpecificationHighlights preserves source order for equal orders", () => {

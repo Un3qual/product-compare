@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c22f2cf1e58e0e50f488384dfa144155>>
+ * @generated SignedSource<<f1cb769b6c57bc671afdd2735ffd0c80>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,12 +11,12 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type ApiTokenItem_token$data = {
-  readonly expiresAt: string | null | undefined;
+  readonly expiresAt: string | null;
   readonly id: string;
   readonly insertedAt: string;
-  readonly label: string | null | undefined;
-  readonly lastUsedAt: string | null | undefined;
-  readonly revokedAt: string | null | undefined;
+  readonly label: string | null;
+  readonly lastUsedAt: string | null;
+  readonly revokedAt: string | null;
   readonly tokenPrefix: string;
   readonly " $fragmentType": "ApiTokenItem_token";
 };

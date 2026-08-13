@@ -56,7 +56,7 @@ describe("buildSavedComparisonsPagination", () => {
     ).toEqual({ firstHref: "/compare/saved", nextHref: null });
   });
 
-  test.each([null, "", undefined])(
+  test.each([null, ""])(
     "hides the next-page path when its cursor is absent or empty (%j)",
     (endCursor) => {
       expect(

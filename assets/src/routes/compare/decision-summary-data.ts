@@ -86,7 +86,7 @@ const DECISION_SUMMARY_METRICS = [
 
 export function buildDecisionSummaryMetricRows(
   products: readonly DecisionSummaryProduct[],
-  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>> | undefined,
+  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>>,
 ): DecisionSummaryMetricRow[] {
   const relativePriceLabels = relativeLoadedPriceLabels(products, offerContexts);
 
@@ -112,7 +112,7 @@ export function buildDecisionSummaryMetricRows(
 
 function relativeLoadedPriceLabels(
   products: readonly DecisionSummaryProduct[],
-  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>> | undefined,
+  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>>,
 ) {
   const unavailable = new Map(products.map(({ id }) => [id, "Not comparable"]));
 
@@ -171,10 +171,10 @@ function relativeLoadedPriceLabels(
 }
 
 function offerContextForProduct(
-  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>> | undefined,
+  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>>,
   productId: string,
 ): DecisionSummaryOfferContext {
-  return offerContexts?.[productId] ?? { status: "unavailable", productId };
+  return offerContexts[productId];
 }
 
 function bestCurrentPriceLabel(context: DecisionSummaryOfferContext) {
@@ -221,6 +221,6 @@ function priceRecencyLabel(context: DecisionSummaryOfferContext) {
   return dateLabel(context.latestPriceObservedAt) ?? "No price check available";
 }
 
-function dateLabel(value: string | null | undefined) {
+function dateLabel(value: string | null) {
   return graphQLDateTimeLabel(value);
 }

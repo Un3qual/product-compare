@@ -180,7 +180,7 @@ function QuestionSection({
 }
 
 function nextPageAction(
-  pageInfo: { readonly endCursor: string | null | undefined; readonly hasNextPage: boolean },
+  pageInfo: CommunityProduct["questions"]["pageInfo"],
   currentAfter: string | null,
   setAfter: (cursor: string) => void,
 ) {

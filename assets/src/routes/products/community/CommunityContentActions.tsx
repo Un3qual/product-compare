@@ -41,7 +41,7 @@ export function useCommunityItemState() {
 export type CommunityItemState = ReturnType<typeof useCommunityItemState>;
 
 export function applyCommunityUpdate(
-  content: object | null | undefined,
+  content: object | null,
   nextMessage: string,
   graphQLErrors: MutationGraphQLErrors,
   ownerView: boolean,
@@ -200,7 +200,7 @@ function moderationStatusCopy(status: string) {
   }
 }
 
-export function OptionalParagraph({ value }: { value: string | null | undefined }) {
+export function OptionalParagraph({ value }: { value: string | null }) {
   return value ? <p>{value}</p> : null;
 }
 

@@ -1,49 +1,20 @@
-export interface CatalogAdvancedFilterSelections {
+import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
+import type { CatalogFilters } from "./filter-state";
+
+type ProductFilterMetadata = BrowseRouteQuery["response"]["productFilterMetadata"];
+type NumericFilterMetadata = ProductFilterMetadata["numericFilters"][number];
+type BooleanFilterMetadata = ProductFilterMetadata["booleanFilters"][number];
+
+export type CatalogAdvancedFilterSelections = {
+  booleans: ReadonlyArray<CatalogFilters["booleans"][number]>;
+  enums: ReadonlyArray<CatalogFilters["enums"][number]>;
+  numeric: ReadonlyArray<CatalogFilters["numeric"][number]>;
   useCaseTaxonIds: readonly string[];
-  numeric: readonly CatalogAdvancedNumericSelection[];
-  booleans: readonly CatalogAdvancedBooleanSelection[];
-  enums: readonly CatalogAdvancedEnumSelection[];
-}
-
-export type CatalogAdvancedNumericSelection = ProductNumericFilterInput;
-export type CatalogAdvancedBooleanSelection = ProductBooleanFilterInput;
-export type CatalogAdvancedEnumSelection = ProductEnumFilterInput;
-
-export interface CatalogAdvancedFilterOptionMetadata {
-  id: string;
-  label: string;
-  count: number;
-  selected: boolean;
-  disabled: boolean;
-}
-
-export interface CatalogAdvancedFilterMetadata {
-  useCaseOptions: readonly CatalogAdvancedFilterOptionMetadata[];
-  numericFilters: readonly CatalogAdvancedNumericFilterMetadata[];
-  booleanFilters: readonly CatalogAdvancedBooleanFilterMetadata[];
-  enumFilters: readonly CatalogAdvancedEnumFilterMetadata[];
-}
-
-export interface CatalogAdvancedNumericFilterMetadata {
-  attributeId: string;
-  displayName: string;
-  selectedMin?: string | null;
-  selectedMax?: string | null;
-}
-
-export interface CatalogAdvancedBooleanFilterMetadata {
-  attributeId: string;
-  displayName: string;
-  trueCount: number;
-  falseCount: number;
-  selectedValue?: boolean | null;
-}
-
-export interface CatalogAdvancedEnumFilterMetadata {
-  attributeId: string;
-  displayName: string;
-  options: readonly CatalogAdvancedFilterOptionMetadata[];
-}
+};
+export type CatalogAdvancedFilterMetadata = Pick<
+  ProductFilterMetadata,
+  "booleanFilters" | "enumFilters" | "numericFilters" | "useCaseOptions"
+>;
 
 export interface CatalogAdvancedFilterViewData {
   useCaseRows: readonly CatalogAdvancedUseCaseRow[];
@@ -147,8 +118,8 @@ export function catalogAdvancedFilterViewData(
 }
 
 function catalogAdvancedNumericRow(
-  selections: readonly CatalogAdvancedNumericSelection[],
-  filter: CatalogAdvancedNumericFilterMetadata,
+  selections: CatalogAdvancedFilterSelections["numeric"],
+  filter: NumericFilterMetadata,
 ): CatalogAdvancedNumericRow {
   const selected = selectedNumericFilter(selections, filter.attributeId);
 
@@ -161,28 +132,28 @@ function catalogAdvancedNumericRow(
 }
 
 function selectedNumericFieldValue(
-  selectedValue: string | null | undefined,
-  metadataValue: string | null | undefined,
+  selectedValue: CatalogAdvancedFilterSelections["numeric"][number]["min"],
+  metadataValue: NumericFilterMetadata["selectedMin"],
 ) {
   return selectedValue ?? metadataValue ?? "";
 }
 
 function selectedNumericFilter(
-  filters: readonly CatalogAdvancedNumericSelection[],
+  filters: CatalogAdvancedFilterSelections["numeric"],
   attributeId: string,
 ) {
   return filters.find((filter) => filter.attributeId === attributeId);
 }
 
 function selectedBooleanFilter(
-  filters: readonly CatalogAdvancedBooleanSelection[],
+  filters: CatalogAdvancedFilterSelections["booleans"],
   attributeId: string,
 ) {
   return filters.find((filter) => filter.attributeId === attributeId);
 }
 
 function selectedEnumOptionId(
-  filters: readonly CatalogAdvancedEnumSelection[],
+  filters: CatalogAdvancedFilterSelections["enums"],
   attributeId: string,
 ) {
   let selectedOptionId: string | undefined;
@@ -197,7 +168,9 @@ function selectedEnumOptionId(
 }
 
 function booleanDefaultValue(
-  value: boolean | null | undefined,
+  value:
+    | CatalogAdvancedFilterSelections["booleans"][number]["value"]
+    | BooleanFilterMetadata["selectedValue"],
 ): CatalogAdvancedBooleanRow["defaultValue"] {
   if (typeof value !== "boolean") {
     return "";
@@ -205,8 +178,3 @@ function booleanDefaultValue(
 
   return value ? "true" : "false";
 }
-import type {
-  ProductBooleanFilterInput,
-  ProductEnumFilterInput,
-  ProductNumericFilterInput,
-} from "$generated/BrowseRouteQuery.graphql";

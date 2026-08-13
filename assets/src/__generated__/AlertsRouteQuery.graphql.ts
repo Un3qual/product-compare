@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<fd2f84e9d640e00ad1f83df31bd4daf5>>
+ * @generated SignedSource<<ce4199f6c59de814f3839e6b909b72b3>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -18,7 +18,7 @@ export type AlertsRouteQuery$data = {
     readonly edges: ReadonlyArray<{
       readonly node: {
         readonly id: string;
-        readonly readAt: string | null | undefined;
+        readonly readAt: string | null;
         readonly " $fragmentSpreads": FragmentRefs<"AlertsRoute_alert">;
       };
     }>;

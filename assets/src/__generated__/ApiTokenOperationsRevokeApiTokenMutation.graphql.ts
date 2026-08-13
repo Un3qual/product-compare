@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<7149039c0e80c59566d5325eb7b17417>>
+ * @generated SignedSource<<5d45137d502c7ae82023acbf9a1fb151>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -15,17 +15,17 @@ export type ApiTokenOperationsRevokeApiTokenMutation$variables = {
 export type ApiTokenOperationsRevokeApiTokenMutation$data = {
   readonly revokeApiToken: {
     readonly apiToken: {
-      readonly expiresAt: string | null | undefined;
+      readonly expiresAt: string | null;
       readonly id: string;
       readonly insertedAt: string;
-      readonly label: string | null | undefined;
-      readonly lastUsedAt: string | null | undefined;
-      readonly revokedAt: string | null | undefined;
+      readonly label: string | null;
+      readonly lastUsedAt: string | null;
+      readonly revokedAt: string | null;
       readonly tokenPrefix: string;
-    } | null | undefined;
+    } | null;
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
   };

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<3aa6413a09d31d5de8917706622ff483>>
+ * @generated SignedSource<<b4d9c4ec7a41571d4a4056fc666dbb59>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,7 +11,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type AffiliateSetupRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
 };
 export type AffiliateSetupRouteQuery$data = {
@@ -26,12 +26,12 @@ export type AffiliateSetupRouteQuery$data = {
       };
     }>;
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
       readonly hasPreviousPage: boolean;
-      readonly startCursor: string | null | undefined;
+      readonly startCursor: string | null;
     };
-  } | null | undefined;
+  } | null;
 };
 export type AffiliateSetupRouteQuery = {
   response: AffiliateSetupRouteQuery$data;

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9f6fdc85c411a42198752a0a02ca02fa>>
+ * @generated SignedSource<<ba6866c5699a1cc12ce32ac7c1b792c2>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -17,14 +17,14 @@ export type RegisterRouteMutation$data = {
   readonly register: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly viewer: {
       readonly email: string;
       readonly id: string;
       readonly isOperator: boolean;
-    } | null | undefined;
+    } | null;
   };
 };
 export type RegisterRouteMutation = {

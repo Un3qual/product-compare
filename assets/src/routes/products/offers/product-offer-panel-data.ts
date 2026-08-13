@@ -15,10 +15,10 @@ import { productDetailPath } from "../product-detail-route-data";
 
 export type ProductOfferCouponRow = {
   code: string;
-  description: string | null | undefined;
+  description: string | null;
   discountText: string | null;
   key: string;
-  terms: string | null | undefined;
+  terms: string | null;
   validToText: string | null;
 };
 
@@ -58,12 +58,7 @@ export type ProductOfferPriceHistoryConnection = NonNullable<
   ProductOfferPanelOffer["priceHistory"]
 >;
 
-export type ProductOfferSnapshot = {
-  couponOfferCount: number;
-  lowestVisiblePriceText: string | null;
-  missingPriceCount: number;
-  visibleOfferCount: number;
-};
+export type ProductOfferSnapshot = ReturnType<typeof productOfferSnapshot>;
 
 export type ProductOfferPanelData = {
   offers: VisibleProductOffer[];
@@ -116,17 +111,17 @@ function buildVisibleProductOffer(node: ProductOfferPanelOffer): VisibleProductO
 }
 
 function buildLatestPriceSummary(
-  latestPrice: ProductOfferPrice | null | undefined,
+  latestPrice: ProductOfferPanelOffer["latestPrice"],
   currency: string,
 ) {
   return {
-    priceText: formatPriceText(latestPrice?.price, currency),
+    priceText: formatPriceText(latestPrice?.price ?? null, currency),
     numericPrice: decimalStringToNumber(latestPrice?.price),
     priceObservation: graphQLDateTimeContext(latestPrice?.observedAt),
   };
 }
 
-function buildVisibleCouponSummary(activeCoupons: ProductOfferCouponConnection | null | undefined) {
+function buildVisibleCouponSummary(activeCoupons: ProductOfferPanelOffer["activeCoupons"]) {
   return {
     coupons: buildCouponRows(activeCoupons?.edges ?? []),
     couponsHasMore: activeCoupons?.pageInfo.hasNextPage ?? false,
@@ -134,7 +129,7 @@ function buildVisibleCouponSummary(activeCoupons: ProductOfferCouponConnection |
 }
 
 function buildVisiblePriceHistorySummary(
-  priceHistory: ProductOfferPriceHistoryConnection | null | undefined,
+  priceHistory: ProductOfferPanelOffer["priceHistory"],
   currency: string,
 ) {
   return {
@@ -149,7 +144,7 @@ const PRODUCT_OFFER_SNAPSHOT_SELECTORS = {
   numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null),
 } satisfies OfferSnapshotSelectors<VisibleProductOffer>;
 
-function productOfferSnapshot(offers: readonly VisibleProductOffer[]): ProductOfferSnapshot {
+function productOfferSnapshot(offers: readonly VisibleProductOffer[]) {
   const summary = buildOfferSnapshotSummary(offers, PRODUCT_OFFER_SNAPSHOT_SELECTORS);
 
   return {
@@ -235,7 +230,7 @@ function buildPriceHistoryRows(
   });
 }
 
-function formatPriceText(price: string | null | undefined, currency: string) {
+function formatPriceText(price: string | null, currency: string) {
   if (price && decimalStringToNumber(price) !== null) {
     return `${price} ${currency}`;
   }
@@ -246,7 +241,7 @@ function formatPriceText(price: string | null | undefined, currency: string) {
 function formatCouponDiscountText(
   discountType: ProductOfferCoupon["discountType"],
   discountValue: ProductOfferCoupon["discountValue"],
-  currency: string | null | undefined,
+  currency: ProductOfferCoupon["currency"],
 ) {
   if (discountType === "FREE_SHIPPING") {
     return "Free shipping";
@@ -262,9 +257,7 @@ function formatCouponDiscountText(
     return `${valueText}%`;
   }
 
-  return discountType === "AMOUNT" && typeof currency === "string" && currency !== ""
-    ? `${valueText} ${currency}`
-    : null;
+  return discountType === "AMOUNT" && currency ? `${valueText} ${currency}` : null;
 }
 
 function formatCouponValidToText(validTo: ProductOfferCoupon["validTo"]) {
@@ -272,7 +265,7 @@ function formatCouponValidToText(validTo: ProductOfferCoupon["validTo"]) {
   return dateText ? `Valid through ${dateText}` : null;
 }
 
-function formatFiniteNumberText(value: string | null | undefined) {
+function formatFiniteNumberText(value: string | null) {
   if (!value) {
     return null;
   }

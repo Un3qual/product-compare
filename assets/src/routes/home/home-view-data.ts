@@ -15,16 +15,7 @@ type HomeWorkspaceProduct = HomeProductLedger_products$data["edges"][number];
 type HomeDealEdge = HomeDeals["new"]["edges"][number];
 type HomeOffer = Pick<HomeDeals_deal$data["offer"], "currency" | "landedPrice" | "merchantName">;
 
-export type HomeLedgerRow = {
-  freshness: string;
-  highlights: string;
-  href: string;
-  id: string;
-  name: string;
-  offer: string;
-  priceSignal: string;
-  slug: string;
-};
+export type HomeLedgerRow = ReturnType<typeof homeLedgerRow>;
 
 export type HomeDealReason = HomeDeals_deal$data["reasons"][number];
 
@@ -101,7 +92,7 @@ export function homeDealReasonCopy(reason: HomeDealReason, currency: string) {
   }
 }
 
-function homeLedgerRow(row: HomeWorkspaceProduct, selectedSlugs: readonly string[]): HomeLedgerRow {
+function homeLedgerRow(row: HomeWorkspaceProduct, selectedSlugs: readonly string[]) {
   const { offer, node: product } = row;
 
   return {
@@ -196,7 +187,7 @@ function formatObservedAt(observedAt: string | null) {
   }).format(new Date(observedAt))}`;
 }
 
-function nonBlankText(value: string | null | undefined) {
+function nonBlankText(value: string | null) {
   const text = value?.trim();
   return text ? text : null;
 }

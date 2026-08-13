@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<cc5fbb72f8421f3be102a35834035849>>
+ * @generated SignedSource<<01258ae222c8ff64a7681cbe0cfa6d75>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -16,12 +16,12 @@ export type SavedComparisonSetListDeleteSavedComparisonSetMutation$data = {
   readonly deleteSavedComparisonSet: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly savedComparisonSet: {
       readonly id: string;
-    } | null | undefined;
+    } | null;
   };
 };
 export type SavedComparisonSetListDeleteSavedComparisonSetMutation = {

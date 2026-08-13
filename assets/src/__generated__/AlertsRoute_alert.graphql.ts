@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<163c39da4275f9b3320c9992a1460810>>
+ * @generated SignedSource<<6a78726750fc4f4fbf626b42734f0b9e>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -19,7 +19,7 @@ export type AlertsRoute_alert$data = {
   readonly observedAt: string;
   readonly productName: string;
   readonly productSlug: string;
-  readonly readAt: string | null | undefined;
+  readonly readAt: string | null;
   readonly ruleType: PriceWatchRuleType;
   readonly " $fragmentType": "AlertsRoute_alert";
 };

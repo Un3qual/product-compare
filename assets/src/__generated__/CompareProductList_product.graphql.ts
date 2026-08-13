@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2c6808ff33b952125b97897ce33313ef>>
+ * @generated SignedSource<<3081c8c5ab4a8963b6c0255c539b3b80>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -13,22 +13,22 @@ import { FragmentRefs } from "relay-runtime";
 export type CompareProductList_product$data = {
   readonly brand: {
     readonly name: string;
-  } | null | undefined;
+  } | null;
   readonly currentAttributes: ReadonlyArray<{
     readonly attributeId: string;
-    readonly booleanValue: boolean | null | undefined;
+    readonly booleanValue: boolean | null;
     readonly code: string;
     readonly dataType: string;
     readonly displayName: string;
-    readonly enumOptionId: string | null | undefined;
-    readonly groupLabel: string | null | undefined;
+    readonly enumOptionId: string | null;
+    readonly groupLabel: string | null;
     readonly isRequired: boolean;
-    readonly numericValue: string | null | undefined;
-    readonly sortOrder: number | null | undefined;
-    readonly unitSymbol: string | null | undefined;
+    readonly numericValue: string | null;
+    readonly sortOrder: number | null;
+    readonly unitSymbol: string | null;
     readonly valueText: string;
   }>;
-  readonly description: string | null | undefined;
+  readonly description: string | null;
   readonly id: string;
   readonly name: string;
   readonly slug: string;

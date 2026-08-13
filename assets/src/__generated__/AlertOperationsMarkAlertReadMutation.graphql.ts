@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<bb8a50162c41c924a7e0e67b399c55f5>>
+ * @generated SignedSource<<3ecda5c18fa0a056e44bb1eb0519174c>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -16,13 +16,13 @@ export type AlertOperationsMarkAlertReadMutation$data = {
   readonly markAlertRead: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly event: {
       readonly id: string;
-      readonly readAt: string | null | undefined;
-    } | null | undefined;
+      readonly readAt: string | null;
+    } | null;
   };
 };
 export type AlertOperationsMarkAlertReadMutation = {

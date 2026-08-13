@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b9fe57085ec0e36d51b54332033e8d92>>
+ * @generated SignedSource<<4ac714a1e8f8a113c852d390f45d6ebc>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,26 +10,26 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type ApiTokenOperationsCreateApiTokenMutation$variables = {
-  expiresAt?: string | null | undefined;
-  label?: string | null | undefined;
+  expiresAt?: string | null;
+  label?: string | null;
 };
 export type ApiTokenOperationsCreateApiTokenMutation$data = {
   readonly createApiToken: {
     readonly apiToken: {
-      readonly expiresAt: string | null | undefined;
+      readonly expiresAt: string | null;
       readonly id: string;
       readonly insertedAt: string;
-      readonly label: string | null | undefined;
-      readonly lastUsedAt: string | null | undefined;
-      readonly revokedAt: string | null | undefined;
+      readonly label: string | null;
+      readonly lastUsedAt: string | null;
+      readonly revokedAt: string | null;
       readonly tokenPrefix: string;
-    } | null | undefined;
+    } | null;
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
-    readonly plainTextToken: string | null | undefined;
+    readonly plainTextToken: string | null;
   };
 };
 export type ApiTokenOperationsCreateApiTokenMutation = {

@@ -50,7 +50,7 @@ export interface OfferDiscoveryScopeBadgeData {
   tone: "neutral" | "positive";
 }
 
-export function normalizeOfferDiscoverySort(sort: string | null | undefined): OfferDiscoverySort {
+export function normalizeOfferDiscoverySort(sort: string | null): OfferDiscoverySort {
   const option = OFFER_DISCOVERY_SORT_OPTIONS.find((option) => option.value === sort);
 
   return option?.value ?? DEFAULT_OFFER_DISCOVERY_SORT_OPTION.value;

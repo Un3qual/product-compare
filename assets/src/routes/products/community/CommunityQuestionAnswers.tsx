@@ -70,7 +70,7 @@ function AdditionalAnswers({
   after: initialAfter,
   questionId,
 }: {
-  acceptedAnswerId: string | null | undefined;
+  acceptedAnswerId: Question["acceptedAnswerId"];
   after: string;
   questionId: string;
 }) {
@@ -89,7 +89,7 @@ function AdditionalAnswers({
     setLoadedAnswers((current) => appendUniqueCommunityItems(current, pageAnswers));
   }, [pageAnswers]);
 
-  const next = nextCommunityPageCursor(connection?.pageInfo, after);
+  const next = nextCommunityPageCursor(connection?.pageInfo ?? null, after);
   return (
     <>
       {answers.map((answer) => (

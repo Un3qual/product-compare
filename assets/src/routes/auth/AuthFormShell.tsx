@@ -117,7 +117,7 @@ interface AuthFormShellProps extends PropsWithChildren {
   errors?: MutationError[];
   footerLinks?: FooterLink[];
   fieldNames?: string[];
-  successMessage?: string | null;
+  successMessage: string | null;
   title: string;
 }
 
@@ -226,7 +226,7 @@ export function AuthField({
   type = "text",
 }: {
   autoComplete?: string;
-  error?: string | null;
+  error: string | null;
   label: string;
   name: string;
   required?: boolean;

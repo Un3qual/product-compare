@@ -8,7 +8,10 @@ export interface MerchantPagination {
   first: number;
 }
 
-export function merchantDirectoryPagePath(pagination: MerchantPagination, after?: string | null) {
+export function merchantDirectoryPagePath(
+  pagination: MerchantPagination,
+  after: string | null = null,
+) {
   const params = new URLSearchParams();
 
   params.set("first", String(pagination.first));

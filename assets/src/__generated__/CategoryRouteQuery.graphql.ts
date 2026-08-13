@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a49033caa99823e32b42a4b072870658>>
+ * @generated SignedSource<<e87817230d082a1b088cb2e0b0933cc1>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,7 +10,7 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type CategoryRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
   slug: string;
 };
@@ -26,21 +26,21 @@ export type CategoryRouteQuery$data = {
           readonly brand: {
             readonly id: string;
             readonly name: string;
-          } | null | undefined;
+          } | null;
           readonly currentAttributes: ReadonlyArray<{
             readonly attributeId: string;
             readonly displayName: string;
-            readonly sortOrder: number | null | undefined;
+            readonly sortOrder: number | null;
             readonly valueText: string;
           }>;
-          readonly description: string | null | undefined;
+          readonly description: string | null;
           readonly id: string;
           readonly name: string;
           readonly slug: string;
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
       };
     };
@@ -48,13 +48,13 @@ export type CategoryRouteQuery$data = {
     readonly seo: {
       readonly canonicalPath: string;
       readonly description: string;
-      readonly imageUrl: string | null | undefined;
+      readonly imageUrl: string | null;
       readonly indexable: boolean;
-      readonly structuredData: string | null | undefined;
+      readonly structuredData: string | null;
       readonly title: string;
     };
     readonly slug: string;
-  } | null | undefined;
+  } | null;
 };
 export type CategoryRouteQuery = {
   response: CategoryRouteQuery$data;

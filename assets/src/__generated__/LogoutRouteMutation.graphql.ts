@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<f3d141334af1c084091ea3f6288c71e4>>
+ * @generated SignedSource<<cb15b5cd81c72c2ef544e29ee353570a>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -14,7 +14,7 @@ export type LogoutRouteMutation$data = {
   readonly logout: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly ok: boolean;

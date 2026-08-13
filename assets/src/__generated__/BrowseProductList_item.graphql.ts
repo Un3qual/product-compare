@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<6ed214fb9673bbd5932138106e3d8b28>>
+ * @generated SignedSource<<43d8ba2f84b2d79266510da9e36d0ea3>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -14,11 +14,11 @@ export type BrowseProductList_item$data = {
   readonly brand: {
     readonly id: string;
     readonly name: string;
-  } | null | undefined;
+  } | null;
   readonly currentAttributes: ReadonlyArray<{
     readonly code: string;
     readonly displayName: string;
-    readonly sortOrder: number | null | undefined;
+    readonly sortOrder: number | null;
     readonly valueText: string;
   }>;
   readonly id: string;

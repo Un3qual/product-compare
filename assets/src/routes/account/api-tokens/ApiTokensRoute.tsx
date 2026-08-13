@@ -51,13 +51,12 @@ import {
 } from "./api-token-route-data";
 import { apiTokenIsActive } from "./api-token-status";
 
-export type ApiTokenSummary = ApiTokenRecord;
 export type ApiTokenQueryDescriptor = RelayRouteQueryDescriptor<ApiTokensRouteQuery["variables"]>;
 export type ApiTokensRouteLoaderData =
   | {
       status: "ready" | "empty";
       tokenQueries: ApiTokenQueryDescriptor[];
-      tokens: ApiTokenSummary[];
+      tokens: ApiTokenRecord[];
       tokenStatus: ApiTokenStatus;
       after?: string | null;
       hasNextPage?: boolean;
@@ -117,7 +116,7 @@ export async function apiTokensLoader({
     fetchedPage = await fetchRouteQuery<ApiTokensRouteQuery>(
       environment,
       apiTokensRouteQuery,
-      apiTokensQueryVariables(tokenStatus, after ?? undefined),
+      apiTokensQueryVariables(tokenStatus, after),
       { signal: request.signal },
     );
     throwIfAborted(request.signal);
@@ -154,12 +153,12 @@ export async function apiTokensLoader({
 
 function apiTokensQueryVariables(
   tokenStatus: ApiTokenStatus,
-  after: string | undefined,
-  ) {
+  after: string | null,
+) {
   return {
     first: API_TOKENS_PAGE_SIZE,
     status: API_TOKEN_STATUS_VARIABLES[tokenStatus],
-    ...(after === undefined ? {} : { after }),
+    after,
   } satisfies ApiTokensRouteQuery["variables"];
 }
 
@@ -200,8 +199,8 @@ export function ApiTokensRoute() {
 }
 
 function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderData }) {
-  const [createdTokens, setCreatedTokens] = useState<ApiTokenSummary[]>([]);
-  const [apiTokenUpdates, setApiTokenUpdates] = useState<ReadonlyMap<string, ApiTokenSummary>>(
+  const [createdTokens, setCreatedTokens] = useState<ApiTokenRecord[]>([]);
+  const [apiTokenUpdates, setApiTokenUpdates] = useState<ReadonlyMap<string, ApiTokenRecord>>(
     () => new Map(),
   );
   const [oneTimeToken, setOneTimeToken] = useState<string | null>(null);
@@ -287,7 +286,7 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
     );
   }
 
-  function handleRotate(token: ApiTokenSummary, form: HTMLFormElement) {
+  function handleRotate(token: ApiTokenRecord, form: HTMLFormElement) {
     if (
       inFlightRotateIdsRef.current.has(token.id) ||
       inFlightRevokeIdsRef.current.has(token.id) ||
@@ -496,9 +495,9 @@ function RelayApiTokenPage({
   tokenQuery,
   ...listProps
 }: {
-  apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>;
-  localTokens: ApiTokenSummary[];
-  onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
+  apiTokenUpdates: ReadonlyMap<string, ApiTokenRecord>;
+  localTokens: ApiTokenRecord[];
+  onRotate: (token: ApiTokenRecord, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
   pendingRotateIds: ReadonlySet<string>;

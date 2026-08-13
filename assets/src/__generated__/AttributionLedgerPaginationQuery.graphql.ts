@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a22193265bbba1292f12933ccd2da127>>
+ * @generated SignedSource<<63f0ecffe80ff7144b9ce5808c3fe4d4>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,17 +11,17 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type RevenueSummaryInput = {
-  currency?: string | null | undefined;
-  from?: string | null | undefined;
-  merchantId?: string | null | undefined;
-  network?: string | null | undefined;
-  productId?: string | null | undefined;
-  to?: string | null | undefined;
+  currency?: string | null;
+  from?: string | null;
+  merchantId?: string | null;
+  network?: string | null;
+  productId?: string | null;
+  to?: string | null;
 };
 export type AttributionLedgerPaginationQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
-  input?: RevenueSummaryInput | null | undefined;
+  input?: RevenueSummaryInput | null;
 };
 export type AttributionLedgerPaginationQuery$data = {
   readonly " $fragmentSpreads": FragmentRefs<"AttributionLedger_connection">;

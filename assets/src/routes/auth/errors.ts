@@ -34,7 +34,7 @@ export function selectGlobalMutationErrors(
   return errors.filter((error) => {
     const field = error.field;
 
-    return field === undefined || field === null || field === "" || !renderedFields.has(field);
+    return field === null || field === "" || !renderedFields.has(field);
   });
 }
 

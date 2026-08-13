@@ -2,8 +2,6 @@ import { create, props } from "@stylexjs/stylex";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { groupProductSpecifications, type ProductSpecification } from "./specifications";
 
-export type ProductAttributeListItem = ProductSpecification;
-
 const styles = create({
   groups: {
     display: "grid",
@@ -48,7 +46,7 @@ export function ProductAttributeList({
   attributes,
   emptyMessage,
 }: {
-  attributes: ReadonlyArray<ProductAttributeListItem>;
+  attributes: ReadonlyArray<ProductSpecification>;
   emptyMessage: string;
 }) {
   if (attributes.length === 0) {
@@ -79,7 +77,7 @@ export function ProductAttributeList({
 function AttributeDefinitionList({
   attributes,
 }: {
-  attributes: ReadonlyArray<ProductAttributeListItem>;
+  attributes: ReadonlyArray<ProductSpecification>;
 }) {
   return (
     <dl {...props(styles.list)}>

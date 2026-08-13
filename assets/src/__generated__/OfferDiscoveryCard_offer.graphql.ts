@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9b7a52bcf08824949ae0a47866a976f2>>
+ * @generated SignedSource<<6e93a172e3b608835aa32de48347d8a2>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -17,32 +17,32 @@ export type OfferDiscoveryCard_offer$data = {
       readonly cursor: string;
       readonly node: {
         readonly code: string;
-        readonly currency: string | null | undefined;
-        readonly description: string | null | undefined;
+        readonly currency: string | null;
+        readonly description: string | null;
         readonly discountType: CouponDiscountType;
-        readonly discountValue: string | null | undefined;
-        readonly terms: string | null | undefined;
-        readonly validTo: string | null | undefined;
+        readonly discountValue: string | null;
+        readonly terms: string | null;
+        readonly validTo: string | null;
       };
     }>;
     readonly pageInfo: {
       readonly hasNextPage: boolean;
     };
-  } | null | undefined;
+  } | null;
   readonly currency: string;
   readonly id: string;
   readonly isActive: boolean;
-  readonly lastSeenAt: string | null | undefined;
+  readonly lastSeenAt: string | null;
   readonly latestPrice: {
     readonly id: string;
     readonly observedAt: string;
     readonly price: string;
-  } | null | undefined;
+  } | null;
   readonly merchant: {
     readonly domain: string;
     readonly id: string;
     readonly name: string;
-  } | null | undefined;
+  } | null;
   readonly priceHistory: {
     readonly edges: ReadonlyArray<{
       readonly node: {
@@ -54,12 +54,12 @@ export type OfferDiscoveryCard_offer$data = {
     readonly pageInfo: {
       readonly hasNextPage: boolean;
     };
-  } | null | undefined;
+  } | null;
   readonly product: {
     readonly id: string;
     readonly name: string;
     readonly slug: string;
-  } | null | undefined;
+  } | null;
   readonly url: string;
   readonly " $fragmentType": "OfferDiscoveryCard_offer";
 };

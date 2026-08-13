@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<79bd590388f56e338fa2be87643470c9>>
+ * @generated SignedSource<<aac7f4c527d39b6a32003d80d7d2231f>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -12,19 +12,19 @@ import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type ProductSort = "BRAND_NAME_ASC" | "ID_ASC" | "NAME_ASC" | "NEWEST" | "RELEVANCE" | "%future added value";
 export type ProductFiltersInput = {
-  booleans?: ReadonlyArray<ProductBooleanFilterInput> | null | undefined;
-  enums?: ReadonlyArray<ProductEnumFilterInput> | null | undefined;
-  includeTypeDescendants?: boolean | null | undefined;
-  numeric?: ReadonlyArray<ProductNumericFilterInput> | null | undefined;
-  primaryTypeTaxonId?: string | null | undefined;
-  query?: string | null | undefined;
-  sort?: ProductSort | null | undefined;
-  useCaseTaxonIds?: ReadonlyArray<string> | null | undefined;
+  booleans?: ReadonlyArray<ProductBooleanFilterInput> | null;
+  enums?: ReadonlyArray<ProductEnumFilterInput> | null;
+  includeTypeDescendants?: boolean | null;
+  numeric?: ReadonlyArray<ProductNumericFilterInput> | null;
+  primaryTypeTaxonId?: string | null;
+  query?: string | null;
+  sort?: ProductSort | null;
+  useCaseTaxonIds?: ReadonlyArray<string> | null;
 };
 export type ProductNumericFilterInput = {
   attributeId: string;
-  max?: string | null | undefined;
-  min?: string | null | undefined;
+  max?: string | null;
+  min?: string | null;
 };
 export type ProductBooleanFilterInput = {
   attributeId: string;
@@ -35,8 +35,8 @@ export type ProductEnumFilterInput = {
   enumOptionId: string;
 };
 export type BrowseRouteQuery$variables = {
-  after?: string | null | undefined;
-  filters?: ProductFiltersInput | null | undefined;
+  after?: string | null;
+  filters?: ProductFiltersInput | null;
   first: number;
 };
 export type BrowseRouteQuery$data = {
@@ -46,7 +46,7 @@ export type BrowseRouteQuery$data = {
       readonly code: string;
       readonly displayName: string;
       readonly falseCount: number;
-      readonly selectedValue: boolean | null | undefined;
+      readonly selectedValue: boolean | null;
       readonly trueCount: number;
     }>;
     readonly enumFilters: ReadonlyArray<{
@@ -65,11 +65,11 @@ export type BrowseRouteQuery$data = {
       readonly attributeId: string;
       readonly code: string;
       readonly displayName: string;
-      readonly max: string | null | undefined;
-      readonly min: string | null | undefined;
-      readonly selectedMax: string | null | undefined;
-      readonly selectedMin: string | null | undefined;
-      readonly unitSymbol: string | null | undefined;
+      readonly max: string | null;
+      readonly min: string | null;
+      readonly selectedMax: string | null;
+      readonly selectedMin: string | null;
+      readonly unitSymbol: string | null;
     }>;
     readonly resultCount: number;
     readonly typeOptions: ReadonlyArray<{
@@ -97,11 +97,11 @@ export type BrowseRouteQuery$data = {
       };
     }>;
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
     };
     readonly " $fragmentSpreads": FragmentRefs<"BrowseProductList_products">;
-  } | null | undefined;
+  } | null;
 };
 export type BrowseRouteQuery = {
   response: BrowseRouteQuery$data;

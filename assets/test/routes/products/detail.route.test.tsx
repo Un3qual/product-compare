@@ -128,6 +128,24 @@ type DetailProduct = Omit<
   "currentAttributes" | "merchantProducts"
 > & { currentAttributes: readonly ProductSpecification[] };
 
+function productSpecification(
+  value: Pick<ProductSpecification, "code" | "displayName" | "valueText"> &
+    Partial<Omit<ProductSpecification, "code" | "displayName" | "valueText">>,
+) {
+  return {
+    attributeId: `attribute-${value.code}`,
+    booleanValue: null,
+    dataType: "text",
+    enumOptionId: null,
+    groupLabel: null,
+    isRequired: false,
+    numericValue: null,
+    sortOrder: null,
+    unitSymbol: null,
+    ...value,
+  };
+}
+
 const DETAIL_PRODUCT: DetailProduct = {
   id: "UHJvZHVjdDox",
   name: "Detail Product",
@@ -1805,18 +1823,18 @@ test("renders product specifications from current attributes", () => {
   mockProductAndOffersQueries(buildOffersData([]), {
     ...DETAIL_PRODUCT,
     currentAttributes: [
-      {
+      productSpecification({
         code: "refresh-rate",
         displayName: "Refresh rate",
         dataType: "numeric",
         valueText: "144 Hz",
-      },
-      {
+      }),
+      productSpecification({
         code: "panel-type",
         displayName: "Panel type",
         dataType: "text",
         valueText: "OLED",
-      },
+      }),
     ],
   });
 
@@ -1930,27 +1948,27 @@ test("renders product specification group labels case-insensitively", () => {
   mockProductAndOffersQueries(buildOffersData([]), {
     ...DETAIL_PRODUCT,
     currentAttributes: [
-      {
+      productSpecification({
         code: "refresh-rate",
         displayName: "Refresh rate",
         dataType: "numeric",
         valueText: "144 Hz",
         groupLabel: "Performance",
-      },
-      {
+      }),
+      productSpecification({
         code: "response-time",
         displayName: "Response time",
         dataType: "numeric",
         valueText: "1 ms",
         groupLabel: "performance",
-      },
-      {
+      }),
+      productSpecification({
         code: "release-year",
         displayName: "Release year",
         dataType: "int",
         valueText: "2026",
         groupLabel: " ",
-      },
+      }),
     ],
   });
 

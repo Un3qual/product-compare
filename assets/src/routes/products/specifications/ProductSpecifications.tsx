@@ -12,15 +12,9 @@ import {
   type SpecFilterSelection,
 } from "./spec-filter-selection";
 
-type ProductSpecificationData = NonNullable<
+export type ProductSpecification = NonNullable<
   ProductDetailRouteQuery["response"]["product"]
 >["currentAttributes"][number];
-
-export type ProductSpecification = Pick<
-  ProductSpecificationData,
-  "code" | "displayName" | "valueText"
-> &
-  Partial<Omit<ProductSpecificationData, "code" | "displayName" | "valueText">>;
 
 const styles = create({
   section: { display: "grid", gap: "1rem" },
@@ -247,11 +241,7 @@ function selectionFromAttribute(attribute: ProductSpecification): SpecFilterSele
     return { ...shared, kind: "enum", value: attribute.enumOptionId };
   }
 
-  if (
-    attribute.dataType === "bool" &&
-    attribute.booleanValue !== null &&
-    attribute.booleanValue !== undefined
-  ) {
+  if (attribute.dataType === "bool" && attribute.booleanValue !== null) {
     return { ...shared, kind: "boolean", value: attribute.booleanValue };
   }
 
@@ -259,7 +249,7 @@ function selectionFromAttribute(attribute: ProductSpecification): SpecFilterSele
     return {
       ...shared,
       kind: "numeric",
-      unitSymbol: attribute.unitSymbol ?? undefined,
+      unitSymbol: attribute.unitSymbol,
       value: attribute.numericValue,
     };
   }

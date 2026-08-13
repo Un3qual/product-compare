@@ -3,11 +3,19 @@ import {
   type ProductSpecification,
 } from "../../../../src/routes/products/specifications/ProductSpecifications";
 
-function attribute(code: string, groupLabel?: string | null): ProductSpecification {
+function attribute(code: string, groupLabel: string | null = null): ProductSpecification {
   return {
+    attributeId: `attribute-${code}`,
+    booleanValue: null,
     code,
+    dataType: "text",
     displayName: code,
+    enumOptionId: null,
     groupLabel,
+    isRequired: false,
+    numericValue: null,
+    sortOrder: null,
+    unitSymbol: null,
     valueText: `${code} value`,
   };
 }

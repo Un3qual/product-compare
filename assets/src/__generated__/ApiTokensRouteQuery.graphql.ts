@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<87edb7c9c45edc04b93bf81201b919f1>>
+ * @generated SignedSource<<54a46bbbc803cfb23e2a8b705e9beab3>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -12,27 +12,27 @@ import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type ApiTokenStatusFilter = "ACTIVE" | "ALL" | "REVOKED" | "%future added value";
 export type ApiTokensRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
-  status?: ApiTokenStatusFilter | null | undefined;
+  status?: ApiTokenStatusFilter | null;
 };
 export type ApiTokensRouteQuery$data = {
   readonly myApiTokens: {
     readonly edges: ReadonlyArray<{
       readonly cursor: string;
       readonly node: {
-        readonly expiresAt: string | null | undefined;
+        readonly expiresAt: string | null;
         readonly id: string;
         readonly insertedAt: string;
-        readonly label: string | null | undefined;
-        readonly lastUsedAt: string | null | undefined;
-        readonly revokedAt: string | null | undefined;
+        readonly label: string | null;
+        readonly lastUsedAt: string | null;
+        readonly revokedAt: string | null;
         readonly tokenPrefix: string;
         readonly " $fragmentSpreads": FragmentRefs<"ApiTokenItem_token">;
       };
     }>;
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
     };
   };

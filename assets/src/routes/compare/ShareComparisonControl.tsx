@@ -371,7 +371,7 @@ function PublishedSnapshots({
     [localSnapshots, loadedSnapshots, pageSnapshots],
     revokedSnapshotIds,
   );
-  const next = nextComparisonSnapshotCursor(connection, after);
+  const next = nextComparisonSnapshotCursor(connection ?? null, after);
 
   useEffect(() => {
     setLoadedSnapshots((current) => appendComparisonSnapshotPage(current, pageSnapshots));

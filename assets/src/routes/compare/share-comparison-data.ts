@@ -168,18 +168,14 @@ export function appendComparisonSnapshotPage(
 }
 
 export function nextComparisonSnapshotCursor(
-  connection: ComparisonSnapshotPageConnection | null | undefined,
+  connection: ComparisonSnapshotPageConnection | null,
   after: string | null,
 ) {
   const pageInfo = connection?.pageInfo;
   const endCursor = pageInfo?.endCursor;
 
-  return pageInfo?.hasNextPage === true &&
-    typeof endCursor === "string" &&
-    endCursor.trim() &&
-    endCursor !== after
-    ? endCursor
-    : null;
+  if (!pageInfo?.hasNextPage || !endCursor?.trim() || endCursor === after) return null;
+  return endCursor;
 }
 
 export function removeComparisonSnapshotId(ids: ReadonlySet<string>, id: string) {
