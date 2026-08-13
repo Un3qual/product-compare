@@ -204,7 +204,9 @@ test("revenueSummaryLoader returns error state when route preloading fails", asy
       },
     });
     await expect(
-      Promise.resolve((loaderData as Extract<RevenueSummaryLoaderData, { status: "error" }>).ledgerQuery),
+      Promise.resolve(
+        (loaderData as Extract<RevenueSummaryLoaderData, { status: "error" }>).ledgerQuery,
+      ),
     ).resolves.toBeNull();
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload revenue summary route query.", {
@@ -222,9 +224,7 @@ test("revenueSummaryLoader retains a successful ledger when summary preloading f
   const ledgerDescriptor = attributionLedgerQueryDescriptor({ currency: "USD" });
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-  preloadRouteQueryMock
-    .mockRejectedValueOnce(summaryError)
-    .mockResolvedValueOnce(ledgerDescriptor);
+  preloadRouteQueryMock.mockRejectedValueOnce(summaryError).mockResolvedValueOnce(ledgerDescriptor);
 
   try {
     const loaderData = await revenueSummaryLoader(

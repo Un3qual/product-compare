@@ -97,8 +97,7 @@ type ProgramPayload =
   AffiliateSetupOperationsUpsertAffiliateProgramMutation["response"]["upsertAffiliateProgram"];
 type LinkPayload =
   AffiliateSetupOperationsUpsertAffiliateLinkMutation["response"]["upsertAffiliateLink"];
-type CouponPayload =
-  AffiliateSetupOperationsCreateCouponMutation["response"]["createCoupon"];
+type CouponPayload = AffiliateSetupOperationsCreateCouponMutation["response"]["createCoupon"];
 type AffiliateMutationErrors = NonNullable<NetworkPayload>["errors"];
 
 export function resolveAffiliateNetworkMutationOutcome(

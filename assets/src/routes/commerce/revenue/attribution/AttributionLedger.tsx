@@ -1,6 +1,6 @@
 import { create, props } from "@stylexjs/stylex";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { graphql, useFragment, usePaginationFragment } from "react-relay";
 import type { AttributionLedger_connection$key } from "$generated/AttributionLedger_connection.graphql";
 import type { AttributionLedgerPaginationQuery } from "$generated/AttributionLedgerPaginationQuery.graphql";
@@ -9,6 +9,7 @@ import type {
   AttributionLedger_row$key,
 } from "$generated/AttributionLedger_row.graphql";
 import { formatProductDateTimeLabel } from "$frontend/formatting";
+import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { Button } from "$ui/primitives/Button";
 import {
   Table,
@@ -18,9 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "$ui/primitives/Table";
-import {
-  ATTRIBUTION_LEDGER_PAGE_SIZE,
-} from "../summary/revenue-summary-data";
+import { tokens } from "$ui/theme/tokens.stylex";
+import { ATTRIBUTION_LEDGER_PAGE_SIZE } from "../summary/revenue-summary-data";
 import { ConversionDetails } from "./ConversionDetails";
 
 export const attributionLedgerRouteQuery = graphql`
@@ -30,10 +30,34 @@ export const attributionLedgerRouteQuery = graphql`
 `;
 
 const styles = create({
-  cell: { verticalAlign: "top" },
+  cell: { minWidth: "10rem", textAlign: "start", verticalAlign: "top" },
+  code: {
+    fontFamily: tokens.fontMono,
+    fontSize: "0.78rem",
+    overflowWrap: "anywhere",
+  },
   conversionList: { display: "grid", gap: "0.5rem", listStyle: "none", margin: 0, padding: 0 },
-  details: { display: "grid", gap: "0.2rem", margin: 0 },
+  meta: {
+    alignItems: "center",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.35rem",
+  },
+  primary: {
+    fontWeight: 700,
+    lineHeight: 1.3,
+    margin: 0,
+    overflowWrap: "anywhere",
+  },
   row: { borderBlockStart: "1px solid var(--pc-border-quiet)" },
+  secondary: {
+    color: tokens.textSecondary,
+    fontSize: "0.88rem",
+    lineHeight: 1.4,
+    margin: 0,
+    overflowWrap: "anywhere",
+  },
+  stack: { display: "grid", gap: "0.55rem" },
   table: { borderCollapse: "collapse", minWidth: "68rem", width: "100%" },
   title: { fontSize: "1.25rem", marginBlockEnd: "0.5rem" },
   wrapper: { display: "grid", gap: "1rem", marginBlockStart: "2rem" },
@@ -112,9 +136,7 @@ const columns = columnHelper.columns([
   columnHelper.display({
     id: "conversions",
     header: "Matched conversions",
-    cell: ({ row }) => (
-      <AttributionConversionList conversions={row.original.matchedConversions} />
-    ),
+    cell: ({ row }) => <AttributionConversionList conversions={row.original.matchedConversions} />,
   }),
 ]);
 
@@ -221,65 +243,73 @@ function AttributionPaginationControl({
 }
 
 function AttributionDiagnostics({ click }: { click: AttributionClick }) {
+  const referrer = referrerCopy(click.referrer);
+
   return (
-    <dl {...props(styles.details)}>
-      <dt>Referrer</dt>
-      <dd>{click.referrer ?? "Not captured"}</dd>
-      <dt>User agent</dt>
-      <dd>{click.userAgent ?? "Not captured"}</dd>
-      <dt>IP address</dt>
-      <dd>{click.ipAddress ?? "Not captured"}</dd>
-    </dl>
+    <div {...props(styles.stack)}>
+      <strong title={click.referrer ?? undefined} {...props(styles.primary)}>
+        {referrer}
+      </strong>
+      <span title={click.userAgent ?? undefined} {...props(styles.secondary)}>
+        {userAgentCopy(click.userAgent)}
+      </span>
+      <code {...props(styles.code)}>{click.ipAddress ?? "IP not captured"}</code>
+    </div>
   );
 }
 
 function AttributionCommerce({ click }: { click: AttributionClick }) {
-  const details = [
-    ["Merchant", click.merchantName],
-    ["Product", click.productName ?? "No product"],
-    ["Merchant product", click.merchantProductExternalSku ?? "No SKU"],
-    ["Program", click.affiliateProgramCode ?? "No affiliate program"],
-    ["Network", click.affiliateNetworkName ?? "No affiliate network"],
-  ] as const;
-
   return (
-    <dl {...props(styles.details)}>
-      {details.map(([label, value]) => (
-        <Fragment key={label}>
-          <dt>{label}</dt>
-          <dd>{value}</dd>
-        </Fragment>
-      ))}
-    </dl>
+    <div {...props(styles.stack)}>
+      <div>
+        <p {...props(styles.primary)}>{click.merchantName}</p>
+        <p {...props(styles.secondary)}>{click.productName ?? "No product"}</p>
+      </div>
+      <div {...props(styles.meta)}>
+        <StatusBadge>{click.affiliateNetworkName ?? "No network"}</StatusBadge>
+        <code title="Merchant SKU" {...props(styles.code)}>
+          {click.merchantProductExternalSku ?? "No SKU"}
+        </code>
+      </div>
+      <code title="Affiliate program" {...props(styles.code)}>
+        {click.affiliateProgramCode ?? "No affiliate program"}
+      </code>
+    </div>
   );
 }
 
 function AttributionClickDetails({ click }: { click: AttributionClick }) {
   return (
-    <dl {...props(styles.details)}>
-      <dt>Created</dt>
-      <dd>
-        <time dateTime={click.insertedAt}>{formatProductDateTimeLabel(click.insertedAt)}</time>
-      </dd>
-      <dt>Source</dt>
-      <dd>{sourceSurfaceCopy(click.sourceSurface)}</dd>
-      <dt>Link type</dt>
-      <dd>{linkTypeCopy(click.linkType)}</dd>
-    </dl>
+    <div {...props(styles.stack)}>
+      <time dateTime={click.insertedAt} {...props(styles.primary)}>
+        {formatProductDateTimeLabel(click.insertedAt)}
+      </time>
+      <div {...props(styles.meta)}>
+        <StatusBadge tone="accent">{sourceSurfaceCopy(click.sourceSurface)}</StatusBadge>
+        <StatusBadge>{linkTypeCopy(click.linkType)}</StatusBadge>
+      </div>
+    </div>
   );
 }
 
 function AttributionIdentity({ click }: { click: AttributionClick }) {
   if (click.userEmail) {
     return (
-      <dl {...props(styles.details)}>
-        <dt>User</dt>
-        <dd>{click.userEmail}</dd>
-      </dl>
+      <div {...props(styles.stack)}>
+        <strong {...props(styles.primary)}>{click.userEmail}</strong>
+        <span {...props(styles.secondary)}>Known customer</span>
+      </div>
     );
   }
 
-  return <p>{click.anonymousVisitor ? "Anonymous visitor" : "Unidentified click"}</p>;
+  return (
+    <div {...props(styles.stack)}>
+      <p {...props(styles.primary)}>
+        {click.anonymousVisitor ? "Anonymous visitor" : "Unidentified click"}
+      </p>
+      <span {...props(styles.secondary)}>No account linked</span>
+    </div>
+  );
 }
 
 function AttributionConversionList({
@@ -325,4 +355,23 @@ function linkTypeCopy(value: AttributionClick["linkType"]) {
     default:
       return "Link type unavailable";
   }
+}
+
+function referrerCopy(value: AttributionClick["referrer"]) {
+  if (!value) {
+    return "Not captured";
+  }
+
+  try {
+    const url = new URL(value);
+    const path = url.pathname === "/" ? "" : ` ${url.pathname}`;
+
+    return `${url.hostname}${path}`;
+  } catch {
+    return value;
+  }
+}
+
+function userAgentCopy(value: AttributionClick["userAgent"]) {
+  return value?.replace(/([A-Za-z])\/(?=\d)/g, "$1 ") ?? "Not captured";
 }

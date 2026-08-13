@@ -49,7 +49,9 @@ test("cjProgramsLoader preloads the default lifecycle ledger and unmatched feeds
     after: variables.unmatchedAfter,
   });
 
-  preloadRouteQueryMock.mockResolvedValueOnce(descriptor).mockResolvedValueOnce(unmatchedDescriptor);
+  preloadRouteQueryMock
+    .mockResolvedValueOnce(descriptor)
+    .mockResolvedValueOnce(unmatchedDescriptor);
 
   const result = await cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request }));
 
@@ -95,12 +97,13 @@ test("cjProgramsLoader isolates an unmatched-feed preload failure from program d
       status: "ready",
       query: descriptor,
     });
-    await expect((result as { unmatchedQuery: Promise<unknown> }).unmatchedQuery).resolves.toBeNull();
+    await expect(
+      (result as { unmatchedQuery: Promise<unknown> }).unmatchedQuery,
+    ).resolves.toBeNull();
     expect(preloadRouteQueryMock).toHaveBeenCalledTimes(2);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      "Failed to preload unmatched CJ feeds query.",
-      { error: unmatchedError },
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload unmatched CJ feeds query.", {
+      error: unmatchedError,
+    });
   } finally {
     consoleErrorSpy.mockRestore();
   }
@@ -130,7 +133,9 @@ test("cjProgramsLoader preserves each normalized connection cursor and page size
     after: variables.unmatchedAfter,
   });
 
-  preloadRouteQueryMock.mockResolvedValueOnce(descriptor).mockResolvedValueOnce(unmatchedDescriptor);
+  preloadRouteQueryMock
+    .mockResolvedValueOnce(descriptor)
+    .mockResolvedValueOnce(unmatchedDescriptor);
 
   const result = await cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request }));
 
@@ -167,9 +172,9 @@ test("cjProgramsLoader returns the existing error shape for unavailable data", a
   const preloadError = new Error("Network request failed: CJ programs unavailable");
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-  preloadRouteQueryMock.mockRejectedValueOnce(preloadError).mockResolvedValueOnce(
-    unmatchedFeedsQueryDescriptor({ first: 10, after: null }),
-  );
+  preloadRouteQueryMock
+    .mockRejectedValueOnce(preloadError)
+    .mockResolvedValueOnce(unmatchedFeedsQueryDescriptor({ first: 10, after: null }));
 
   try {
     await expect(
@@ -202,9 +207,9 @@ test("cjProgramsLoader forwards and rethrows request aborts", async () => {
   });
   const abortError = new DOMException("Route transition", "AbortError");
 
-  preloadRouteQueryMock.mockRejectedValueOnce(abortError).mockResolvedValueOnce(
-    unmatchedFeedsQueryDescriptor({ first: 10, after: null }),
-  );
+  preloadRouteQueryMock
+    .mockRejectedValueOnce(abortError)
+    .mockResolvedValueOnce(unmatchedFeedsQueryDescriptor({ first: 10, after: null }));
 
   await expect(cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request }))).rejects.toBe(
     abortError,

@@ -175,7 +175,7 @@ export function CJProgramsRoute() {
             <CJProgramControls pagination={loaderData.pagination} />
           </ContextRail>
         }
-        label="CJ programs"
+        label="CJ program operations"
       >
         {loaderData.status === "ready" ? (
           <ResettableErrorBoundary

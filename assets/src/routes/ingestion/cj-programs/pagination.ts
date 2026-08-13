@@ -112,9 +112,7 @@ export function buildCJUnmatchedFeedPageData(
       pageInfo.hasPreviousPage && pagination.unmatchedAfter
         ? cjProgramsPath({ ...pagination, unmatchedAfter: null })
         : null,
-    nextHref: nextCursor
-      ? cjProgramsPath({ ...pagination, unmatchedAfter: nextCursor })
-      : null,
+    nextHref: nextCursor ? cjProgramsPath({ ...pagination, unmatchedAfter: nextCursor }) : null,
   };
 }
 

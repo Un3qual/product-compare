@@ -306,22 +306,34 @@ test("revenue route renders customer-facing visit and purchase details without i
   expect(
     summary.compareDocumentPosition(ledgerHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
-  expect(screen.getByRole("table", { name: "Attribution ledger" })).toBeVisible();
-  expect(screen.getByText("operator@example.test")).toBeInTheDocument();
-  expect(screen.getByText("Product Compare website")).toBeInTheDocument();
-  expect(screen.getByText("Partner link")).toBeInTheDocument();
-  expect(screen.getByText("https://example.test/compare")).toBeInTheDocument();
-  expect(screen.getByText("ExampleBrowser/1.0")).toBeInTheDocument();
-  expect(screen.getByText("203.0.113.44")).toBeInTheDocument();
-  expect(screen.getByText("Impact")).toBeInTheDocument();
-  expect(screen.getByText("impact-conversion-123")).toBeInTheDocument();
-  expect(screen.getByText("Order: 90.00 USD")).toBeInTheDocument();
-  expect(screen.getByText("Paid")).toBeInTheDocument();
-  expect(screen.getByText("Strong match")).toBeInTheDocument();
+  const ledger = screen.getByRole("table", { name: "Attribution ledger" });
+  expect(ledger).toBeVisible();
+  expect(ledger.querySelectorAll("dl")).toHaveLength(0);
+  expect(within(ledger).getByText("operator@example.test")).toBeInTheDocument();
+  expect(within(ledger).getByText("Product Compare website")).toBeInTheDocument();
+  expect(within(ledger).getByText("Partner link")).toBeInTheDocument();
+  expect(within(ledger).getByText("example.test /compare")).toHaveAttribute(
+    "title",
+    "https://example.test/compare",
+  );
+  expect(within(ledger).queryByText("https://example.test/compare")).not.toBeInTheDocument();
+  expect(within(ledger).getByText("ExampleBrowser 1.0")).toHaveAttribute(
+    "title",
+    "ExampleBrowser/1.0",
+  );
+  expect(within(ledger).queryByText("ExampleBrowser/1.0")).not.toBeInTheDocument();
+  expect(within(ledger).getByText("203.0.113.44")).toBeInTheDocument();
+  expect(within(ledger).getByText("Impact")).toBeInTheDocument();
+  expect(within(ledger).getByText("impact-conversion-123")).toBeInTheDocument();
+  expect(within(ledger).getByText("90.00 USD")).toBeInTheDocument();
+  expect(within(ledger).queryByText("Order: 90.00 USD")).not.toBeInTheDocument();
+  expect(within(ledger).getByText("Paid")).toBeInTheDocument();
+  expect(within(ledger).getByText("Strong match")).toBeInTheDocument();
   fireEvent.click(
     screen.getByRole("button", { name: "Show conversion impact-conversion-123 details" }),
   );
-  expect(screen.getByText("Commission: 9.00 USD")).toBeInTheDocument();
+  expect(within(ledger).getByText("9.00 USD commission")).toBeInTheDocument();
+  expect(within(ledger).queryByText("Commission: 9.00 USD")).not.toBeInTheDocument();
   expect(screen.getByText("Conversion Merchant")).toBeInTheDocument();
   expect(screen.getByText("Conversion Product")).toBeInTheDocument();
   expect(screen.getByText("Conversion Network")).toBeInTheDocument();
@@ -587,10 +599,11 @@ test("revenue route renders one-conversion metrics without hidden-metrics copy",
 
   renderRevenueSummaryRoute();
 
+  const summary = screen.getByRole("region", { name: "Summary" });
   expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
-  expect(screen.getByText("Clicks")).toBeInTheDocument();
-  expect(screen.getAllByText("1")).toHaveLength(2);
-  expect(screen.getAllByText("90.00 USD")).toHaveLength(2);
+  expect(within(summary).getByText("Clicks")).toBeInTheDocument();
+  expect(within(summary).getAllByText("1")).toHaveLength(2);
+  expect(within(summary).getAllByText("90.00 USD")).toHaveLength(2);
   expect(screen.queryByText(/Revenue metrics are hidden/i)).not.toBeInTheDocument();
 });
 

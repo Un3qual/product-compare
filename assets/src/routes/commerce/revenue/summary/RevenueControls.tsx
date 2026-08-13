@@ -38,6 +38,18 @@ const styles = create({
     gridTemplateColumns: "repeat(auto-fit, minmax(10rem, 1fr))",
     padding: "1rem",
   },
+  list: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.5rem 1rem",
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
+  },
+  activeFilter: {
+    display: "flex",
+    gap: "0.35rem",
+  },
 });
 
 export function RevenueControls({
@@ -100,12 +112,7 @@ function RevenueFilterForm({ values }: { values: RevenueFilterFormValues }) {
       </div>
       <div {...props(styles.field)}>
         <span id={LABEL_IDS.to}>To</span>
-        <Input
-          aria-labelledby={LABEL_IDS.to}
-          defaultValue={values.to}
-          name="to"
-          type="date"
-        />
+        <Input aria-labelledby={LABEL_IDS.to} defaultValue={values.to} name="to" type="date" />
       </div>
       <Button type="submit">Apply filters</Button>
       <Link to="/commerce/revenue">Clear filters</Link>
@@ -119,7 +126,7 @@ function RevenueDatePresetList({ links }: { links: RevenueControlData["datePrese
   }
 
   return (
-    <ul aria-label="Revenue date presets">
+    <ul aria-label="Revenue date presets" {...props(styles.list)}>
       {links.map((preset) => (
         <li key={preset.label}>
           <Link to={preset.to}>{preset.label}</Link>
@@ -129,19 +136,15 @@ function RevenueDatePresetList({ links }: { links: RevenueControlData["datePrese
   );
 }
 
-function RevenueActiveFilterList({
-  filters,
-}: {
-  filters: RevenueControlData["activeFilters"];
-}) {
+function RevenueActiveFilterList({ filters }: { filters: RevenueControlData["activeFilters"] }) {
   if (filters.length === 0) {
     return <p>Aggregate revenue summary</p>;
   }
 
   return (
-    <ul aria-label="Active revenue filters">
+    <ul aria-label="Active revenue filters" {...props(styles.list)}>
       {filters.map((filter) => (
-        <li key={filter.label}>
+        <li key={filter.label} {...props(styles.activeFilter)}>
           <span>{filter.label}</span>
           <span>{filter.value}</span>
         </li>
