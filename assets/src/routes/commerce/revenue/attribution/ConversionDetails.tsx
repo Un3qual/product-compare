@@ -1,7 +1,11 @@
 import { create, props } from "@stylexjs/stylex";
 import { useState } from "react";
 import { graphql, useFragment } from "react-relay";
-import type { ConversionDetails_conversion$key } from "$generated/ConversionDetails_conversion.graphql";
+import type {
+  CommerceAttributionConfidence,
+  CommerceConversionStatus,
+  ConversionDetails_conversion$key,
+} from "$generated/ConversionDetails_conversion.graphql";
 import { formatProductDateTimeLabel } from "$frontend/formatting";
 import { Button } from "$ui/primitives/Button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
@@ -89,8 +93,8 @@ export function ConversionDetails({
   );
 }
 
-function conversionStatusCopy(value: string) {
-  switch (value.toUpperCase()) {
+function conversionStatusCopy(value: CommerceConversionStatus) {
+  switch (value) {
     case "APPROVED":
       return "Approved";
     case "PAID":
@@ -104,8 +108,8 @@ function conversionStatusCopy(value: string) {
   }
 }
 
-function attributionConfidenceCopy(value: string) {
-  switch (value.toUpperCase()) {
+function attributionConfidenceCopy(value: CommerceAttributionConfidence) {
+  switch (value) {
     case "HIGH":
       return "Strong match";
     case "LOW":

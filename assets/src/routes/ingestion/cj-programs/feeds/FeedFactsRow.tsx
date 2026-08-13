@@ -2,7 +2,7 @@ import { create, props } from "@stylexjs/stylex";
 import { graphql, useFragment } from "react-relay";
 import type { FeedFactsRow_feed$key } from "$generated/FeedFactsRow_feed.graphql";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { formatCJDateTime, formatFeedProductCount } from "../cj-program-data";
+import { formatCJDateTime, formatFeedProductCount } from "../formatting";
 
 const cjFeedFragment = graphql`
   fragment FeedFactsRow_feed on MerchantFeedCandidate {

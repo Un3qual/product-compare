@@ -6,7 +6,7 @@ import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
 import { MerchantChoiceSelect } from "../MerchantChoiceSelect";
 import { affiliateWorkflowStyles as styles } from "../affiliate-workflow.stylex";
-import type { MerchantChoice } from "../affiliate-setup-data";
+import type { MerchantChoice } from "../merchant-context";
 
 export type ProgramResult = NonNullable<
   NonNullable<

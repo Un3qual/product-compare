@@ -2,9 +2,11 @@ import {
   CJ_PROGRAM_STAGES,
   cjProgramStageLabel,
   cjProgramWarningCopy,
+} from "../../../../src/routes/ingestion/cj-programs/programs/lifecycle-policy";
+import {
   formatCJDateTime,
   formatFeedProductCount,
-} from "../../../../src/routes/ingestion/cj-programs/cj-program-data";
+} from "../../../../src/routes/ingestion/cj-programs/formatting";
 import {
   buildCJProgramPaginationData,
   cjProgramStageToUrlParam,

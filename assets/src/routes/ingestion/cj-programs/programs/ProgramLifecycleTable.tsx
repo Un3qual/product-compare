@@ -12,7 +12,7 @@ import {
 } from "$ui/primitives/Table";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { ProgramLifecycleRow } from "./ProgramLifecycleRow";
-import { CJ_PROGRAM_STAGES } from "../cj-program-data";
+import { CJ_PROGRAM_STAGES } from "./lifecycle-policy";
 import type { buildCJProgramPaginationData } from "../pagination";
 
 type ProgramsConnection = CJProgramsRouteQuery["response"]["cjPrograms"];

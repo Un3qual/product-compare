@@ -29,7 +29,7 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { UnmatchedFeeds, unmatchedFeedsQuery } from "./feeds/UnmatchedFeeds";
 import { ProgramLifecycleTable } from "./programs/ProgramLifecycleTable";
-import { CJ_PROGRAM_SORTS, CJ_PROGRAM_STAGES } from "./cj-program-data";
+import { CJ_PROGRAM_SORTS, CJ_PROGRAM_STAGES } from "./programs/lifecycle-policy";
 import {
   cjProgramsPaginationFromUrl,
   cjProgramSortToUrlParam,

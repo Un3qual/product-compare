@@ -303,8 +303,8 @@ function AttributionConversionList({
   );
 }
 
-function sourceSurfaceCopy(value: string) {
-  switch (value.toUpperCase()) {
+function sourceSurfaceCopy(value: AttributionClick["sourceSurface"]) {
+  switch (value) {
     case "API":
       return "Connected tool";
     case "EXTENSION":
@@ -316,8 +316,8 @@ function sourceSurfaceCopy(value: string) {
   }
 }
 
-function linkTypeCopy(value: string) {
-  switch (value.toUpperCase()) {
+function linkTypeCopy(value: AttributionClick["linkType"]) {
+  switch (value) {
     case "AFFILIATE":
       return "Partner link";
     case "NON_AFFILIATE":

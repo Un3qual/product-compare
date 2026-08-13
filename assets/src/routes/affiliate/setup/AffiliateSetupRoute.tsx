@@ -31,6 +31,10 @@ import { NetworkStep, type NetworkResult } from "./network/NetworkStep";
 import { ProgramStep, type ProgramResult } from "./program/ProgramStep";
 import {
   createCouponMutation,
+  resolveAffiliateCouponMutationOutcome,
+  resolveAffiliateLinkMutationOutcome,
+  resolveAffiliateNetworkMutationOutcome,
+  resolveAffiliateProgramMutationOutcome,
   upsertAffiliateLinkMutation,
   upsertAffiliateNetworkMutation,
   upsertAffiliateProgramMutation,
@@ -38,15 +42,13 @@ import {
 import {
   buildCouponVariables,
   buildLinkVariables,
-  buildMerchantChoices,
   buildNetworkVariables,
   buildProgramVariables,
+} from "./affiliate-form-values";
+import {
+  buildMerchantChoices,
   getAffiliateMerchantContext,
-  resolveAffiliateCouponMutationOutcome,
-  resolveAffiliateLinkMutationOutcome,
-  resolveAffiliateNetworkMutationOutcome,
-  resolveAffiliateProgramMutationOutcome,
-} from "./affiliate-setup-data";
+} from "./merchant-context";
 import { buildAffiliateSetupPaginationData } from "./pagination";
 
 const affiliateSetupRouteQuery = graphql`

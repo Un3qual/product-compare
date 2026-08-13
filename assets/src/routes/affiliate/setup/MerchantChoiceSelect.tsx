@@ -6,7 +6,7 @@ import {
   SelectValue,
 } from "$ui/primitives/Select";
 import { Label } from "$ui/primitives/Label";
-import type { MerchantChoice } from "./affiliate-setup-data";
+import type { MerchantChoice } from "./merchant-context";
 
 export function MerchantChoiceSelect({
   label = "Merchant",

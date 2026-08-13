@@ -22,9 +22,9 @@ import {
   cjProgramStageLabel,
   cjProgramWarningCopy,
   editableCJProgramStage,
-  formatCJDateTime,
   type CJProgramStage,
-} from "../cj-program-data";
+} from "./lifecycle-policy";
+import { formatCJDateTime } from "../formatting";
 import { ProgramFeeds } from "../feeds/ProgramFeeds";
 
 const cjProgramFragment = graphql`

@@ -4,7 +4,7 @@ import {
   CJ_PROGRAM_STAGES,
   type CJProgramSort,
   type CJProgramStage,
-} from "./cj-program-data";
+} from "./programs/lifecycle-policy";
 
 const DEFAULT_PROGRAM_PAGE_SIZE = 20;
 const DEFAULT_UNMATCHED_PAGE_SIZE = 10;

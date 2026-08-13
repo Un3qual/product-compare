@@ -13,7 +13,7 @@ import {
 } from "$ui/primitives/Select";
 import { MerchantChoiceSelect } from "../MerchantChoiceSelect";
 import { affiliateWorkflowStyles as styles } from "../affiliate-workflow.stylex";
-import { couponDiscountText, type MerchantChoice } from "../affiliate-setup-data";
+import type { MerchantChoice } from "../merchant-context";
 
 export type CouponResult = NonNullable<
   NonNullable<AffiliateSetupOperationsCreateCouponMutation["response"]["createCoupon"]>["coupon"]
@@ -143,4 +143,23 @@ function CouponResultPanel({ coupon }: { coupon: CouponResult }) {
       {discountText ? <p>{discountText}</p> : null}
     </section>
   );
+}
+
+export function couponDiscountText(
+  coupon: Pick<CouponResult, "currency" | "discountType" | "discountValue">,
+) {
+  const value = coupon.discountValue;
+
+  switch (coupon.discountType) {
+    case "AMOUNT":
+      return value && coupon.currency ? `${value} ${coupon.currency}` : null;
+    case "PERCENT":
+      return value ? `${value}% off` : null;
+    case "FREE_SHIPPING":
+      return "Free shipping";
+    case "OTHER":
+      return value ? `${value} off` : "Other discount";
+    default:
+      return null;
+  }
 }

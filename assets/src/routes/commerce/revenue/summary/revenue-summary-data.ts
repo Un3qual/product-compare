@@ -1,8 +1,7 @@
 import type { RevenueSummaryRouteQuery } from "$generated/RevenueSummaryRouteQuery.graphql";
 
-type RevenueSummaryInput = NonNullable<RevenueSummaryRouteQuery["variables"]["input"]>;
 export type RevenueSummaryFilters = Pick<
-  RevenueSummaryInput,
+  NonNullable<RevenueSummaryRouteQuery["variables"]["input"]>,
   "currency" | "from" | "network" | "to"
 >;
 
@@ -34,7 +33,7 @@ export function buildRevenueSummaryFilterFormData(filters: RevenueSummaryFilters
   };
 }
 
-function revenueFilterFormValue(value: RevenueSummaryInput["currency"]) {
+function revenueFilterFormValue(value: RevenueSummaryFilters["currency"]) {
   return value ?? "";
 }
 
