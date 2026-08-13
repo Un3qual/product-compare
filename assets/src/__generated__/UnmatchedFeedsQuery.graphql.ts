@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9f0b195af57ae89c6a0be373f72c7048>>
+ * @generated SignedSource<<9fe26e9b9cd526e6f485a86149770747>>
  * @lightSyntaxTransform
  */
 
@@ -9,29 +9,16 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type CJProgramSort = "FEED_COUNT_DESC" | "LAST_CHANGED_DESC" | "NAME_ASC" | "%future added value";
-export type CJProgramStage = "ACCEPTED" | "APPLIED" | "CONSIDERING" | "DECLINED" | "NEW" | "NOT_PURSUING" | "SELECTED" | "%future added value";
-export type CJProgramsRouteQuery$variables = {
+export type UnmatchedFeedsQuery$variables = {
   after?: string | null;
   first: number;
-  sort: CJProgramSort;
-  stage?: CJProgramStage | null;
 };
-export type CJProgramsRouteQuery$data = {
-  readonly cjProgramStageCounts: {
-    readonly accepted: number;
-    readonly applied: number;
-    readonly considering: number;
-    readonly declined: number;
-    readonly new: number;
-    readonly notPursuing: number;
-    readonly selected: number;
-  };
-  readonly cjPrograms: {
+export type UnmatchedFeedsQuery$data = {
+  readonly unmatchedCjFeeds: {
     readonly edges: ReadonlyArray<{
       readonly node: {
         readonly id: string;
-        readonly " $fragmentSpreads": FragmentRefs<"ProgramLifecycleRow_program">;
+        readonly " $fragmentSpreads": FragmentRefs<"FeedFactsRow_feed">;
       };
     }>;
     readonly pageInfo: {
@@ -41,9 +28,9 @@ export type CJProgramsRouteQuery$data = {
     };
   };
 };
-export type CJProgramsRouteQuery = {
-  response: CJProgramsRouteQuery$data;
-  variables: CJProgramsRouteQuery$variables;
+export type UnmatchedFeedsQuery = {
+  response: UnmatchedFeedsQuery$data;
+  variables: UnmatchedFeedsQuery$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -57,77 +44,7 @@ v1 = {
   "kind": "LocalArgument",
   "name": "first"
 },
-v2 = {
-  "defaultValue": null,
-  "kind": "LocalArgument",
-  "name": "sort"
-},
-v3 = {
-  "defaultValue": null,
-  "kind": "LocalArgument",
-  "name": "stage"
-},
-v4 = {
-  "alias": null,
-  "args": null,
-  "concreteType": "CJProgramStageCounts",
-  "kind": "LinkedField",
-  "name": "cjProgramStageCounts",
-  "plural": false,
-  "selections": [
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "new",
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "considering",
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "selected",
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "applied",
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "accepted",
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "notPursuing",
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "declined",
-      "storageKey": null
-    }
-  ],
-  "storageKey": null
-},
-v5 = [
+v2 = [
   {
     "kind": "Variable",
     "name": "after",
@@ -137,26 +54,16 @@ v5 = [
     "kind": "Variable",
     "name": "first",
     "variableName": "first"
-  },
-  {
-    "kind": "Variable",
-    "name": "sort",
-    "variableName": "sort"
-  },
-  {
-    "kind": "Variable",
-    "name": "stage",
-    "variableName": "stage"
   }
 ],
-v6 = {
+v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
   "storageKey": null
 },
-v7 = {
+v4 = {
   "alias": null,
   "args": null,
   "concreteType": "PageInfo",
@@ -192,27 +99,24 @@ return {
   "fragment": {
     "argumentDefinitions": [
       (v0/*:: as any*/),
-      (v1/*:: as any*/),
-      (v2/*:: as any*/),
-      (v3/*:: as any*/)
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
-    "name": "CJProgramsRouteQuery",
+    "name": "UnmatchedFeedsQuery",
     "selections": [
-      (v4/*:: as any*/),
       {
         "alias": null,
-        "args": (v5/*:: as any*/),
-        "concreteType": "CJProgramConnection",
+        "args": (v2/*:: as any*/),
+        "concreteType": "MerchantFeedCandidateConnection",
         "kind": "LinkedField",
-        "name": "cjPrograms",
+        "name": "unmatchedCjFeeds",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": null,
-            "concreteType": "CJProgramEdge",
+            "concreteType": "MerchantFeedCandidateEdge",
             "kind": "LinkedField",
             "name": "edges",
             "plural": true,
@@ -220,16 +124,16 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "CJProgram",
+                "concreteType": "MerchantFeedCandidate",
                 "kind": "LinkedField",
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v6/*:: as any*/),
+                  (v3/*:: as any*/),
                   {
                     "args": null,
                     "kind": "FragmentSpread",
-                    "name": "ProgramLifecycleRow_program"
+                    "name": "FeedFactsRow_feed"
                   }
                 ],
                 "storageKey": null
@@ -237,7 +141,7 @@ return {
             ],
             "storageKey": null
           },
-          (v7/*:: as any*/)
+          (v4/*:: as any*/)
         ],
         "storageKey": null
       }
@@ -249,26 +153,23 @@ return {
   "operation": {
     "argumentDefinitions": [
       (v1/*:: as any*/),
-      (v0/*:: as any*/),
-      (v3/*:: as any*/),
-      (v2/*:: as any*/)
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
-    "name": "CJProgramsRouteQuery",
+    "name": "UnmatchedFeedsQuery",
     "selections": [
-      (v4/*:: as any*/),
       {
         "alias": null,
-        "args": (v5/*:: as any*/),
-        "concreteType": "CJProgramConnection",
+        "args": (v2/*:: as any*/),
+        "concreteType": "MerchantFeedCandidateConnection",
         "kind": "LinkedField",
-        "name": "cjPrograms",
+        "name": "unmatchedCjFeeds",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": null,
-            "concreteType": "CJProgramEdge",
+            "concreteType": "MerchantFeedCandidateEdge",
             "kind": "LinkedField",
             "name": "edges",
             "plural": true,
@@ -276,17 +177,17 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "CJProgram",
+                "concreteType": "MerchantFeedCandidate",
                 "kind": "LinkedField",
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v6/*:: as any*/),
+                  (v3/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "advertiserId",
+                    "name": "providerFeedId",
                     "storageKey": null
                   },
                   {
@@ -300,35 +201,49 @@ return {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "stage",
+                    "name": "advertiserCountry",
                     "storageKey": null
                   },
                   {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "note",
+                    "name": "sourceFeedType",
                     "storageKey": null
                   },
                   {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "lastChanged",
+                    "name": "currency",
                     "storageKey": null
                   },
                   {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "feedCount",
+                    "name": "language",
                     "storageKey": null
                   },
                   {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "warningCodes",
+                    "name": "feedName",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "productCount",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "lastSeenAt",
                     "storageKey": null
                   }
                 ],
@@ -337,23 +252,23 @@ return {
             ],
             "storageKey": null
           },
-          (v7/*:: as any*/)
+          (v4/*:: as any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "910511a7fa50828501a31d2616feabce",
+    "cacheID": "f1b898906df8c81d69a48fdd1512ec14",
     "id": null,
     "metadata": {},
-    "name": "CJProgramsRouteQuery",
+    "name": "UnmatchedFeedsQuery",
     "operationKind": "query",
-    "text": "query CJProgramsRouteQuery(\n  $first: Int!\n  $after: String\n  $stage: CJProgramStage\n  $sort: CJProgramSort!\n) {\n  cjProgramStageCounts {\n    new\n    considering\n    selected\n    applied\n    accepted\n    notPursuing\n    declined\n  }\n  cjPrograms(first: $first, after: $after, stage: $stage, sort: $sort) {\n    edges {\n      node {\n        id\n        ...ProgramLifecycleRow_program\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      endCursor\n    }\n  }\n}\n\nfragment ProgramLifecycleRow_program on CJProgram {\n  id\n  advertiserId\n  advertiserName\n  stage\n  note\n  lastChanged\n  feedCount\n  warningCodes\n}\n"
+    "text": "query UnmatchedFeedsQuery(\n  $first: Int!\n  $after: String\n) {\n  unmatchedCjFeeds(first: $first, after: $after) {\n    edges {\n      node {\n        id\n        ...FeedFactsRow_feed\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      endCursor\n    }\n  }\n}\n\nfragment FeedFactsRow_feed on MerchantFeedCandidate {\n  id\n  providerFeedId\n  advertiserName\n  advertiserCountry\n  sourceFeedType\n  currency\n  language\n  feedName\n  productCount\n  lastSeenAt\n}\n"
   }
 };
 })();
 
-(node as any).hash = "f9f4b96b8b06a5e5ab7537ac023c709d";
+(node as any).hash = "ad945a454b0904f1fe94cacc09a9e0e5";
 
 export default node;

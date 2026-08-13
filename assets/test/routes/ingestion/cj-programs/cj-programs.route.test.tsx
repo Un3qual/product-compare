@@ -7,6 +7,7 @@ import {
   type RelayRouteQueryDescriptor,
 } from "../../../../src/relay/route-preload";
 import type { CJProgramsRouteQuery } from "../../../../src/__generated__/CJProgramsRouteQuery.graphql";
+import type { UnmatchedFeedsQuery } from "../../../../src/__generated__/UnmatchedFeedsQuery.graphql";
 import {
   CJProgramsRoute,
   type CJProgramsLoaderData,
@@ -89,9 +90,17 @@ const CJ_PROGRAMS_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<CJProgramsRouteQue
       after: null,
       stage: null,
       sort: "NAME_ASC",
-      unmatchedFirst: 10,
-      unmatchedAfter: null,
     },
+  },
+};
+
+const UNMATCHED_FEEDS_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<
+  UnmatchedFeedsQuery["variables"]
+> = {
+  __relayQuery: {
+    operationName: "UnmatchedFeedsQuery",
+    text: null,
+    variables: { first: 10, after: null },
   },
 };
 
@@ -374,7 +383,10 @@ test("CJ program rows show factual advertiser details and plain warning copy", (
 
   expect(row.getByText("Advertiser ID advertiser-1")).toBeInTheDocument();
   expect(row.getByText("1 feed")).toBeInTheDocument();
-  expect(row.getByText("Last changed Jul 20, 2026, 10:00 AM")).toBeInTheDocument();
+  expect(row.getByText("Jul 20, 2026, 10:00 AM")).toHaveAttribute(
+    "datetime",
+    "2026-07-20T10:00:00.000000Z",
+  );
   const warnings = row.getByRole("list", { name: "Warnings for New Merchant" });
 
   expect(
@@ -432,9 +444,12 @@ test("a failed CJ program feed query stays in its row and retries only that row"
     loadFeedQueryMock,
     disposeFeedQueryMock,
   ] as never);
-  mockedUsePreloadedQuery.mockReturnValueOnce(buildCJProgramsData()).mockImplementation(() => {
-    throw new Error("CJ program feed query failed");
-  });
+  mockedUsePreloadedQuery
+    .mockReturnValueOnce(buildCJProgramsData())
+    .mockReturnValueOnce(buildCJProgramsData())
+    .mockImplementation(() => {
+      throw new Error("CJ program feed query failed");
+    });
 
   try {
     renderCJProgramsRoute();
@@ -464,6 +479,20 @@ test("a failed CJ program feed query stays in its row and retries only that row"
   }
 });
 
+test("an unavailable unmatched-feed region leaves the program lifecycle ledger usable", () => {
+  mockedUseLoaderData.mockReturnValue({
+    ...buildReadyLoaderData(),
+    unmatchedQuery: null,
+  } as never);
+
+  renderCJProgramsRoute();
+
+  expect(screen.getByRole("table", { name: "CJ program lifecycle ledger" })).toBeVisible();
+  expect(screen.getByLabelText("Stage for New Merchant")).toBeEnabled();
+  expect(screen.getByRole("alert")).toHaveTextContent("Unmatched feeds unavailable.");
+  expect(screen.queryByText("CJ programs unavailable.")).not.toBeInTheDocument();
+});
+
 test("expanded CJ program rows render bounded feed facts and replace only their feed page", () => {
   mockedUseQueryLoader.mockReturnValue([
     FEED_QUERY_REF,
@@ -471,6 +500,7 @@ test("expanded CJ program rows render bounded feed facts and replace only their 
     disposeFeedQueryMock,
   ] as never);
   mockedUsePreloadedQuery
+    .mockReturnValueOnce(buildCJProgramsData())
     .mockReturnValueOnce(buildCJProgramsData())
     .mockReturnValueOnce(buildCJProgramFeedsData());
 
@@ -647,7 +677,7 @@ function rowFor(name: string) {
 }
 
 function rowElementFor(name: string) {
-  const row = screen.getByRole("heading", { name }).closest("li");
+  const row = screen.getByRole("heading", { name }).closest<HTMLElement>("tr, li");
 
   if (!row) {
     throw new Error(`Could not find row for ${name}.`);
@@ -682,6 +712,13 @@ function buildReadyLoaderData(
     status: "ready",
     pagination,
     query: CJ_PROGRAMS_QUERY_DESCRIPTOR,
+    unmatchedQuery: {
+      ...UNMATCHED_FEEDS_QUERY_DESCRIPTOR,
+      __relayQuery: {
+        ...UNMATCHED_FEEDS_QUERY_DESCRIPTOR.__relayQuery,
+        variables: { first: pagination.unmatchedFirst, after: pagination.unmatchedAfter },
+      },
+    },
   } satisfies CJProgramsLoaderData;
 }
 

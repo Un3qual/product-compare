@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<d11fb548ce2285a194a5fe8234ce5b50>>
+ * @generated SignedSource<<16aa15119130239d5e5239f473bf268d>>
  * @lightSyntaxTransform
  */
 
@@ -9,7 +9,7 @@
 
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type CJFeedRow_feed$data = {
+export type FeedFactsRow_feed$data = {
   readonly advertiserCountry: string | null;
   readonly advertiserName: string | null;
   readonly currency: string | null;
@@ -20,18 +20,18 @@ export type CJFeedRow_feed$data = {
   readonly productCount: number | null;
   readonly providerFeedId: string;
   readonly sourceFeedType: string | null;
-  readonly " $fragmentType": "CJFeedRow_feed";
+  readonly " $fragmentType": "FeedFactsRow_feed";
 };
-export type CJFeedRow_feed$key = {
-  readonly " $data"?: CJFeedRow_feed$data;
-  readonly " $fragmentSpreads": FragmentRefs<"CJFeedRow_feed">;
+export type FeedFactsRow_feed$key = {
+  readonly " $data"?: FeedFactsRow_feed$data;
+  readonly " $fragmentSpreads": FragmentRefs<"FeedFactsRow_feed">;
 };
 
 const node: ReaderFragment = {
   "argumentDefinitions": [],
   "kind": "Fragment",
   "metadata": null,
-  "name": "CJFeedRow_feed",
+  "name": "FeedFactsRow_feed",
   "selections": [
     {
       "alias": null,
@@ -108,6 +108,6 @@ const node: ReaderFragment = {
   "abstractKey": null
 };
 
-(node as any).hash = "52c88eab449fc224591413f44e9cef3b";
+(node as any).hash = "eebb183280ce2f8b44f2e4397089da11";
 
 export default node;

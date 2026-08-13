@@ -1,5 +1,9 @@
 import { parseGraphQLDateTime } from "$relay/scalars";
 import { formatProductDateTime } from "$frontend/formatting";
+import type {
+  CJProgramStage as GeneratedCJProgramStage,
+  CJProgramWarningCode,
+} from "$generated/ProgramLifecycleRow_program.graphql";
 
 export const CJ_PROGRAM_STAGES = [
   { countKey: "new", label: "New", urlValue: "new", value: "NEW" },
@@ -19,7 +23,12 @@ export const CJ_PROGRAM_STAGES = [
     value: "NOT_PURSUING",
   },
   { countKey: "declined", label: "Declined", urlValue: "declined", value: "DECLINED" },
-] as const;
+] as const satisfies readonly {
+  countKey: string;
+  label: string;
+  urlValue: string;
+  value: Exclude<GeneratedCJProgramStage, "%future added value">;
+}[];
 
 export type CJProgramStage = (typeof CJ_PROGRAM_STAGES)[number]["value"];
 
@@ -35,15 +44,15 @@ export const CJ_PROGRAM_SORTS = [
 
 export type CJProgramSort = (typeof CJ_PROGRAM_SORTS)[number]["value"];
 
-export function cjProgramStageLabel(stage: string | null) {
+export function cjProgramStageLabel(stage: GeneratedCJProgramStage) {
   return CJ_PROGRAM_STAGES.find(({ value }) => value === stage)?.label ?? null;
 }
 
-export function isCJProgramStage(stage: string): stage is CJProgramStage {
-  return CJ_PROGRAM_STAGES.some(({ value }) => value === stage);
+export function editableCJProgramStage(stage: GeneratedCJProgramStage) {
+  return stage === "%future added value" ? null : stage;
 }
 
-export function cjProgramWarningCopy(code: string | null) {
+export function cjProgramWarningCopy(code: CJProgramWarningCode) {
   switch (code) {
     case "MISSING_ADVERTISER_NAME":
       return "At least one observed feed is missing an advertiser name.";

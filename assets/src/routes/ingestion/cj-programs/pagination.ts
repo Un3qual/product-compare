@@ -80,28 +80,41 @@ export function buildCJProgramPaginationData(
     readonly unmatched: ConnectionPageInfo;
   },
 ) {
-  const programNextCursor = nextPageCursor(program, pagination.after);
-  const unmatchedNextCursor = nextPageCursor(unmatched, pagination.unmatchedAfter);
+  return {
+    program: buildCJProgramPageData(pagination, program),
+    unmatched: buildCJUnmatchedFeedPageData(pagination, unmatched),
+  };
+}
+
+export function buildCJProgramPageData(
+  pagination: Readonly<CJProgramsPagination>,
+  pageInfo: ConnectionPageInfo,
+) {
+  const nextCursor = nextPageCursor(pageInfo, pagination.after);
 
   return {
-    program: {
-      firstHref:
-        program.hasPreviousPage && pagination.after
-          ? cjProgramsPath({ ...pagination, after: null })
-          : null,
-      nextHref: programNextCursor
-        ? cjProgramsPath({ ...pagination, after: programNextCursor })
+    firstHref:
+      pageInfo.hasPreviousPage && pagination.after
+        ? cjProgramsPath({ ...pagination, after: null })
         : null,
-    },
-    unmatched: {
-      firstHref:
-        unmatched.hasPreviousPage && pagination.unmatchedAfter
-          ? cjProgramsPath({ ...pagination, unmatchedAfter: null })
-          : null,
-      nextHref: unmatchedNextCursor
-        ? cjProgramsPath({ ...pagination, unmatchedAfter: unmatchedNextCursor })
+    nextHref: nextCursor ? cjProgramsPath({ ...pagination, after: nextCursor }) : null,
+  };
+}
+
+export function buildCJUnmatchedFeedPageData(
+  pagination: Readonly<CJProgramsPagination>,
+  pageInfo: ConnectionPageInfo,
+) {
+  const nextCursor = nextPageCursor(pageInfo, pagination.unmatchedAfter);
+
+  return {
+    firstHref:
+      pageInfo.hasPreviousPage && pagination.unmatchedAfter
+        ? cjProgramsPath({ ...pagination, unmatchedAfter: null })
         : null,
-    },
+    nextHref: nextCursor
+      ? cjProgramsPath({ ...pagination, unmatchedAfter: nextCursor })
+      : null,
   };
 }
 

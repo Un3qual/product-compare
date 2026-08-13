@@ -155,11 +155,10 @@ test("maps mixed-feed warning codes to truthful any-feed copy", () => {
   expect(cjProgramWarningCopy("NON_ENGLISH_LANGUAGE")).toBe(
     "At least one observed feed is not marked as English.",
   );
-  expect(cjProgramWarningCopy("UNKNOWN")).toBeNull();
+  expect(cjProgramWarningCopy("%future added value")).toBeNull();
 });
 
-test("does not relabel future or unknown Relay enum values as New", () => {
+test("does not relabel Relay future enum values as New", () => {
   expect(cjProgramStageLabel("%future added value")).toBeNull();
-  expect(cjProgramStageLabel("RETIRED")).toBeNull();
   expect(cjProgramWarningCopy("%future added value")).toBeNull();
 });

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<5529df142518bfaaee9e3a78e238cb3d>>
+ * @generated SignedSource<<b2bc7369ce3ce235f6a8b34396683602>>
  * @lightSyntaxTransform
  */
 
@@ -11,7 +11,7 @@ import { ReaderFragment } from 'relay-runtime';
 export type CJProgramStage = "ACCEPTED" | "APPLIED" | "CONSIDERING" | "DECLINED" | "NEW" | "NOT_PURSUING" | "SELECTED" | "%future added value";
 export type CJProgramWarningCode = "MISSING_ADVERTISER_NAME" | "MISSING_PRODUCT_COUNT" | "NON_ENGLISH_LANGUAGE" | "NON_USD_CURRENCY" | "NON_US_MARKET" | "%future added value";
 import { FragmentRefs } from "relay-runtime";
-export type CJProgramRow_program$data = {
+export type ProgramLifecycleRow_program$data = {
   readonly advertiserId: string;
   readonly advertiserName: string | null;
   readonly feedCount: number | null;
@@ -20,18 +20,18 @@ export type CJProgramRow_program$data = {
   readonly note: string | null;
   readonly stage: CJProgramStage;
   readonly warningCodes: ReadonlyArray<CJProgramWarningCode>;
-  readonly " $fragmentType": "CJProgramRow_program";
+  readonly " $fragmentType": "ProgramLifecycleRow_program";
 };
-export type CJProgramRow_program$key = {
-  readonly " $data"?: CJProgramRow_program$data;
-  readonly " $fragmentSpreads": FragmentRefs<"CJProgramRow_program">;
+export type ProgramLifecycleRow_program$key = {
+  readonly " $data"?: ProgramLifecycleRow_program$data;
+  readonly " $fragmentSpreads": FragmentRefs<"ProgramLifecycleRow_program">;
 };
 
 const node: ReaderFragment = {
   "argumentDefinitions": [],
   "kind": "Fragment",
   "metadata": null,
-  "name": "CJProgramRow_program",
+  "name": "ProgramLifecycleRow_program",
   "selections": [
     {
       "alias": null,
@@ -94,6 +94,6 @@ const node: ReaderFragment = {
   "abstractKey": null
 };
 
-(node as any).hash = "6ef1b97ec06b828e768df319f36a5d57";
+(node as any).hash = "d25b97d95e681814ad717ca896b12092";
 
 export default node;

@@ -1,11 +1,11 @@
 import { create, props } from "@stylexjs/stylex";
 import { graphql, useFragment } from "react-relay";
-import type { CJFeedRow_feed$key } from "$generated/CJFeedRow_feed.graphql";
+import type { FeedFactsRow_feed$key } from "$generated/FeedFactsRow_feed.graphql";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { formatCJDateTime, formatFeedProductCount } from "./cj-program-data";
+import { formatCJDateTime, formatFeedProductCount } from "../cj-program-data";
 
 const cjFeedFragment = graphql`
-  fragment CJFeedRow_feed on MerchantFeedCandidate {
+  fragment FeedFactsRow_feed on MerchantFeedCandidate {
     id
     providerFeedId
     advertiserName
@@ -40,11 +40,11 @@ const styles = create({
   },
 });
 
-export function CJFeedRow({
+export function FeedFactsRow({
   feed: feedRef,
   showAdvertiserName = false,
 }: {
-  feed: CJFeedRow_feed$key;
+  feed: FeedFactsRow_feed$key;
   showAdvertiserName?: boolean;
 }) {
   const feed = useFragment(cjFeedFragment, feedRef);
