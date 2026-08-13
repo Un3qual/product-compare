@@ -43,6 +43,23 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 - Completed lanes do not stay in this queue. Their history remains in the lane
   work doc and dated plan archive.
 
+## Active Work
+
+### Frontend Inferred Type Simplification
+
+Status: active
+Owner: current detached worktree
+Lane: Frontend inferred type simplification
+Batch outcome: The full frontend relies on inference and Relay-generated
+contracts instead of redundant annotations, recreated response schemas, and
+generic route helper files, without weakening real boundary validation.
+Current action: Inventory type declarations, explicit annotations, generated
+Relay duplication, and root-level route helpers before refactoring.
+Owned paths:
+
+- `assets/src/**`, generated Relay artifacts, and focused frontend tests.
+- `docs/work/frontend-inferred-type-simplification.md`.
+
 ## Ready Work
 
 ### 1. Comparison And Authentication Continuity
