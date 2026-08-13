@@ -4,7 +4,7 @@ import {
   buildComparePathFromSlugs,
   selectedCompareSlugsAfterAdding,
   type CompareSpecMode,
-} from "./paths";
+} from "../paths";
 import { nextPageCursor } from "$relay/pagination";
 
 export type ComparePickerProduct = NonNullable<

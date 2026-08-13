@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 import { Button } from "$ui/primitives/Button";
 import { tokens } from "$ui/theme/tokens.stylex";
 import type { CompareProductSummary, CompareSpecMode } from "../compare-route-data";
-import { CompareProductPickerBoundary } from "../CompareProductPickerBoundary";
+import { CompareProductPickerBoundary } from "../picker/CompareProductPickerBoundary";
+import { ShareComparisonControl } from "../sharing/ShareComparisonControl";
 import { CompareSelectionTray } from "../CompareSelectionTray";
-import { ShareComparisonControl } from "../ShareComparisonControl";
 import { buildComparePathAfterRemovingSlugIndex, buildComparePathFromSlugs } from "../paths";
 
 const styles = create({

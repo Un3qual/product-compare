@@ -9,7 +9,7 @@ import {
 } from "$relay/mutation-errors";
 import { nextPageCursor } from "$relay/pagination";
 import { parseGraphQLDateTime } from "$relay/scalars";
-import { apiTokenIsActive } from "./api-token-status";
+import { apiTokenIsActive } from "./rows/api-token-status";
 
 export type ApiTokenStatus = "active" | "revoked" | "all";
 

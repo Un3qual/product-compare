@@ -11,9 +11,9 @@ import {
   TableRow,
 } from "$ui/primitives/Table";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { productOffersPath } from "../offers/paths";
-import type { CompareProductSummary, CompareRouteLoaderData } from "./compare-route-data";
-import { buildDecisionSummaryMetricRows } from "./live/decision-summary";
+import { productOffersPath } from "../../offers/paths";
+import type { CompareProductSummary, CompareRouteLoaderData } from "../compare-route-data";
+import { buildDecisionSummaryMetricRows } from "./decision-summary";
 
 type OfferContexts = Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"];
 

@@ -11,8 +11,8 @@ import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import {
   publishComparisonSnapshotMutation,
   revokeComparisonSnapshotMutation,
-} from "../../../src/routes/compare/ComparisonSharingOperations";
-import { ShareComparisonControl } from "../../../src/routes/compare/ShareComparisonControl";
+} from "../../../src/routes/compare/sharing/ComparisonSharingOperations";
+import { ShareComparisonControl } from "../../../src/routes/compare/sharing/ShareComparisonControl";
 import {
   SharedComparisonRoute,
   sharedComparisonLoader,

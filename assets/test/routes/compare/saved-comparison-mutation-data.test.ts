@@ -3,7 +3,7 @@ import {
   SAVED_COMPARISON_SUCCESS_MESSAGE,
   buildSavedComparisonSetMutationInput,
   resolveSavedComparisonSetMutationOutcome,
-} from "../../../src/routes/compare/saved-comparison-mutation-data";
+} from "../../../src/routes/compare/saved/saved-comparison-mutation";
 
 const MUTATION_ERROR = {
   code: "INVALID_ARGUMENT",

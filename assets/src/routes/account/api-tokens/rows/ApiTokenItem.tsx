@@ -1,19 +1,17 @@
-import { type FormEvent, useId, useRef } from "react";
+import type { FormEvent } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { graphql, useFragment } from "react-relay";
 import type { ApiTokenItem_token$key } from "$generated/ApiTokenItem_token.graphql";
 import { StatusBadge } from "$ui/components/status/StatusBadge";
-import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
-import { Button } from "$ui/primitives/Button";
-import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { ApiTokenExpiryField } from "./ApiTokenExpiryField";
 import {
   buildApiTokenActionPolicy,
   buildApiTokenDisplayData,
   summarizeMutationApiToken,
   type ApiTokenRecord,
-} from "./api-token-route-data";
+} from "../api-token-lifecycle";
+import { RevokeApiTokenAction } from "../revocation/RevokeApiTokenAction";
+import { RotateApiTokenForm } from "../rotation/RotateApiTokenForm";
 
 const apiTokenItemFragment = graphql`
   fragment ApiTokenItem_token on ApiToken {
@@ -93,13 +91,6 @@ const styles = create({
     color: tokens.textSecondary,
     fontSize: "0.9rem",
     margin: 0,
-  },
-  rotateForm: {
-    backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--pc-radius-medium)",
-    display: "grid",
-    gap: "0.75rem",
-    padding: "0.9rem",
   },
 });
 
@@ -233,51 +224,22 @@ function ApiTokenActions({
   onRotateSubmit: (event: FormEvent<HTMLFormElement>) => void;
   token: ApiTokenRecord;
 }) {
-  const rotateExpiresAtInputRef = useRef<HTMLInputElement>(null);
-  const rotateExpiresAtPresetInputRef = useRef<HTMLInputElement>(null);
-  const rotateLabelInputId = useId();
-  const rotateLabelId = `${rotateLabelInputId}-label`;
-
   return (
     <>
       {actionPolicy.rotate.visible ? (
-        <form
-          aria-label={`Rotate ${displayLabel} API token`}
+        <RotateApiTokenForm
+          copy={actionPolicy.rotate.copy}
+          disabled={actionPolicy.rotate.disabled}
+          displayLabel={displayLabel}
           onSubmit={onRotateSubmit}
-          {...props(styles.rotateForm)}
-        >
-          <div>
-            <span id={rotateLabelId}>{`Replacement label for ${displayLabel}`}</span>
-            <Input
-              aria-labelledby={rotateLabelId}
-              autoComplete="off"
-              id={rotateLabelInputId}
-              name="label"
-              type="text"
-            />
-          </div>
-          <ApiTokenExpiryField
-            inputLabel={`Replacement expiry for ${displayLabel}`}
-            inputRef={rotateExpiresAtInputRef}
-            presetInputRef={rotateExpiresAtPresetInputRef}
-          />
-          <Button disabled={actionPolicy.rotate.disabled} type="submit">
-            {actionPolicy.rotate.copy}
-          </Button>
-        </form>
+        />
       ) : null}
       {actionPolicy.revoke.visible ? (
-        <DestructiveActionDialog
-          confirmLabel="Revoke token"
-          description={`Revoking ${displayLabel} will stop integrations that use this API token.`}
+        <RevokeApiTokenAction
+          copy={actionPolicy.revoke.copy}
           disabled={actionPolicy.revoke.disabled}
-          onConfirm={() => onRevoke(token.id)}
-          title="Revoke this API token?"
-          trigger={
-            <Button disabled={actionPolicy.revoke.disabled} variant="destructive" type="button">
-              {actionPolicy.revoke.copy}
-            </Button>
-          }
+          displayLabel={displayLabel}
+          onRevoke={() => onRevoke(token.id)}
         />
       ) : null}
     </>

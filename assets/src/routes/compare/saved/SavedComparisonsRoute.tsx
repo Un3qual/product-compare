@@ -12,9 +12,9 @@ import {
 } from "$relay/route-preload";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { Button } from "$ui/primitives/Button";
-import { CompareShell } from "./CompareShell";
+import { CompareShell } from "../CompareShell";
 import { SavedComparisonSetList } from "./SavedComparisonSetList";
-import { buildSavedComparisonsPagination } from "./saved-comparisons-route-data";
+import { buildSavedComparisonsPagination } from "./saved-comparisons-route";
 
 const SAVED_COMPARISON_SETS_PAGE_SIZE = 20;
 const SAVED_COMPARISONS_AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED"]);

@@ -2,7 +2,10 @@ import { type ChangeEvent, type FormEvent, useEffect, useId, useState } from "re
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLocation, useOutletContext } from "react-router-dom";
 import { useMutation } from "react-relay";
-import type { AlertOperationsCreatePriceWatchMutation } from "$generated/AlertOperationsCreatePriceWatchMutation.graphql";
+import type {
+  AlertOperationsCreatePriceWatchMutation,
+  CreatePriceWatchInput,
+} from "$generated/AlertOperationsCreatePriceWatchMutation.graphql";
 import { Button } from "$ui/primitives/Button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
 import {
@@ -15,13 +18,12 @@ import {
 import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
 import { commitRouteMutationPromise } from "$relay/mutations";
-import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
-  buildCreatePriceWatchInput,
-  getPriceWatchAmountFieldData,
-  resolveCreatePriceWatchMutationMessage,
-  type PriceWatchRuleType,
-} from "./price-watch-data";
+  DEFAULT_MUTATION_ERROR_MESSAGE,
+  hasGraphQLErrors,
+  mutationErrorMessage,
+  type MutationGraphQLErrors,
+} from "$relay/mutation-errors";
 import { createPriceWatchMutation } from "../account/alerts/AlertOperations";
 import type { RootViewer } from "../root/viewer";
 import {
@@ -68,7 +70,9 @@ const PRICE_WATCH_RULE_OPTIONS = [
     label: "A qualifying offer becomes available",
     value: "NEWLY_AVAILABLE",
   },
-];
+] as const;
+
+type SupportedPriceWatchRuleType = (typeof PRICE_WATCH_RULE_OPTIONS)[number]["value"];
 
 export function PriceWatchControl({ productId }: { productId: string }) {
   return <PriceWatchForm key={productId} productId={productId} />;
@@ -86,7 +90,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
   const amountId = useId();
   const currencyId = useId();
   const ruleId = useId();
-  const [ruleType, setRuleType] = useState<PriceWatchRuleType>(
+  const [ruleType, setRuleType] = useState<SupportedPriceWatchRuleType>(
     restoredIntent?.ruleType ?? "TARGET_PRICE",
   );
   const [amount, setAmount] = useState(restoredIntent?.amount ?? "");
@@ -194,13 +198,13 @@ function PriceWatchRuleField({
   value,
 }: {
   id: string;
-  onChange: (value: PriceWatchRuleType) => void;
-  value: PriceWatchRuleType;
+  onChange: (value: SupportedPriceWatchRuleType) => void;
+  value: SupportedPriceWatchRuleType;
 }) {
   return (
     <Label htmlFor={id} style={styles.field}>
       Alert when
-      <Select<PriceWatchRuleType>
+      <Select<SupportedPriceWatchRuleType>
         items={PRICE_WATCH_RULE_OPTIONS}
         name="ruleType"
         onValueChange={(nextValue) => {
@@ -221,6 +225,49 @@ function PriceWatchRuleField({
       </Select>
     </Label>
   );
+}
+
+function buildCreatePriceWatchInput({
+  amount: rawAmount,
+  currency: rawCurrency,
+  productId,
+  ruleType,
+}: {
+  amount: string;
+  currency: string;
+  productId: string;
+  ruleType: SupportedPriceWatchRuleType;
+}): CreatePriceWatchInput {
+  const amount = rawAmount.trim();
+  const currency = rawCurrency.trim().toUpperCase();
+
+  return {
+    productId,
+    ruleType,
+    currency,
+    ...(ruleType === "TARGET_PRICE" ? { targetAmount: amount } : {}),
+    ...(ruleType === "PERCENTAGE_DROP" ? { percentageDrop: amount } : {}),
+  };
+}
+
+function resolveCreatePriceWatchMutationMessage(
+  payload: AlertOperationsCreatePriceWatchMutation["response"]["createPriceWatch"],
+  graphQLErrors: MutationGraphQLErrors = null,
+) {
+  return payload.watch && !hasGraphQLErrors(graphQLErrors)
+    ? "Watch created. New qualifying changes will appear in your inbox."
+    : mutationErrorMessage(payload.errors, graphQLErrors);
+}
+
+function getPriceWatchAmountFieldData(ruleType: SupportedPriceWatchRuleType) {
+  switch (ruleType) {
+    case "TARGET_PRICE":
+      return { visible: true, label: "Target landed price" } as const;
+    case "PERCENTAGE_DROP":
+      return { visible: true, label: "Percentage drop" } as const;
+    default:
+      return { visible: false, label: null } as const;
+  }
 }
 
 function PriceWatchAmountField({

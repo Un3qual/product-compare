@@ -14,7 +14,7 @@ import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
 import { commitRouteMutationPromise } from "$relay/mutations";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
-import type { CompareProductSummary } from "./compare-route-data";
+import type { CompareProductSummary } from "../compare-route-data";
 import {
   comparisonSharingOperationsQuery,
   publishComparisonSnapshotMutation,
@@ -23,7 +23,7 @@ import {
 import {
   recommendationProfileFromUrl,
   type RecommendationProfile,
-} from "./recommendation-route-data";
+} from "../recommendation-route-data";
 import {
   appendComparisonSnapshotPage,
   buildComparisonSnapshotPublishInput,
@@ -39,7 +39,7 @@ import {
   snapshotFromNode,
   type ComparisonSnapshotState,
   type PublishedComparisonSnapshot,
-} from "./share-comparison-data";
+} from "./share-comparison";
 
 const SNAPSHOT_PAGE_SIZE = 20;
 

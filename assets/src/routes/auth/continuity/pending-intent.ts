@@ -74,7 +74,7 @@ export function consumePendingIntent(
 export function safeRelativeReturnPath(value: string | null | undefined, origin = browserOrigin()) {
   if (!value || !origin) return null;
   if (!value.startsWith("/") || value.startsWith("//")) return null;
-  if (/[\\\u0000-\u001f\u007f]/u.test(value)) return null;
+  if (hasUnsafeReturnPathCharacter(value)) return null;
 
   try {
     const url = new URL(value, origin);
@@ -86,6 +86,15 @@ export function safeRelativeReturnPath(value: string | null | undefined, origin 
   } catch {
     return null;
   }
+}
+
+function hasUnsafeReturnPathCharacter(value: string) {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (character === "\\" || codePoint <= 0x1f || codePoint === 0x7f) return true;
+  }
+
+  return false;
 }
 
 export function pendingIntentReturnPath() {

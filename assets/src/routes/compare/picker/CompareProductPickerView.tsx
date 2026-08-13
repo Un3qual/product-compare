@@ -5,7 +5,7 @@ import { DataList, DataListItem } from "$ui/components/data/DataList";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
-import type { ComparePickerOption } from "./compare-picker-data";
+import type { ComparePickerOption } from "./compare-picker";
 
 const styles = create({
   picker: {

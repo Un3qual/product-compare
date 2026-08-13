@@ -5,14 +5,14 @@ import { graphql, useLazyLoadQuery } from "react-relay";
 import type { RecommendationPanelQuery } from "$generated/RecommendationPanelQuery.graphql";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
-import type { CompareSpecMode } from "./compare-route-data";
+import type { CompareSpecMode } from "../compare-route-data";
 import {
   buildRecommendationQueryInput,
   buildRecommendationProfilePath,
   recommendationProfileFromUrl,
   type RecommendationProfile,
-} from "./recommendation-route-data";
-import { getRecommendationViewData } from "./recommendation-view-data";
+} from "../recommendation-route-data";
+import { getRecommendationViewData } from "../recommendation-view-data";
 
 const compareRecommendationQuery = graphql`
   query RecommendationPanelQuery($slugs: [String!]!, $profile: RecommendationProfile!) {

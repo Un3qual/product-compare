@@ -13,10 +13,10 @@ import {
 import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader,
-} from "../../../src/routes/compare/SavedComparisonsRoute";
+} from "../../../src/routes/compare/saved/SavedComparisonsRoute";
 import { RouteErrorBoundary } from "../../../src/routes/compare/RouteErrorBoundary";
 import { CompareRoute, compareLoader } from "../../../src/routes/compare/CompareRoute";
-import { CompareProductPickerView } from "../../../src/routes/compare/CompareProductPickerView";
+import { CompareProductPickerView } from "../../../src/routes/compare/picker/CompareProductPickerView";
 import { SpecificationMatrix } from "../../../src/routes/compare/live/SpecificationMatrix";
 import {
   buildComparePathFromSlugs,
@@ -24,7 +24,7 @@ import {
   selectedCompareSlugsAfterAdding,
   selectedCompareSlugsFromSearch,
 } from "../../../src/routes/compare/paths";
-import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
+import { SavedComparisonsRoute } from "../../../src/routes/compare/saved/SavedComparisonsRoute";
 import {
   buildAbortableRequest,
   buildCompareLoaderArgs,

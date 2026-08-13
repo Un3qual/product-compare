@@ -13,7 +13,7 @@ export const accountRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary title="Saved comparisons" />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { SavedComparisonsRoute, savedComparisonsLoader } =
-        await import("../routes/compare/SavedComparisonsRoute");
+        await import("../routes/compare/saved/SavedComparisonsRoute");
       return { Component: SavedComparisonsRoute, loader: savedComparisonsLoader };
     }),
   },

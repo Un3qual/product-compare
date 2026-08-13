@@ -13,7 +13,7 @@ import {
   resolveRevokeApiTokenMutationOutcome,
   summarizeMutationApiToken,
   upsertApiTokenSummary,
-} from "../../../../src/routes/account/api-tokens/api-token-route-data";
+} from "../../../../src/routes/account/api-tokens/api-token-lifecycle";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../../src/relay/mutation-errors";
 
 const SERVER_TOKEN = {

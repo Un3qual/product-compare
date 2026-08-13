@@ -1,9 +1,9 @@
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../../src/relay/mutation-errors";
+import { resolveMarkAlertReadMutationError } from "../../../../src/routes/account/alerts/alert-rows/alert-event-mutation-result";
 import {
   resolveDeletePriceWatchMutationError,
-  resolveMarkAlertReadMutationError,
   resolveTogglePriceWatchMutationError,
-} from "../../../../src/routes/account/alerts/alerts-mutation-data";
+} from "../../../../src/routes/account/alerts/watches/price-watch-mutation-results";
 
 const MUTATION_ERROR = {
   code: "INVALID_ARGUMENT",

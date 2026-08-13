@@ -1,9 +1,9 @@
 import type { CompareRouteQuery$data } from "$generated/CompareRouteQuery.graphql";
-import type { CompareRouteLoaderData } from "./compare-route-data";
+import type { CompareRouteLoaderData } from "../compare-route-data";
 import { DecisionSummary } from "./DecisionSummary";
 import { RecommendationPanel } from "./RecommendationPanel";
-import { ComparisonModeTabs } from "./live/ComparisonModeTabs";
-import { ProductDecisionSummaries } from "./live/ProductDecisionSummaries";
+import { ComparisonModeTabs } from "./ComparisonModeTabs";
+import { ProductDecisionSummaries } from "./ProductDecisionSummaries";
 
 export function CompareProductList({
   fragmentProducts,

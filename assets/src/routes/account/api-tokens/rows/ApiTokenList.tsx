@@ -5,7 +5,7 @@ import {
   applyApiTokenUpdates,
   type ApiTokenRecord,
   type ApiTokenStatus,
-} from "./api-token-route-data";
+} from "../api-token-lifecycle";
 
 const styles = create({
   list: {

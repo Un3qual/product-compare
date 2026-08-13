@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   buildSavedComparisonReopenPath,
   buildSavedComparisonsPagination,
-} from "../../../src/routes/compare/saved-comparisons-route-data";
+} from "../../../src/routes/compare/saved/saved-comparisons-route";
 
 describe("buildSavedComparisonReopenPath", () => {
   test("builds a comparison path for an empty product selection", () => {

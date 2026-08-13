@@ -27,8 +27,8 @@ import {
   upsertMapValue,
 } from "$frontend/state/immutable-collections";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
-import { ApiTokenList, RelayApiTokenList } from "./ApiTokenList";
-import { ApiTokenControls, OneTimeApiToken } from "./ApiTokenControls";
+import { ApiTokenControls, OneTimeApiToken } from "./create/ApiTokenControls";
+import { ApiTokenList, RelayApiTokenList } from "./rows/ApiTokenList";
 import {
   createApiTokenMutation,
   revokeApiTokenMutation,
@@ -48,8 +48,8 @@ import {
   upsertApiTokenSummaryMap,
   type ApiTokenRecord,
   type ApiTokenStatus,
-} from "./api-token-route-data";
-import { apiTokenIsActive } from "./api-token-status";
+} from "./api-token-lifecycle";
+import { apiTokenIsActive } from "./rows/api-token-status";
 
 export type ApiTokenQueryDescriptor = RelayRouteQueryDescriptor<ApiTokensRouteQuery["variables"]>;
 export type ApiTokensRouteLoaderData =
@@ -151,10 +151,7 @@ export async function apiTokensLoader({
   }
 }
 
-function apiTokensQueryVariables(
-  tokenStatus: ApiTokenStatus,
-  after: string | null,
-) {
+function apiTokensQueryVariables(tokenStatus: ApiTokenStatus, after: string | null) {
   return {
     first: API_TOKENS_PAGE_SIZE,
     status: API_TOKEN_STATUS_VARIABLES[tokenStatus],

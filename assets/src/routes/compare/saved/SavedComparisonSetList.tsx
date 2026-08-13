@@ -27,11 +27,11 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { addSetValue, removeSetValue } from "$frontend/state/immutable-collections";
 import { commitRouteMutation } from "$relay/mutations";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
-import { resolveDeleteSavedComparisonSetMutationOutcome } from "./saved-comparison-delete-mutation-data";
+import { resolveDeleteSavedComparisonSetMutationOutcome } from "./saved-comparison-delete";
 import {
   buildSavedComparisonReopenPath,
   type SavedComparisonsPagination,
-} from "./saved-comparisons-route-data";
+} from "./saved-comparisons-route";
 import {
   buildSavedComparisonsViewState,
   savedComparisonSortModeFromValue,

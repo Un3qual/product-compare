@@ -5,7 +5,7 @@ import {
   type SavedComparisonsViewInput,
   savedComparisonSortModeFromValue,
   type SavedComparisonSortMode,
-} from "../../../src/routes/compare/saved-view-state";
+} from "../../../src/routes/compare/saved/saved-view-state";
 
 const savedSets: SavedComparisonSetSummary[] = [
   {

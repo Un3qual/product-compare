@@ -1,5 +1,5 @@
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
-import { resolveDeleteSavedComparisonSetMutationOutcome } from "../../../src/routes/compare/saved-comparison-delete-mutation-data";
+import { resolveDeleteSavedComparisonSetMutationOutcome } from "../../../src/routes/compare/saved/saved-comparison-delete";
 
 const MUTATION_ERROR = {
   code: "BAD_USER_INPUT",

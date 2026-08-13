@@ -12,8 +12,8 @@ import {
   isComparePickerEmpty,
   nextComparePickerPageCursor,
   type ComparePickerProduct,
-} from "./compare-picker-data";
-import type { CompareSpecMode } from "./paths";
+} from "./compare-picker";
+import type { CompareSpecMode } from "../paths";
 import { CompareProductPickerView } from "./CompareProductPickerView";
 
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;

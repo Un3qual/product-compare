@@ -9,7 +9,7 @@ import { ApiTokenExpiryField } from "./ApiTokenExpiryField";
 import {
   buildApiTokenStatusFilterNavigationData,
   type ApiTokenStatus,
-} from "./api-token-route-data";
+} from "../api-token-lifecycle";
 
 const styles = create({
   createForm: {

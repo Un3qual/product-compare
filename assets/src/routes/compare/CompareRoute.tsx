@@ -40,15 +40,15 @@ import {
   MAX_COMPARE_PRODUCTS,
   type CompareRouteLoaderData,
 } from "./compare-route-data";
-import { CompareProductList } from "./CompareProductList";
-import { CompareProductPickerBoundary } from "./CompareProductPickerBoundary";
+import { CompareProductList } from "./live/CompareProductList";
+import { CompareProductPickerBoundary } from "./picker/CompareProductPickerBoundary";
 import { selectedCompareSlugsFromSearch } from "./paths";
 import { ComparisonToolbar } from "./live/ComparisonToolbar";
 import { ProductDecisionSummaries } from "./live/ProductDecisionSummaries";
 import {
   buildSavedComparisonSetMutationInput,
   resolveSavedComparisonSetMutationOutcome,
-} from "./saved-comparison-mutation-data";
+} from "./saved/saved-comparison-mutation";
 
 export {
   recommendationProfileFromUrl,

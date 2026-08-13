@@ -1,12 +1,11 @@
 import type { AlertsRoute_watch$data } from "$generated/AlertsRoute_watch.graphql";
-import { graphQLDateTimeLabel } from "$relay/scalars";
 
 export type PriceWatchViewSource = Pick<
   AlertsRoute_watch$data,
   "baselineLandedPrice" | "currency" | "enabled" | "percentageDrop" | "ruleType" | "targetAmount"
 >;
 
-const ALERT_RULE_LABELS: Readonly<Record<string, string>> = {
+const PRICE_WATCH_RULE_LABELS: Readonly<Record<string, string>> = {
   TARGET_PRICE: "Target reached",
   PERCENTAGE_DROP: "Price drop reached",
   BACK_IN_STOCK: "Back in stock",
@@ -24,10 +23,6 @@ export function buildAlertsViewData<TAlert, TWatch extends Pick<PriceWatchViewSo
   };
 }
 
-export function alertRuleLabel(ruleType: string) {
-  return ALERT_RULE_LABELS[ruleType] ?? "Watch matched";
-}
-
 export function priceWatchLabel(watch: PriceWatchViewSource) {
   if (watch.ruleType === "TARGET_PRICE") {
     return `Target ${watch.targetAmount ?? "—"} ${watch.currency}`;
@@ -37,7 +32,7 @@ export function priceWatchLabel(watch: PriceWatchViewSource) {
     return `${watch.percentageDrop ?? "—"}% below ${watch.baselineLandedPrice ?? "baseline"} ${watch.currency}`;
   }
 
-  return alertRuleLabel(watch.ruleType);
+  return PRICE_WATCH_RULE_LABELS[watch.ruleType] ?? "Watch matched";
 }
 
 export function priceWatchToggleControl(watch: PriceWatchViewSource) {
@@ -45,8 +40,4 @@ export function priceWatchToggleControl(watch: PriceWatchViewSource) {
     nextEnabled: !watch.enabled,
     label: watch.enabled ? "Pause" : "Resume",
   };
-}
-
-export function observationDateLabel(value: string) {
-  return graphQLDateTimeLabel(value) ?? value;
 }

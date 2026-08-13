@@ -5,17 +5,19 @@ import type { VerifyEmailRouteMutation } from "$generated/VerifyEmailRouteMutati
 import { commitRouteMutationPromise, type RouteMutationCommit } from "$relay/mutations";
 import {
   type AuthActionResult,
+  invalidTokenMutationError,
   isSuccessfulActionResult,
   type MutationError,
   resolveActionMutationResult,
   transportMutationErrors,
 } from "./errors";
 import { AuthFormShell } from "./AuthFormShell";
-import {
-  buildVerifyEmailRequestData,
-  VERIFY_EMAIL_MISSING_TOKEN_ERROR,
-  VERIFY_EMAIL_SUCCESS_MESSAGE,
-} from "./verify-email-data";
+
+export const VERIFY_EMAIL_MISSING_TOKEN_ERROR = invalidTokenMutationError(
+  "This verification link is missing or invalid.",
+);
+
+export const VERIFY_EMAIL_SUCCESS_MESSAGE = "Your email address is verified.";
 
 const verifyEmailMutation = graphql`
   mutation VerifyEmailRouteMutation($token: String!) {
@@ -111,6 +113,16 @@ export function VerifyEmailRoute() {
 
 export function resetVerifyEmailRequestCache() {
   verificationRequests.clear();
+}
+
+export function buildVerifyEmailRequestData(rawToken: string | null) {
+  const token = rawToken?.trim() ?? "";
+
+  return {
+    initialErrors: token ? [] : [VERIFY_EMAIL_MISSING_TOKEN_ERROR],
+    isLoading: Boolean(token),
+    token,
+  };
 }
 
 function verifyEmailOnce(token: string, commitVerifyEmail: VerifyEmailCommit) {

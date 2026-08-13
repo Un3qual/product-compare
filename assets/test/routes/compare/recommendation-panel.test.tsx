@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { useLazyLoadQuery } from "react-relay";
-import { RecommendationPanel } from "../../../src/routes/compare/RecommendationPanel";
+import { RecommendationPanel } from "../../../src/routes/compare/live/RecommendationPanel";
 import {
   recommendationProfileFromUrl,
   shouldRevalidateCompareLoader,
