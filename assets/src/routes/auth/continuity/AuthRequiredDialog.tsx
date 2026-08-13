@@ -38,7 +38,7 @@ export function AuthRequiredDialog({
   const query = new URLSearchParams({ returnTo: intent.returnTo, intent: intent.kind }).toString();
   const chooseAuthPath = (path: "/auth/login" | "/auth/register") => {
     writePendingIntent(intent);
-    void navigate(`${path}?${query}`);
+    navigate(`${path}?${query}`);
   };
 
   return (
