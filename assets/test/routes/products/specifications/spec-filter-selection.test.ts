@@ -44,27 +44,47 @@ test("recovers from invalid browser storage at the storage boundary", () => {
   expect(readSpecFilterDraft(sessionStorage, "product-a")).toEqual([]);
 });
 
+test("falls back when browser storage reads or writes throw", () => {
+  const unavailableStorage = new Proxy(sessionStorage, {
+    get(target, property) {
+      if (property === "getItem" || property === "setItem") {
+        return () => {
+          throw new DOMException("Storage is unavailable", "SecurityError");
+        };
+      }
+
+      return Reflect.get(target, property, target);
+    },
+  });
+
+  expect(readSpecFilterDraft(unavailableStorage, "product-a")).toEqual([]);
+  expect(() => writeSpecFilterDraft(unavailableStorage, "product-a", selections)).not.toThrow();
+});
+
 test("maps multiple exact and numeric modes into one shareable catalog URL", () => {
-  const path = catalogPathForSpecSelections([
-    ...selections,
-    {
-      attributeId: "attribute-depth",
-      code: "depth",
-      displayName: "Depth",
-      kind: "numeric",
-      mode: "at_most",
-      unitSymbol: "mm",
-      value: "42.5",
-    },
-    {
-      attributeId: "attribute-hdr",
-      code: "hdr",
-      displayName: "HDR",
-      kind: "boolean",
-      mode: "same",
-      value: true,
-    },
-  ]);
+  const path = catalogPathForSpecSelections(
+    [
+      ...selections,
+      {
+        attributeId: "attribute-depth",
+        code: "depth",
+        displayName: "Depth",
+        kind: "numeric",
+        mode: "at_most",
+        unitSymbol: "mm",
+        value: "42.5",
+      },
+      {
+        attributeId: "attribute-hdr",
+        code: "hdr",
+        displayName: "HDR",
+        kind: "boolean",
+        mode: "same",
+        value: true,
+      },
+    ],
+    ["first-product", "second-product"],
+  );
   const url = new URL(path, "https://app.example.com");
 
   expect(url.pathname).toBe("/products");
@@ -73,20 +93,24 @@ test("maps multiple exact and numeric modes into one shareable catalog URL", () 
   expect(url.searchParams.has("numeric.attribute-refresh.max")).toBe(false);
   expect(url.searchParams.get("numeric.attribute-depth.max")).toBe("42.5");
   expect(url.searchParams.get("boolean.attribute-hdr")).toBe("true");
+  expect(url.searchParams.getAll("slug")).toEqual(["first-product", "second-product"]);
 });
 
 test("maps Same numeric selection to both inclusive bounds", () => {
-  const path = catalogPathForSpecSelections([
-    {
-      attributeId: "attribute-weight",
-      code: "weight",
-      displayName: "Weight",
-      kind: "numeric",
-      mode: "same",
-      unitSymbol: "kg",
-      value: "2.5",
-    },
-  ]);
+  const path = catalogPathForSpecSelections(
+    [
+      {
+        attributeId: "attribute-weight",
+        code: "weight",
+        displayName: "Weight",
+        kind: "numeric",
+        mode: "same",
+        unitSymbol: "kg",
+        value: "2.5",
+      },
+    ],
+    [],
+  );
   const search = new URL(path, "https://app.example.com").searchParams;
 
   expect(search.get("numeric.attribute-weight.min")).toBe("2.5");

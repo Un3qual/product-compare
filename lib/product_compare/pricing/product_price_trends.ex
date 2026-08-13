@@ -25,7 +25,7 @@ defmodule ProductCompare.Pricing.ProductPriceTrends do
       rows
       |> Enum.group_by(&{&1.product_id, &1.currency})
       |> Enum.reduce(%{}, fn {{product_id, currency}, currency_rows}, trends ->
-        case currency_series(currency, currency_rows, first_date, DateTime.to_date(as_of)) do
+        case currency_series(currency, currency_rows, first_date, as_of) do
           nil -> trends
           series -> Map.update(trends, product_id, [series], &[series | &1])
         end
@@ -107,31 +107,35 @@ defmodule ProductCompare.Pricing.ProductPriceTrends do
       }
   end
 
-  defp currency_series(currency, rows, first_date, last_date) do
-    offers =
+  defp currency_series(currency, rows, first_date, as_of) do
+    merchants =
       rows
-      |> Enum.group_by(& &1.merchant_product_id)
-      |> Enum.map(fn {merchant_product_id, observations} ->
+      |> Enum.group_by(& &1.merchant_id)
+      |> Enum.map(fn {merchant_id, observations} ->
         first = hd(observations)
+        offers = Enum.group_by(observations, & &1.merchant_product_id)
 
         %{
-          merchant_id: first.merchant_id,
-          merchant_product_id: merchant_product_id,
+          merchant_id: merchant_id,
+          merchant_product_id: offers |> Map.keys() |> Enum.min(),
           name: first.merchant_name,
-          observations: observations
+          offers: offers
         }
       end)
       |> Enum.filter(
-        &Enum.any?(&1.observations, fn observation -> observation.in_stock != false end)
+        &Enum.any?(&1.offers, fn {_merchant_product_id, observations} ->
+          Enum.any?(observations, fn observation -> observation.in_stock == true end)
+        end)
       )
       |> Enum.sort_by(&{&1.name, &1.merchant_product_id})
 
     {points, _projection_state} =
       first_date
-      |> Date.range(last_date)
-      |> Enum.map_reduce(initial_projection_state(offers), fn date, state ->
-        state = advance_projection_state(state, date)
-        {price_point(currency, date, offers, state.prices), state}
+      |> Date.range(DateTime.to_date(as_of))
+      |> Enum.map_reduce(initial_projection_state(merchants), fn date, state ->
+        checkpoint = projection_checkpoint(date, as_of)
+        state = advance_projection_state(state, checkpoint)
+        {price_point(currency, checkpoint, merchants, state.prices), state}
       end)
 
     points = Enum.reject(points, &is_nil/1)
@@ -141,54 +145,88 @@ defmodule ProductCompare.Pricing.ProductPriceTrends do
     else
       %{
         currency: currency,
-        merchants: Enum.map(offers, &Map.drop(&1, [:observations])),
+        merchants: Enum.map(merchants, &Map.drop(&1, [:offers])),
         points: points
       }
     end
   end
 
-  defp initial_projection_state(offers) do
+  defp initial_projection_state(merchants) do
     %{
-      observations: Map.new(offers, &{&1.merchant_product_id, &1.observations}),
+      observations:
+        Map.new(
+          for merchant <- merchants,
+              {merchant_product_id, observations} <- merchant.offers,
+              do: {merchant_product_id, observations}
+        ),
       prices: %{}
     }
   end
 
-  defp advance_projection_state(state, date) do
+  defp advance_projection_state(state, checkpoint) do
     Enum.reduce(state.observations, state, fn {merchant_product_id, observations}, projection ->
-      {current, remaining} = Enum.split_while(observations, &observed_by?(&1, date))
+      {current, remaining} = Enum.split_while(observations, &observed_by?(&1, checkpoint))
 
       case List.last(current) do
         nil ->
           projection
 
-        %{in_stock: false} ->
-          %{
-            observations: Map.put(projection.observations, merchant_product_id, remaining),
-            prices: Map.delete(projection.prices, merchant_product_id)
-          }
-
-        observation ->
+        %{in_stock: true} = observation ->
           %{
             observations: Map.put(projection.observations, merchant_product_id, remaining),
             prices: Map.put(projection.prices, merchant_product_id, observation.price)
+          }
+
+        _unavailable ->
+          %{
+            observations: Map.put(projection.observations, merchant_product_id, remaining),
+            prices: Map.delete(projection.prices, merchant_product_id)
           }
       end
     end)
   end
 
-  defp observed_by?(observation, date),
-    do: Date.compare(DateTime.to_date(observation.observed_at), date) != :gt
+  defp projection_checkpoint(date, as_of) do
+    end_of_day =
+      date
+      |> Date.add(1)
+      |> DateTime.new!(~T[00:00:00])
+      |> DateTime.add(-1, :microsecond)
 
-  defp price_point(_currency, _date, _offers, prices) when map_size(prices) == 0, do: nil
+    if DateTime.compare(end_of_day, as_of) == :gt, do: as_of, else: end_of_day
+  end
 
-  defp price_point(currency, date, offers, prices) do
+  defp observed_by?(observation, checkpoint),
+    do: DateTime.compare(observation.observed_at, checkpoint) != :gt
+
+  defp price_point(_currency, _checkpoint, _merchants, prices) when map_size(prices) == 0,
+    do: nil
+
+  defp price_point(currency, checkpoint, merchants, prices) do
     merchant_prices =
-      offers
-      |> Enum.flat_map(fn offer ->
-        case Map.fetch(prices, offer.merchant_product_id) do
-          {:ok, price} -> [%{merchant_product_id: offer.merchant_product_id, price: price}]
-          :error -> []
+      merchants
+      |> Enum.flat_map(fn merchant ->
+        candidates =
+          Enum.flat_map(merchant.offers, fn {merchant_product_id, _observations} ->
+            case Map.fetch(prices, merchant_product_id) do
+              {:ok, price} -> [%{merchant_product_id: merchant_product_id, price: price}]
+              :error -> []
+            end
+          end)
+
+        case candidates do
+          [] ->
+            []
+
+          candidates ->
+            contribution = lowest_merchant_price(candidates)
+
+            [
+              %{
+                merchant_product_id: merchant.merchant_product_id,
+                price: contribution.price
+              }
+            ]
         end
       end)
 
@@ -201,7 +239,7 @@ defmodule ProductCompare.Pricing.ProductPriceTrends do
       lowest_merchant_product_id: winner.merchant_product_id,
       lowest_price: winner.price,
       merchant_prices: merchant_prices,
-      observed_at: DateTime.new!(date, ~T[00:00:00])
+      observed_at: checkpoint
     }
   end
 

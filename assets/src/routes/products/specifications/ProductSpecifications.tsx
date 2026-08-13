@@ -74,20 +74,24 @@ const styles = create({
 export function ProductSpecifications({
   attributes,
   productId,
+  selectedCompareSlugs,
 }: {
   attributes: readonly ProductSpecification[];
   productId: string;
+  selectedCompareSlugs: readonly string[];
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selections, setSelections] = useState<SpecFilterSelection[]>([]);
 
   useEffect(() => {
-    setSelections(readSpecFilterDraft(sessionStorage, productId));
+    const storage = availableSessionStorage();
+    setSelections(storage ? readSpecFilterDraft(storage, productId) : []);
   }, [productId]);
 
   const updateSelections = (nextSelections: SpecFilterSelection[]) => {
     setSelections(nextSelections);
-    writeSpecFilterDraft(sessionStorage, productId, nextSelections);
+    const storage = availableSessionStorage();
+    if (storage) writeSpecFilterDraft(storage, productId, nextSelections);
     if (nextSelections.length === 0) setDrawerOpen(false);
   };
 
@@ -142,7 +146,7 @@ export function ProductSpecifications({
       )}
 
       <SpecificationFilterDrawer
-        matchingHref={catalogPathForSpecSelections(selections)}
+        matchingHref={catalogPathForSpecSelections(selections, selectedCompareSlugs)}
         onOpenChange={setDrawerOpen}
         onSelectionsChange={updateSelections}
         open={drawerOpen && selections.length > 0}
@@ -150,6 +154,14 @@ export function ProductSpecifications({
       />
     </section>
   );
+}
+
+function availableSessionStorage() {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
 }
 
 function SpecificationList({

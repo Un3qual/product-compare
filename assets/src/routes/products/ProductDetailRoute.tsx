@@ -259,6 +259,7 @@ function ProductDetail({
                 <ProductSpecifications
                   attributes={product.currentAttributes}
                   productId={product.id}
+                  selectedCompareSlugs={routeData.selectedCompareSlugs}
                 />
               ),
               label: "Specifications",

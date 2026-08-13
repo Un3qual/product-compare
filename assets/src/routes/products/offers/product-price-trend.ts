@@ -38,24 +38,14 @@ export function productPriceChartSeries(
   );
 
   if (mode === "merchants") {
-    return series.merchants.map((merchant) => ({
-      color: colors.get(merchant.merchantProductId) ?? tokens.actionAccent,
-      id: merchant.merchantProductId,
-      label: merchant.name,
-      rows: series.points.flatMap((point) => {
-        const merchantPrice = point.merchantPrices.find(
-          ({ merchantProductId }) => merchantProductId === merchant.merchantProductId,
-        );
-        return merchantPrice
-          ? chartRow(
-              `${merchant.merchantProductId}-${String(point.observedAt)}`,
-              point.observedAt,
-              merchantPrice.price,
-              series.currency,
-            )
-          : [];
-      }),
-    }));
+    return series.merchants.flatMap((merchant) =>
+      merchantChartSegments(
+        series,
+        merchant.merchantProductId,
+        merchant.name,
+        colors.get(merchant.merchantProductId) ?? tokens.actionAccent,
+      ),
+    );
   }
 
   const average = mode === "average";
@@ -84,6 +74,64 @@ export function productPriceChartSeries(
 
 export function merchantNameByProductId(series: ProductPriceTrendCurrency) {
   return new Map(series.merchants.map(({ merchantProductId, name }) => [merchantProductId, name]));
+}
+
+function merchantChartSegments(
+  series: ProductPriceTrendCurrency,
+  merchantProductId: string,
+  label: string,
+  color: string,
+) {
+  const segments: Array<PriceSeriesChartSeries["rows"][number][]> = [];
+  let rows: PriceSeriesChartSeries["rows"][number][] = [];
+  let previousDay: number | null = null;
+
+  const finishSegment = () => {
+    if (rows.length > 0) segments.push(rows);
+    rows = [];
+  };
+
+  for (const point of series.points) {
+    const day = utcDay(point.observedAt);
+    const merchantPrice = point.merchantPrices.find(
+      (price) => price.merchantProductId === merchantProductId,
+    );
+
+    if (!merchantPrice || (previousDay !== null && day !== previousDay + 1)) {
+      finishSegment();
+    }
+
+    if (merchantPrice) {
+      const pointRows = chartRow(
+        `${merchantProductId}-${String(point.observedAt)}`,
+        point.observedAt,
+        merchantPrice.price,
+        series.currency,
+      );
+
+      if (pointRows.length === 0) finishSegment();
+      else rows.push(...pointRows);
+    }
+
+    previousDay = day;
+  }
+
+  finishSegment();
+
+  return segments.map((segmentRows, index) => ({
+    color,
+    id: index === 0 ? merchantProductId : `${merchantProductId}-${index}`,
+    label,
+    rows: segmentRows,
+  }));
+}
+
+function utcDay(value: string) {
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return null;
+
+  const date = new Date(timestamp);
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / 86_400_000;
 }
 
 function chartRow(id: string, observedAtValue: string, priceValue: string, currency: string) {

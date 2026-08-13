@@ -55,7 +55,7 @@ defmodule ProductCompare.Pricing.ProductPriceTrendsTest do
       {beta.id, "80"}
     ])
 
-    assert DateTime.compare(hd(eur.points).observed_at, ~U[2026-06-01 00:00:00Z]) == :eq
+    assert hd(eur.points).observed_at == ~U[2026-06-01 23:59:59.999999Z]
     assert Enum.all?(eur.points, &(&1.currency == "EUR"))
   end
 
@@ -67,6 +67,80 @@ defmodule ProductCompare.Pricing.ProductPriceTrendsTest do
     assert Pricing.product_price_trends([], as_of: @as_of) == %{}
   end
 
+  test "requires confirmed in-stock observations and removes offers with unknown availability" do
+    product = SpecsFixtures.product_fixture(%{slug: "confirmed-stock-price-trend"})
+    offer = offer_fixture(product, "Availability Market", "USD")
+
+    add_price(offer, ~U[2026-08-09 08:00:00.000000Z], "100", true)
+    add_price(offer, ~U[2026-08-10 08:00:00.000000Z], "90", nil)
+    product_id = product.id
+
+    assert %{^product_id => [series]} =
+             Pricing.product_price_trends([product.id], as_of: @as_of)
+
+    assert Enum.map(series.points, &DateTime.to_date(&1.observed_at)) == [~D[2026-08-09]]
+
+    unconfirmed_product =
+      SpecsFixtures.product_fixture(%{slug: "unconfirmed-stock-price-trend"})
+
+    unconfirmed_offer = offer_fixture(unconfirmed_product, "Unknown Stock Market", "USD")
+    add_price(unconfirmed_offer, ~U[2026-08-10 08:00:00.000000Z], "80", nil)
+    unconfirmed_product_id = unconfirmed_product.id
+
+    assert %{^unconfirmed_product_id => []} =
+             Pricing.product_price_trends([unconfirmed_product.id], as_of: @as_of)
+  end
+
+  test "timestamps daily projections after the observations they include" do
+    product = SpecsFixtures.product_fixture(%{slug: "intraday-price-trend"})
+    offer = offer_fixture(product, "Intraday Market", "USD")
+    observed_at = ~U[2026-08-12 11:00:00.000000Z]
+
+    add_price(offer, observed_at, "100", true)
+    product_id = product.id
+
+    assert %{^product_id => [%{points: [point]}]} =
+             Pricing.product_price_trends([product.id], as_of: @as_of)
+
+    assert DateTime.compare(point.observed_at, observed_at) in [:eq, :gt]
+    assert point.observed_at == @as_of
+  end
+
+  test "consolidates multiple listings from one merchant into one lowest contribution" do
+    product = SpecsFixtures.product_fixture(%{slug: "merchant-listing-price-trend"})
+
+    {:ok, merchant} =
+      Pricing.upsert_merchant(%{
+        name: "Multi Listing Market",
+        domain: "multi-listing-market.example"
+      })
+
+    first_offer = offer_fixture(product, merchant, "USD", "first")
+    second_offer = offer_fixture(product, merchant, "USD", "second")
+    add_price(first_offer, ~U[2026-08-10 08:00:00.000000Z], "100", true)
+    add_price(second_offer, ~U[2026-08-10 08:00:00.000000Z], "80", true)
+    product_id = product.id
+
+    assert %{^product_id => [series]} =
+             Pricing.product_price_trends([product.id], as_of: @as_of)
+
+    assert [%{merchant_id: merchant_id, merchant_product_id: merchant_product_id}] =
+             series.merchants
+
+    assert merchant_id == merchant.id
+    assert merchant_product_id == first_offer.id
+
+    assert %{average_price: average, lowest_price: lowest, merchant_prices: merchant_prices} =
+             List.last(series.points)
+
+    assert Decimal.eq?(average, Decimal.new("80"))
+    assert Decimal.eq?(lowest, Decimal.new("80"))
+
+    assert [%{merchant_product_id: returned_id, price: returned_price}] = merchant_prices
+    assert returned_id == first_offer.id
+    assert Decimal.eq?(returned_price, Decimal.new("80"))
+  end
+
   defp offer_fixture(product, merchant_name, currency) do
     suffix = System.unique_integer([:positive])
 
@@ -76,11 +150,15 @@ defmodule ProductCompare.Pricing.ProductPriceTrendsTest do
         domain: "trend-#{suffix}.example"
       })
 
+    offer_fixture(product, merchant, currency, "product")
+  end
+
+  defp offer_fixture(product, merchant, currency, url_suffix) do
     {:ok, offer} =
       Pricing.upsert_merchant_product(%{
         merchant_id: merchant.id,
         product_id: product.id,
-        url: "https://#{merchant.domain}/product",
+        url: "https://#{merchant.domain}/#{url_suffix}",
         currency: currency,
         is_active: true
       })

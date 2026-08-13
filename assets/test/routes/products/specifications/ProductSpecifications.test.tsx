@@ -38,7 +38,13 @@ beforeEach(() => sessionStorage.clear());
 test("builds a multi-spec catalog filter without leaving the specifications page", async () => {
   const user = userEvent.setup();
 
-  render(<ProductSpecifications attributes={attributes} productId="product-tv" />);
+  render(
+    <ProductSpecifications
+      attributes={attributes}
+      productId="product-tv"
+      selectedCompareSlugs={["first-product", "second-product"]}
+    />,
+  );
 
   await user.click(screen.getByRole("checkbox", { name: /^Select Panel technology/ }));
   await user.click(screen.getByRole("button", { name: "Keep browsing specs" }));
@@ -52,6 +58,7 @@ test("builds a multi-spec catalog filter without leaving the specifications page
   expect(catalogUrl.searchParams.get("enum.attribute-panel")).toBe("enum-oled");
   expect(catalogUrl.searchParams.get("numeric.attribute-refresh.min")).toBe("120");
   expect(catalogUrl.searchParams.get("numeric.attribute-refresh.max")).toBe("120");
+  expect(catalogUrl.searchParams.getAll("slug")).toEqual(["first-product", "second-product"]);
 
   await user.click(screen.getByRole("button", { name: "Keep browsing specs" }));
   expect(
@@ -60,4 +67,29 @@ test("builds a multi-spec catalog filter without leaving the specifications page
 
   await user.click(screen.getByRole("button", { name: "Edit 2 selected specs" }));
   expect(screen.getByText("2 specs selected")).toBeVisible();
+});
+
+test("keeps selections in memory when session storage access is blocked", async () => {
+  const user = userEvent.setup();
+  const storage = vi.spyOn(window, "sessionStorage", "get").mockImplementation(() => {
+    throw new DOMException("Storage is unavailable", "SecurityError");
+  });
+
+  try {
+    render(
+      <ProductSpecifications
+        attributes={attributes}
+        productId="product-tv"
+        selectedCompareSlugs={[]}
+      />,
+    );
+
+    const checkbox = screen.getByRole("checkbox", { name: /^Select Panel technology/ });
+    await user.click(checkbox);
+
+    expect(checkbox).toBeChecked();
+    expect(screen.getByRole("button", { name: "Remove Panel technology" })).toBeInTheDocument();
+  } finally {
+    storage.mockRestore();
+  }
 });

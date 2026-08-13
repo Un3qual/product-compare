@@ -84,7 +84,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
              } = List.last(eur_points)
 
       assert {:ok, latest_date, 0} = DateTime.from_iso8601(latest_observed_at)
-      assert DateTime.to_time(latest_date) == ~T[00:00:00]
+      assert DateTime.compare(latest_date, observed_at) in [:eq, :gt]
+      assert DateTime.to_date(latest_date) == DateTime.to_date(observed_at)
 
       assert List.last(usd_points)["lowestPrice"] == "120.50"
       assert Enum.count_until(eur_points, 92) <= 91

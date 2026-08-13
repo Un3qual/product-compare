@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProductPriceTrend } from "../../../../src/routes/products/offers/ProductPriceTrend";
+import { productPriceChartSeries } from "../../../../src/routes/products/offers/product-price-trend";
 
 const series = [
   {
@@ -75,4 +76,58 @@ test("keeps currencies separated and changes the selected series explicitly", as
   expect(screen.getByRole("table", { name: "Lowest EUR price trend data" })).toBeInTheDocument();
   expect(screen.queryByText("Beta Market")).not.toBeInTheDocument();
   expect(screen.getAllByText("Euro Shop")).not.toHaveLength(0);
+});
+
+test("splits merchant lines when availability is interrupted", () => {
+  const merchantSeries = productPriceChartSeries(
+    {
+      currency: "USD",
+      merchants: [
+        { id: "merchant-alpha", merchantProductId: "offer-alpha", name: "Alpha Market" },
+        { id: "merchant-beta", merchantProductId: "offer-beta", name: "Beta Market" },
+      ],
+      points: [
+        {
+          averagePrice: "110",
+          lowestMerchantProductId: "offer-alpha",
+          lowestPrice: "100",
+          merchantPrices: [
+            { merchantProductId: "offer-alpha", price: "100" },
+            { merchantProductId: "offer-beta", price: "120" },
+          ],
+          observedAt: "2026-08-09T23:59:59Z",
+        },
+        {
+          averagePrice: "115",
+          lowestMerchantProductId: "offer-beta",
+          lowestPrice: "115",
+          merchantPrices: [{ merchantProductId: "offer-beta", price: "115" }],
+          observedAt: "2026-08-10T23:59:59Z",
+        },
+        {
+          averagePrice: "100",
+          lowestMerchantProductId: "offer-alpha",
+          lowestPrice: "90",
+          merchantPrices: [
+            { merchantProductId: "offer-alpha", price: "90" },
+            { merchantProductId: "offer-beta", price: "110" },
+          ],
+          observedAt: "2026-08-11T23:59:59Z",
+        },
+      ],
+    },
+    "merchants",
+  );
+
+  expect(merchantSeries.filter(({ label }) => label === "Alpha Market")).toEqual([
+    expect.objectContaining({
+      id: "offer-alpha",
+      rows: [expect.objectContaining({ observedAt: "2026-08-09T23:59:59Z" })],
+    }),
+    expect.objectContaining({
+      id: "offer-alpha-1",
+      rows: [expect.objectContaining({ observedAt: "2026-08-11T23:59:59Z" })],
+    }),
+  ]);
+  expect(merchantSeries.filter(({ label }) => label === "Beta Market")).toHaveLength(1);
 });

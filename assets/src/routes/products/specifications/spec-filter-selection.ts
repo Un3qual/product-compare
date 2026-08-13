@@ -21,10 +21,10 @@ export type SpecFilterSelection =
   | (SpecFilterSelectionBase & { kind: "numeric"; unitSymbol: string | null; value: string });
 
 export function readSpecFilterDraft(storage: Storage, productId: string): SpecFilterSelection[] {
-  const value = storage.getItem(STORAGE_KEY);
-  if (!value) return [];
-
   try {
+    const value = storage.getItem(STORAGE_KEY);
+    if (!value) return [];
+
     const draft: unknown = JSON.parse(value);
     return validDraft(draft, productId) ? draft.selections : [];
   } catch {
@@ -37,10 +37,20 @@ export function writeSpecFilterDraft(
   productId: string,
   selections: readonly SpecFilterSelection[],
 ) {
-  storage.setItem(STORAGE_KEY, JSON.stringify({ productId, selections, version: STORAGE_VERSION }));
+  try {
+    storage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ productId, selections, version: STORAGE_VERSION }),
+    );
+  } catch {
+    // Persisting this optional draft must not block in-memory filtering.
+  }
 }
 
-export function catalogPathForSpecSelections(selections: readonly SpecFilterSelection[]) {
+export function catalogPathForSpecSelections(
+  selections: readonly SpecFilterSelection[],
+  selectedCompareSlugs: readonly string[],
+) {
   const filters = {
     booleans: selections.flatMap((selection) =>
       selection.kind === "boolean"
@@ -56,7 +66,7 @@ export function catalogPathForSpecSelections(selections: readonly SpecFilterSele
     useCaseTaxonIds: [],
   } satisfies CatalogFilters;
 
-  return catalogBrowseFirstPagePath(filters, CATALOG_PAGE_SIZE);
+  return catalogBrowseFirstPagePath(filters, CATALOG_PAGE_SIZE, selectedCompareSlugs);
 }
 
 function numericCatalogFilter(selection: SpecFilterSelection) {
