@@ -6,6 +6,8 @@ import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { create, props } from "@stylexjs/stylex";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { ProductOfferList } from "./ProductOfferList";
+import { ProductPriceTrend, type ProductPriceTrendCurrency } from "./offers";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   buildProductOfferPanelData,
   productOfferPaginationPaths,
@@ -115,19 +117,28 @@ const styles = create({
 
 export function ProductOfferPanel({
   connection,
-  productSlug,
   offersAfter,
+  priceTrendSeries,
+  productSlug,
+  referenceTime,
   selectedCompareSlugs,
 }: {
   connection: ProductOfferPanel_connection$key | null | undefined;
-  productSlug: string;
   offersAfter: string | null;
+  priceTrendSeries: readonly ProductPriceTrendCurrency[];
+  productSlug: string;
+  referenceTime: string;
   selectedCompareSlugs: readonly string[];
 }) {
   const data = useFragment(productOfferPanelFragment, connection);
 
   if (!data) {
-    return <FeedbackState kind="error" title="Offers unavailable." />;
+    return (
+      <>
+        <ProductTrendBoundary productSlug={productSlug} series={priceTrendSeries} />
+        <FeedbackState kind="error" title="Offers unavailable." />
+      </>
+    );
   }
 
   const { offers, snapshot } = buildProductOfferPanelData(data);
@@ -143,6 +154,7 @@ export function ProductOfferPanel({
   if (offers.length === 0) {
     return (
       <>
+        <ProductTrendBoundary productSlug={productSlug} series={priceTrendSeries} />
         <p>No active offers yet.</p>
         {pagination}
       </>
@@ -151,10 +163,28 @@ export function ProductOfferPanel({
 
   return (
     <>
+      <ProductTrendBoundary productSlug={productSlug} series={priceTrendSeries} />
       <OfferSnapshot snapshot={snapshot} />
-      <ProductOfferList offers={offers} />
+      <ProductOfferList offers={offers} referenceTime={referenceTime} />
       {pagination}
     </>
+  );
+}
+
+function ProductTrendBoundary({
+  productSlug,
+  series,
+}: {
+  productSlug: string;
+  series: readonly ProductPriceTrendCurrency[];
+}) {
+  return (
+    <ResettableErrorBoundary
+      fallback={<FeedbackState kind="error" title="Price trend unavailable." />}
+      resetToken={productSlug}
+    >
+      <ProductPriceTrend series={series} />
+    </ResettableErrorBoundary>
   );
 }
 

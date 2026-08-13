@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import type { ProductDetailRouteQuery } from "$generated/ProductDetailRouteQuery.graphql";
 import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../src/relay/environment";
 import {
   createRelayRouterContext,
@@ -22,6 +23,7 @@ import {
   ProductOfferList,
   type ProductOfferListItem,
 } from "../../../src/routes/products/ProductOfferList";
+import type { ProductSpecification } from "../../../src/routes/products/specifications";
 
 const {
   fetchRouteQueryMock,
@@ -121,43 +123,16 @@ function makeOffersQueryDescriptor(offersAfter?: string | null) {
 
 const OFFERS_QUERY_DESCRIPTOR = makeOffersQueryDescriptor();
 
-type DetailProduct = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  seo: {
-    title: string;
-    description: string;
-    canonicalPath: string;
-    indexable: boolean;
-    imageUrl: string | null;
-    structuredData: string | null;
-  };
-  brand: {
-    id: string;
-    name: string;
-  };
-  currentAttributes: ReadonlyArray<{
-    attributeId?: string;
-    code: string;
-    displayName: string;
-    dataType: string;
-    valueText: string;
-    sortOrder?: number | null;
-    groupLabel?: string | null;
-    isRequired?: boolean;
-    numericValue?: string | null;
-    booleanValue?: boolean | null;
-    enumOptionId?: string | null;
-    unitSymbol?: string | null;
-  }>;
-};
+type DetailProduct = Omit<
+  NonNullable<ProductDetailRouteQuery["response"]["product"]>,
+  "currentAttributes" | "merchantProducts"
+> & { currentAttributes: readonly ProductSpecification[] };
 
 const DETAIL_PRODUCT: DetailProduct = {
   id: "UHJvZHVjdDox",
   name: "Detail Product",
   slug: "detail-product",
+  modelNumber: "DP-100",
   description: "A narrow product detail baseline.",
   seo: {
     title: "Detail Product specifications and prices | Product Compare",
@@ -173,11 +148,42 @@ const DETAIL_PRODUCT: DetailProduct = {
     name: "Acme",
   },
   currentAttributes: [],
+  offerTruth: {
+    asOf: "2026-06-01T02:00:00Z",
+    offerCount: 0,
+    observedOfferCount: 0,
+    eligibleOfferCount: 0,
+    currencySummaries: [],
+  },
+  priceHistory90d: [],
 };
 
 const productQueryRef = {
   dispose: vi.fn(),
   variables: PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
+};
+
+const DETAIL_PRODUCT_WITH_CURRENT_PRICE: DetailProduct = {
+  ...DETAIL_PRODUCT,
+  offerTruth: {
+    ...DETAIL_PRODUCT.offerTruth,
+    offerCount: 1,
+    observedOfferCount: 1,
+    eligibleOfferCount: 1,
+    currencySummaries: [
+      {
+        currency: "USD",
+        eligibleOfferCount: 1,
+        bestOffer: {
+          eligible: true,
+          freshness: "FRESH",
+          landedPrice: "199.99",
+          merchantProductId: "merchant-product-1",
+          observedAt: "2026-06-01T00:00:00Z",
+        },
+      },
+    ],
+  },
 };
 const offersQueryRef = {
   dispose: vi.fn(),
@@ -705,6 +711,7 @@ test("renders product detail and active offers from Relay route queries", () => 
         },
       },
     ]),
+    DETAIL_PRODUCT_WITH_CURRENT_PRICE,
   );
 
   render(
@@ -724,7 +731,10 @@ test("renders product detail and active offers from Relay route queries", () => 
   );
   expect(screen.getByRole("region", { name: "Specifications" })).toBeInTheDocument();
   expect(screen.getByRole("complementary", { name: "Product decisions" })).toBeInTheDocument();
-  expect(screen.getByText("Acme", { selector: "p" })).toBeInTheDocument();
+  expect(screen.getByText("Acme")).toBeInTheDocument();
+  expect(screen.getByText("Model DP-100")).toBeInTheDocument();
+  const decisionSummary = screen.getByRole("region", { name: "Product decision summary" });
+  expect(within(decisionSummary).getByText("199.99 USD")).toBeInTheDocument();
   expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
   expect(screen.queryByText("detail-product")).not.toBeInTheDocument();
 
@@ -737,11 +747,13 @@ test("renders product detail and active offers from Relay route queries", () => 
     "href",
     `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`,
   );
-  expect(screen.getByText("199.99 USD")).toBeInTheDocument();
-  const priceObservedAt = screen.getByText("2026-06-01", { selector: "time" });
+  expect(screen.getAllByText("199.99 USD")).toHaveLength(2);
+  const priceObservedAt = screen.getAllByText("Price observed 2 hours ago", {
+    selector: "time",
+  })[0];
 
   expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
-  expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
+  expect(priceObservedAt).toHaveAttribute("title", "Jun 1, 2026, 12:00 AM UTC");
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
     PRODUCT_QUERY_DESCRIPTOR,
@@ -1817,10 +1829,11 @@ test("renders product specifications from current attributes", () => {
   openProductDetailTab("Specifications");
 
   expect(screen.getByRole("heading", { name: "Specifications" })).toBeInTheDocument();
-  expect(screen.getByText("Refresh rate")).toBeVisible();
-  expect(screen.getByText("144 Hz")).toBeVisible();
-  expect(screen.getByText("Panel type")).toBeVisible();
-  expect(screen.getByText("OLED")).toBeVisible();
+  const specifications = screen.getByRole("region", { name: "Specifications" });
+  expect(within(specifications).getByText("Refresh rate")).toBeVisible();
+  expect(within(specifications).getByText("144 Hz")).toBeVisible();
+  expect(within(specifications).getByText("Panel type")).toBeVisible();
+  expect(within(specifications).getByText("OLED")).toBeVisible();
 });
 
 test("renders product specifications grouped by compare group label", () => {

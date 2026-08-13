@@ -2,6 +2,7 @@ import { useId } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
 import { PriceHistoryChart } from "$ui/components/data/PriceHistoryChart";
+import { RelativeDateTime } from "$ui/components/data";
 import { Badge } from "$ui/primitives/Badge";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { TrackedCommerceClickAction } from "../offers/TrackedCommerceClickAction";
@@ -167,19 +168,31 @@ const styles = create({
   },
 });
 
-export function ProductOfferList({ offers }: { offers: ReadonlyArray<ProductOfferListItem> }) {
+export function ProductOfferList({
+  offers,
+  referenceTime,
+}: {
+  offers: ReadonlyArray<ProductOfferListItem>;
+  referenceTime?: string;
+}) {
   return (
     <DataList label="Active offer list">
       {offers.map((offer) => (
         <DataListItem key={offer.id}>
-          <ProductOfferRow offer={offer} />
+          <ProductOfferRow offer={offer} referenceTime={referenceTime} />
         </DataListItem>
       ))}
     </DataList>
   );
 }
 
-function ProductOfferRow({ offer }: { offer: ProductOfferListItem }) {
+function ProductOfferRow({
+  offer,
+  referenceTime,
+}: {
+  offer: ProductOfferListItem;
+  referenceTime?: string;
+}) {
   const headingId = useId();
 
   return (
@@ -205,8 +218,20 @@ function ProductOfferRow({ offer }: { offer: ProductOfferListItem }) {
         </div>
         {offer.priceObservation ? (
           <p {...props(styles.observation)}>
-            <span>Price observed</span>{" "}
-            <time dateTime={offer.priceObservation.dateTime}>{offer.priceObservation.label}</time>
+            {referenceTime ? (
+              <RelativeDateTime
+                prefix="Price observed"
+                referenceTime={referenceTime}
+                value={offer.priceObservation.dateTime}
+              />
+            ) : (
+              <>
+                <span>Price observed</span>{" "}
+                <time dateTime={offer.priceObservation.dateTime}>
+                  {offer.priceObservation.label}
+                </time>
+              </>
+            )}
           </p>
         ) : null}
       </div>

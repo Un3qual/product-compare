@@ -27,11 +27,11 @@ import { ContextRail } from "$ui/components/layout/ContextRail";
 import { DetailTabs } from "$ui/components/layout/DetailTabs";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
-import { tokens } from "$ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
 import { productOffersPath } from "../offers/paths";
 import { ProductDecisionActions } from "./ProductDecisionActions";
+import { ProductDecisionHeader } from "./ProductDecisionHeader";
 import { ProductOfferPanel } from "./ProductOfferPanel";
 import { PriceWatchControl } from "./PriceWatchControl";
 import { ProductCommunityPanel } from "./ProductCommunityPanel";
@@ -44,6 +44,7 @@ const productDetailRouteQuery = graphql`
       id
       name
       slug
+      modelNumber
       description
       seo {
         title
@@ -70,6 +71,41 @@ const productDetailRouteQuery = graphql`
         booleanValue
         enumOptionId
         unitSymbol
+      }
+      offerTruth {
+        asOf
+        offerCount
+        observedOfferCount
+        eligibleOfferCount
+        currencySummaries {
+          currency
+          eligibleOfferCount
+          bestOffer {
+            merchantProductId
+            landedPrice
+            observedAt
+            freshness
+            eligible
+          }
+        }
+      }
+      priceHistory90d {
+        currency
+        merchants {
+          id
+          name
+          merchantProductId
+        }
+        points {
+          observedAt
+          lowestPrice
+          averagePrice
+          lowestMerchantProductId
+          merchantPrices {
+            merchantProductId
+            price
+          }
+        }
       }
       merchantProducts(first: $offerFirst, after: $offersAfter, activeOnly: true) {
         edges {
@@ -105,13 +141,6 @@ type ProductDetailResponseWithProduct = ProductDetailRouteQuery["response"] & {
 };
 
 const styles = create({
-  description: {
-    display: "grid",
-    gap: "0.35rem",
-  },
-  descriptionText: {
-    margin: 0,
-  },
   section: {
     display: "grid",
     gap: "1rem",
@@ -191,8 +220,10 @@ function ProductDetail({
       </h2>
       <ProductOfferPanel
         connection={product.merchantProducts}
-        productSlug={product.slug}
         offersAfter={routeData.offersAfter}
+        priceTrendSeries={product.priceHistory90d}
+        productSlug={product.slug}
+        referenceTime={String(product.offerTruth.asOf)}
         selectedCompareSlugs={routeData.selectedCompareSlugs}
       />
     </section>
@@ -200,14 +231,7 @@ function ProductDetail({
 
   return (
     <PageShell
-      description={
-        <div {...props(styles.description)}>
-          <p {...props(styles.descriptionText)}>{product.brand?.name ?? "Unknown brand"}</p>
-          {product.description ? (
-            <p {...props(styles.descriptionText)}>{product.description}</p>
-          ) : null}
-        </div>
-      }
+      description={<ProductDecisionHeader product={product} />}
       eyebrow="Product detail"
       title={product.name}
     >

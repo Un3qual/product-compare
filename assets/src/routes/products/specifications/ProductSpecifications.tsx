@@ -12,9 +12,15 @@ import {
   type SpecFilterSelection,
 } from "./spec-filter-selection";
 
-export type ProductSpecification = NonNullable<
+type ProductSpecificationData = NonNullable<
   ProductDetailRouteQuery["response"]["product"]
 >["currentAttributes"][number];
+
+export type ProductSpecification = Pick<
+  ProductSpecificationData,
+  "code" | "displayName" | "valueText"
+> &
+  Partial<Omit<ProductSpecificationData, "code" | "displayName" | "valueText">>;
 
 const styles = create({
   section: { display: "grid", gap: "1rem" },

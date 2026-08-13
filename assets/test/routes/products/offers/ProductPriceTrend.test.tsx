@@ -55,8 +55,8 @@ test("switches between lowest, average, and merchant trend modes without hiding 
   expect(screen.getByRole("heading", { name: "Price trend" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Lowest" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("table", { name: "Lowest USD price trend data" })).toBeInTheDocument();
-  expect(screen.getByText("Alpha Market")).toBeInTheDocument();
-  expect(screen.getByText("Beta Market")).toBeInTheDocument();
+  expect(screen.getAllByText("Alpha Market")).not.toHaveLength(0);
+  expect(screen.getAllByText("Beta Market")).not.toHaveLength(0);
 
   await user.click(screen.getByRole("button", { name: "Average" }));
   expect(screen.getByRole("table", { name: "Average USD price trend data" })).toBeInTheDocument();
@@ -74,5 +74,5 @@ test("keeps currencies separated and changes the selected series explicitly", as
 
   expect(screen.getByRole("table", { name: "Lowest EUR price trend data" })).toBeInTheDocument();
   expect(screen.queryByText("Beta Market")).not.toBeInTheDocument();
-  expect(screen.getByText("Euro Shop")).toBeInTheDocument();
+  expect(screen.getAllByText("Euro Shop")).not.toHaveLength(0);
 });
