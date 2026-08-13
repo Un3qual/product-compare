@@ -381,7 +381,7 @@
 - Consumes: `[data-slot="table-container"]` from the shared `Table` primitive and the existing desktop/tablet/mobile viewport matrix.
 - Produces: ordinary operator ledgers with no internal horizontal scroll at 1,440px and 900px; contained internal scrolling at 390px when needed; comparison tables whose containers remain bounded while their intentional matrix scrolling survives.
 
-- [ ] **Step 1: Add failing operator table measurements and preserved-detail interactions**
+- [x] **Step 1: Add failing operator table measurements and preserved-detail interactions**
 
   Add this helper to the operations spec:
 
@@ -415,11 +415,11 @@
   - Open the conversion investigation and assert order value, commission, merchant, product, network, purchased time, and reported time before closing it.
   - Keep the existing axe, reduced-motion, document-width, and screenshot checks.
 
-- [ ] **Step 2: Extend the comparison browser audit**
+- [x] **Step 2: Extend the comparison browser audit**
 
   In the comparison viewport loop, measure every `[data-slot="table-container"]` and assert its right edge is at most its parent right edge plus one pixel. Do not assert `scrollWidth <= clientWidth`; specification and decision matrices deliberately retain internal horizontal scrolling.
 
-- [ ] **Step 3: Run the operator browser scenario and verify RED**
+- [x] **Step 3: Run the operator browser scenario and verify RED**
 
   ```bash
   cd assets
@@ -428,7 +428,7 @@
 
   Expected: FAIL at desktop CJ and tablet revenue/CJ compact-width assertions because the route tables still impose `64rem` and `68rem` minimum widths.
 
-- [ ] **Step 4: Make the shared table wrapper shrink inside layout rails**
+- [x] **Step 4: Make the shared table wrapper shrink inside layout rails**
 
   Change only the generic wrapper containment contract:
 
@@ -444,7 +444,7 @@
 
   Do not change cell padding globally and do not remove overflow scrolling from the primitive.
 
-- [ ] **Step 5: Remove desktop minimum widths from operator tables**
+- [x] **Step 5: Remove desktop minimum widths from operator tables**
 
   Give both operator tables `tableLayout: "fixed"` and `width: "100%"`. Use a route-local minimum only below the context-rail breakpoint so mobile keeps readable columns inside the shared scroll container:
 
@@ -474,7 +474,7 @@
 
   Keep overflow wrapping on long email, URL, user-agent, SKU, program, and conversion reference values.
 
-- [ ] **Step 6: Run operator and comparison browser GREEN and inspect captures**
+- [x] **Step 6: Run operator and comparison browser GREEN and inspect captures**
 
   ```bash
   cd assets
@@ -483,7 +483,7 @@
 
   Expected: PASS at all three viewports. Inspect the generated desktop/tablet CJ and revenue screenshots to confirm no content is hidden beneath the context rail, rows are visibly shorter, conversion details are grouped rather than prose, and comparison matrices still scroll internally at narrow widths.
 
-- [ ] **Step 7: Commit responsive containment**
+- [x] **Step 7: Commit responsive containment**
 
   ```bash
   git add src/ui/primitives/Table.tsx src/routes/commerce/revenue/attribution/AttributionLedger.tsx src/routes/ingestion/cj-programs/programs/ProgramLifecycleTable.tsx tests/e2e/production-ui-operations.spec.ts tests/e2e/production-ui-compare-return.spec.ts

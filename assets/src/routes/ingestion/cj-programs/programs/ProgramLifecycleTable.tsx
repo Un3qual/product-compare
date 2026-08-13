@@ -16,7 +16,11 @@ type ProgramPagination = ReturnType<typeof buildCJProgramPaginationData>["progra
 const styles = create({
   content: { display: "grid", gap: "1rem" },
   empty: { color: tokens.textSecondary, margin: 0 },
-  table: { minWidth: "64rem" },
+  table: {
+    minWidth: { default: "44rem", "@media (min-width: 62rem)": 0 },
+    tableLayout: "fixed",
+    width: "100%",
+  },
 });
 
 const tableModel = tableFeatures({});

@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import {
   expectNoUnhandledGraphQLOperations,
@@ -36,10 +36,31 @@ for (const viewport of VIEWPORTS) {
     );
 
     await page.goto("/ingestion/cj-programs");
-    await expect(page.getByRole("table", { name: "CJ program lifecycle ledger" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Required action" })).toBeVisible();
+    const cjLedger = page.getByRole("table", { name: "CJ program lifecycle ledger" });
+    await expect(cjLedger).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Action" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Unmatched feeds" })).toBeVisible();
     await expect(page.locator('time[datetime="2026-08-12T17:45:00Z"]')).toBeVisible();
+    await expect(cjLedger.getByText("Advertiser ID northwind-advertiser")).toBeVisible();
+    await expect(cjLedger.getByText("1 feed")).toBeVisible();
+    await page.getByRole("button", { name: "Edit program Northwind Merchant" }).click();
+    const programEditor = page.getByRole("region", { name: "Edit Northwind Merchant" });
+    await expect(programEditor.getByLabel("Stage for Northwind Merchant")).toBeVisible();
+    await expect(programEditor.getByLabel("Note for Northwind Merchant")).toBeVisible();
+    await expect(
+      programEditor.getByRole("button", { name: "Save Northwind Merchant" }),
+    ).toBeVisible();
+    await expect(
+      programEditor.getByRole("button", { name: "Show feeds for Northwind Merchant" }),
+    ).toBeVisible();
+    if (viewport.name === "desktop") {
+      await page.screenshot({
+        fullPage: true,
+        path: testInfo.outputPath("desktop-cj-editor.png"),
+      });
+    }
+    await page.getByRole("button", { name: "Close editor Northwind Merchant" }).click();
+    await expectTableContained(cjLedger, { compact: viewport.name !== "mobile" });
     await expectOperatorSurface(page, viewport.width);
     await captureOperatorWorkspace(page, testInfo.outputPath(`${viewport.name}-cj-lifecycle.png`));
 
@@ -50,6 +71,7 @@ for (const viewport of VIEWPORTS) {
     await expect(controls).toBeVisible();
     await expect(summary).toBeVisible();
     await expect(ledger).toBeVisible();
+    await expectTableContained(ledger, { compact: viewport.name !== "mobile" });
     expect(
       await controls.evaluate(
         (element, nextElement) =>
@@ -63,8 +85,24 @@ for (const viewport of VIEWPORTS) {
     await page
       .getByRole("button", { name: "Show conversion impact-conversion-123 details" })
       .click();
-    await expect(page.locator('time[datetime="2026-08-12T18:00:00Z"]')).toBeVisible();
-    await expect(page.locator('time[datetime="2026-08-13T09:15:00Z"]')).toBeVisible();
+    const investigation = page.getByRole("group", {
+      name: "Conversion impact-conversion-123 investigation",
+    });
+    await expect(investigation.getByText("Order value")).toBeVisible();
+    await expect(investigation.getByText("Commission")).toBeVisible();
+    await expect(investigation.getByText("180.00 USD")).toBeVisible();
+    await expect(investigation.getByText("18.00 USD")).toBeVisible();
+    await expect(investigation.getByText("Northwind Supply")).toBeVisible();
+    await expect(investigation.getByText("Field Camera")).toBeVisible();
+    await expect(investigation.getByText("Impact")).toBeVisible();
+    await expect(investigation.locator('time[datetime="2026-08-12T18:00:00Z"]')).toBeVisible();
+    await expect(investigation.locator('time[datetime="2026-08-13T09:15:00Z"]')).toBeVisible();
+    if (viewport.name === "desktop") {
+      await page.screenshot({
+        fullPage: true,
+        path: testInfo.outputPath("desktop-revenue-conversion.png"),
+      });
+    }
     await page
       .getByRole("button", { name: "Hide conversion impact-conversion-123 details" })
       .click();
@@ -74,6 +112,30 @@ for (const viewport of VIEWPORTS) {
       testInfo.outputPath(`${viewport.name}-revenue-ledger.png`),
     );
   });
+}
+
+async function expectTableContained(table: Locator, options: { compact: boolean }) {
+  const bounds = await table.evaluate((element) => {
+    const container = element.closest<HTMLElement>('[data-slot="table-container"]');
+    const parent = container?.parentElement;
+
+    if (!container || !parent) {
+      throw new Error("Expected a table container and parent.");
+    }
+
+    return {
+      clientWidth: container.clientWidth,
+      containerRight: container.getBoundingClientRect().right,
+      parentRight: parent.getBoundingClientRect().right,
+      scrollWidth: container.scrollWidth,
+    };
+  });
+
+  expect(bounds.containerRight).toBeLessThanOrEqual(bounds.parentRight + 1);
+
+  if (options.compact) {
+    expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.clientWidth + 1);
+  }
 }
 
 async function captureOperatorWorkspace(page: Page, path: string) {
@@ -176,20 +238,22 @@ test("CJ feed failures stay local and lifecycle updates remain usable", async ({
   await stubGraphQL(page, responders);
 
   await page.goto("/ingestion/cj-programs");
-  await page.getByRole("button", { name: "Show feeds for Northwind Merchant" }).click();
-  await expect(page.getByRole("alert")).toContainText("Feeds unavailable.");
+  await page.getByRole("button", { name: "Edit program Northwind Merchant" }).click();
+  const editor = page.getByRole("region", { name: "Edit Northwind Merchant" });
+  await editor.getByRole("button", { name: "Show feeds for Northwind Merchant" }).click();
+  await expect(editor.getByRole("alert")).toContainText("Feeds unavailable.");
   await expect(page.getByRole("table", { name: "CJ program lifecycle ledger" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Unmatched feeds" })).toBeVisible();
-  await page.getByRole("button", { name: "Retry feeds for Northwind Merchant" }).click();
-  await expect(page.getByRole("list", { name: "Feeds for Northwind Merchant" })).toContainText(
+  await editor.getByRole("button", { name: "Retry feeds for Northwind Merchant" }).click();
+  await expect(editor.getByRole("list", { name: "Feeds for Northwind Merchant" })).toContainText(
     "Northwind Product Feed",
   );
 
-  const stage = page.getByRole("combobox", { name: "Stage for Northwind Merchant" });
+  const stage = editor.getByRole("combobox", { name: "Stage for Northwind Merchant" });
   await stage.click();
   await page.getByRole("option", { name: "Accepted" }).click();
-  await page.getByRole("button", { name: "Save Northwind Merchant" }).click();
-  await expect(page.getByRole("status")).toContainText("Northwind Merchant saved.");
+  await editor.getByRole("button", { name: "Save Northwind Merchant" }).click();
+  await expect(editor.getByRole("status")).toContainText("Northwind Merchant saved.");
 });
 
 test("an unmatched-feed failure does not hide the CJ lifecycle ledger", async ({ page }) => {
@@ -203,7 +267,12 @@ test("an unmatched-feed failure does not hide the CJ lifecycle ledger", async ({
 
   await expect(page.getByRole("table", { name: "CJ program lifecycle ledger" })).toBeVisible();
   await expect(page.getByRole("alert")).toContainText("Unmatched feeds unavailable.");
-  await expect(page.getByLabel("Stage for Northwind Merchant")).toBeEnabled();
+  await page.getByRole("button", { name: "Edit program Northwind Merchant" }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "Edit Northwind Merchant" })
+      .getByLabel("Stage for Northwind Merchant"),
+  ).toBeEnabled();
 });
 
 test("revenue summary, ledger preload, and pagination failures recover independently", async ({

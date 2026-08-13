@@ -65,7 +65,12 @@ const styles = create({
     overflowWrap: "anywhere",
   },
   stack: { display: "grid", gap: "0.4rem" },
-  table: { borderCollapse: "collapse", minWidth: "68rem", width: "100%" },
+  table: {
+    borderCollapse: "collapse",
+    minWidth: { default: "44rem", "@media (min-width: 48rem)": 0 },
+    tableLayout: "fixed",
+    width: "100%",
+  },
   title: { fontSize: "1.25rem", marginBlockEnd: "0.5rem" },
   wrapper: { display: "grid", gap: "1rem", marginBlockStart: "2rem" },
 });

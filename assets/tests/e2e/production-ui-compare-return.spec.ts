@@ -60,6 +60,21 @@ for (const viewport of VIEWPORTS) {
       page.getByRole("link", { name: `Remove ${products[0].name} from selection` }),
     ).toHaveAttribute("href", "/compare?slug=northstar-barista-scale");
 
+    const tableBounds = await page.locator('[data-slot="table-container"]').evaluateAll((tables) =>
+      tables.map((table) => {
+        const parent = table.parentElement;
+
+        if (!parent) throw new Error("Expected every table container to have a parent.");
+
+        return {
+          containerRight: table.getBoundingClientRect().right,
+          parentRight: parent.getBoundingClientRect().right,
+        };
+      }),
+    );
+    for (const bounds of tableBounds) {
+      expect(bounds.containerRight).toBeLessThanOrEqual(bounds.parentRight + 1);
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       viewport.width,
     );
