@@ -308,8 +308,19 @@ test("revenue route renders customer-facing visit and purchase details without i
   ).toBeTruthy();
   const ledger = screen.getByRole("table", { name: "Attribution ledger" });
   expect(ledger).toBeVisible();
+  expect(
+    within(ledger)
+      .getAllByRole("columnheader")
+      .map((header) => header.textContent),
+  ).toEqual(["Visit", "Request", "Commerce", "Conversion"]);
   expect(ledger.querySelectorAll("dl")).toHaveLength(0);
+  const visitRow = within(ledger).getByRole("row", { name: /operator@example\.test/ });
+  expect(within(visitRow).getByText("May 31, 2026, 12:30 PM")).toHaveAttribute(
+    "datetime",
+    "2026-05-31T12:30:00Z",
+  );
   expect(within(ledger).getByText("operator@example.test")).toBeInTheDocument();
+  expect(within(ledger).getByText("Known customer")).toBeInTheDocument();
   expect(within(ledger).getByText("Product Compare website")).toBeInTheDocument();
   expect(within(ledger).getByText("Partner link")).toBeInTheDocument();
   expect(within(ledger).getByText("example.test /compare")).toHaveAttribute(
@@ -324,6 +335,8 @@ test("revenue route renders customer-facing visit and purchase details without i
   expect(within(ledger).queryByText("ExampleBrowser/1.0")).not.toBeInTheDocument();
   expect(within(ledger).getByText("203.0.113.44")).toBeInTheDocument();
   expect(within(ledger).getByText("Impact")).toBeInTheDocument();
+  expect(within(ledger).getByText("SKU-42")).toBeInTheDocument();
+  expect(within(ledger).getByText("impact-program")).toBeInTheDocument();
   expect(within(ledger).getByText("impact-conversion-123")).toBeInTheDocument();
   expect(within(ledger).getByText("90.00 USD")).toBeInTheDocument();
   expect(within(ledger).queryByText("Order: 90.00 USD")).not.toBeInTheDocument();
@@ -332,11 +345,19 @@ test("revenue route renders customer-facing visit and purchase details without i
   fireEvent.click(
     screen.getByRole("button", { name: "Show conversion impact-conversion-123 details" }),
   );
-  expect(within(ledger).getByText("9.00 USD commission")).toBeInTheDocument();
-  expect(within(ledger).queryByText("Commission: 9.00 USD")).not.toBeInTheDocument();
-  expect(screen.getByText("Conversion Merchant")).toBeInTheDocument();
-  expect(screen.getByText("Conversion Product")).toBeInTheDocument();
-  expect(screen.getByText("Conversion Network")).toBeInTheDocument();
+  const investigation = screen.getByRole("group", {
+    name: "Conversion impact-conversion-123 investigation",
+  });
+  expect(within(investigation).getByText("Order value")).toBeInTheDocument();
+  expect(within(investigation).getByText("Commission")).toBeInTheDocument();
+  expect(within(investigation).getByText("90.00 USD")).toBeInTheDocument();
+  expect(within(investigation).getByText("9.00 USD")).toBeInTheDocument();
+  expect(within(investigation).getByText("Conversion Merchant")).toBeInTheDocument();
+  expect(within(investigation).getByText("Conversion Product")).toBeInTheDocument();
+  expect(within(investigation).getByText("Conversion Network")).toBeInTheDocument();
+  expect(within(investigation).getByText("Purchased")).toBeInTheDocument();
+  expect(within(investigation).getByText("Reported")).toBeInTheDocument();
+  expect(investigation.querySelector("dl")).not.toBeInTheDocument();
   expect(
     screen.queryByText(/db8e90c9|user-1|merchant-1|product-1|network-1/),
   ).not.toBeInTheDocument();

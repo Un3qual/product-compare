@@ -31,7 +31,7 @@ const conversionFragment = graphql`
 
 const styles = create({
   amount: {
-    fontSize: "1.05rem",
+    fontSize: "1rem",
     fontWeight: 750,
     margin: 0,
   },
@@ -41,29 +41,66 @@ const styles = create({
     fontSize: "0.76rem",
     overflowWrap: "anywhere",
   },
-  detail: {
-    color: tokens.textSecondary,
-    lineHeight: 1.45,
-    margin: 0,
+  commerceContext: {
+    alignItems: "center",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.3rem 0.55rem",
   },
-  detailPanel: {
+  earnings: {
+    backgroundColor: tokens.surfaceMuted,
+    borderRadius: "var(--pc-radius-medium)",
+    display: "grid",
+    gap: "0.5rem",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    padding: "0.55rem 0.65rem",
+  },
+  earning: { display: "grid", gap: "0.1rem", minWidth: 0 },
+  investigation: {
     borderBlockStartColor: tokens.borderQuiet,
     borderBlockStartStyle: "solid",
     borderBlockStartWidth: "1px",
     display: "grid",
-    gap: "0.6rem",
-    marginBlockStart: "0.5rem",
-    paddingBlockStart: "0.75rem",
+    gap: "0.55rem",
+    marginBlockStart: "0.35rem",
+    paddingBlockStart: "0.55rem",
   },
   item: {
-    backgroundColor: tokens.surfaceRaised,
-    borderRadius: "var(--pc-radius-large)",
     display: "grid",
-    gap: "0.75rem",
-    padding: "0.75rem",
+    gap: "0.35rem",
   },
-  summary: { display: "grid", gap: "0.5rem" },
-  tags: { display: "flex", flexWrap: "wrap", gap: "0.35rem" },
+  label: {
+    color: tokens.textSecondary,
+    fontSize: "0.72rem",
+    fontWeight: 700,
+    letterSpacing: "0.04em",
+    textTransform: "uppercase",
+  },
+  reference: {
+    alignItems: "center",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.25rem 0.6rem",
+  },
+  summary: { display: "grid", gap: "0.3rem" },
+  tags: { alignItems: "center", display: "flex", flexWrap: "wrap", gap: "0.3rem" },
+  timeline: {
+    display: "grid",
+    gap: "0.5rem",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
+  },
+  timelineItem: {
+    borderInlineStartColor: tokens.borderEmphasized,
+    borderInlineStartStyle: "solid",
+    borderInlineStartWidth: "2px",
+    display: "grid",
+    gap: "0.1rem",
+    minWidth: 0,
+    paddingInlineStart: "0.5rem",
+  },
 });
 
 export function ConversionDetails({
@@ -77,10 +114,10 @@ export function ConversionDetails({
   return (
     <li {...props(styles.item)}>
       <div {...props(styles.summary)}>
-        <p {...props(styles.amount)}>
-          {formatCurrencyAmount(conversion.orderAmount, conversion.currency)}
-        </p>
         <div {...props(styles.tags)}>
+          <p {...props(styles.amount)}>
+            {formatCurrencyAmount(conversion.orderAmount, conversion.currency)}
+          </p>
           <StatusBadge tone={conversionStatusTone(conversion.status)}>
             {conversionStatusCopy(conversion.status)}
           </StatusBadge>
@@ -88,45 +125,60 @@ export function ConversionDetails({
             {attributionConfidenceCopy(conversion.attributionConfidence)}
           </StatusBadge>
         </div>
-        <code title="Conversion reference" {...props(styles.code)}>
-          {conversion.networkConversionRef}
-        </code>
       </div>
       <Collapsible onOpenChange={setIsOpen} open={isOpen}>
-        <CollapsibleTrigger
-          aria-label={`${isOpen ? "Hide" : "Show"} conversion ${conversion.networkConversionRef} details`}
-          render={<Button variant="link" />}
-        >
-          {isOpen ? "Hide conversion details" : "Show conversion details"}
-        </CollapsibleTrigger>
+        <div {...props(styles.reference)}>
+          <code title="Conversion reference" {...props(styles.code)}>
+            {conversion.networkConversionRef}
+          </code>
+          <CollapsibleTrigger
+            aria-label={`${isOpen ? "Hide" : "Show"} conversion ${conversion.networkConversionRef} details`}
+            render={<Button variant="link" />}
+          >
+            {isOpen ? "Hide details" : "Details"}
+          </CollapsibleTrigger>
+        </div>
         <CollapsibleContent>
-          <div {...props(styles.detailPanel)}>
-            <p {...props(styles.detail)}>
-              <strong>
-                {formatCurrencyAmount(conversion.commissionAmount, conversion.currency)} commission
-              </strong>
-            </p>
-            <p {...props(styles.detail)}>
-              <span>{conversion.merchantName ?? "No merchant"}</span>
-              {" · "}
+          <div
+            aria-label={`Conversion ${conversion.networkConversionRef} investigation`}
+            role="group"
+            {...props(styles.investigation)}
+          >
+            <div {...props(styles.earnings)}>
+              <div {...props(styles.earning)}>
+                <span {...props(styles.label)}>Order value</span>
+                <strong>{formatCurrencyAmount(conversion.orderAmount, conversion.currency)}</strong>
+              </div>
+              <div {...props(styles.earning)}>
+                <span {...props(styles.label)}>Commission</span>
+                <strong>
+                  {formatCurrencyAmount(conversion.commissionAmount, conversion.currency)}
+                </strong>
+              </div>
+            </div>
+            <div {...props(styles.commerceContext)}>
+              <strong>{conversion.merchantName ?? "No merchant"}</strong>
               <span>{conversion.productName ?? "No product"}</span>
-              {" · "}
-              <span>{conversion.affiliateNetworkName ?? "No affiliate network"}</span>
-            </p>
-            <p {...props(styles.detail)}>
-              Purchased{" "}
-              {conversion.purchasedAt ? (
-                <time dateTime={conversion.purchasedAt}>
-                  {formatProductDateTimeLabel(conversion.purchasedAt)}
+              <StatusBadge>{conversion.affiliateNetworkName ?? "No affiliate network"}</StatusBadge>
+            </div>
+            <ol aria-label="Conversion timeline" {...props(styles.timeline)}>
+              <li {...props(styles.timelineItem)}>
+                <span {...props(styles.label)}>Purchased</span>
+                {conversion.purchasedAt ? (
+                  <time dateTime={conversion.purchasedAt}>
+                    {formatProductDateTimeLabel(conversion.purchasedAt)}
+                  </time>
+                ) : (
+                  <span>Not recorded</span>
+                )}
+              </li>
+              <li {...props(styles.timelineItem)}>
+                <span {...props(styles.label)}>Reported</span>
+                <time dateTime={conversion.reportedAt}>
+                  {formatProductDateTimeLabel(conversion.reportedAt)}
                 </time>
-              ) : (
-                "not recorded"
-              )}
-              {" · Reported "}
-              <time dateTime={conversion.reportedAt}>
-                {formatProductDateTimeLabel(conversion.reportedAt)}
-              </time>
-            </p>
+              </li>
+            </ol>
           </div>
         </CollapsibleContent>
       </Collapsible>

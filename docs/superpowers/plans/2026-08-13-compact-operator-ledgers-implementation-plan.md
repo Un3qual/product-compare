@@ -45,7 +45,7 @@
 - Consumes: the existing `AttributionLedger_row` and `ConversionDetails_conversion` generated Relay fragments without changing their fields.
 - Produces: four table columns named `Visit`, `Request`, `Commerce`, and `Conversion`; an accessible `Conversion <network reference> investigation` group; unchanged pagination and empty-state behavior.
 
-- [ ] **Step 1: Write the failing four-column and non-loss route tests**
+- [x] **Step 1: Write the failing four-column and non-loss route tests**
 
   Update the existing customer-facing ledger test to assert the new table model while retaining its current assertions for email, source, link type, referrer, user agent, IP address, network, amount, status, confidence, reference, and absence of internal IDs:
 
@@ -90,7 +90,7 @@
   expect(investigation.querySelector("dl")).not.toBeInTheDocument();
   ```
 
-- [ ] **Step 2: Run the revenue route test and verify RED**
+- [x] **Step 2: Run the revenue route test and verify RED**
 
   ```bash
   cd assets
@@ -99,7 +99,7 @@
 
   Expected: FAIL because the current headers are `Click`, `Identity`, `Request diagnostics`, `Commerce`, and `Matched conversions`, and there is no labeled investigation group or structured earnings/timeline labels.
 
-- [ ] **Step 3: Merge click and identity into the `Visit` cell**
+- [x] **Step 3: Merge click and identity into the `Visit` cell**
 
   Replace the five-column table definition with this four-column ownership:
 
@@ -132,11 +132,11 @@
 
   Implement `AttributionVisit` as one compact hierarchy: exact click time first; source and link badges in one inline group; email/anonymous identity and its state in one inline identity group. Delete the now-independent `AttributionClickDetails` and `AttributionIdentity` owners.
 
-- [ ] **Step 4: Tighten scan summaries without dropping metadata**
+- [x] **Step 4: Tighten scan summaries without dropping metadata**
 
   Reduce route-local gaps and nested blocks to compact inline groups. Keep the full referrer and user agent in `title`, preserve the visible normalized copies, and keep IP, network, SKU, and affiliate program in visible text. Leave the existing `68rem` table minimum in place until Task 3 so the responsive containment test can prove its removal.
 
-- [ ] **Step 5: Replace the conversion card with a structured disclosure**
+- [x] **Step 5: Replace the conversion card with a structured disclosure**
 
   Keep the collapsed order amount, status, confidence, reference, and trigger visible. Remove the raised card background and padding. Render the open panel with a labeled group and three visual units:
 
@@ -184,7 +184,7 @@
 
   The purchased item must render `Not recorded` when `purchasedAt` is null. The reported item always renders the generated `reportedAt` value.
 
-- [ ] **Step 6: Run focused revenue GREEN and commit**
+- [x] **Step 6: Run focused revenue GREEN and commit**
 
   ```bash
   cd assets

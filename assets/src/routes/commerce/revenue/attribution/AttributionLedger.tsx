@@ -36,7 +36,7 @@ const styles = create({
     fontSize: "0.78rem",
     overflowWrap: "anywhere",
   },
-  conversionList: { display: "grid", gap: "0.5rem", listStyle: "none", margin: 0, padding: 0 },
+  conversionList: { display: "grid", gap: "0.35rem", listStyle: "none", margin: 0, padding: 0 },
   identity: {
     fontSize: "0.9rem",
     fontWeight: 700,
@@ -48,7 +48,7 @@ const styles = create({
     alignItems: "center",
     display: "flex",
     flexWrap: "wrap",
-    gap: "0.35rem",
+    gap: "0.3rem 0.45rem",
   },
   primary: {
     fontWeight: 700,
@@ -64,7 +64,7 @@ const styles = create({
     margin: 0,
     overflowWrap: "anywhere",
   },
-  stack: { display: "grid", gap: "0.55rem" },
+  stack: { display: "grid", gap: "0.4rem" },
   table: { borderCollapse: "collapse", minWidth: "68rem", width: "100%" },
   title: { fontSize: "1.25rem", marginBlockEnd: "0.5rem" },
   wrapper: { display: "grid", gap: "1rem", marginBlockStart: "2rem" },
@@ -121,18 +121,13 @@ const tableModel = tableFeatures({});
 const columnHelper = createColumnHelper<typeof tableModel, AttributionClick>();
 const columns = columnHelper.columns([
   columnHelper.display({
-    id: "click",
-    header: "Click",
-    cell: ({ row }) => <AttributionClickDetails click={row.original} />,
+    id: "visit",
+    header: "Visit",
+    cell: ({ row }) => <AttributionVisit click={row.original} />,
   }),
   columnHelper.display({
-    id: "identity",
-    header: "Identity",
-    cell: ({ row }) => <AttributionIdentity click={row.original} />,
-  }),
-  columnHelper.display({
-    id: "diagnostics",
-    header: "Request diagnostics",
+    id: "request",
+    header: "Request",
     cell: ({ row }) => <AttributionDiagnostics click={row.original} />,
   }),
   columnHelper.display({
@@ -141,8 +136,8 @@ const columns = columnHelper.columns([
     cell: ({ row }) => <AttributionCommerce click={row.original} />,
   }),
   columnHelper.display({
-    id: "conversions",
-    header: "Matched conversions",
+    id: "conversion",
+    header: "Conversion",
     cell: ({ row }) => <AttributionConversionList conversions={row.original.matchedConversions} />,
   }),
 ]);
@@ -257,10 +252,12 @@ function AttributionDiagnostics({ click }: { click: AttributionClick }) {
       <strong title={click.referrer ?? undefined} {...props(styles.primary)}>
         {referrer}
       </strong>
-      <span title={click.userAgent ?? undefined} {...props(styles.secondary)}>
-        {userAgentCopy(click.userAgent)}
-      </span>
-      <code {...props(styles.code)}>{click.ipAddress ?? "IP not captured"}</code>
+      <div {...props(styles.meta)}>
+        <span title={click.userAgent ?? undefined} {...props(styles.secondary)}>
+          {userAgentCopy(click.userAgent)}
+        </span>
+        <code {...props(styles.code)}>{click.ipAddress ?? "IP not captured"}</code>
+      </div>
     </div>
   );
 }
@@ -268,24 +265,24 @@ function AttributionDiagnostics({ click }: { click: AttributionClick }) {
 function AttributionCommerce({ click }: { click: AttributionClick }) {
   return (
     <div {...props(styles.stack)}>
-      <div>
-        <p {...props(styles.primary)}>{click.merchantName}</p>
-        <p {...props(styles.secondary)}>{click.productName ?? "No product"}</p>
-      </div>
+      <p {...props(styles.primary)}>
+        {click.merchantName}
+        <span {...props(styles.secondary)}> · {click.productName ?? "No product"}</span>
+      </p>
       <div {...props(styles.meta)}>
         <StatusBadge>{click.affiliateNetworkName ?? "No network"}</StatusBadge>
         <code title="Merchant SKU" {...props(styles.code)}>
           {click.merchantProductExternalSku ?? "No SKU"}
         </code>
+        <code title="Affiliate program" {...props(styles.code)}>
+          {click.affiliateProgramCode ?? "No affiliate program"}
+        </code>
       </div>
-      <code title="Affiliate program" {...props(styles.code)}>
-        {click.affiliateProgramCode ?? "No affiliate program"}
-      </code>
     </div>
   );
 }
 
-function AttributionClickDetails({ click }: { click: AttributionClick }) {
+function AttributionVisit({ click }: { click: AttributionClick }) {
   return (
     <div {...props(styles.stack)}>
       <time dateTime={click.insertedAt} {...props(styles.primary)}>
@@ -295,6 +292,7 @@ function AttributionClickDetails({ click }: { click: AttributionClick }) {
         <StatusBadge tone="accent">{sourceSurfaceCopy(click.sourceSurface)}</StatusBadge>
         <StatusBadge>{linkTypeCopy(click.linkType)}</StatusBadge>
       </div>
+      <AttributionIdentity click={click} />
     </div>
   );
 }
@@ -302,7 +300,7 @@ function AttributionClickDetails({ click }: { click: AttributionClick }) {
 function AttributionIdentity({ click }: { click: AttributionClick }) {
   if (click.userEmail) {
     return (
-      <div {...props(styles.stack)}>
+      <div {...props(styles.meta)}>
         <strong {...props(styles.identity)}>{click.userEmail}</strong>
         <span {...props(styles.secondary)}>Known customer</span>
       </div>
@@ -310,7 +308,7 @@ function AttributionIdentity({ click }: { click: AttributionClick }) {
   }
 
   return (
-    <div {...props(styles.stack)}>
+    <div {...props(styles.meta)}>
       <p {...props(styles.primary)}>
         {click.anonymousVisitor ? "Anonymous visitor" : "Unidentified click"}
       </p>
