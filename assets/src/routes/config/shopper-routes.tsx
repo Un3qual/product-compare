@@ -1,6 +1,6 @@
 import type { RouteObject } from "react-router-dom";
-import { routeMetadata } from "../frontend/head";
-import { RouteErrorBoundary } from "../routes/compare/RouteErrorBoundary";
+import { routeMetadata } from "../../frontend/head";
+import { RouteErrorBoundary } from "../compare/RouteErrorBoundary";
 import { withLazyRouteImportRecovery } from "./lazy-route";
 
 export const shopperRoutes: RouteObject[] = [
@@ -11,7 +11,7 @@ export const shopperRoutes: RouteObject[] = [
       "Choose products with clearer specifications and current offers.",
     ),
     lazy: withLazyRouteImportRecovery(async () => {
-      const { HomeRoute, homeLoader } = await import("../routes/home/HomeRoute");
+      const { HomeRoute, homeLoader } = await import("../home/HomeRoute");
       return { Component: HomeRoute, loader: homeLoader };
     }),
   },
@@ -22,7 +22,7 @@ export const shopperRoutes: RouteObject[] = [
       "Browse the product catalog and narrow the results by the attributes that matter.",
     ),
     lazy: withLazyRouteImportRecovery(async () => {
-      const { BrowseRoute, browseLoader } = await import("../routes/catalog/BrowseRoute");
+      const { BrowseRoute, browseLoader } = await import("../catalog/BrowseRoute");
       return { Component: BrowseRoute, loader: browseLoader };
     }),
   },
@@ -35,7 +35,7 @@ export const shopperRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary resourceName="product" title="Product details" />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { ProductDetailRoute, productDetailLoader } =
-        await import("../routes/products/ProductDetailRoute");
+        await import("../products/ProductDetailRoute");
       return { Component: ProductDetailRoute, loader: productDetailLoader };
     }),
   },
@@ -48,7 +48,7 @@ export const shopperRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { MerchantDirectoryRoute, merchantDirectoryLoader } =
-        await import("../routes/merchants/MerchantDirectoryRoute");
+        await import("../merchants/MerchantDirectoryRoute");
       return { Component: MerchantDirectoryRoute, loader: merchantDirectoryLoader };
     }),
   },
@@ -61,7 +61,7 @@ export const shopperRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary resourceName="merchant" title="Merchant details" />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { MerchantDetailRoute, merchantDetailLoader } =
-        await import("../routes/merchants/detail/MerchantDetailRoute");
+        await import("../merchants/detail/MerchantDetailRoute");
       return { Component: MerchantDetailRoute, loader: merchantDetailLoader };
     }),
   },
@@ -73,7 +73,7 @@ export const shopperRoutes: RouteObject[] = [
     ),
     errorElement: <RouteErrorBoundary resourceName="category" title="Product category" />,
     lazy: withLazyRouteImportRecovery(async () => {
-      const { CategoryRoute, categoryLoader } = await import("../routes/categories/CategoryRoute");
+      const { CategoryRoute, categoryLoader } = await import("../categories/CategoryRoute");
       return { Component: CategoryRoute, loader: categoryLoader };
     }),
   },
@@ -86,7 +86,7 @@ export const shopperRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary resourceName="offer discovery" title="Offers" />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { OfferDiscoveryRoute, offerDiscoveryLoader } =
-        await import("../routes/offers/OfferDiscoveryRoute");
+        await import("../offers/OfferDiscoveryRoute");
       return { Component: OfferDiscoveryRoute, loader: offerDiscoveryLoader };
     }),
   },
@@ -99,7 +99,7 @@ export const shopperRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { CompareRoute, compareLoader, shouldRevalidateCompareLoader } =
-        await import("../routes/compare/CompareRoute");
+        await import("../compare/CompareRoute");
       return {
         Component: CompareRoute,
         loader: compareLoader,
@@ -116,7 +116,7 @@ export const shopperRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary resourceName="shared comparison" title="Shared comparison" />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { SharedComparisonRoute, sharedComparisonLoader } =
-        await import("../routes/compare/shared/SharedComparisonRoute");
+        await import("../compare/shared/SharedComparisonRoute");
       return { Component: SharedComparisonRoute, loader: sharedComparisonLoader };
     }),
   },

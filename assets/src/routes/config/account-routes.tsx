@@ -1,6 +1,6 @@
 import type { RouteObject } from "react-router-dom";
-import { routeMetadata } from "../frontend/head";
-import { RouteErrorBoundary } from "../routes/compare/RouteErrorBoundary";
+import { routeMetadata } from "../../frontend/head";
+import { RouteErrorBoundary } from "../compare/RouteErrorBoundary";
 import { withLazyRouteImportRecovery } from "./lazy-route";
 
 export const accountRoutes: RouteObject[] = [
@@ -13,7 +13,7 @@ export const accountRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary title="Saved comparisons" />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { SavedComparisonsRoute, savedComparisonsLoader } =
-        await import("../routes/compare/saved/SavedComparisonsRoute");
+        await import("../compare/saved/SavedComparisonsRoute");
       return { Component: SavedComparisonsRoute, loader: savedComparisonsLoader };
     }),
   },
@@ -25,7 +25,7 @@ export const accountRoutes: RouteObject[] = [
     ),
     errorElement: <RouteErrorBoundary resourceName="price alerts" title="Price alerts" />,
     lazy: withLazyRouteImportRecovery(async () => {
-      const { AlertsRoute, alertsLoader } = await import("../routes/account/alerts/AlertsRoute");
+      const { AlertsRoute, alertsLoader } = await import("../account/alerts/AlertsRoute");
       return { Component: AlertsRoute, loader: alertsLoader };
     }),
   },
@@ -38,7 +38,7 @@ export const accountRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary resourceName="API tokens page" title="API tokens" />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { ApiTokensRoute, apiTokensLoader } =
-        await import("../routes/account/api-tokens/ApiTokensRoute");
+        await import("../account/api-tokens/ApiTokensRoute");
       return { Component: ApiTokensRoute, loader: apiTokensLoader };
     }),
   },
@@ -49,7 +49,7 @@ export const accountRoutes: RouteObject[] = [
       "Sign in to manage saved comparisons and account tools.",
     ),
     lazy: withLazyRouteImportRecovery(async () => {
-      const { LoginRoute } = await import("../routes/auth/LoginRoute");
+      const { LoginRoute } = await import("../auth/LoginRoute");
       return { Component: LoginRoute };
     }),
   },
@@ -60,7 +60,7 @@ export const accountRoutes: RouteObject[] = [
       "Sign out of your Product Compare account.",
     ),
     lazy: withLazyRouteImportRecovery(async () => {
-      const { LogoutRoute } = await import("../routes/auth/LogoutRoute");
+      const { LogoutRoute } = await import("../auth/LogoutRoute");
       return { Component: LogoutRoute };
     }),
   },
@@ -71,7 +71,7 @@ export const accountRoutes: RouteObject[] = [
       "Create an account to save comparisons and manage connected tools.",
     ),
     lazy: withLazyRouteImportRecovery(async () => {
-      const { RegisterRoute } = await import("../routes/auth/RegisterRoute");
+      const { RegisterRoute } = await import("../auth/RegisterRoute");
       return { Component: RegisterRoute };
     }),
   },
@@ -82,7 +82,7 @@ export const accountRoutes: RouteObject[] = [
       "Request a secure Product Compare password reset link.",
     ),
     lazy: withLazyRouteImportRecovery(async () => {
-      const { ForgotPasswordRoute } = await import("../routes/auth/ForgotPasswordRoute");
+      const { ForgotPasswordRoute } = await import("../auth/ForgotPasswordRoute");
       return { Component: ForgotPasswordRoute };
     }),
   },
@@ -93,7 +93,7 @@ export const accountRoutes: RouteObject[] = [
       "Choose a new password for your Product Compare account.",
     ),
     lazy: withLazyRouteImportRecovery(async () => {
-      const { ResetPasswordRoute } = await import("../routes/auth/ResetPasswordRoute");
+      const { ResetPasswordRoute } = await import("../auth/ResetPasswordRoute");
       return { Component: ResetPasswordRoute };
     }),
   },
@@ -104,7 +104,7 @@ export const accountRoutes: RouteObject[] = [
       "Verify the email address connected to your Product Compare account.",
     ),
     lazy: withLazyRouteImportRecovery(async () => {
-      const { VerifyEmailRoute } = await import("../routes/auth/VerifyEmailRoute");
+      const { VerifyEmailRoute } = await import("../auth/VerifyEmailRoute");
       return { Component: VerifyEmailRoute };
     }),
   },

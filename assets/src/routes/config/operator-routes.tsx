@@ -1,7 +1,7 @@
 import type { RouteObject } from "react-router-dom";
 import { redirect } from "react-router-dom";
-import { routeMetadata } from "../frontend/head";
-import { RouteErrorBoundary } from "../routes/compare/RouteErrorBoundary";
+import { routeMetadata } from "../../frontend/head";
+import { RouteErrorBoundary } from "../compare/RouteErrorBoundary";
 import { withLazyRouteImportRecovery } from "./lazy-route";
 
 export const operatorRoutes: RouteObject[] = [
@@ -14,7 +14,7 @@ export const operatorRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { AffiliateSetupRoute, affiliateSetupLoader } =
-        await import("../routes/affiliate/setup/AffiliateSetupRoute");
+        await import("../affiliate/setup/AffiliateSetupRoute");
       return { Component: AffiliateSetupRoute, loader: affiliateSetupLoader };
     }),
   },
@@ -27,7 +27,7 @@ export const operatorRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary resourceName="revenue report" title="Revenue" />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { RevenueSummaryRoute, revenueSummaryLoader } =
-        await import("../routes/commerce/revenue/RevenueSummaryRoute");
+        await import("../commerce/revenue/RevenueSummaryRoute");
       return { Component: RevenueSummaryRoute, loader: revenueSummaryLoader };
     }),
   },
@@ -40,7 +40,7 @@ export const operatorRoutes: RouteObject[] = [
     errorElement: <RouteErrorBoundary resourceName="CJ programs" title="CJ programs" />,
     lazy: withLazyRouteImportRecovery(async () => {
       const { CJProgramsRoute, cjProgramsLoader } =
-        await import("../routes/ingestion/cj-programs/CJProgramsRoute");
+        await import("../ingestion/cj-programs/CJProgramsRoute");
       return { Component: CJProgramsRoute, loader: cjProgramsLoader };
     }),
   },
