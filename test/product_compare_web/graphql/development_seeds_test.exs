@@ -89,9 +89,18 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
     assert %{
              "data" => %{
                "viewer" => %{"email" => "shopper@example.com"},
-               "mySavedComparisonSets" => %{"edges" => saved_set_edges},
-               "myPriceWatches" => %{"edges" => watch_edges},
-               "myAlertEvents" => %{"edges" => event_edges},
+               "mySavedComparisonSets" => %{
+                 "edges" => saved_set_edges,
+                 "pageInfo" => %{"endCursor" => saved_end_cursor, "hasNextPage" => true}
+               },
+               "myPriceWatches" => %{
+                 "edges" => watch_edges,
+                 "pageInfo" => %{"endCursor" => watch_end_cursor, "hasNextPage" => true}
+               },
+               "myAlertEvents" => %{
+                 "edges" => event_edges,
+                 "pageInfo" => %{"hasNextPage" => true}
+               },
                "myApiTokens" => %{"edges" => token_edges},
                "mySpecificationCorrections" => %{"edges" => correction_edges},
                "reviewedProduct" => %{
@@ -112,24 +121,34 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
                "questionSlug" => "acme-beam-4k"
              })
 
-    assert Enum.sort(Enum.map(saved_set_edges, &get_in(&1, ["node", "name"]))) == [
-             "Gaming shortlist",
-             "Home theater shortlist"
-           ]
+    assert length(saved_set_edges) == 20
+    assert length(watch_edges) == 20
+    assert length(event_edges) == 20
 
-    assert [_, _, _, _] = watch_edges
-    assert [_, _, _ | _] = event_edges
+    assert %{
+             "data" => %{
+               "mySavedComparisonSets" => %{
+                 "edges" => [_ | _],
+                 "pageInfo" => %{"hasPreviousPage" => true}
+               },
+               "myPriceWatches" => %{
+                 "edges" => [_ | _],
+                 "pageInfo" => %{"hasPreviousPage" => true}
+               }
+             }
+           } =
+             graphql(shopper_conn, shopper_page_query(), %{
+               "savedAfter" => saved_end_cursor,
+               "watchAfter" => watch_end_cursor
+             })
 
     assert Enum.sort(Enum.map(token_edges, &get_in(&1, ["node", "label"]))) == [
              "Development active",
              "Development revoked"
            ]
 
-    assert Enum.sort(Enum.map(correction_edges, &get_in(&1, ["node", "status"]))) == [
-             "ACCEPTED",
-             "PENDING",
-             "REJECTED"
-           ]
+    assert MapSet.new(correction_edges, &get_in(&1, ["node", "status"])) ==
+             MapSet.new(["ACCEPTED", "PENDING", "REJECTED"])
 
     assert community_submissions["answers"] != []
 
@@ -212,9 +231,18 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
     """
     query DevelopmentShopper($reviewSlug: String!, $questionSlug: String!) {
       viewer { email }
-      mySavedComparisonSets(first: 20) { edges { node { name items { position } } } }
-      myPriceWatches(first: 20) { edges { node { ruleType enabled } } }
-      myAlertEvents(first: 20) { edges { node { ruleType readAt } } }
+      mySavedComparisonSets(first: 20) {
+        edges { cursor node { name items { position } } }
+        pageInfo { endCursor hasNextPage }
+      }
+      myPriceWatches(first: 20) {
+        edges { cursor node { ruleType enabled } }
+        pageInfo { endCursor hasNextPage }
+      }
+      myAlertEvents(first: 20) {
+        edges { cursor node { ruleType readAt } }
+        pageInfo { hasNextPage }
+      }
       myApiTokens(first: 20, status: ALL) { edges { node { label revokedAt } } }
       mySpecificationCorrections(first: 20) { edges { node { status reason } } }
       reviewedProduct: product(slug: $reviewSlug) {
@@ -227,6 +255,21 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
           questions { id moderationStatus viewerCanEdit }
           answers { id moderationStatus viewerCanEdit }
         }
+      }
+    }
+    """
+  end
+
+  defp shopper_page_query do
+    """
+    query DevelopmentShopperPage($savedAfter: String, $watchAfter: String) {
+      mySavedComparisonSets(first: 20, after: $savedAfter) {
+        edges { cursor node { name } }
+        pageInfo { hasPreviousPage }
+      }
+      myPriceWatches(first: 20, after: $watchAfter) {
+        edges { cursor node { ruleType } }
+        pageInfo { hasPreviousPage }
       }
     }
     """

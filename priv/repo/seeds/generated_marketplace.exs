@@ -17,12 +17,18 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
   @current_hash Support.sha256("development-marketplace-generated-current-v1")
   @weekly_hash Support.sha256("development-marketplace-generated-weekly-v1")
   @monthly_hash Support.sha256("development-marketplace-generated-full-monthly-v1")
+  @generated_watch_entropy_ids Enum.map(1..156, fn index ->
+                                 Support.stable_uuid(
+                                   "development-generated-watch",
+                                   Integer.to_string(index)
+                                 )
+                               end)
   @seed_watch_entropy_ids [
-    "d3ca0000-0000-4000-8000-000000000001",
-    "d3ca0000-0000-4000-8000-000000000002",
-    "d3ca0000-0000-4000-8000-000000000003",
-    Support.unobserved_watch_entropy_id()
-  ]
+                            "d3ca0000-0000-4000-8000-000000000001",
+                            "d3ca0000-0000-4000-8000-000000000002",
+                            "d3ca0000-0000-4000-8000-000000000003",
+                            Support.unobserved_watch_entropy_id()
+                          ] ++ @generated_watch_entropy_ids
 
   @spec seed!(map(), map(), map(), struct(), DateTime.t(), map()) :: map()
   def seed!(catalog, named_merchants, named_offers, source, anchor, profile) do

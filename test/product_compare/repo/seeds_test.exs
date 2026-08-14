@@ -7,6 +7,7 @@ Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/catalog.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/generated_marketplace.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/marketplace.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/community_writes.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/generated_engagement.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/engagement.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/operations.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/guide.exs"))
@@ -84,6 +85,12 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Taxonomy.Taxonomy
 
   @seed_password "supersecretpass123"
+  @named_watch_entropy_ids [
+    "d3ca0000-0000-4000-8000-000000000001",
+    "d3ca0000-0000-4000-8000-000000000002",
+    "d3ca0000-0000-4000-8000-000000000003",
+    "d3ca0000-0000-4000-8000-000000000004"
+  ]
 
   test "density defaults to the bounded profile" do
     assert %{
@@ -245,6 +252,63 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Repo.aggregate(PricePoint, :count, :id) ==
              length(bounded_again.marketplace.all_price_points)
+
+    assert engagement_counts(bounded_again) == %{
+             saved_sets: 24,
+             watches: 48,
+             reviews: 120,
+             questions: 80,
+             corrections: 24
+           }
+
+    assert Repo.aggregate(SavedComparisonSet, :count, :id) == 24
+    assert Repo.aggregate(PriceWatchRule, :count, :id) == 48
+    assert Repo.aggregate(ProductReview, :count, :id) == 120
+    assert Repo.aggregate(ProductThread, :count, :id) == 80
+    assert Repo.aggregate(SpecificationCorrection, :count, :id) == 24
+  end
+
+  test "engagement densities scale lifecycle and moderation coverage" do
+    bounded = run_seed(["--density", "bounded"])
+
+    assert %{
+             saved_sets: 24,
+             watches: 48,
+             reviews: 120,
+             questions: 80,
+             corrections: 24
+           } == engagement_counts(bounded)
+
+    assert length(bounded.engagement.all_alerts) >= 64
+
+    assert MapSet.new(bounded.engagement.all_watches, & &1.rule_type) ==
+             MapSet.new([:target_price, :percentage_drop, :back_in_stock, :newly_available])
+
+    assert Enum.any?(bounded.engagement.all_watches, & &1.enabled)
+    assert Enum.any?(bounded.engagement.all_watches, &(not &1.enabled))
+    assert Enum.any?(bounded.engagement.all_alerts, &is_nil(&1.read_at))
+    assert Enum.any?(bounded.engagement.all_alerts, &(not is_nil(&1.read_at)))
+
+    full = run_seed(["--density", "full"])
+
+    assert %{
+             saved_sets: 60,
+             watches: 160,
+             reviews: 300,
+             questions: 180,
+             corrections: 90
+           } == engagement_counts(full)
+
+    assert length(full.engagement.all_alerts) >= 240
+
+    for correction <- Enum.filter(full.engagement.all_corrections, &(&1.status == :pending)),
+        claim = Repo.get!(ProductAttributeClaim, correction.claim_id),
+        is_nil(claim.supersedes_claim_id) do
+      refute Repo.get_by(ProductAttributeCurrent,
+               product_id: correction.product_id,
+               attribute_id: correction.attribute_id
+             )
+    end
   end
 
   test "seed transaction retries explicit stale-snapshot conflicts on a fresh transaction" do
@@ -915,6 +979,7 @@ defmodule ProductCompare.Repo.SeedsTest do
     watches =
       shopper.id
       |> Alerts.list_watch_rules_query()
+      |> where([watch], watch.entropy_id in ^@named_watch_entropy_ids)
       |> Repo.all()
 
     assert Enum.map(watches, & &1.rule_type) |> Enum.sort() ==
@@ -942,7 +1007,8 @@ defmodule ProductCompare.Repo.SeedsTest do
       |> where(
         [review],
         review.user_id in ^[shopper.id, participant.id] and
-          review.moderation_status == :published
+          review.moderation_status == :published and
+          review.title in ["Excellent for fast games", "Great movie picture"]
       )
       |> Repo.all()
 
@@ -2736,7 +2802,11 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     watches =
       PriceWatchRule
-      |> where([watch], watch.user_id == ^shopper.id and watch.enabled == true)
+      |> where(
+        [watch],
+        watch.user_id == ^shopper.id and watch.enabled == true and
+          watch.entropy_id in ^@named_watch_entropy_ids
+      )
       |> Repo.all()
 
     percentage_watch = Enum.find(watches, &(&1.rule_type == :percentage_drop))
@@ -3152,6 +3222,16 @@ defmodule ProductCompare.Repo.SeedsTest do
   defp run_seed(argv) do
     capture_io(fn -> Process.put(:seed_result, ProductCompare.DevSeeds.run!(argv)) end)
     Process.delete(:seed_result)
+  end
+
+  defp engagement_counts(seed) do
+    %{
+      saved_sets: length(seed.engagement.all_saved_sets),
+      watches: length(seed.engagement.all_watches),
+      reviews: length(seed.engagement.all_reviews),
+      questions: length(seed.engagement.all_questions),
+      corrections: length(seed.engagement.all_corrections)
+    }
   end
 
   defp latest_offer_summary(offer, now) do

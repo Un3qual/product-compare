@@ -8,6 +8,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.DevSeeds.CommunityWrites
   alias ProductCompare.DevSeeds.CorrectionSafety
+  alias ProductCompare.DevSeeds.GeneratedEngagement
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Discussions
   alias ProductCompare.Pricing
@@ -49,7 +50,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
         catalog,
         marketplace,
         %DateTime{} = anchor,
-        _profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
+        profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
       ) do
     saved_sets = seed_saved_sets!(accounts.shopper, catalog.products)
     snapshot = seed_snapshot!(accounts.shopper, catalog.products, anchor)
@@ -57,12 +58,35 @@ defmodule ProductCompare.DevSeeds.Engagement do
     community = seed_community!(accounts, catalog.products)
     corrections = seed_corrections!(accounts, catalog)
 
+    named = %{
+      saved_sets: [saved_sets.gaming, saved_sets.home_theater],
+      watches: [
+        alerts.watches.target,
+        alerts.watches.percentage_drop,
+        alerts.watches.back_in_stock,
+        alerts.watches.newly_available
+      ],
+      alerts: [alerts.read_event | alerts.unread_events],
+      reviews: [community.reviews.shopper, community.reviews.participant],
+      questions: [community.question, community.pending_question],
+      corrections: [corrections.pending, corrections.accepted, corrections.rejected]
+    }
+
+    generated =
+      GeneratedEngagement.seed!(accounts, catalog, marketplace, anchor, profile, named)
+
     %{
       saved_sets: saved_sets,
+      all_saved_sets: named.saved_sets ++ generated.saved_sets,
       snapshot: snapshot,
       alerts: alerts,
+      all_watches: named.watches ++ generated.watches,
+      all_alerts: named.alerts ++ generated.alerts,
       community: community,
-      corrections: corrections
+      all_reviews: named.reviews ++ generated.reviews,
+      all_questions: named.questions ++ generated.questions,
+      corrections: corrections,
+      all_corrections: named.corrections ++ generated.corrections
     }
   end
 
