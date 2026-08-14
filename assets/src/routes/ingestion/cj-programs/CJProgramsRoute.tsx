@@ -112,6 +112,7 @@ export async function cjProgramsLoader({
     (reason: unknown) =>
       recoverRouteLoaderError(reason, "Failed to preload unmatched CJ feeds query.", null),
   );
+  void unmatchedQuery.catch(() => undefined);
 
   try {
     return {

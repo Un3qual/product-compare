@@ -226,6 +226,41 @@ test("cjProgramsLoader forwards and rethrows request aborts", async () => {
   );
 });
 
+test("cjProgramsLoader drains the detached unmatched-feed preload when the request aborts", async () => {
+  const environment = createRelayEnvironment();
+  const controller = new AbortController();
+  const request = new Request("https://app.example.test/ingestion/cj-programs", {
+    signal: controller.signal,
+  });
+  const abortError = new DOMException("Route transition", "AbortError");
+  const programsPreload = deferredPromise<ReturnType<typeof cjProgramsQueryDescriptor>>();
+  const unmatchedPreload = deferredPromise<ReturnType<typeof unmatchedFeedsQueryDescriptor>>();
+  const unhandledRejections: unknown[] = [];
+  const captureUnhandledRejection = (reason: unknown) => {
+    unhandledRejections.push(reason);
+  };
+
+  preloadRouteQueryMock
+    .mockImplementationOnce(() => programsPreload.promise)
+    .mockImplementationOnce(() => unmatchedPreload.promise);
+  process.on("unhandledRejection", captureUnhandledRejection);
+
+  try {
+    const loaderResult = cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request }));
+
+    controller.abort(abortError);
+    programsPreload.reject(abortError);
+    await expect(loaderResult).rejects.toBe(abortError);
+
+    unmatchedPreload.reject(abortError);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(unhandledRejections).toEqual([]);
+  } finally {
+    process.off("unhandledRejection", captureUnhandledRejection);
+  }
+});
+
 function buildCJProgramsLoaderArgs({
   environment = createRelayEnvironment(),
   request = new Request("https://app.example.test/ingestion/cj-programs"),
@@ -260,4 +295,15 @@ function unmatchedFeedsQueryDescriptor(variables: UnmatchedFeedsQuery["variables
       variables,
     },
   };
+}
+
+function deferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
 }
