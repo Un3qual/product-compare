@@ -4,6 +4,7 @@ import { createRelayRouterContext, preloadRouteQuery } from "../../../../src/rel
 import { cjProgramsLoader } from "../../../../src/routes/ingestion/cj-programs/CJProgramsRoute";
 import type { CJProgramsRouteQuery } from "../../../../src/__generated__/CJProgramsRouteQuery.graphql";
 import type { UnmatchedFeedsQuery } from "../../../../src/__generated__/UnmatchedFeedsQuery.graphql";
+import { buildAbortableRequest } from "../../compare/saved-comparisons-test-helpers";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
@@ -205,9 +206,10 @@ test("cjProgramsLoader preserves unmatched feeds when program data is unavailabl
 test("cjProgramsLoader forwards and rethrows request aborts", async () => {
   const environment = createRelayEnvironment();
   const controller = new AbortController();
-  const request = new Request("https://app.example.test/ingestion/cj-programs", {
-    signal: controller.signal,
-  });
+  const request = buildAbortableRequest(
+    "https://app.example.test/ingestion/cj-programs",
+    controller.signal,
+  );
   const abortError = new DOMException("Route transition", "AbortError");
 
   preloadRouteQueryMock
@@ -229,9 +231,10 @@ test("cjProgramsLoader forwards and rethrows request aborts", async () => {
 test("cjProgramsLoader drains the detached unmatched-feed preload when the request aborts", async () => {
   const environment = createRelayEnvironment();
   const controller = new AbortController();
-  const request = new Request("https://app.example.test/ingestion/cj-programs", {
-    signal: controller.signal,
-  });
+  const request = buildAbortableRequest(
+    "https://app.example.test/ingestion/cj-programs",
+    controller.signal,
+  );
   const abortError = new DOMException("Route transition", "AbortError");
   const programsPreload = deferredPromise<ReturnType<typeof cjProgramsQueryDescriptor>>();
   const unmatchedPreload = deferredPromise<ReturnType<typeof unmatchedFeedsQueryDescriptor>>();
