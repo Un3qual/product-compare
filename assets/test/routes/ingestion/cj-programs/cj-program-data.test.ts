@@ -1,10 +1,17 @@
 import {
   CJ_PROGRAM_STAGES,
+  cjProgramRequiredAction,
   cjProgramStageLabel,
   cjProgramWarningCopy,
+} from "../../../../src/routes/ingestion/cj-programs/programs/lifecycle-policy";
+import {
+  buildCJLifecycleSummary,
+  selectCJProgramAttention,
+} from "../../../../src/routes/ingestion/cj-programs/programs/program-dashboard-data";
+import {
   formatCJDateTime,
   formatFeedProductCount,
-} from "../../../../src/routes/ingestion/cj-programs/cj-program-data";
+} from "../../../../src/routes/ingestion/cj-programs/formatting";
 import {
   buildCJProgramPaginationData,
   cjProgramStageToUrlParam,
@@ -155,11 +162,93 @@ test("maps mixed-feed warning codes to truthful any-feed copy", () => {
   expect(cjProgramWarningCopy("NON_ENGLISH_LANGUAGE")).toBe(
     "At least one observed feed is not marked as English.",
   );
-  expect(cjProgramWarningCopy("UNKNOWN")).toBeNull();
+  expect(cjProgramWarningCopy("%future added value")).toBeNull();
 });
 
-test("does not relabel future or unknown Relay enum values as New", () => {
+test("does not relabel Relay future enum values as New", () => {
   expect(cjProgramStageLabel("%future added value")).toBeNull();
-  expect(cjProgramStageLabel("RETIRED")).toBeNull();
   expect(cjProgramWarningCopy("%future added value")).toBeNull();
+});
+
+test("buildCJLifecycleSummary includes the exact global total and stage counts", () => {
+  expect(
+    buildCJLifecycleSummary({
+      new: 2,
+      considering: 3,
+      selected: 4,
+      applied: 5,
+      accepted: 6,
+      notPursuing: 7,
+      declined: 8,
+    }),
+  ).toEqual([
+    { label: "All programs", value: 35 },
+    { label: "New", value: 2 },
+    { label: "Considering", value: 3 },
+    { label: "Selected", value: 4 },
+    { label: "Applied", value: 5 },
+    { label: "Accepted", value: 6 },
+    { label: "Not pursuing", value: 7 },
+    { label: "Declined", value: 8 },
+  ]);
+});
+
+test("selectCJProgramAttention counts actionable rows and prioritizes a warning on the loaded page", () => {
+  expect(
+    selectCJProgramAttention([
+      {
+        advertiserId: "ordinary",
+        advertiserName: "Ordinary",
+        stage: "SELECTED",
+        warningCodes: [],
+      },
+      {
+        advertiserId: "warning",
+        advertiserName: "Warning merchant",
+        stage: "ACCEPTED",
+        warningCodes: ["NON_US_MARKET"],
+      },
+      {
+        advertiserId: "terminal",
+        advertiserName: "Terminal",
+        stage: "DECLINED",
+        warningCodes: [],
+      },
+    ]),
+  ).toEqual({
+    count: 2,
+    program: { advertiserId: "warning", advertiserName: "Warning merchant" },
+    requiredAction: "Review feed warnings",
+  });
+});
+
+test("selectCJProgramAttention returns an empty result for terminal-only pages", () => {
+  expect(
+    selectCJProgramAttention([
+      {
+        advertiserId: "terminal",
+        advertiserName: null,
+        stage: "NOT_PURSUING",
+        warningCodes: [],
+      },
+    ]),
+  ).toEqual({ count: 0, program: null, requiredAction: null });
+});
+
+test("future lifecycle stages remain actionable for explicit review", () => {
+  expect(cjProgramRequiredAction("%future added value", [])).toBe("Review new lifecycle stage");
+  expect(
+    selectCJProgramAttention([
+      {
+        advertiserId: "future",
+        advertiserName: null,
+        stage: "%future added value",
+        warningCodes: [],
+      },
+    ]),
+  ).toEqual({
+    count: 1,
+    program: { advertiserId: "future", advertiserName: null },
+    requiredAction: "Review new lifecycle stage",
+  });
 });

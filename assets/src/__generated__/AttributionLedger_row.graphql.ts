@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<ca51cdc8e37819df1c17bc1af24e1950>>
+ * @generated SignedSource<<f92ffefeaa5db7fdf942ac9b6dfa2a1a>>
  * @lightSyntaxTransform
  */
 
@@ -32,9 +32,9 @@ export type AttributionLedger_row$data = ReadonlyArray<{
     readonly networkConversionRef: string;
     readonly orderAmount: string | null;
     readonly productName: string | null;
-    readonly purchasedAt: string | null;
     readonly reportedAt: string;
     readonly status: CommerceConversionStatus;
+    readonly " $fragmentSpreads": FragmentRefs<"ConversionDetails_conversion">;
   }>;
   readonly merchantName: string;
   readonly merchantProductExternalSku: string | null;
@@ -182,13 +182,6 @@ return {
           "alias": null,
           "args": null,
           "kind": "ScalarField",
-          "name": "purchasedAt",
-          "storageKey": null
-        },
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
           "name": "reportedAt",
           "storageKey": null
         },
@@ -198,6 +191,11 @@ return {
           "kind": "ScalarField",
           "name": "status",
           "storageKey": null
+        },
+        {
+          "args": null,
+          "kind": "FragmentSpread",
+          "name": "ConversionDetails_conversion"
         }
       ],
       "storageKey": null
@@ -245,6 +243,6 @@ return {
 };
 })();
 
-(node as any).hash = "077e1884473aa75ad5a54958a4981005";
+(node as any).hash = "f5f00f5ebb39aa23ebfdea15cf2df5e0";
 
 export default node;

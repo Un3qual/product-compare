@@ -1,18 +1,22 @@
 import {
   buildCouponVariables,
   buildLinkVariables,
-  buildMerchantChoices,
   buildNetworkVariables,
   buildProgramVariables,
-  couponDiscountText,
+} from "../../../../src/routes/affiliate/setup/affiliate-form-values";
+import {
+  buildMerchantChoices,
   getAffiliateMerchantContext,
   getMerchantChoiceById,
   getMerchantSummary,
+} from "../../../../src/routes/affiliate/setup/merchant-context";
+import { couponDiscountText } from "../../../../src/routes/affiliate/setup/coupon/CouponStep";
+import {
   resolveAffiliateCouponMutationOutcome,
   resolveAffiliateLinkMutationOutcome,
   resolveAffiliateNetworkMutationOutcome,
   resolveAffiliateProgramMutationOutcome,
-} from "../../../../src/routes/affiliate/setup/affiliate-setup-data";
+} from "../../../../src/routes/affiliate/setup/AffiliateSetupOperations";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../../src/relay/mutation-errors";
 
 const FIRST_MERCHANT = {

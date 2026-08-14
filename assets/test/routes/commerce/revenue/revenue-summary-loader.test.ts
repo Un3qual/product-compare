@@ -5,7 +5,7 @@ import {
   revenueSummaryLoader,
   type RevenueSummaryLoaderData,
 } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
-import { ATTRIBUTION_LEDGER_PAGE_SIZE } from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
+import { ATTRIBUTION_LEDGER_PAGE_SIZE } from "../../../../src/routes/commerce/revenue/summary/revenue-summary-data";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
@@ -192,19 +192,52 @@ test("revenueSummaryLoader returns error state when route preloading fails", asy
   preloadRouteQueryMock.mockRejectedValue(preloadError);
 
   try {
-    await expect(
-      revenueSummaryLoader(buildRevenueSummaryLoaderArgs({ environment, request })),
-    ).resolves.toEqual({
+    const loaderData = await revenueSummaryLoader(
+      buildRevenueSummaryLoaderArgs({ environment, request }),
+    );
+
+    expect(loaderData).toMatchObject({
       status: "error",
       filters: {
         currency: "USD",
         network: "impact",
       },
     });
+    await expect(
+      Promise.resolve(
+        (loaderData as Extract<RevenueSummaryLoaderData, { status: "error" }>).ledgerQuery,
+      ),
+    ).resolves.toBeNull();
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload revenue summary route query.", {
       error: preloadError,
     });
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("revenueSummaryLoader retains a successful ledger when summary preloading fails", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.test/commerce/revenue?currency=usd");
+  const summaryError = new Error("summary unavailable");
+  const ledgerDescriptor = attributionLedgerQueryDescriptor({ currency: "USD" });
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  preloadRouteQueryMock.mockRejectedValueOnce(summaryError).mockResolvedValueOnce(ledgerDescriptor);
+
+  try {
+    const loaderData = await revenueSummaryLoader(
+      buildRevenueSummaryLoaderArgs({ environment, request }),
+    );
+
+    expect(loaderData).toMatchObject({
+      status: "error",
+      filters: { currency: "USD" },
+    });
+    await expect(
+      Promise.resolve((loaderData as { ledgerQuery?: unknown }).ledgerQuery),
+    ).resolves.toBe(ledgerDescriptor);
   } finally {
     consoleErrorSpy.mockRestore();
   }

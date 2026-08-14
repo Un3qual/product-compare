@@ -20,15 +20,22 @@ for (const viewport of VIEWPORTS) {
   test(`${viewport.name} comparison workspace stays ordered, accessible, and within the viewport`, async ({
     page,
   }, testInfo) => {
-    await page.setViewportSize({ height: viewport.height, width: viewport.width });
+    await page.setViewportSize({
+      height: viewport.height,
+      width: viewport.width,
+    });
     const responders = comparisonResponders();
     await stubGraphQL(page, responders);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(comparisonPath);
 
-    const workspace = page.getByRole("region", { name: "Comparison workspace" });
+    const workspace = page.getByRole("region", {
+      name: "Comparison workspace",
+    });
     const controls = page.getByRole("region", { name: "Comparison controls" });
-    const summaries = page.getByRole("region", { name: "Product decision summaries" });
+    const summaries = page.getByRole("region", {
+      name: "Product decision summaries",
+    });
     const specificationWorkspace = page.getByRole("region", {
       name: "Specification comparison",
     });
@@ -57,15 +64,35 @@ for (const viewport of VIEWPORTS) {
     await page.getByRole("button", { name: "Share this comparison" }).click();
     await expect(page.getByRole("button", { name: "Publish comparison link" })).toBeVisible();
     await expect(
-      page.getByRole("link", { name: `Remove ${products[0].name} from selection` }),
+      page.getByRole("link", {
+        name: `Remove ${products[0].name} from selection`,
+      }),
     ).toHaveAttribute("href", "/compare?slug=northstar-barista-scale");
 
+    const tableBounds = await page.locator('[data-slot="table-container"]').evaluateAll((tables) =>
+      tables.map((table) => {
+        const parent = table.parentElement;
+
+        if (!parent) throw new Error("Expected every table container to have a parent.");
+
+        return {
+          containerRight: table.getBoundingClientRect().right,
+          parentRight: parent.getBoundingClientRect().right,
+        };
+      }),
+    );
+    expect(tableBounds.length).toBeGreaterThan(0);
+    for (const bounds of tableBounds) {
+      expect(bounds.containerRight).toBeLessThanOrEqual(bounds.parentRight + 1);
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       viewport.width,
     );
     const accessibility = await new AxeBuilder({ page }).analyze();
     expect(accessibility.violations).toEqual([]);
-    await page.screenshot({ path: testInfo.outputPath(`${viewport.name}-comparison.png`) });
+    await page.screenshot({
+      path: testInfo.outputPath(`${viewport.name}-comparison.png`),
+    });
   });
 }
 
@@ -102,7 +129,9 @@ test("guest comparison intent returns through registration for review before sav
   const saveComparison = page.getByRole("button", { name: "Save comparison" });
   await saveComparison.click();
 
-  const dialog = page.getByRole("dialog", { name: "Sign in to save this comparison" });
+  const dialog = page.getByRole("dialog", {
+    name: "Sign in to save this comparison",
+  });
   await expect(dialog).toBeVisible();
   expect(
     requests.some(

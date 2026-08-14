@@ -25,18 +25,16 @@ import {
 } from "../../merchants/pagination";
 import { commitRouteMutationPromise } from "$relay/mutations";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
-import {
-  AffiliateCouponForm,
-  AffiliateLinkForm,
-  AffiliateNetworkForm,
-  AffiliateProgramForm,
-  type CouponResult,
-  type LinkResult,
-  type NetworkResult,
-  type ProgramResult,
-} from "./AffiliateSetupForms";
+import { CouponStep, type CouponResult } from "./coupon/CouponStep";
+import { MerchantLinkStep, type LinkResult } from "./merchant-link/MerchantLinkStep";
+import { NetworkStep, type NetworkResult } from "./network/NetworkStep";
+import { ProgramStep, type ProgramResult } from "./program/ProgramStep";
 import {
   createCouponMutation,
+  resolveAffiliateCouponMutationOutcome,
+  resolveAffiliateLinkMutationOutcome,
+  resolveAffiliateNetworkMutationOutcome,
+  resolveAffiliateProgramMutationOutcome,
   upsertAffiliateLinkMutation,
   upsertAffiliateNetworkMutation,
   upsertAffiliateProgramMutation,
@@ -44,15 +42,13 @@ import {
 import {
   buildCouponVariables,
   buildLinkVariables,
-  buildMerchantChoices,
   buildNetworkVariables,
   buildProgramVariables,
+} from "./affiliate-form-values";
+import {
+  buildMerchantChoices,
   getAffiliateMerchantContext,
-  resolveAffiliateCouponMutationOutcome,
-  resolveAffiliateLinkMutationOutcome,
-  resolveAffiliateNetworkMutationOutcome,
-  resolveAffiliateProgramMutationOutcome,
-} from "./affiliate-setup-data";
+} from "./merchant-context";
 import { buildAffiliateSetupPaginationData } from "./pagination";
 
 const affiliateSetupRouteQuery = graphql`
@@ -368,7 +364,7 @@ function AffiliateSetupPanel({
       }
       label="Affiliate configuration workflow"
     >
-      <AffiliateNetworkForm
+      <NetworkStep
         error={networkError}
         onSubmit={handleNetworkSubmit}
         pending={networkPending}
@@ -378,7 +374,7 @@ function AffiliateSetupPanel({
       {merchantChoices.length === 0 ? (
         <p role="status">No merchants available for affiliate setup yet.</p>
       ) : (
-        <AffiliateProgramForm
+        <ProgramStep
           affiliateNetworkId={affiliateNetworkId}
           error={programError}
           merchantChoices={merchantChoices}
@@ -392,7 +388,7 @@ function AffiliateSetupPanel({
         />
       )}
 
-      <AffiliateLinkForm
+      <MerchantLinkStep
         error={linkError}
         onSubmit={handleLinkSubmit}
         pending={linkPending}
@@ -401,7 +397,7 @@ function AffiliateSetupPanel({
       />
 
       {merchantChoices.length === 0 ? null : (
-        <AffiliateCouponForm
+        <CouponStep
           error={couponError}
           merchantChoices={merchantChoices}
           onSelectedMerchantIdChange={setSelectedMerchantId}

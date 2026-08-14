@@ -1,8 +1,10 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { Await, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, usePreloadedQuery } from "react-relay";
+import type { Environment } from "relay-runtime";
 import type { CJProgramsRouteQuery } from "$generated/CJProgramsRouteQuery.graphql";
+import type { UnmatchedFeedsQuery } from "$generated/UnmatchedFeedsQuery.graphql";
 import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
@@ -11,9 +13,7 @@ import {
 } from "$relay/route-preload";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
-import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
-import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
 import { Label } from "$ui/primitives/Label";
 import {
@@ -25,13 +25,15 @@ import {
 } from "$ui/primitives/Select";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { recoverRouteLoaderError } from "$relay/loader-errors";
-import { CJProgramList } from "./CJProgramList";
-import { CJ_PROGRAM_SORTS, CJ_PROGRAM_STAGES } from "./cj-program-data";
+import { UnmatchedFeeds, unmatchedFeedsQuery } from "./feeds/UnmatchedFeeds";
+import { ProgramLifecycleTable } from "./programs/ProgramLifecycleTable";
+import { CJ_PROGRAM_SORTS, CJ_PROGRAM_STAGES } from "./programs/lifecycle-policy";
 import {
   cjProgramsPaginationFromUrl,
   cjProgramSortToUrlParam,
   cjProgramStageToUrlParam,
   type CJProgramsPagination,
+  buildCJProgramPageData,
 } from "./pagination";
 
 const cjProgramsRouteQuery = graphql`
@@ -40,8 +42,6 @@ const cjProgramsRouteQuery = graphql`
     $after: String
     $stage: CJProgramStage
     $sort: CJProgramSort!
-    $unmatchedFirst: Int!
-    $unmatchedAfter: String
   ) {
     cjProgramStageCounts {
       new
@@ -56,20 +56,11 @@ const cjProgramsRouteQuery = graphql`
       edges {
         node {
           id
-          ...CJProgramRow_program
-        }
-      }
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        endCursor
-      }
-    }
-    unmatchedCjFeeds(first: $unmatchedFirst, after: $unmatchedAfter) {
-      edges {
-        node {
-          id
-          ...CJFeedRow_feed
+          advertiserId
+          advertiserName
+          stage
+          warningCodes
+          ...ProgramLifecycleRow_program
         }
       }
       pageInfo {
@@ -86,10 +77,18 @@ export type CJProgramsLoaderData =
       status: "ready";
       pagination: CJProgramsPagination;
       query: RelayRouteQueryDescriptor<CJProgramsRouteQuery["variables"]>;
+      unmatchedQuery:
+        | Promise<RelayRouteQueryDescriptor<UnmatchedFeedsQuery["variables"]> | null>
+        | RelayRouteQueryDescriptor<UnmatchedFeedsQuery["variables"]>
+        | null;
     }
   | {
       status: "error";
       pagination: CJProgramsPagination;
+      unmatchedQuery:
+        | Promise<RelayRouteQueryDescriptor<UnmatchedFeedsQuery["variables"]> | null>
+        | RelayRouteQueryDescriptor<UnmatchedFeedsQuery["variables"]>
+        | null;
     };
 
 export async function cjProgramsLoader({
@@ -98,17 +97,29 @@ export async function cjProgramsLoader({
 }: LoaderFunctionArgs): Promise<CJProgramsLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const pagination = cjProgramsPaginationFromUrl(new URL(request.url));
+  const query = preloadRouteQuery<CJProgramsRouteQuery>(
+    environment,
+    cjProgramsRouteQuery,
+    {
+      first: pagination.first,
+      after: pagination.after,
+      stage: pagination.stage,
+      sort: pagination.sort,
+    },
+    { signal: request.signal },
+  );
+  const unmatchedQuery = preloadUnmatchedFeeds(environment, pagination, request.signal).catch(
+    (reason: unknown) =>
+      recoverRouteLoaderError(reason, "Failed to preload unmatched CJ feeds query.", null),
+  );
+  void unmatchedQuery.catch(() => undefined);
 
   try {
     return {
       status: "ready",
       pagination,
-      query: await preloadRouteQuery<CJProgramsRouteQuery>(
-        environment,
-        cjProgramsRouteQuery,
-        pagination,
-        { signal: request.signal },
-      ),
+      query: await query,
+      unmatchedQuery,
     };
   } catch (error) {
     return recoverRouteLoaderError<CJProgramsLoaderData>(
@@ -117,17 +128,37 @@ export async function cjProgramsLoader({
       {
         status: "error",
         pagination,
+        unmatchedQuery,
       },
     );
   }
 }
 
+function preloadUnmatchedFeeds(
+  environment: Environment,
+  pagination: CJProgramsPagination,
+  signal: AbortSignal,
+) {
+  return preloadRouteQuery<UnmatchedFeedsQuery>(
+    environment,
+    unmatchedFeedsQuery,
+    { first: pagination.unmatchedFirst, after: pagination.unmatchedAfter },
+    { signal },
+  );
+}
+
 const styles = create({
   controls: {
     alignItems: "end",
-    display: "grid",
-    gap: "0.85rem",
-    paddingBlock: "0.25rem",
+    backgroundColor: tokens.surfaceMuted,
+    borderColor: tokens.borderQuiet,
+    borderRadius: "var(--pc-radius-large)",
+    borderStyle: "solid",
+    borderWidth: "1px",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.65rem",
+    padding: "0.75rem",
   },
   field: {
     display: "grid",
@@ -138,6 +169,22 @@ const styles = create({
     fontSize: "0.82rem",
     fontWeight: 600,
   },
+  dashboard: {
+    display: "grid",
+    gap: "1rem",
+    gridTemplateAreas: {
+      default:
+        '"lifecycle lifecycle" "attention feedHealth" "programs programs" "unmatched unmatched"',
+      "@media (max-width: 48rem)": '"lifecycle" "attention" "feedHealth" "programs" "unmatched"',
+    },
+    gridTemplateColumns: {
+      default: "repeat(2, minmax(0, 1fr))",
+      "@media (max-width: 48rem)": "minmax(0, 1fr)",
+    },
+    minWidth: 0,
+  },
+  feedHealthSlot: { gridArea: "feedHealth", minWidth: 0 },
+  unmatchedSlot: { gridArea: "unmatched", minWidth: 0 },
 });
 
 export function CJProgramsRoute() {
@@ -145,21 +192,12 @@ export function CJProgramsRoute() {
 
   return (
     <PageShell
+      actions={<CJProgramControls pagination={loaderData.pagination} />}
       description="Track each advertiser program from discovery through its application outcome."
       eyebrow="Ingestion"
       title="CJ programs"
     >
-      <WorkspaceLayout
-        context={
-          <ContextRail
-            description="Filter programs while their lifecycle counts remain global."
-            label="Program controls"
-          >
-            <CJProgramControls pagination={loaderData.pagination} />
-          </ContextRail>
-        }
-        label="CJ programs"
-      >
+      <section aria-label="CJ program operations" {...props(styles.dashboard)}>
         {loaderData.status === "ready" ? (
           <ResettableErrorBoundary
             fallback={<CJProgramsUnavailableFallback />}
@@ -172,7 +210,11 @@ export function CJProgramsRoute() {
         ) : (
           <CJProgramsUnavailableFallback />
         )}
-      </WorkspaceLayout>
+        <DeferredUnmatchedFeedsBoundary
+          pagination={loaderData.pagination}
+          query={loaderData.unmatchedQuery}
+        />
+      </section>
     </PageShell>
   );
 }
@@ -187,7 +229,64 @@ function CJProgramsPanel({
   const queryRef = useRoutePreloadedQuery<CJProgramsRouteQuery>(cjProgramsRouteQuery, query);
   const data = usePreloadedQuery<CJProgramsRouteQuery>(cjProgramsRouteQuery, queryRef);
 
-  return <CJProgramList data={data} pagination={pagination} />;
+  const paginationData = buildCJProgramPageData(pagination, data.cjPrograms.pageInfo);
+
+  return (
+    <ProgramLifecycleTable
+      counts={data.cjProgramStageCounts}
+      pagination={paginationData}
+      programs={data.cjPrograms}
+    />
+  );
+}
+
+function DeferredUnmatchedFeedsBoundary({
+  pagination,
+  query,
+}: {
+  pagination: CJProgramsPagination;
+  query: Extract<CJProgramsLoaderData, { status: "ready" }>["unmatchedQuery"];
+}) {
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // SSR waits for all Suspense work, so subscribe to this optional query only after hydration.
+  if (!isHydrated) {
+    return <UnmatchedFeedsLoadingFallback />;
+  }
+
+  return (
+    <Suspense fallback={<UnmatchedFeedsLoadingFallback />}>
+      <Await resolve={query} errorElement={<UnmatchedFeedsUnavailableFallback />}>
+        {(resolvedQuery) => (
+          <UnmatchedFeedsBoundary pagination={pagination} query={resolvedQuery} />
+        )}
+      </Await>
+    </Suspense>
+  );
+}
+
+function UnmatchedFeedsBoundary({
+  pagination,
+  query,
+}: {
+  pagination: CJProgramsPagination;
+  query: Awaited<Extract<CJProgramsLoaderData, { status: "ready" }>["unmatchedQuery"]>;
+}) {
+  if (!query) {
+    return <UnmatchedFeedsUnavailableFallback />;
+  }
+
+  return (
+    <ResettableErrorBoundary fallback={<UnmatchedFeedsUnavailableFallback />} resetToken={query}>
+      <Suspense fallback={<UnmatchedFeedsLoadingFallback />}>
+        <UnmatchedFeeds pagination={pagination} query={query} />
+      </Suspense>
+    </ResettableErrorBoundary>
+  );
 }
 
 function CJProgramControls({ pagination }: { pagination: CJProgramsPagination }) {
@@ -206,7 +305,12 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
   }));
 
   return (
-    <form action="/ingestion/cj-programs" method="get" {...props(styles.controls)}>
+    <form
+      action="/ingestion/cj-programs"
+      aria-label="CJ program filters"
+      method="get"
+      {...props(styles.controls)}
+    >
       <input name="first" type="hidden" value={pagination.first} />
       <input name="unmatchedFirst" type="hidden" value={pagination.unmatchedFirst} />
       {pagination.unmatchedAfter ? (
@@ -252,5 +356,31 @@ function CJProgramsUnavailableFallback() {
     <section role="alert">
       <p>CJ programs unavailable.</p>
     </section>
+  );
+}
+
+function UnmatchedFeedsUnavailableFallback() {
+  return (
+    <>
+      <div {...props(styles.feedHealthSlot)}>
+        <FeedbackState kind="error" title="Feed health unavailable." />
+      </div>
+      <div {...props(styles.unmatchedSlot)}>
+        <FeedbackState kind="error" title="Unmatched feeds unavailable." />
+      </div>
+    </>
+  );
+}
+
+function UnmatchedFeedsLoadingFallback() {
+  return (
+    <>
+      <div {...props(styles.feedHealthSlot)}>
+        <FeedbackState kind="loading" title="Loading feed health..." />
+      </div>
+      <div {...props(styles.unmatchedSlot)}>
+        <FeedbackState kind="loading" title="Loading unmatched feeds..." />
+      </div>
+    </>
   );
 }

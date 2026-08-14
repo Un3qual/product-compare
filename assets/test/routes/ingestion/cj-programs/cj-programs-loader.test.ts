@@ -3,6 +3,8 @@ import { createRelayEnvironment } from "../../../../src/relay/environment";
 import { createRelayRouterContext, preloadRouteQuery } from "../../../../src/relay/route-preload";
 import { cjProgramsLoader } from "../../../../src/routes/ingestion/cj-programs/CJProgramsRoute";
 import type { CJProgramsRouteQuery } from "../../../../src/__generated__/CJProgramsRouteQuery.graphql";
+import type { UnmatchedFeedsQuery } from "../../../../src/__generated__/UnmatchedFeedsQuery.graphql";
+import { buildAbortableRequest } from "../../compare/saved-comparisons-test-helpers";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
@@ -18,13 +20,15 @@ vi.mock("../../../../src/relay/route-preload", async () => {
 const preloadRouteQueryMock = vi.mocked(preloadRouteQuery);
 
 const CJ_PROGRAMS_QUERY_TEXT =
-  "query CJProgramsRouteQuery($first: Int!, $after: String, $stage: CJProgramStage, $sort: CJProgramSort!, $unmatchedFirst: Int!, $unmatchedAfter: String) { cjProgramStageCounts { new } cjPrograms(first: $first, after: $after, stage: $stage, sort: $sort) { edges { node { id } } } unmatchedCjFeeds(first: $unmatchedFirst, after: $unmatchedAfter) { edges { node { id } } } }";
+  "query CJProgramsRouteQuery($first: Int!, $after: String, $stage: CJProgramStage, $sort: CJProgramSort!) { cjProgramStageCounts { new } cjPrograms(first: $first, after: $after, stage: $stage, sort: $sort) { edges { node { id } } } }";
+const UNMATCHED_FEEDS_QUERY_TEXT =
+  "query UnmatchedFeedsQuery($first: Int!, $after: String) { unmatchedCjFeeds(first: $first, after: $after) { edges { node { id } } } }";
 
 beforeEach(() => {
   preloadRouteQueryMock.mockReset();
 });
 
-test("cjProgramsLoader preloads counts and both default connections in one operation", async () => {
+test("cjProgramsLoader preloads the default lifecycle ledger and unmatched feeds independently", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.test/ingestion/cj-programs");
   const variables = {
@@ -35,22 +39,75 @@ test("cjProgramsLoader preloads counts and both default connections in one opera
     unmatchedFirst: 10,
     unmatchedAfter: null,
   };
-  const descriptor = cjProgramsQueryDescriptor(variables);
-
-  preloadRouteQueryMock.mockResolvedValue(descriptor);
-
-  await expect(
-    cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request })),
-  ).resolves.toEqual({
-    status: "ready",
-    pagination: variables,
-    query: descriptor,
+  const descriptor = cjProgramsQueryDescriptor({
+    first: variables.first,
+    after: variables.after,
+    stage: variables.stage,
+    sort: variables.sort,
+  });
+  const unmatchedDescriptor = unmatchedFeedsQueryDescriptor({
+    first: variables.unmatchedFirst,
+    after: variables.unmatchedAfter,
   });
 
-  expect(preloadRouteQueryMock).toHaveBeenCalledTimes(1);
-  expect(preloadRouteQueryMock).toHaveBeenCalledWith(environment, expect.anything(), variables, {
-    signal: request.signal,
+  preloadRouteQueryMock
+    .mockResolvedValueOnce(descriptor)
+    .mockResolvedValueOnce(unmatchedDescriptor);
+
+  const result = await cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request }));
+
+  expect(result).toMatchObject({ status: "ready", pagination: variables, query: descriptor });
+  await expect((result as { unmatchedQuery: Promise<unknown> }).unmatchedQuery).resolves.toBe(
+    unmatchedDescriptor,
+  );
+  expect(preloadRouteQueryMock).toHaveBeenCalledTimes(2);
+  expect(preloadRouteQueryMock).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    { first: 20, after: null, stage: null, sort: "NAME_ASC" },
+    { signal: request.signal },
+  );
+  expect(preloadRouteQueryMock).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    { first: 10, after: null },
+    { signal: request.signal },
+  );
+});
+
+test("cjProgramsLoader isolates an unmatched-feed preload failure from program data", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.test/ingestion/cj-programs");
+  const descriptor = cjProgramsQueryDescriptor({
+    first: 20,
+    after: null,
+    stage: null,
+    sort: "NAME_ASC",
   });
+  const unmatchedError = new Error("unmatched feeds unavailable");
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  preloadRouteQueryMock.mockResolvedValueOnce(descriptor).mockRejectedValueOnce(unmatchedError);
+
+  try {
+    const result = await cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request }));
+
+    expect(result).toMatchObject({
+      status: "ready",
+      query: descriptor,
+    });
+    await expect(
+      (result as { unmatchedQuery: Promise<unknown> }).unmatchedQuery,
+    ).resolves.toBeNull();
+    expect(preloadRouteQueryMock).toHaveBeenCalledTimes(2);
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload unmatched CJ feeds query.", {
+      error: unmatchedError,
+    });
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
 });
 
 test("cjProgramsLoader preserves each normalized connection cursor and page size", async () => {
@@ -66,25 +123,49 @@ test("cjProgramsLoader preserves each normalized connection cursor and page size
     unmatchedFirst: 7,
     unmatchedAfter: "unmatched-cursor",
   };
-  const descriptor = cjProgramsQueryDescriptor(variables);
-
-  preloadRouteQueryMock.mockResolvedValue(descriptor);
-
-  await expect(
-    cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request })),
-  ).resolves.toEqual({
-    status: "ready",
-    pagination: variables,
-    query: descriptor,
+  const descriptor = cjProgramsQueryDescriptor({
+    first: variables.first,
+    after: variables.after,
+    stage: variables.stage,
+    sort: variables.sort,
+  });
+  const unmatchedDescriptor = unmatchedFeedsQueryDescriptor({
+    first: variables.unmatchedFirst,
+    after: variables.unmatchedAfter,
   });
 
-  expect(preloadRouteQueryMock).toHaveBeenCalledTimes(1);
-  expect(preloadRouteQueryMock).toHaveBeenCalledWith(environment, expect.anything(), variables, {
-    signal: request.signal,
-  });
+  preloadRouteQueryMock
+    .mockResolvedValueOnce(descriptor)
+    .mockResolvedValueOnce(unmatchedDescriptor);
+
+  const result = await cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request }));
+
+  expect(result).toMatchObject({ status: "ready", pagination: variables, query: descriptor });
+  await expect((result as { unmatchedQuery: Promise<unknown> }).unmatchedQuery).resolves.toBe(
+    unmatchedDescriptor,
+  );
+  expect(preloadRouteQueryMock).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    {
+      first: 30,
+      after: "program-cursor",
+      stage: "SELECTED",
+      sort: "LAST_CHANGED_DESC",
+    },
+    { signal: request.signal },
+  );
+  expect(preloadRouteQueryMock).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    { first: 7, after: "unmatched-cursor" },
+    { signal: request.signal },
+  );
 });
 
-test("cjProgramsLoader returns the existing error shape for unavailable data", async () => {
+test("cjProgramsLoader preserves unmatched feeds when program data is unavailable", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
     "https://app.example.test/ingestion/cj-programs?first=30&after=program-cursor",
@@ -92,12 +173,14 @@ test("cjProgramsLoader returns the existing error shape for unavailable data", a
   const preloadError = new Error("Network request failed: CJ programs unavailable");
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-  preloadRouteQueryMock.mockRejectedValue(preloadError);
+  preloadRouteQueryMock
+    .mockRejectedValueOnce(preloadError)
+    .mockResolvedValueOnce(unmatchedFeedsQueryDescriptor({ first: 10, after: null }));
 
   try {
-    await expect(
-      cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request })),
-    ).resolves.toEqual({
+    const result = await cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request }));
+
+    expect(result).toMatchObject({
       status: "error",
       pagination: {
         first: 30,
@@ -108,6 +191,9 @@ test("cjProgramsLoader returns the existing error shape for unavailable data", a
         unmatchedAfter: null,
       },
     });
+    await expect((result as { unmatchedQuery: Promise<unknown> }).unmatchedQuery).resolves.toEqual(
+      unmatchedFeedsQueryDescriptor({ first: 10, after: null }),
+    );
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload CJ programs route query.", {
       error: preloadError,
@@ -120,12 +206,15 @@ test("cjProgramsLoader returns the existing error shape for unavailable data", a
 test("cjProgramsLoader forwards and rethrows request aborts", async () => {
   const environment = createRelayEnvironment();
   const controller = new AbortController();
-  const request = new Request("https://app.example.test/ingestion/cj-programs", {
-    signal: controller.signal,
-  });
+  const request = buildAbortableRequest(
+    "https://app.example.test/ingestion/cj-programs",
+    controller.signal,
+  );
   const abortError = new DOMException("Route transition", "AbortError");
 
-  preloadRouteQueryMock.mockRejectedValue(abortError);
+  preloadRouteQueryMock
+    .mockRejectedValueOnce(abortError)
+    .mockResolvedValueOnce(unmatchedFeedsQueryDescriptor({ first: 10, after: null }));
 
   await expect(cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request }))).rejects.toBe(
     abortError,
@@ -134,16 +223,45 @@ test("cjProgramsLoader forwards and rethrows request aborts", async () => {
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    {
-      first: 20,
-      after: null,
-      stage: null,
-      sort: "NAME_ASC",
-      unmatchedFirst: 10,
-      unmatchedAfter: null,
-    },
+    { first: 20, after: null, stage: null, sort: "NAME_ASC" },
     { signal: request.signal },
   );
+});
+
+test("cjProgramsLoader drains the detached unmatched-feed preload when the request aborts", async () => {
+  const environment = createRelayEnvironment();
+  const controller = new AbortController();
+  const request = buildAbortableRequest(
+    "https://app.example.test/ingestion/cj-programs",
+    controller.signal,
+  );
+  const abortError = new DOMException("Route transition", "AbortError");
+  const programsPreload = deferredPromise<ReturnType<typeof cjProgramsQueryDescriptor>>();
+  const unmatchedPreload = deferredPromise<ReturnType<typeof unmatchedFeedsQueryDescriptor>>();
+  const unhandledRejections: unknown[] = [];
+  const captureUnhandledRejection = (reason: unknown) => {
+    unhandledRejections.push(reason);
+  };
+
+  preloadRouteQueryMock
+    .mockImplementationOnce(() => programsPreload.promise)
+    .mockImplementationOnce(() => unmatchedPreload.promise);
+  process.on("unhandledRejection", captureUnhandledRejection);
+
+  try {
+    const loaderResult = cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request }));
+
+    controller.abort(abortError);
+    programsPreload.reject(abortError);
+    await expect(loaderResult).rejects.toBe(abortError);
+
+    unmatchedPreload.reject(abortError);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(unhandledRejections).toEqual([]);
+  } finally {
+    process.off("unhandledRejection", captureUnhandledRejection);
+  }
 });
 
 function buildCJProgramsLoaderArgs({
@@ -170,4 +288,25 @@ function cjProgramsQueryDescriptor(variables: CJProgramsRouteQuery["variables"])
       variables,
     },
   };
+}
+
+function unmatchedFeedsQueryDescriptor(variables: UnmatchedFeedsQuery["variables"]) {
+  return {
+    __relayQuery: {
+      operationName: "UnmatchedFeedsQuery",
+      text: UNMATCHED_FEEDS_QUERY_TEXT,
+      variables,
+    },
+  };
+}
+
+function deferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
 }

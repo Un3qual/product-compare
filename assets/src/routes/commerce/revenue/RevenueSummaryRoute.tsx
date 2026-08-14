@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useState } from "react";
+import { create, props } from "@stylexjs/stylex";
 import { Await, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { Environment } from "relay-runtime";
@@ -15,16 +16,35 @@ import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { recoverRouteLoaderError } from "$relay/loader-errors";
-import { AttributionLedger, attributionLedgerRouteQuery } from "./AttributionLedger";
-import { RevenueSummaryMetrics, RevenueSummaryView } from "./RevenueSummaryView";
+import { AttributionLedger, attributionLedgerRouteQuery } from "./attribution/AttributionLedger";
+import { RevenueControls } from "./summary/RevenueControls";
+import { RevenueMetrics } from "./summary/RevenueMetrics";
 import {
   buildRevenueSummaryControls,
-  buildRevenueSummaryMetrics,
+  buildRevenueDashboardMetrics,
   hasInvertedRevenueDateRange,
   revenueSummaryFiltersFromUrl,
   ATTRIBUTION_LEDGER_PAGE_SIZE,
   type RevenueSummaryFilters,
-} from "./revenue-summary-view-data";
+} from "./summary/revenue-summary-data";
+
+const styles = create({
+  dashboard: {
+    display: "grid",
+    gap: "1rem",
+    gridTemplateAreas: {
+      default: '"summary recent" "ledger ledger"',
+      "@media (max-width: 64rem)": '"summary" "recent" "ledger"',
+    },
+    gridTemplateColumns: {
+      default: "minmax(0, 2fr) minmax(18rem, 1fr)",
+      "@media (max-width: 64rem)": "minmax(0, 1fr)",
+    },
+    minWidth: 0,
+  },
+  recentSlot: { gridArea: "recent", minWidth: 0 },
+  ledgerSlot: { gridArea: "ledger", minWidth: 0 },
+});
 
 const revenueSummaryRouteQuery = graphql`
   query RevenueSummaryRouteQuery($input: RevenueSummaryInput) {
@@ -49,19 +69,25 @@ const revenueSummaryRouteQuery = graphql`
   }
 `;
 
+type AttributionLedgerQueryDescriptor =
+  | Promise<RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]> | null>
+  | RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]>
+  | null;
+
 export type RevenueSummaryLoaderData =
   | {
       status: "ready";
       filters: RevenueSummaryFilters;
-      ledgerQuery:
-        | Promise<RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]> | null>
-        | RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]>
-        | null;
+      ledgerQuery: AttributionLedgerQueryDescriptor;
       query: RelayRouteQueryDescriptor<RevenueSummaryRouteQuery["variables"]>;
     }
   | { status: "needsCurrency"; filters: RevenueSummaryFilters }
   | { status: "invalidDateRange"; filters: RevenueSummaryFilters }
-  | { status: "error"; filters: RevenueSummaryFilters };
+  | {
+      status: "error";
+      filters: RevenueSummaryFilters;
+      ledgerQuery: AttributionLedgerQueryDescriptor;
+    };
 
 export async function revenueSummaryLoader({
   context,
@@ -100,7 +126,7 @@ export async function revenueSummaryLoader({
     return recoverRouteLoaderError<RevenueSummaryLoaderData>(
       reason,
       "Failed to preload revenue summary route query.",
-      { status: "error", filters },
+      { status: "error", filters, ledgerQuery },
     );
   }
 }
@@ -127,21 +153,24 @@ export function RevenueSummaryRoute() {
 
   return (
     <PageShell
+      actions={
+        <RevenueControls
+          activeFilters={activeFilters}
+          datePresetLinks={datePresetLinks}
+          filters={loaderData.filters}
+        />
+      }
       description="This preview summarizes recorded attribution data. A live conversion provider is not connected for this milestone."
       eyebrow="Commerce analytics"
       title="Revenue reporting preview"
     >
-      <RevenueSummaryView
-        activeFilters={activeFilters}
-        datePresetLinks={datePresetLinks}
-        filters={loaderData.filters}
-      >
-        {loaderData.status === "error" ? (
-          <RevenueSummaryUnavailableFallback />
-        ) : loaderData.status === "needsCurrency" ? (
+      <section aria-label="Revenue report" {...props(styles.dashboard)}>
+        {loaderData.status === "needsCurrency" ? (
           <RevenueSummaryCurrencyRequiredFallback />
         ) : loaderData.status === "invalidDateRange" ? (
           <RevenueSummaryInvalidDateRangeFallback />
+        ) : loaderData.status === "error" ? (
+          <RevenueSummaryUnavailableFallback />
         ) : (
           <ResettableErrorBoundary
             fallback={<RevenueSummaryUnavailableFallback />}
@@ -150,20 +179,19 @@ export function RevenueSummaryRoute() {
             <Suspense
               fallback={<FeedbackState kind="loading" title="Loading revenue summary..." />}
             >
-              <RevenueSummaryPanel ledgerQuery={loaderData.ledgerQuery} query={loaderData.query} />
+              <RevenueSummaryPanel query={loaderData.query} />
             </Suspense>
           </ResettableErrorBoundary>
         )}
-      </RevenueSummaryView>
+        {loaderData.status === "ready" || loaderData.status === "error" ? (
+          <DeferredAttributionLedgerBoundary query={loaderData.ledgerQuery} />
+        ) : null}
+      </section>
     </PageShell>
   );
 }
 
-function RevenueSummaryPanel({
-  ledgerQuery,
-  query,
-}: {
-  ledgerQuery: Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"];
+function RevenueSummaryPanel({ query }: {
   query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["query"];
 }) {
   const queryRef = useRoutePreloadedQuery<RevenueSummaryRouteQuery>(
@@ -179,18 +207,13 @@ function RevenueSummaryPanel({
   const currency =
     data.revenueSummary.metrics.currency ?? data.revenueSummary.filters.currency ?? "";
 
-  return (
-    <>
-      <RevenueSummaryMetrics metrics={buildRevenueSummaryMetrics(data.revenueSummary, currency)} />
-      <DeferredAttributionLedgerBoundary query={ledgerQuery} />
-    </>
-  );
+  return <RevenueMetrics metrics={buildRevenueDashboardMetrics(data.revenueSummary, currency)} />;
 }
 
 function DeferredAttributionLedgerBoundary({
   query,
 }: {
-  query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"];
+  query: AttributionLedgerQueryDescriptor;
 }) {
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -200,11 +223,11 @@ function DeferredAttributionLedgerBoundary({
 
   // SSR waits for all Suspense work, so subscribe to this optional query only after hydration.
   if (!isHydrated) {
-    return <FeedbackState kind="loading" title="Loading attribution ledger..." />;
+    return <AttributionActivityLoadingFallback />;
   }
 
   return (
-    <Suspense fallback={<FeedbackState kind="loading" title="Loading attribution ledger..." />}>
+    <Suspense fallback={<AttributionActivityLoadingFallback />}>
       <Await resolve={query} errorElement={<AttributionLedgerUnavailableFallback />}>
         {(resolvedQuery) => <AttributionLedgerBoundary query={resolvedQuery} />}
       </Await>
@@ -215,7 +238,7 @@ function DeferredAttributionLedgerBoundary({
 function AttributionLedgerBoundary({
   query,
 }: {
-  query: Awaited<Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"]>;
+  query: Awaited<AttributionLedgerQueryDescriptor>;
 }) {
   if (!query) {
     return <AttributionLedgerUnavailableFallback />;
@@ -223,7 +246,7 @@ function AttributionLedgerBoundary({
 
   return (
     <ResettableErrorBoundary fallback={<AttributionLedgerUnavailableFallback />} resetToken={query}>
-      <Suspense fallback={<FeedbackState kind="loading" title="Loading attribution ledger..." />}>
+      <Suspense fallback={<AttributionActivityLoadingFallback />}>
         <AttributionLedgerPanel query={query} />
       </Suspense>
     </ResettableErrorBoundary>
@@ -234,7 +257,7 @@ function AttributionLedgerPanel({
   query,
 }: {
   query: NonNullable<
-    Awaited<Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"]>
+    Awaited<AttributionLedgerQueryDescriptor>
   >;
 }) {
   const queryRef = useRoutePreloadedQuery<AttributionLedgerRouteQuery>(
@@ -259,9 +282,27 @@ function RevenueSummaryUnavailableFallback() {
 
 function AttributionLedgerUnavailableFallback() {
   return (
-    <section role="alert">
-      <p>Attribution ledger unavailable.</p>
-    </section>
+    <>
+      <div {...props(styles.recentSlot)}>
+        <FeedbackState kind="error" title="Recent conversion unavailable." />
+      </div>
+      <div {...props(styles.ledgerSlot)}>
+        <FeedbackState kind="error" title="Attribution ledger unavailable." />
+      </div>
+    </>
+  );
+}
+
+function AttributionActivityLoadingFallback() {
+  return (
+    <>
+      <div {...props(styles.recentSlot)}>
+        <FeedbackState kind="loading" title="Loading recent conversion..." />
+      </div>
+      <div {...props(styles.ledgerSlot)}>
+        <FeedbackState kind="loading" title="Loading attribution ledger..." />
+      </div>
+    </>
   );
 }
 

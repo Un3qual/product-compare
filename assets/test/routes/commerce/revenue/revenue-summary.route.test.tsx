@@ -9,16 +9,16 @@ import {
   type RelayRouteQueryDescriptor,
   useRoutePreloadedQuery,
 } from "../../../../src/relay/route-preload";
-import { RevenueSummaryRoute } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import {
-  RevenueSummaryMetrics,
-  RevenueSummaryView,
-} from "../../../../src/routes/commerce/revenue/RevenueSummaryView";
-import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
+  RevenueSummaryRoute,
+  type RevenueSummaryLoaderData,
+} from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
+import { RevenueControls } from "../../../../src/routes/commerce/revenue/summary/RevenueControls";
+import { RevenueMetrics } from "../../../../src/routes/commerce/revenue/summary/RevenueMetrics";
 import {
   ATTRIBUTION_LEDGER_PAGE_SIZE,
   buildRevenueDatePresetLinks,
-} from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
+} from "../../../../src/routes/commerce/revenue/summary/revenue-summary-data";
 import { mockPreloadedQuery } from "../../../helpers/relay";
 
 const {
@@ -137,13 +137,13 @@ const ATTRIBUTION_LEDGER_PAGE = {
           clickId: "db8e90c9-c6f2-4f36-a67f-3324033ac114",
           insertedAt: "2026-05-31T12:30:00Z",
           ipAddress: "203.0.113.44",
-          linkType: "affiliate",
+          linkType: "AFFILIATE",
           matchedConversions: [
             {
               affiliateNetworkCode: "partnerize",
               affiliateNetworkId: "conversion-network-1",
               affiliateNetworkName: "Conversion Network",
-              attributionConfidence: "high",
+              attributionConfidence: "HIGH",
               commissionAmount: "9.00",
               currency: "USD",
               merchantId: "conversion-merchant-1",
@@ -154,7 +154,7 @@ const ATTRIBUTION_LEDGER_PAGE = {
               productName: "Conversion Product",
               purchasedAt: "2026-05-31T13:00:00Z",
               reportedAt: "2026-06-01T09:00:00Z",
-              status: "paid",
+              status: "PAID",
             },
           ],
           merchantId: "merchant-1",
@@ -163,8 +163,8 @@ const ATTRIBUTION_LEDGER_PAGE = {
           merchantProductId: "merchant-product-1",
           productId: "product-1",
           productName: "Example camera",
-          referrer: "https://example.test/compare",
-          sourceSurface: "web",
+          referrer: "https://example.test/compare?campaign=summer#offer",
+          sourceSurface: "WEB",
           userAgent: "ExampleBrowser/1.0",
           userEmail: "operator@example.test",
           userId: "user-1",
@@ -211,18 +211,24 @@ afterEach(() => {
 test("revenue presentation exposes filters, presets, active filters, and metrics", () => {
   render(
     <MemoryRouter>
-      <RevenueSummaryView
-        activeFilters={[{ label: "Network", value: "impact" }]}
-        datePresetLinks={[{ label: "Last 7 days", to: "/commerce/revenue?from=2026-07-05" }]}
-        filters={{
-          currency: "USD",
-          from: "2026-07-05",
-          network: "impact",
-          to: "2026-07-11",
-        }}
-      >
-        <RevenueSummaryMetrics metrics={[{ label: "Clicks", value: "12" }]} />
-      </RevenueSummaryView>
+      <section aria-label="Revenue report">
+        <RevenueControls
+          activeFilters={[{ label: "Network", value: "impact" }]}
+          datePresetLinks={[{ label: "Last 7 days", to: "/commerce/revenue?from=2026-07-05" }]}
+          filters={{
+            currency: "USD",
+            from: "2026-07-05",
+            network: "impact",
+            to: "2026-07-11",
+          }}
+        />
+        <RevenueMetrics
+          metrics={{
+            attribution: { clicks: "12", conversionRate: "25%", conversions: "3" },
+            revenue: [{ label: "Gross order value", value: "90.00 USD" }],
+          }}
+        />
+      </section>
     </MemoryRouter>,
   );
 
@@ -238,7 +244,28 @@ test("revenue presentation exposes filters, presets, active filters, and metrics
   );
   expect(screen.getByRole("list", { name: "Revenue date presets" })).toBeVisible();
   expect(screen.getByRole("list", { name: "Active revenue filters" })).toBeVisible();
-  expect(screen.getByRole("region", { name: "Summary" })).toBeVisible();
+  expect(screen.getByRole("region", { name: "Attribution performance" })).toBeVisible();
+  expect(screen.getByRole("region", { name: "Revenue outcome" })).toBeVisible();
+  expect(screen.getByText("25%")).toBeVisible();
+  expect(screen.queryByRole("region", { name: "Summary" })).not.toBeInTheDocument();
+});
+
+test("revenue controls scope field labels to each rendered instance", () => {
+  render(
+    <MemoryRouter>
+      <RevenueControls activeFilters={[]} datePresetLinks={[]} filters={{ currency: "USD" }} />
+      <RevenueControls activeFilters={[]} datePresetLinks={[]} filters={{ currency: "EUR" }} />
+    </MemoryRouter>,
+  );
+
+  const networkLabelIds = screen
+    .getAllByLabelText("Network")
+    .map((input) => input.getAttribute("aria-labelledby"));
+
+  expect(new Set(networkLabelIds).size).toBe(2);
+  expect(
+    networkLabelIds.every((id) => id && document.getElementById(id)?.textContent === "Network"),
+  ).toBe(true);
 });
 
 test("revenue route identifies recorded attribution data as a preview", () => {
@@ -249,9 +276,47 @@ test("revenue route identifies recorded attribution data as a preview", () => {
   expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Revenue report" })).toBeInTheDocument();
-  expect(screen.getByRole("complementary", { name: "Revenue controls" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Revenue controls" })).toBeInTheDocument();
+  expect(screen.queryByRole("complementary", { name: "Revenue controls" })).not.toBeInTheDocument();
   expect(screen.getByText(/preview summarizes recorded attribution data/i)).toBeInTheDocument();
   expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
+});
+
+test("revenue route keeps one control band ahead of metrics and the attribution ledger", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+
+  renderRevenueSummaryRoute();
+
+  const controls = screen.getByRole("region", { name: "Revenue controls" });
+  const summary = screen.getByRole("region", { name: "Attribution performance" });
+  const ledger = screen.getByRole("table", { name: "Attribution ledger" });
+
+  expect(controls.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(summary.compareDocumentPosition(ledger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test("revenue route keeps exact conversion timing visible in the ledger", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+
+  renderRevenueSummaryRoute();
+
+  const visitRow = screen.getByRole("row", { name: /operator@example\.test/ });
+  fireEvent.click(
+    within(visitRow).getByRole("button", { name: /Show details for operator@example\.test/ }),
+  );
+  const conversion = screen.getByRole("group", {
+    name: "Conversion impact-conversion-123",
+  });
+  expect(within(conversion).getByText("Purchased")).toBeInTheDocument();
+  expect(within(conversion).getByText("Reported")).toBeInTheDocument();
+  expect(within(conversion).getByText("May 31, 2026, 1:00 PM")).toHaveAttribute(
+    "datetime",
+    "2026-05-31T13:00:00Z",
+  );
+  expect(within(conversion).getByText("Jun 1, 2026, 9:00 AM")).toHaveAttribute(
+    "datetime",
+    "2026-06-01T09:00:00Z",
+  );
 });
 
 test("revenue route renders customer-facing visit and purchase details without internal IDs", () => {
@@ -266,32 +331,98 @@ test("revenue route renders customer-facing visit and purchase details without i
 
   renderRevenueSummaryRoute();
 
-  const summary = screen.getByRole("region", { name: "Summary" });
-  const ledgerHeading = screen.getByRole("heading", { name: "Attribution ledger" });
+  const summary = screen.getByRole("region", { name: "Attribution performance" });
+  const ledgerHeading = screen.getByRole("heading", { name: "Attribution clicks" });
 
   expect(
     summary.compareDocumentPosition(ledgerHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
-  expect(screen.getByRole("table", { name: "Attribution ledger" })).toBeVisible();
-  expect(screen.getByText("operator@example.test")).toBeInTheDocument();
-  expect(screen.getByText("Product Compare website")).toBeInTheDocument();
-  expect(screen.getByText("Partner link")).toBeInTheDocument();
-  expect(screen.getByText("https://example.test/compare")).toBeInTheDocument();
-  expect(screen.getByText("ExampleBrowser/1.0")).toBeInTheDocument();
-  expect(screen.getByText("203.0.113.44")).toBeInTheDocument();
-  expect(screen.getByText("Impact")).toBeInTheDocument();
-  expect(screen.getByText("impact-conversion-123")).toBeInTheDocument();
-  expect(screen.getByText("Order: 90.00 USD")).toBeInTheDocument();
-  expect(screen.getByText("Commission: 9.00 USD")).toBeInTheDocument();
-  expect(screen.getByText("Paid")).toBeInTheDocument();
-  expect(screen.getByText("Strong match")).toBeInTheDocument();
-  expect(screen.getByText("Conversion Merchant")).toBeInTheDocument();
-  expect(screen.getByText("Conversion Product")).toBeInTheDocument();
-  expect(screen.getByText("Conversion Network")).toBeInTheDocument();
+  const ledger = screen.getByRole("table", { name: "Attribution ledger" });
+  expect(ledger).toBeVisible();
+  expect(
+    within(ledger)
+      .getAllByRole("columnheader")
+      .map((header) => header.textContent),
+  ).toEqual(["Visit", "Customer", "Commerce", "Order", "Commission", "State", "Details"]);
+  expect(ledger.querySelectorAll("dl")).toHaveLength(0);
+  const visitRow = within(ledger).getByRole("row", { name: /operator@example\.test/ });
+  expect(within(visitRow).getByText("May 31, 2026, 12:30 PM")).toHaveAttribute(
+    "datetime",
+    "2026-05-31T12:30:00Z",
+  );
+  expect(within(visitRow).getByText("operator@example.test")).toBeInTheDocument();
+  expect(within(visitRow).getByText("Known customer")).toBeInTheDocument();
+  expect(within(visitRow).getByText("Example Merchant · Example camera")).toBeInTheDocument();
+  expect(within(visitRow).getByText("90.00 USD")).toBeInTheDocument();
+  expect(within(visitRow).getByText("9.00 USD")).toBeInTheDocument();
+  expect(within(visitRow).getByText("Paid")).toBeInTheDocument();
+  expect(within(visitRow).getByText("Strong match")).toBeInTheDocument();
+  expect(within(visitRow).queryByText("203.0.113.44")).not.toBeInTheDocument();
+  expect(within(visitRow).queryByText("impact-conversion-123")).not.toBeInTheDocument();
+
+  const detailsButton = within(visitRow).getByRole("button", {
+    name: /Show details for operator@example\.test/,
+  });
+  fireEvent.click(detailsButton);
+
+  expect(detailsButton).toHaveAttribute("aria-expanded", "true");
+  const details = screen.getByRole("region", {
+    name: /Attribution details for operator@example\.test/,
+  });
+  expect(detailsButton).toHaveAttribute("aria-controls", details.id);
+  expect(details.closest("td")).toHaveAttribute("colspan", "7");
+  expect(visitRow.nextElementSibling).toBe(details.closest("tr"));
+  expect(within(details).getByText("Touchpoint")).toBeVisible();
+  expect(within(details).getByText("Request evidence")).toBeVisible();
+  expect(within(details).getByText("Commerce")).toBeVisible();
+  expect(within(details).getByText("Conversion")).toBeVisible();
+  expect(within(details).getByText("Product Compare website")).toBeInTheDocument();
+  expect(within(details).getByText("Partner link")).toBeInTheDocument();
+  expect(
+    within(details).getByText("https://example.test/compare?campaign=summer#offer"),
+  ).toBeInTheDocument();
+  expect(within(details).getByText("ExampleBrowser/1.0")).toBeInTheDocument();
+  expect(within(details).getByText("203.0.113.44")).toBeInTheDocument();
+  expect(within(details).getByText("Impact")).toBeInTheDocument();
+  expect(within(details).getByText("SKU-42")).toBeInTheDocument();
+  expect(within(details).getByText("impact-program")).toBeInTheDocument();
+  expect(within(details).getByText("impact-conversion-123")).toBeInTheDocument();
+  const conversion = screen.getByRole("group", {
+    name: "Conversion impact-conversion-123",
+  });
+  expect(within(conversion).getByText("Order value")).toBeInTheDocument();
+  expect(within(conversion).getByText("Commission")).toBeInTheDocument();
+  expect(within(conversion).getByText("90.00 USD")).toBeInTheDocument();
+  expect(within(conversion).getByText("9.00 USD")).toBeInTheDocument();
+  expect(within(conversion).getByText("Conversion Merchant")).toBeInTheDocument();
+  expect(within(conversion).getByText("Conversion Product")).toBeInTheDocument();
+  expect(within(conversion).getByText("Conversion Network")).toBeInTheDocument();
+  expect(within(conversion).getByText("Purchased")).toBeInTheDocument();
+  expect(within(conversion).getByText("Reported")).toBeInTheDocument();
+  expect(conversion.querySelector("dl")).not.toBeInTheDocument();
+  fireEvent.click(
+    within(visitRow).getByRole("button", { name: /Close details for operator@example\.test/ }),
+  );
+  expect(
+    screen.queryByRole("region", { name: /Attribution details for operator@example\.test/ }),
+  ).not.toBeInTheDocument();
+
+  const recent = screen.getByRole("region", { name: "Recent conversion" });
+  expect(within(recent).getByText("Latest in loaded activity")).toBeVisible();
+  expect(within(recent).getByText("Conversion Merchant")).toBeVisible();
+  expect(within(recent).getByText("Conversion Product")).toBeVisible();
+  expect(within(recent).getByText("Paid")).toBeVisible();
+  expect(within(recent).getByText("Strong match")).toBeVisible();
+  expect(within(recent).getByText("90.00 USD")).toBeVisible();
+  expect(within(recent).getByText("9.00 USD")).toBeVisible();
+  expect(within(recent).getByText("Jun 1, 2026, 9:00 AM")).toHaveAttribute(
+    "datetime",
+    "2026-06-01T09:00:00Z",
+  );
   expect(
     screen.queryByText(/db8e90c9|user-1|merchant-1|product-1|network-1/),
   ).not.toBeInTheDocument();
-  expect(mockedUseFragment).toHaveBeenCalledTimes(1);
+  expect(mockedUseFragment).toHaveBeenCalled();
 
   fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
 
@@ -408,7 +539,12 @@ test("revenue route distinguishes an anonymous click and an empty ledger", () =>
   );
 
   expect(screen.getByText("Anonymous visitor")).toBeInTheDocument();
-  expect(screen.getByText("No matched conversions.")).toBeInTheDocument();
+  expect(screen.getByText("No conversion")).toBeInTheDocument();
+  expect(screen.getAllByText("—")).toHaveLength(2);
+  expect(screen.getByText("No matched conversion in loaded activity")).toBeInTheDocument();
+  const anonymousRow = screen.getByRole("row", { name: /Anonymous visitor/ });
+  fireEvent.click(within(anonymousRow).getByRole("button", { name: /Show details/ }));
+  expect(screen.getByText("No matched conversions")).toBeInTheDocument();
 
   mockedUsePaginationFragment.mockReturnValue({
     data: {
@@ -438,8 +574,23 @@ test("revenue route keeps the summary visible when the ledger preload failed", (
 
   renderRevenueSummaryRoute();
 
-  expect(screen.getByRole("region", { name: "Summary" })).toBeVisible();
-  expect(screen.getByRole("alert")).toHaveTextContent("Attribution ledger unavailable.");
+  expect(screen.getByRole("region", { name: "Attribution performance" })).toBeVisible();
+  expect(screen.getAllByRole("alert")).toHaveLength(2);
+  expect(screen.getByText("Recent conversion unavailable.")).toBeVisible();
+  expect(screen.getByText("Attribution ledger unavailable.")).toBeVisible();
+});
+
+test("revenue route keeps the attribution ledger visible when the summary preload failed", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "error",
+    filters: { currency: "USD" },
+    ledgerQuery: ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR,
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  expect(screen.getByRole("alert")).toHaveTextContent("Revenue summary unavailable.");
+  expect(screen.getByRole("table", { name: "Attribution ledger" })).toBeVisible();
 });
 
 test("revenue route renders the summary while the ledger preload is pending", async () => {
@@ -452,8 +603,10 @@ test("revenue route renders the summary while the ledger preload is pending", as
 
   renderRevenueSummaryRoute();
 
-  expect(screen.getByRole("region", { name: "Summary" })).toBeVisible();
-  expect(screen.getByRole("status")).toHaveTextContent("Loading attribution ledger...");
+  expect(screen.getByRole("region", { name: "Attribution performance" })).toBeVisible();
+  expect(screen.getAllByRole("status")).toHaveLength(2);
+  expect(screen.getByText("Loading recent conversion...")).toBeVisible();
+  expect(screen.getByText("Loading attribution ledger...")).toBeVisible();
   expect(screen.queryByRole("table", { name: "Attribution ledger" })).not.toBeInTheDocument();
 
   await act(() => {
@@ -500,12 +653,55 @@ test("revenue route renders equal conversion references from different networks 
   try {
     renderRevenueSummaryRoute();
 
+    const row = screen.getByRole("row", { name: /operator@example\.test/ });
+    expect(within(row).getAllByText("Multiple")).toHaveLength(2);
+    expect(within(row).getByText("2 conversions")).toBeVisible();
+    fireEvent.click(within(row).getByRole("button", { name: /Show details/ }));
     expect(screen.getByText("Conversion Network")).toBeVisible();
     expect(screen.getByText("Second Conversion Network")).toBeVisible();
     expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
   } finally {
     consoleErrorSpy.mockRestore();
   }
+});
+
+test("revenue route keeps attribution detail expansion local to each row", () => {
+  const firstNode = ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node;
+  const secondNode = {
+    ...firstNode,
+    clickId: "second-click",
+    insertedAt: "2026-05-31T12:45:00Z",
+    userEmail: "second@example.test",
+  };
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      commerceAttributionClicks: {
+        edges: [
+          ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0],
+          { cursor: "ledger-cursor-2", node: secondNode },
+        ],
+        pageInfo: { endCursor: null, hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  const firstRow = screen.getByRole("row", { name: /operator@example\.test/ });
+  const secondRow = screen.getByRole("row", { name: /second@example\.test/ });
+  fireEvent.click(within(firstRow).getByRole("button", { name: /Show details/ }));
+  fireEvent.click(within(secondRow).getByRole("button", { name: /Show details/ }));
+
+  expect(screen.getAllByRole("region", { name: /Attribution details for/ })).toHaveLength(2);
+  fireEvent.click(within(firstRow).getByRole("button", { name: /Close details/ }));
+  expect(screen.getAllByRole("region", { name: /Attribution details for/ })).toHaveLength(1);
+  expect(
+    screen.getByRole("region", { name: /Attribution details for second@example\.test/ }),
+  ).toBeVisible();
 });
 
 test("revenue route renders one-conversion metrics without hidden-metrics copy", () => {
@@ -531,10 +727,12 @@ test("revenue route renders one-conversion metrics without hidden-metrics copy",
 
   renderRevenueSummaryRoute();
 
+  const summary = screen.getByRole("region", { name: "Attribution performance" });
+  const revenue = screen.getByRole("region", { name: "Revenue outcome" });
   expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
-  expect(screen.getByText("Clicks")).toBeInTheDocument();
-  expect(screen.getAllByText("1")).toHaveLength(2);
-  expect(screen.getAllByText("90.00 USD")).toHaveLength(2);
+  expect(within(summary).getByText("Clicks")).toBeInTheDocument();
+  expect(within(summary).getAllByText("1")).toHaveLength(2);
+  expect(within(revenue).getAllByText("90.00 USD")).toHaveLength(2);
   expect(screen.queryByText(/Revenue metrics are hidden/i)).not.toBeInTheDocument();
 });
 
@@ -553,7 +751,7 @@ test("revenue route renders unavailable null counts when metrics are unsuppresse
 
   renderRevenueSummaryRoute();
 
-  expect(screen.getAllByText("Not available")).toHaveLength(2);
+  expect(screen.getAllByText("Not available")).toHaveLength(3);
 });
 
 test("revenue route renders unsuppressed revenue metrics", () => {
@@ -815,7 +1013,7 @@ test("revenue route updates filter field values when loader filters change", () 
   expect(screen.getByLabelText("Network")).toHaveValue("impact");
   expect(screen.getByLabelText("From")).toHaveValue("2026-05-01");
   expect(screen.getByLabelText("To")).toHaveValue("2026-05-31");
-  const reportSummary = screen.getByRole("region", { name: "Summary" });
+  const reportSummary = screen.getByRole("region", { name: "Attribution performance" });
 
   loaderData = buildReadyLoaderData({ currency: "USD" });
   rerender(
@@ -828,7 +1026,7 @@ test("revenue route updates filter field values when loader filters change", () 
   expect(screen.getByLabelText("Currency")).toHaveValue("USD");
   expect(screen.getByLabelText("From")).toHaveValue("");
   expect(screen.getByLabelText("To")).toHaveValue("");
-  expect(screen.getByRole("region", { name: "Summary" })).toBe(reportSummary);
+  expect(screen.getByRole("region", { name: "Attribution performance" })).toBe(reportSummary);
 });
 
 test("revenue route asks for a currency before loading metrics", () => {
@@ -881,12 +1079,14 @@ test("revenue route renders the loader error state", () => {
       currency: "USD",
       network: "impact",
     },
+    ledgerQuery: null,
   } satisfies RevenueSummaryLoaderData);
 
   renderRevenueSummaryRoute();
 
   expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent("Revenue summary unavailable.");
+  expect(screen.getByText("Revenue summary unavailable.")).toBeInTheDocument();
+  expect(screen.getByText("Attribution ledger unavailable.")).toBeInTheDocument();
   expect(screen.getByLabelText("Network")).toHaveValue("impact");
   expect(screen.getByLabelText("Currency")).toHaveValue("USD");
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();

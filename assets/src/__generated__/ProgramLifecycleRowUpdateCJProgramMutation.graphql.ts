@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<bba6090bd93f6f26d6e5ec2c37e98506>>
+ * @generated SignedSource<<8dae7d9da3819282f32358743e261fad>>
  * @lightSyntaxTransform
  */
 
@@ -15,10 +15,10 @@ export type UpdateCjProgramInput = {
   note?: string | null;
   stage: CJProgramStage;
 };
-export type CJProgramRowUpdateCJProgramMutation$variables = {
+export type ProgramLifecycleRowUpdateCJProgramMutation$variables = {
   input: UpdateCjProgramInput;
 };
-export type CJProgramRowUpdateCJProgramMutation$data = {
+export type ProgramLifecycleRowUpdateCJProgramMutation$data = {
   readonly updateCjProgram: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
@@ -27,9 +27,9 @@ export type CJProgramRowUpdateCJProgramMutation$data = {
     }>;
   };
 };
-export type CJProgramRowUpdateCJProgramMutation = {
-  response: CJProgramRowUpdateCJProgramMutation$data;
-  variables: CJProgramRowUpdateCJProgramMutation$variables;
+export type ProgramLifecycleRowUpdateCJProgramMutation = {
+  response: ProgramLifecycleRowUpdateCJProgramMutation$data;
+  variables: ProgramLifecycleRowUpdateCJProgramMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -96,7 +96,7 @@ return {
     "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "CJProgramRowUpdateCJProgramMutation",
+    "name": "ProgramLifecycleRowUpdateCJProgramMutation",
     "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -105,20 +105,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
-    "name": "CJProgramRowUpdateCJProgramMutation",
+    "name": "ProgramLifecycleRowUpdateCJProgramMutation",
     "selections": (v1/*:: as any*/)
   },
   "params": {
-    "cacheID": "53a9de2f70ed5ad98ee90851479f2a86",
+    "cacheID": "e3c7c1e3a1c660dd955545d931496d5a",
     "id": null,
     "metadata": {},
-    "name": "CJProgramRowUpdateCJProgramMutation",
+    "name": "ProgramLifecycleRowUpdateCJProgramMutation",
     "operationKind": "mutation",
-    "text": "mutation CJProgramRowUpdateCJProgramMutation(\n  $input: UpdateCjProgramInput!\n) {\n  updateCjProgram(input: $input) {\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation ProgramLifecycleRowUpdateCJProgramMutation(\n  $input: UpdateCjProgramInput!\n) {\n  updateCjProgram(input: $input) {\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "1c3aaa59813d141d130c9573b02c49b6";
+(node as any).hash = "2a63bfb22038db72588d0822f4f1bae0";
 
 export default node;

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c7d2b272b23c99b41775b182f08a7456>>
+ * @generated SignedSource<<c687b1c957996016fb47e4805726d215>>
  * @lightSyntaxTransform
  */
 
@@ -9,18 +9,18 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type CJProgramRowFeedsQuery$variables = {
+export type ProgramFeedsQuery$variables = {
   after?: string | null;
   first: number;
   id: string;
 };
-export type CJProgramRowFeedsQuery$data = {
+export type ProgramFeedsQuery$data = {
   readonly cjProgram: {
     readonly feeds: {
       readonly edges: ReadonlyArray<{
         readonly node: {
           readonly id: string;
-          readonly " $fragmentSpreads": FragmentRefs<"CJFeedRow_feed">;
+          readonly " $fragmentSpreads": FragmentRefs<"FeedFactsRow_feed">;
         };
       }>;
       readonly pageInfo: {
@@ -31,9 +31,9 @@ export type CJProgramRowFeedsQuery$data = {
     };
   } | null;
 };
-export type CJProgramRowFeedsQuery = {
-  response: CJProgramRowFeedsQuery$data;
-  variables: CJProgramRowFeedsQuery$variables;
+export type ProgramFeedsQuery = {
+  response: ProgramFeedsQuery$data;
+  variables: ProgramFeedsQuery$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -119,7 +119,7 @@ return {
     ],
     "kind": "Fragment",
     "metadata": null,
-    "name": "CJProgramRowFeedsQuery",
+    "name": "ProgramFeedsQuery",
     "selections": [
       {
         "alias": null,
@@ -157,7 +157,7 @@ return {
                       {
                         "args": null,
                         "kind": "FragmentSpread",
-                        "name": "CJFeedRow_feed"
+                        "name": "FeedFactsRow_feed"
                       }
                     ],
                     "storageKey": null
@@ -184,7 +184,7 @@ return {
       (v0/*:: as any*/)
     ],
     "kind": "Operation",
-    "name": "CJProgramRowFeedsQuery",
+    "name": "ProgramFeedsQuery",
     "selections": [
       {
         "alias": null,
@@ -299,16 +299,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "8681ac1ef8750f2fd657925ab2ec8924",
+    "cacheID": "9a8903c63b6fcd528e3f3ee091e181e1",
     "id": null,
     "metadata": {},
-    "name": "CJProgramRowFeedsQuery",
+    "name": "ProgramFeedsQuery",
     "operationKind": "query",
-    "text": "query CJProgramRowFeedsQuery(\n  $id: ID!\n  $first: Int!\n  $after: String\n) {\n  cjProgram(id: $id) {\n    feeds(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          ...CJFeedRow_feed\n        }\n      }\n      pageInfo {\n        hasNextPage\n        hasPreviousPage\n        endCursor\n      }\n    }\n    id\n  }\n}\n\nfragment CJFeedRow_feed on MerchantFeedCandidate {\n  id\n  providerFeedId\n  advertiserName\n  advertiserCountry\n  sourceFeedType\n  currency\n  language\n  feedName\n  productCount\n  lastSeenAt\n}\n"
+    "text": "query ProgramFeedsQuery(\n  $id: ID!\n  $first: Int!\n  $after: String\n) {\n  cjProgram(id: $id) {\n    feeds(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          ...FeedFactsRow_feed\n        }\n      }\n      pageInfo {\n        hasNextPage\n        hasPreviousPage\n        endCursor\n      }\n    }\n    id\n  }\n}\n\nfragment FeedFactsRow_feed on MerchantFeedCandidate {\n  id\n  providerFeedId\n  advertiserName\n  advertiserCountry\n  sourceFeedType\n  currency\n  language\n  feedName\n  productCount\n  lastSeenAt\n}\n"
   }
 };
 })();
 
-(node as any).hash = "0c1cd16c3b1ea86b5f9ce9ec0220e573";
+(node as any).hash = "fea6523aeea984e8ec64faafc2264f06";
 
 export default node;
