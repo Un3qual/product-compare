@@ -163,5 +163,5 @@ export function referrerCopy(value: AttributionClick["referrer"]) {
 }
 
 export function userAgentCopy(value: AttributionClick["userAgent"]) {
-  return value?.replace(/([A-Za-z])\/(?=\d)/g, "$1 ") ?? "Not captured";
+  return value ?? "Not captured";
 }

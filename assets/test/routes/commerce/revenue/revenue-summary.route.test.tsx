@@ -381,7 +381,7 @@ test("revenue route renders customer-facing visit and purchase details without i
   expect(
     within(details).getByText("https://example.test/compare?campaign=summer#offer"),
   ).toBeInTheDocument();
-  expect(within(details).getByText("ExampleBrowser 1.0")).toBeInTheDocument();
+  expect(within(details).getByText("ExampleBrowser/1.0")).toBeInTheDocument();
   expect(within(details).getByText("203.0.113.44")).toBeInTheDocument();
   expect(within(details).getByText("Impact")).toBeInTheDocument();
   expect(within(details).getByText("SKU-42")).toBeInTheDocument();
