@@ -1,3 +1,5 @@
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/dictionary.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/profile.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/support.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/accounts.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/correction_safety.exs"))
@@ -5,6 +7,9 @@ Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/catalog.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/marketplace.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/community_writes.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/engagement.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/operations.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/guide.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/runner.exs"))
 
 defmodule ProductCompare.Repo.SeedsTest do
   use ProductCompare.DataCase, async: false
@@ -25,8 +30,10 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompare.DevSeeds.Catalog, as: DevSeedCatalog
   alias ProductCompare.DevSeeds.CommunityWrites, as: DevSeedCommunityWrites
   alias ProductCompare.DevSeeds.CorrectionSafety, as: DevSeedCorrectionSafety
+  alias ProductCompare.DevSeeds.Dictionary, as: DevSeedDictionary
   alias ProductCompare.DevSeeds.Engagement, as: DevSeedEngagement
   alias ProductCompare.DevSeeds.Marketplace, as: DevSeedMarketplace
+  alias ProductCompare.DevSeeds.Profile, as: DevSeedProfile
   alias ProductCompare.DevSeeds.Support, as: DevSeedSupport
   alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
@@ -76,6 +83,78 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Taxonomy.Taxonomy
 
   @seed_password "supersecretpass123"
+
+  test "density defaults to the bounded profile" do
+    assert %{
+             density: :bounded,
+             product_count: 300,
+             merchant_count: 70,
+             offer_range: 1_700..1_900
+           } = DevSeedProfile.parse!([])
+  end
+
+  test "density accepts the full profile" do
+    assert %{
+             density: :full,
+             product_count: 300,
+             merchant_count: 70,
+             offer_range: 2_900..3_100
+           } = DevSeedProfile.parse!(["--density", "full"])
+  end
+
+  test "density rejects malformed arguments" do
+    assert_raise ArgumentError, ~r/density must be bounded or full/, fn ->
+      DevSeedProfile.parse!(["--density", "huge"])
+    end
+
+    assert_raise ArgumentError, ~r/density may be supplied once/, fn ->
+      DevSeedProfile.parse!(["--density", "bounded", "--density", "full"])
+    end
+
+    assert_raise ArgumentError, ~r/unknown seed arguments/, fn ->
+      DevSeedProfile.parse!(["positional"])
+    end
+
+    assert_raise ArgumentError, ~r/unknown seed arguments/, fn ->
+      DevSeedProfile.parse!(["--other", "value"])
+    end
+  end
+
+  test "seed anchors use the start of the UTC hour" do
+    assert DevSeedProfile.utc_hour(~U[2026-08-14 19:42:13.987654Z]) ==
+             ~U[2026-08-14 19:00:00.000000Z]
+  end
+
+  test "dictionary fixtures are ordered, unique, and profile independent" do
+    bounded = DevSeedProfile.config!(:bounded)
+    full = DevSeedProfile.config!(:full)
+    products = DevSeedDictionary.product_fixtures(bounded)
+    merchants = DevSeedDictionary.merchant_fixtures(bounded)
+
+    assert length(products) == 295
+    assert length(merchants) == 68
+    assert products == DevSeedDictionary.product_fixtures(full)
+    assert merchants == DevSeedDictionary.merchant_fixtures(full)
+    assert Enum.uniq_by(products, & &1.slug) == products
+    assert Enum.uniq_by(products, & &1.model_number) == products
+    assert Enum.uniq_by(merchants, & &1.domain) == merchants
+  end
+
+  test "stable seed UUIDs derive from namespace and key" do
+    assert DevSeedSupport.stable_uuid("development-product", "generated-product-001") ==
+             "6b698831-1667-8ff1-91bf-28a2edca8b25"
+
+    refute DevSeedSupport.stable_uuid("development-product", "generated-product-001") ==
+             DevSeedSupport.stable_uuid("development-product", "generated-product-002")
+  end
+
+  test "seed runner accepts an explicit full-density profile" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    output = capture_io(fn -> ProductCompare.DevSeeds.run!(["--density", "full"]) end)
+
+    assert output =~ "Density: full"
+  end
 
   test "seed transaction retries explicit stale-snapshot conflicts on a fresh transaction" do
     assert {{:ok, :seeded}, 2} =
@@ -1019,6 +1098,7 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert output =~ "Synthetic"
     assert output =~ "Development API token"
+    assert output =~ "Density: bounded"
   end
 
   test "reruns restore seed-owned state without duplicating it or changing unrelated data" do

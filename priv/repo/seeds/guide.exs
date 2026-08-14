@@ -13,6 +13,8 @@ defmodule ProductCompare.DevSeeds.Guide do
     Development testing guide
     =========================
 
+    Density: #{seed.profile.density}
+
     Accounts
     --------
     Password: #{seed.password} (SEED_USER_PASSWORD or the development default)

@@ -29,8 +29,12 @@ defmodule ProductCompare.DevSeeds.Marketplace do
     inactive: "d3ca0000-0000-4000-8000-000000000509"
   }
 
-  @spec seed!(map(), DateTime.t()) :: map()
-  def seed!(catalog, %DateTime{} = anchor) do
+  @spec seed!(map(), DateTime.t(), map()) :: map()
+  def seed!(
+        catalog,
+        %DateTime{} = anchor,
+        _profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
+      ) do
     {source, artifact} = seed_source_evidence!(anchor)
     merchants = seed_merchants!()
     offers = seed_offers!(catalog.products, merchants, anchor)
@@ -226,6 +230,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
     entropy_id = Map.fetch!(@price_point_entropy_ids, key)
 
     price_point = Repo.get_by(PricePoint, entropy_id: entropy_id)
+    attrs = available_price_point_attrs(attrs, price_point && price_point.id)
 
     case price_point do
       nil ->
@@ -247,6 +252,23 @@ defmodule ProductCompare.DevSeeds.Marketplace do
         raise "development seed #{key} price point belongs to offer #{conflicting_offer_id}"
     end
     |> Support.expect!("price point #{offer.external_sku}/#{key}")
+  end
+
+  defp available_price_point_attrs(attrs, current_id, offset \\ 0) do
+    observed_at = DateTime.add(attrs.observed_at, offset, :microsecond)
+
+    existing =
+      Repo.get_by(PricePoint,
+        merchant_product_id: attrs.merchant_product_id,
+        artifact_id: attrs.artifact_id,
+        observed_at: observed_at
+      )
+
+    if is_nil(existing) or existing.id == current_id do
+      Map.put(attrs, :observed_at, observed_at)
+    else
+      available_price_point_attrs(attrs, current_id, offset + 1)
+    end
   end
 
   defp delete_alert_evaluation_jobs!([]), do: :ok

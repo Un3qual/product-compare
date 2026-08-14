@@ -43,8 +43,14 @@ defmodule ProductCompare.DevSeeds.Engagement do
     newly_available: Support.unobserved_watch_entropy_id()
   }
 
-  @spec seed!(map(), map(), map(), DateTime.t()) :: map()
-  def seed!(accounts, catalog, marketplace, %DateTime{} = anchor) do
+  @spec seed!(map(), map(), map(), DateTime.t(), map()) :: map()
+  def seed!(
+        accounts,
+        catalog,
+        marketplace,
+        %DateTime{} = anchor,
+        _profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
+      ) do
     saved_sets = seed_saved_sets!(accounts.shopper, catalog.products)
     snapshot = seed_snapshot!(accounts.shopper, catalog.products, anchor)
     alerts = seed_alerts!(accounts.shopper, catalog.products, marketplace, anchor)

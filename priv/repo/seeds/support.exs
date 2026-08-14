@@ -27,6 +27,27 @@ defmodule ProductCompare.DevSeeds.Support do
   @spec sha256(binary()) :: binary()
   def sha256(value) when is_binary(value), do: :crypto.hash(:sha256, value)
 
+  @spec stable_uuid(String.t(), String.t()) :: Ecto.UUID.t()
+  def stable_uuid(namespace, key) when is_binary(namespace) and is_binary(key) do
+    hex =
+      "#{namespace}:#{key}"
+      |> sha256()
+      |> Base.encode16(case: :lower)
+
+    uuid =
+      [
+        String.slice(hex, 0, 8),
+        String.slice(hex, 8, 4),
+        String.slice(hex, 12, 4),
+        String.slice(hex, 16, 4),
+        String.slice(hex, 20, 12)
+      ]
+      |> Enum.join("-")
+
+    {:ok, uuid} = Ecto.UUID.cast(uuid)
+    uuid
+  end
+
   @spec expect!({:ok, value} | {:error, term()}, String.t()) :: value when value: var
   def expect!({:ok, value}, _stage), do: value
 

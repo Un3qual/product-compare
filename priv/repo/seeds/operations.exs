@@ -35,8 +35,14 @@ defmodule ProductCompare.DevSeeds.Operations do
                     |> Enum.with_index(1)
                     |> Map.new(fn {{stage, _label}, index} -> {stage, index} end)
 
-  @spec seed!(map(), map(), map(), DateTime.t()) :: map()
-  def seed!(accounts, catalog, marketplace, %DateTime{} = anchor) do
+  @spec seed!(map(), map(), map(), DateTime.t(), map()) :: map()
+  def seed!(
+        accounts,
+        catalog,
+        marketplace,
+        %DateTime{} = anchor,
+        _profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
+      ) do
     source = seed_cj_source!()
     {programs, feeds} = seed_cj_programs_and_feeds!(source, anchor)
     runs = seed_import_runs!(source, anchor)

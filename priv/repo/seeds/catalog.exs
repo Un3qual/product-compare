@@ -29,8 +29,12 @@ defmodule ProductCompare.DevSeeds.Catalog do
     projector: "d3ca0000-0000-4000-8000-000000000405"
   }
 
-  @spec seed!(map(), DateTime.t()) :: map()
-  def seed!(accounts, %DateTime{} = anchor) do
+  @spec seed!(map(), DateTime.t(), map()) :: map()
+  def seed!(
+        accounts,
+        %DateTime{} = anchor,
+        _profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
+      ) do
     Taxonomy.seed_default_taxonomies()
     |> Support.expect!("default taxonomies")
 
