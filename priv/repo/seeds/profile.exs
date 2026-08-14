@@ -9,17 +9,21 @@ defmodule ProductCompare.DevSeeds.Profile do
 
   @spec parse!([String.t()]) :: map()
   def parse!(argv) when is_list(argv) do
+    density_option_count =
+      Enum.count(argv, &(&1 == "--density" or String.starts_with?(&1, "--density=")))
+
+    if density_option_count > 1 do
+      raise ArgumentError, "density may be supplied once"
+    end
+
     {options, arguments, invalid} =
-      OptionParser.parse(argv, strict: [density: :keep])
+      OptionParser.parse(argv, strict: [density: :string])
 
     densities = Keyword.get_values(options, :density)
 
     cond do
       arguments != [] or invalid != [] ->
         raise ArgumentError, "unknown seed arguments: #{inspect(arguments ++ invalid)}"
-
-      length(densities) > 1 ->
-        raise ArgumentError, "density may be supplied once"
 
       densities == [] ->
         config!(:bounded)

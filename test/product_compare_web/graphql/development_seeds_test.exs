@@ -40,7 +40,7 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
 
     assert [_, _, _, _, _ | _] = product_edges
     assert [_, _ | _] = merchant_edges
-    assert length(offer_edges) == 10
+    assert Enum.count(offer_edges) == 10
     assert [_ | _] = review_edges
     assert [_ | _] = question_edges
 
@@ -53,7 +53,7 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
              }
            } = graphql(conn, catalog_page_query(), %{"first" => 100})
 
-    assert length(first_catalog_page) == 100
+    assert Enum.count(first_catalog_page) == 100
 
     assert %{
              "data" => %{
@@ -68,7 +68,7 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
                "after" => first_end_cursor
              })
 
-    assert length(second_catalog_page) == 100
+    assert Enum.count(second_catalog_page) == 100
 
     assert %{
              "data" => %{
@@ -121,9 +121,9 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
                "questionSlug" => "acme-beam-4k"
              })
 
-    assert length(saved_set_edges) == 20
-    assert length(watch_edges) == 20
-    assert length(event_edges) == 20
+    assert Enum.count(saved_set_edges) == 20
+    assert Enum.count(watch_edges) == 20
+    assert Enum.count(event_edges) == 20
 
     assert %{
              "data" => %{
@@ -201,9 +201,9 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
            |> Map.values()
            |> Enum.all?(&(&1 > 0))
 
-    assert length(cj_program_edges) == 20
-    assert length(unmatched_feed_edges) == 10
-    assert length(attribution_edges) == 20
+    assert Enum.count(cj_program_edges) == 20
+    assert Enum.count(unmatched_feed_edges) == 10
+    assert Enum.count(attribution_edges) == 20
 
     assert %{
              "data" => %{

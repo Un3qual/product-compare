@@ -14,6 +14,7 @@ defmodule ProductCompare.DevSeeds do
   @spec run!([String.t()]) :: map()
   def run!(argv \\ []) when is_list(argv) do
     password = seed_user_password()
+    argv = if match?(["--" | _], argv), do: tl(argv), else: argv
     profile = Profile.parse!(argv)
     anchor = DateTime.utc_now() |> Profile.utc_hour()
 

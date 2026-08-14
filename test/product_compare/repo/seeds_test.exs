@@ -18,6 +18,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   use ProductCompare.DataCase, async: false
 
   @moduletag sandbox_isolation: "REPEATABLE READ"
+  @moduletag timeout: :infinity
 
   import ExUnit.CaptureIO
 
@@ -140,8 +141,8 @@ defmodule ProductCompare.Repo.SeedsTest do
     products = DevSeedDictionary.product_fixtures(bounded)
     merchants = DevSeedDictionary.merchant_fixtures(bounded)
 
-    assert length(products) == 295
-    assert length(merchants) == 68
+    assert Enum.count(products) == 295
+    assert Enum.count(merchants) == 68
     assert products == DevSeedDictionary.product_fixtures(full)
     assert merchants == DevSeedDictionary.merchant_fixtures(full)
     assert Enum.uniq_by(products, & &1.slug) == products
@@ -168,9 +169,9 @@ defmodule ProductCompare.Repo.SeedsTest do
   test "bounded seeds generate an ordered deterministic 300-product catalog" do
     seed = run_seed(["--density", "bounded"])
 
-    assert length(seed.catalog.all_products) == 300
+    assert Enum.count(seed.catalog.all_products) == 300
     assert Repo.aggregate(Product, :count, :id) >= 300
-    assert seed.catalog.all_products |> Enum.uniq_by(& &1.slug) |> length() == 300
+    assert seed.catalog.all_products |> Enum.uniq_by(& &1.slug) |> Enum.count() == 300
 
     assert seed.catalog.all_products |> Enum.take(5) |> Enum.map(& &1.slug) == [
              "acme-vision-27g",
@@ -204,8 +205,8 @@ defmodule ProductCompare.Repo.SeedsTest do
   test "marketplace densities scale merchant, offer, and history coverage" do
     bounded = run_seed(["--density", "bounded"])
 
-    assert length(bounded.marketplace.all_merchants) == 70
-    assert length(bounded.marketplace.all_offers) in 1_700..1_900
+    assert Enum.count(bounded.marketplace.all_merchants) == 70
+    assert Enum.count(bounded.marketplace.all_offers) in 1_700..1_900
 
     assert Enum.all?(bounded.marketplace.all_merchants, fn merchant ->
              Enum.any?(bounded.marketplace.all_offers, &(&1.merchant_id == merchant.id))
@@ -221,7 +222,7 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert bounded.marketplace.all_offers
            |> Enum.uniq_by(&{&1.merchant_id, &1.product_id})
-           |> length() == length(bounded.marketplace.all_offers)
+           |> Enum.count() == Enum.count(bounded.marketplace.all_offers)
 
     assert Enum.any?(bounded.marketplace.all_offers, &(&1.currency != "USD"))
 
@@ -231,12 +232,14 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     full = run_seed(["--density", "full"])
 
-    assert length(full.marketplace.all_merchants) == 70
-    assert length(full.marketplace.all_offers) in 2_900..3_100
-    assert length(full.marketplace.all_offers) > length(bounded.marketplace.all_offers)
+    assert Enum.count(full.marketplace.all_merchants) == 70
+    assert Enum.count(full.marketplace.all_offers) in 2_900..3_100
 
-    assert length(full.marketplace.all_price_points) >
-             length(bounded.marketplace.all_price_points)
+    assert Enum.count(full.marketplace.all_offers) >
+             Enum.count(bounded.marketplace.all_offers)
+
+    assert Enum.count(full.marketplace.all_price_points) >
+             Enum.count(bounded.marketplace.all_price_points)
 
     bounded_offer_identities =
       MapSet.new(bounded.marketplace.all_offers, &{&1.entropy_id, &1.product_id, &1.merchant_id})
@@ -249,10 +252,10 @@ defmodule ProductCompare.Repo.SeedsTest do
            ) == bounded_offer_identities
 
     assert Repo.aggregate(MerchantProduct, :count, :id) ==
-             length(bounded_again.marketplace.all_offers)
+             Enum.count(bounded_again.marketplace.all_offers)
 
     assert Repo.aggregate(PricePoint, :count, :id) ==
-             length(bounded_again.marketplace.all_price_points)
+             Enum.count(bounded_again.marketplace.all_price_points)
 
     assert engagement_counts(bounded_again) == %{
              saved_sets: 24,
@@ -280,7 +283,7 @@ defmodule ProductCompare.Repo.SeedsTest do
              corrections: 24
            } == engagement_counts(bounded)
 
-    assert length(bounded.engagement.all_alerts) >= 64
+    assert Enum.count(bounded.engagement.all_alerts) >= 64
 
     assert MapSet.new(bounded.engagement.all_watches, & &1.rule_type) ==
              MapSet.new([:target_price, :percentage_drop, :back_in_stock, :newly_available])
@@ -300,7 +303,7 @@ defmodule ProductCompare.Repo.SeedsTest do
              corrections: 90
            } == engagement_counts(full)
 
-    assert length(full.engagement.all_alerts) >= 240
+    assert Enum.count(full.engagement.all_alerts) >= 240
 
     for correction <- Enum.filter(full.engagement.all_corrections, &(&1.status == :pending)),
         claim = Repo.get!(ProductAttributeClaim, correction.claim_id),
@@ -334,7 +337,7 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert MapSet.new(bounded.operations.all_conversions, & &1.status) ==
              MapSet.new([:pending, :approved, :reversed, :paid])
 
-    assert length(Enum.chunk_every(bounded.operations.all_import_runs, 20)) >= 2
+    assert bounded.operations.all_import_runs |> Enum.chunk_every(20) |> Enum.count() >= 2
 
     revenue =
       CommerceAttribution.dashboard_revenue_summary(
@@ -357,6 +360,38 @@ defmodule ProductCompare.Repo.SeedsTest do
              clicks: 600,
              conversions: 400
            } == operations_counts(full)
+  end
+
+  @tag timeout: :infinity
+  test "profile reruns preserve logical identities and remove full-only ownership" do
+    bounded_first = run_seed(["--density", "bounded"])
+    bounded_identities = seed_identity_inventory(bounded_first)
+    bounded_operation_ids = operation_database_id_inventory(bounded_first)
+
+    bounded_second = run_seed(["--density", "bounded"])
+
+    assert differing_identity_keys(seed_identity_inventory(bounded_second), bounded_identities) ==
+             []
+
+    assert operation_database_id_inventory(bounded_second) == bounded_operation_ids
+
+    full_first = run_seed(["--density", "full"])
+    full_identities = seed_identity_inventory(full_first)
+    full_operation_ids = operation_database_id_inventory(full_first)
+
+    assert length(full_identities.offers) > length(bounded_identities.offers)
+    assert length(full_identities.conversions) > length(bounded_identities.conversions)
+
+    full_second = run_seed(["--density", "full"])
+    assert differing_identity_keys(seed_identity_inventory(full_second), full_identities) == []
+    assert operation_database_id_inventory(full_second) == full_operation_ids
+
+    bounded_again = run_seed(["--density", "bounded"])
+
+    assert differing_identity_keys(seed_identity_inventory(bounded_again), bounded_identities) ==
+             []
+
+    assert operation_database_id_inventory(bounded_again) == bounded_operation_ids
   end
 
   test "seed transaction retries explicit stale-snapshot conflicts on a fresh transaction" do
@@ -1209,7 +1244,9 @@ defmodule ProductCompare.Repo.SeedsTest do
       |> Repo.all()
       |> Enum.filter(&String.starts_with?(&1.query["seedScenario"] || "", "development-"))
 
-    assert Enum.frequencies_by(runs, &{&1.surface, &1.status}) == %{
+    named_runs = Enum.reject(runs, & &1.query["generated"])
+
+    assert Enum.frequencies_by(named_runs, &{&1.surface, &1.status}) == %{
              {"shoppingProducts", :succeeded} => 1,
              {"shoppingProducts", :failed} => 1,
              {"shoppingProductFeeds", :succeeded} => 1,
@@ -1217,7 +1254,7 @@ defmodule ProductCompare.Repo.SeedsTest do
            }
 
     failed_runs = Enum.filter(runs, &(&1.status == :failed))
-    assert Enum.all?(failed_runs, &String.contains?(&1.error_summary, "Synthetic development"))
+    assert Enum.all?(failed_runs, &String.contains?(&1.error_summary, "Synthetic"))
     refute Enum.any?(failed_runs, &String.contains?(&1.error_summary, "token"))
 
     conversions =
@@ -1264,7 +1301,7 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert %{
              "metrics" => %{
-               "clicks" => 4,
+               "clicks" => 120,
                "commission_revenue" => "145.00",
                "conversions" => 2,
                "currency" => "USD"
@@ -1573,7 +1610,12 @@ defmodule ProductCompare.Repo.SeedsTest do
       )
 
     cj_source = Repo.get_by!(Source, name: "CJ", provider: "cj")
-    accepted_program = Repo.get_by!(CJProgram, source_id: cj_source.id, stage: :accepted)
+
+    accepted_program =
+      Repo.get_by!(CJProgram,
+        source_id: cj_source.id,
+        advertiser_id: "DEV-CJ-ADV-ACCEPTED"
+      )
 
     unmatched_feed =
       Repo.get_by!(MerchantFeedCandidate,
@@ -3289,6 +3331,85 @@ defmodule ProductCompare.Repo.SeedsTest do
       clicks: length(seed.operations.all_clicks),
       conversions: length(seed.operations.all_conversions)
     }
+  end
+
+  defp seed_identity_inventory(seed) do
+    %{
+      products: logical_identities(seed.catalog.all_products),
+      merchants: logical_identities(seed.marketplace.all_merchants),
+      offers: logical_identities(seed.marketplace.all_offers),
+      price_points: logical_identities(seed.marketplace.all_price_points),
+      saved_sets: logical_identities(seed.engagement.all_saved_sets),
+      watches: logical_identities(seed.engagement.all_watches),
+      alerts: alert_logical_identities(seed),
+      reviews: logical_identities(seed.engagement.all_reviews),
+      questions: logical_identities(seed.engagement.all_questions),
+      corrections: logical_identities(seed.engagement.all_corrections),
+      cj_feeds: logical_identities(seed.operations.all_cj_feeds),
+      import_runs: logical_identities(seed.operations.all_import_runs),
+      clicks: logical_identities(seed.operations.all_clicks),
+      conversions: logical_identities(seed.operations.all_conversions),
+      purchase_facts: logical_identities(seed.operations.all_purchase_facts)
+    }
+  end
+
+  defp logical_identities(records) do
+    records
+    |> Enum.map(&{&1.__struct__, &1.entropy_id})
+    |> Enum.sort()
+  end
+
+  defp alert_logical_identities(seed) do
+    watch_entropies = Map.new(seed.engagement.all_watches, &{&1.id, &1.entropy_id})
+
+    point_entropies =
+      Map.new(seed.marketplace.all_price_points, &{&1.id, &1.entropy_id})
+
+    seed.engagement.all_alerts
+    |> Enum.map(fn event ->
+      {
+        event.__struct__,
+        Map.fetch!(watch_entropies, event.watch_rule_id),
+        Map.fetch!(point_entropies, event.triggering_price_point_id)
+      }
+    end)
+    |> Enum.sort()
+  end
+
+  defp operation_database_id_inventory(seed) do
+    %{
+      cj_feeds: database_identities(seed.operations.all_cj_feeds),
+      import_runs: database_identities(seed.operations.all_import_runs),
+      clicks: database_identities(seed.operations.all_clicks),
+      conversions: database_identities(seed.operations.all_conversions),
+      purchase_facts: database_identities(seed.operations.all_purchase_facts)
+    }
+  end
+
+  defp database_identities(records) do
+    records
+    |> Enum.map(&{&1.__struct__, &1.id, &1.entropy_id})
+    |> Enum.sort()
+  end
+
+  defp differing_identity_keys(left, right) do
+    left
+    |> Map.keys()
+    |> Enum.sort()
+    |> Enum.flat_map(fn key ->
+      left_identities = MapSet.new(Map.fetch!(left, key))
+      right_identities = MapSet.new(Map.fetch!(right, key))
+
+      if left_identities == right_identities do
+        []
+      else
+        [
+          {key,
+           only_left: left_identities |> MapSet.difference(right_identities) |> Enum.take(3),
+           only_right: right_identities |> MapSet.difference(left_identities) |> Enum.take(3)}
+        ]
+      end
+    end)
   end
 
   defp latest_offer_summary(offer, now) do

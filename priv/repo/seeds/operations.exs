@@ -328,6 +328,7 @@ defmodule ProductCompare.DevSeeds.Operations do
               |> Repo.update()
           end
           |> Support.expect!("commerce click #{status}")
+          |> then(&Repo.get!(CommerceClickSession, &1.id))
 
         {status, click}
       end)
@@ -422,6 +423,7 @@ defmodule ProductCompare.DevSeeds.Operations do
               |> Repo.update()
           end
           |> Support.expect!("purchase price fact #{status}")
+          |> then(&Repo.get!(PurchasePriceFact, &1.id))
 
         {status, fact}
       end)
