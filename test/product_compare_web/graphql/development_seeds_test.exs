@@ -22,7 +22,10 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
              "data" => %{
                "products" => %{"edges" => product_edges},
                "merchants" => %{"edges" => merchant_edges},
-               "merchantProducts" => %{"edges" => offer_edges},
+               "merchantProducts" => %{
+                 "edges" => offer_edges,
+                 "pageInfo" => %{"endCursor" => offer_end_cursor, "hasNextPage" => true}
+               },
                "product" => %{
                  "reviews" => %{"edges" => review_edges}
                },
@@ -37,7 +40,7 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
 
     assert [_, _, _, _, _ | _] = product_edges
     assert [_, _ | _] = merchant_edges
-    assert [_ | _] = offer_edges
+    assert length(offer_edges) == 10
     assert [_ | _] = review_edges
     assert [_ | _] = question_edges
 
@@ -66,6 +69,19 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
              })
 
     assert length(second_catalog_page) == 100
+
+    assert %{
+             "data" => %{
+               "merchantProducts" => %{
+                 "edges" => [_ | _],
+                 "pageInfo" => %{"hasPreviousPage" => true}
+               }
+             }
+           } =
+             graphql(conn, offer_page_query(), %{
+               "productId" => relay_id(:product, product.id),
+               "after" => offer_end_cursor
+             })
 
     shopper = Repo.get_by!(User, email: "shopper@example.com")
     shopper_conn = conn |> log_in_user(shopper) |> put_req_header_same_origin()
@@ -163,14 +179,30 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
     query DevelopmentPublic($productId: ID!, $slug: String!, $questionSlug: String!) {
       products(first: 20) { edges { node { id slug name } } }
       merchants(first: 20) { edges { node { id slug name } } }
-      merchantProducts(first: 20, input: {productId: $productId, activeOnly: true}) {
-        edges { node { id externalSku latestPrice { price inStock } } }
+      merchantProducts(first: 10, input: {productId: $productId, activeOnly: true}) {
+        edges { cursor node { id externalSku latestPrice { price inStock } } }
+        pageInfo { endCursor hasNextPage }
       }
       product(slug: $slug) {
         reviews(first: 20) { edges { node { id title rating } } }
       }
       questionsProduct: product(slug: $questionSlug) {
         questions(first: 20) { edges { node { id title } } }
+      }
+    }
+    """
+  end
+
+  defp offer_page_query do
+    """
+    query DevelopmentOfferPage($productId: ID!, $after: String) {
+      merchantProducts(
+        first: 10,
+        after: $after,
+        input: {productId: $productId, activeOnly: true}
+      ) {
+        edges { cursor node { id externalSku } }
+        pageInfo { hasPreviousPage }
       }
     }
     """

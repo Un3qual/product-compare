@@ -4,6 +4,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
   import Ecto.Query
 
   alias ProductCompare.Affiliate
+  alias ProductCompare.DevSeeds.GeneratedMarketplace
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
@@ -33,13 +34,17 @@ defmodule ProductCompare.DevSeeds.Marketplace do
   def seed!(
         catalog,
         %DateTime{} = anchor,
-        _profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
+        profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
       ) do
     {source, artifact} = seed_source_evidence!(anchor)
     merchants = seed_merchants!()
     offers = seed_offers!(catalog.products, merchants, anchor)
     restore_unobserved_offer!(offers.unobserved)
     price_history = seed_price_points!(offers, source, anchor)
+
+    generated =
+      GeneratedMarketplace.seed!(catalog, merchants, offers, source, anchor, profile)
+
     affiliate = seed_affiliate!(merchants, offers, anchor)
     coupons = seed_coupons!(merchants.example_mart, affiliate.network, artifact, anchor)
 
@@ -47,8 +52,11 @@ defmodule ProductCompare.DevSeeds.Marketplace do
       source: source,
       artifact: artifact,
       merchants: merchants,
+      all_merchants: generated.all_merchants,
       offers: offers,
+      all_offers: generated.all_offers,
       price_points: price_history.points,
+      all_price_points: Map.values(price_history.points) ++ generated.price_points,
       price_artifacts: price_history.artifacts,
       affiliate: affiliate,
       coupons: coupons

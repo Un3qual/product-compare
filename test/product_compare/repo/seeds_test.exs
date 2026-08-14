@@ -4,6 +4,7 @@ Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/support.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/accounts.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/correction_safety.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/catalog.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/generated_marketplace.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/marketplace.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/community_writes.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/engagement.exs"))
@@ -190,6 +191,60 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     rerun = run_seed(["--density", "bounded"])
     assert Enum.map(rerun.catalog.all_products, &{&1.slug, &1.entropy_id}) == identities
+  end
+
+  test "marketplace densities scale merchant, offer, and history coverage" do
+    bounded = run_seed(["--density", "bounded"])
+
+    assert length(bounded.marketplace.all_merchants) == 70
+    assert length(bounded.marketplace.all_offers) in 1_700..1_900
+
+    assert Enum.all?(bounded.marketplace.all_merchants, fn merchant ->
+             Enum.any?(bounded.marketplace.all_offers, &(&1.merchant_id == merchant.id))
+           end)
+
+    representative_offer_count =
+      Enum.count(
+        bounded.marketplace.all_offers,
+        &(&1.product_id == bounded.catalog.products.monitor_16_9.id)
+      )
+
+    assert representative_offer_count >= 12
+
+    assert bounded.marketplace.all_offers
+           |> Enum.uniq_by(&{&1.merchant_id, &1.product_id})
+           |> length() == length(bounded.marketplace.all_offers)
+
+    assert Enum.any?(bounded.marketplace.all_offers, &(&1.currency != "USD"))
+
+    assert bounded.marketplace.all_merchants
+           |> Enum.drop(2)
+           |> Enum.all?(&String.ends_with?(&1.domain, ".test"))
+
+    full = run_seed(["--density", "full"])
+
+    assert length(full.marketplace.all_merchants) == 70
+    assert length(full.marketplace.all_offers) in 2_900..3_100
+    assert length(full.marketplace.all_offers) > length(bounded.marketplace.all_offers)
+
+    assert length(full.marketplace.all_price_points) >
+             length(bounded.marketplace.all_price_points)
+
+    bounded_offer_identities =
+      MapSet.new(bounded.marketplace.all_offers, &{&1.entropy_id, &1.product_id, &1.merchant_id})
+
+    bounded_again = run_seed(["--density", "bounded"])
+
+    assert MapSet.new(
+             bounded_again.marketplace.all_offers,
+             &{&1.entropy_id, &1.product_id, &1.merchant_id}
+           ) == bounded_offer_identities
+
+    assert Repo.aggregate(MerchantProduct, :count, :id) ==
+             length(bounded_again.marketplace.all_offers)
+
+    assert Repo.aggregate(PricePoint, :count, :id) ==
+             length(bounded_again.marketplace.all_price_points)
   end
 
   test "seed transaction retries explicit stale-snapshot conflicts on a fresh transaction" do
