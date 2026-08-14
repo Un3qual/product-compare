@@ -142,10 +142,11 @@ referential integrity merely to reduce runtime.
 
 The execution anchor is the start of the current UTC hour. It remains current
 enough for freshness-sensitive product behavior while giving repeated local runs
-a stable timestamp boundary. Seed identities and the expected observation set
-are derived from that anchor and named offsets. Repeating a profile within the
-hour yields the same logical rows. A later run reconciles obsolete seed-owned
-observations rather than accumulating unbounded history.
+a stable timestamp boundary. Stable identities derive only from fixed namespace,
+fixture, cadence, and period keys; the anchor supplies observation timestamps.
+Repeating a profile within the hour yields the same logical rows. A later run
+reconciles obsolete seed-owned observations rather than accumulating unbounded
+history.
 
 Prices use authored Decimal bases plus deterministic merchant, product, and
 scenario adjustments. Currencies, stock states, coupon windows, community

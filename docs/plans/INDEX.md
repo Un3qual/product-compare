@@ -37,12 +37,11 @@ residual audit:
 - `docs/superpowers/plans/2026-08-14-scalable-realistic-development-data-implementation-plan.md`
 - `docs/superpowers/plans/2026-08-12-type-validation-and-slop-remediation-implementation-plan.md`
 
-The first five are the current live ready rows. The type/validation/slop plan is
-not queue filler: after those cohorts complete, its first task refreshes the
-remaining manual-type, validator, bigint, declaration, barrel, and generic-file
-inventory and promotes one exact non-overlapping residual outcome. The previous
-four production-UI rows remain below as completion/supersession history rather
-than live dispatch sources.
+The first five outcomes are complete. The type/validation/slop plan is not queue
+filler: its first task must refresh the remaining manual-type, validator,
+bigint, declaration, barrel, and generic-file inventory before promoting exact
+non-overlapping residual outcomes. The previous four production-UI rows remain
+below as completion/supersession history rather than live dispatch sources.
 
 The approved homepage query-scaling outcome is complete through:
 

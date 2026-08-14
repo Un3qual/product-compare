@@ -263,10 +263,19 @@ defmodule ProductCompare.DevSeeds.Operations do
   end
 
   defp import_run_for_scenario(source, scenario) do
-    ImportRun
-    |> where([run], run.source_id == ^source.id)
-    |> where([run], fragment("?->>'seedScenario'", run.query) == ^scenario)
-    |> Repo.one()
+    matches =
+      ImportRun
+      |> where([run], run.source_id == ^source.id)
+      |> where([run], fragment("?->>'seedScenario'", run.query) == ^scenario)
+      |> order_by([run], desc: run.started_at, desc: run.id)
+      |> limit(2)
+      |> Repo.all()
+
+    case matches do
+      [] -> nil
+      [run] -> run
+      _duplicates -> raise "multiple synthetic import runs for #{scenario} on source #{source.id}"
+    end
   end
 
   defp seed_commerce!(accounts, catalog, marketplace, anchor) do

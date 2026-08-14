@@ -305,13 +305,15 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
       |> Support.expect!("generated anonymous visitor")
 
     clicks = seed_clicks!(accounts, offers, links, visitor, click_count)
+    currencies_by_offer_id = Map.new(offers, fn {currency, offer} -> {offer.id, currency} end)
 
     conversions =
       seed_conversions!(
         marketplace.affiliate,
         clicks,
         anchor,
-        conversion_count
+        conversion_count,
+        currencies_by_offer_id
       )
 
     purchase_facts = seed_purchase_facts!(conversions, marketplace.all_price_points)
@@ -432,7 +434,7 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
     end)
   end
 
-  defp seed_conversions!(affiliate, clicks, anchor, selected_count) do
+  defp seed_conversions!(affiliate, clicks, anchor, selected_count, currencies_by_offer_id) do
     statuses = [:pending, :approved, :reversed, :paid]
 
     Enum.map(1..selected_count, fn index ->
@@ -461,7 +463,7 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
           affiliate_network_id: affiliate.network.id,
           network_conversion_ref: conversion_ref(index),
           status: status,
-          currency: currency_for_click(click),
+          currency: Map.fetch!(currencies_by_offer_id, click.merchant_product_id),
           order_amount: order_amount,
           commission_amount: commission_amount,
           commission_rate: Decimal.new("0.10"),
@@ -499,13 +501,6 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
     end)
   end
 
-  defp currency_for_click(click) do
-    click
-    |> Repo.preload(:merchant_product)
-    |> Map.fetch!(:merchant_product)
-    |> Map.fetch!(:currency)
-  end
-
   defp seed_purchase_facts!(conversions, price_points) do
     latest_points =
       price_points
@@ -520,7 +515,10 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
       is_nil(conversion.merchant_product_id) or rem(index, 3) == 0
     end)
     |> Enum.map(fn {conversion, index} ->
-      point = Map.fetch!(latest_points, conversion.merchant_product_id)
+      point =
+        Map.get(latest_points, conversion.merchant_product_id) ||
+          raise "Generated purchase fact #{index}: offer #{conversion.merchant_product_id} has no price point"
+
       paid = conversion.order_amount
       observed = point.price
 

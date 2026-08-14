@@ -197,9 +197,8 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
                "merchantId" => relay_id(:merchant, merchant.id)
              })
 
-    assert stage_counts
-           |> Map.values()
-           |> Enum.all?(&(&1 > 0))
+    assert map_size(stage_counts) == 7
+    assert Enum.all?(Map.values(stage_counts), &(is_integer(&1) and &1 > 0))
 
     assert Enum.count(cj_program_edges) == 20
     assert Enum.count(unmatched_feed_edges) == 10

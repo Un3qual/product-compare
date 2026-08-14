@@ -29,6 +29,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
     out_of_stock: "d3ca0000-0000-4000-8000-000000000508",
     inactive: "d3ca0000-0000-4000-8000-000000000509"
   }
+  @max_observed_at_offset 1_000
 
   @spec seed!(map(), DateTime.t(), map()) :: map()
   def seed!(
@@ -262,7 +263,14 @@ defmodule ProductCompare.DevSeeds.Marketplace do
     |> Support.expect!("price point #{offer.external_sku}/#{key}")
   end
 
-  defp available_price_point_attrs(attrs, current_id, offset \\ 0) do
+  defp available_price_point_attrs(attrs, current_id, offset \\ 0)
+
+  defp available_price_point_attrs(attrs, _current_id, offset)
+       when offset > @max_observed_at_offset do
+    raise "development seed could not find a free observation time for offer #{attrs.merchant_product_id} and artifact #{attrs.artifact_id}"
+  end
+
+  defp available_price_point_attrs(attrs, current_id, offset) do
     observed_at = DateTime.add(attrs.observed_at, offset, :microsecond)
 
     existing =

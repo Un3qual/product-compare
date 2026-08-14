@@ -7,8 +7,13 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Affiliate.AffiliateLink
   alias ProductCompareSchemas.Alerts.AlertEvent
   alias ProductCompareSchemas.Alerts.PriceWatchRule
+  alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
+  alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
+  alias ProductCompareSchemas.Discussions.ProductReview
+  alias ProductCompareSchemas.Ingestion.ImportObservation
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
@@ -475,13 +480,73 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
   defp reconcile_offers!(selected_entropy_ids, full_entropy_ids) do
     obsolete_entropy_ids = MapSet.difference(full_entropy_ids, selected_entropy_ids)
 
-    obsolete_entropy_ids
-    |> Enum.chunk_every(5_000)
-    |> Enum.each(fn entropy_ids ->
+    obsolete_offer_ids =
       MerchantProduct
-      |> where([offer], offer.entropy_id in ^entropy_ids)
-      |> Repo.delete_all()
+      |> where([offer], offer.entropy_id in ^MapSet.to_list(obsolete_entropy_ids))
+      |> select([offer], offer.id)
+      |> Repo.all()
+
+    reconcile_seed_offer_watches!(obsolete_offer_ids)
+
+    for {schema, field, label} <- [
+          {PricePoint, :merchant_product_id, "price points"},
+          {AffiliateLink, :merchant_product_id, "affiliate links"},
+          {ProductReview, :merchant_product_id, "product reviews"},
+          {CommerceClickSession, :merchant_product_id, "commerce clicks"},
+          {CommerceConversion, :merchant_product_id, "commerce conversions"},
+          {ImportObservation, :merchant_product_id, "import observations"},
+          {AlertEvent, :merchant_product_id, "alert events"}
+        ] do
+      ensure_no_offer_references!(schema, field, obsolete_offer_ids, label)
+    end
+
+    obsolete_offer_ids
+    |> Enum.chunk_every(5_000)
+    |> Enum.each(fn offer_ids ->
+      MerchantProduct |> where([offer], offer.id in ^offer_ids) |> Repo.delete_all()
     end)
+  end
+
+  defp reconcile_seed_offer_watches!([]), do: :ok
+
+  defp reconcile_seed_offer_watches!(offer_ids) do
+    watches =
+      PriceWatchRule
+      |> where([watch], watch.merchant_product_id in ^offer_ids)
+      |> select([watch], {watch.id, watch.entropy_id})
+      |> Repo.all()
+
+    {seed_watches, unowned_watches} =
+      Enum.split_with(watches, fn {_id, entropy_id} ->
+        entropy_id in @seed_watch_entropy_ids
+      end)
+
+    if unowned_watches != [] do
+      raise "Refusing to delete full-only offers referenced by unowned watches #{inspect(Enum.map(unowned_watches, &elem(&1, 0)))}"
+    end
+
+    seed_watch_ids = Enum.map(seed_watches, &elem(&1, 0))
+
+    if seed_watch_ids != [] do
+      AlertEvent
+      |> where(
+        [event],
+        event.merchant_product_id in ^offer_ids and event.watch_rule_id in ^seed_watch_ids
+      )
+      |> Repo.delete_all()
+
+      PriceWatchRule |> where([watch], watch.id in ^seed_watch_ids) |> Repo.delete_all()
+    end
+
+    :ok
+  end
+
+  defp ensure_no_offer_references!(_schema, _field, [], _label), do: :ok
+
+  defp ensure_no_offer_references!(schema, field_name, offer_ids, label) do
+    if Repo.exists?(from record in schema, where: field(record, ^field_name) in ^offer_ids) do
+      raise "Refusing to delete full-only offers referenced by unowned #{label}"
+    end
   end
 
   defp fetch_by_entropy_ids([], _schema), do: []

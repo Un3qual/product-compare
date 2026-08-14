@@ -297,7 +297,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
 
   defp seed_alerts!(shopper, watches, fixtures, anchor, selected_count) do
     full_watch_count = @targets.full.watches - 4
-    selected_event_keys = event_keys(fixtures, selected_count)
+    selected_event_keys = event_keys!(fixtures, selected_count)
 
     full_event_keys =
       for round <- 0..1, watch_index <- 1..full_watch_count, do: {watch_index, round}
@@ -381,19 +381,23 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
     fetch_by_entropy_ids(AlertEvent, Enum.map(rows, & &1.entropy_id))
   end
 
-  defp event_keys(fixtures, event_count) do
-    base = Enum.map(fixtures, &{&1.index, 0})
+  @doc false
+  @spec event_keys!([map()], non_neg_integer()) :: [{pos_integer(), non_neg_integer()}]
+  def event_keys!(fixtures, event_count) do
+    max_point_count = fixtures |> Enum.map(&length(&1.points)) |> Enum.max(fn -> 0 end)
 
-    extras =
-      Stream.iterate(1, &(&1 + 1))
-      |> Stream.flat_map(fn round ->
-        fixtures
-        |> Enum.filter(&(length(&1.points) > round))
-        |> Enum.map(&{&1.index, round})
-      end)
+    available_keys =
+      for round <- 0..(max_point_count - 1)//1,
+          fixture <- fixtures,
+          length(fixture.points) > round do
+        {fixture.index, round}
+      end
 
-    (base ++ Enum.take(extras, max(event_count - length(base), 0)))
-    |> Enum.take(event_count)
+    if length(available_keys) < event_count do
+      raise "requested #{event_count} generated alerts but only #{length(available_keys)} price points exist"
+    end
+
+    Enum.take(available_keys, event_count)
   end
 
   defp event_entropy_id(watch_index, round) do
@@ -705,16 +709,21 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
         end
 
       correction =
-        if fixture.status == :pending or correction.status == fixture.status do
-          correction
-        else
-          Specs.moderate_correction(
-            correction.id,
-            accounts.moderator.id,
-            fixture.status,
-            %{moderation_note: "Generated development correction decision"}
-          )
-          |> Support.expect!("moderate generated correction #{fixture.index}")
+        cond do
+          fixture.status == :pending and correction.status != :pending ->
+            reset_correction_to_pending!(correction, fixture)
+
+          fixture.status == :pending or correction.status == fixture.status ->
+            correction
+
+          true ->
+            Specs.moderate_correction(
+              correction.id,
+              accounts.moderator.id,
+              fixture.status,
+              %{moderation_note: "Generated development correction decision"}
+            )
+            |> Support.expect!("moderate generated correction #{fixture.index}")
         end
 
       if fixture.status == :pending do
@@ -781,6 +790,29 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
     else
       raise "Generated correction #{fixture.index} belongs to another scope"
     end
+  end
+
+  defp reset_correction_to_pending!(correction, fixture) do
+    claim = Repo.get!(ProductAttributeClaim, correction.claim_id)
+
+    if claim.supersedes_claim_id do
+      ProductAttributeClaim
+      |> Repo.get!(claim.supersedes_claim_id)
+      |> ProductAttributeClaim.changeset(%{status: :accepted})
+      |> Repo.update()
+      |> Support.expect!("restore generated superseded claim #{fixture.index}")
+    end
+
+    claim
+    |> ProductAttributeClaim.changeset(%{status: :proposed})
+    |> Repo.update()
+    |> Support.expect!("restore generated correction claim #{fixture.index}")
+
+    correction
+    |> SpecificationCorrection.changeset(%{status: :pending})
+    |> Ecto.Changeset.change(reviewed_by: nil, reviewed_at: nil, moderation_note: nil)
+    |> Repo.update()
+    |> Support.expect!("restore generated pending correction #{fixture.index}")
   end
 
   defp correction_entropy_id(index),

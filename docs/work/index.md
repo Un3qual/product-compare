@@ -49,66 +49,23 @@ No work is currently claimed.
 
 ## Ready Work
 
-### 1. Realistic Development Data
-
-Status: ready
-Lane: Realistic development data
-Plan: `docs/superpowers/plans/2026-08-14-scalable-realistic-development-data-implementation-plan.md`
-Batch outcome: Deterministic bounded and full offline profiles exercise exactly
-300 products, 70 merchants, realistic marketplace breadth, and profile-sized
-comparison, account, community, attribution, and operator states without
-adopting unrelated rows or causing external effects.
-Next action: Run Task 1's RED profile, dictionary, UTC-hour, strict-option, and
-unchanged named-scenario characterization.
-Owned paths:
-
-- `priv/repo/seeds/**`, `priv/repo/seeds.exs` only if orchestration changes,
-  focused seed/development-GraphQL tests, optional checked-in development media,
-  and `docs/work/realistic-development-data.md`.
-
-Internal slices:
-
-- Dataset contract characterization.
-- Catalog/specification expansion.
-- Merchant/offer/coupon/history expansion.
-- Account/community/correction/comparison expansion.
-- Attribution/operator expansion and local guide.
-- Two-run, local-page, and full verification.
-
-Prerequisites:
-
-- Existing immutable seed ownership and domain-oriented seed modules are stable.
-- The approved product scenarios map to shipped production schemas and APIs.
-- Owned paths do not overlap the other four ready outcomes.
-
-Verification:
-
-- Focused seed/GraphQL/domain suites and two deterministic development reruns.
-- Unrelated-row preservation, pending-correction baseline, pagination-depth, and
-  zero-external-effect proofs plus representative local page inspection.
-- Complete frontend/backend gates, queue validation, and diff checks.
-
-Exit condition: The authored dataset meets the approved volume/scenario ranges,
-reruns reconcile only owned rows, all local journeys are demonstrable offline,
-and complete gates pass.
+No implementation row is currently validated as ready.
 
 ## Ready Floor Exception
 
 Reason: Product Experience Foundations, Product Discovery And Evaluation,
-Comparison And Authentication Continuity, and Operator Workspaces are complete.
-The closeout audit of their shipped behavior, complete tests, architecture
-boundaries, and the plan catalog leaves Realistic Development Data as the only
-currently validated independently shippable outcome. The residual type,
-validation, and slop audit is explicitly gated until the seed outcome completes
-and its inventory is refreshed; superseded production-UI rows are history, not
-dispatch candidates.
-Rejected split: Seed-domain slices are one deterministic dataset contract, and
-inventory/search steps from the gated residual audit do not create independent
-reviewer decisions or acceptance boundaries.
-Replenishment action: At Realistic Development Data closeout, refresh the
+Comparison And Authentication Continuity, Operator Workspaces, and Realistic
+Development Data are complete. The remaining type, validation, and slop plan
+starts with a fresh repository inventory; its earlier candidate list predates
+those outcomes and is not sufficient evidence for a ready implementation row.
+Rejected split: The inventory and classification work is coordinator curation,
+not an independently shippable implementation outcome. The completed seed
+domains and superseded production-UI rows cannot be split or reused as filler.
+Replenishment action: Before the next implementation claim, refresh the
 repository-wide manual-type, validator, bigint, declaration, barrel, and generic
-file inventory, then promote every exact non-overlapping residual outcome it
-validates and remove this exception when three coherent rows exist.
+file inventory from Task 1 of the residual plan. Promote every exact,
+non-overlapping outcome that the refreshed evidence validates, then remove this
+exception when three coherent rows exist.
 
 ## Superseded Work
 

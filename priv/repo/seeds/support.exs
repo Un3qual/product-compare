@@ -11,10 +11,14 @@ defmodule ProductCompare.DevSeeds.Support do
   def serializable_transaction(fun) when is_function(fun, 0) do
     case Repo.query!("SHOW transaction_isolation").rows do
       [[level]] when level in ["repeatable read", "serializable"] ->
-        Repo.transaction(fun, timeout: :infinity)
+        if Repo.in_transaction?() do
+          Repo.transaction(fun, timeout: :infinity)
+        else
+          retryable_transaction(fun, @max_transaction_attempts, false)
+        end
 
       [["read committed"]] ->
-        serializable_transaction(fun, @max_transaction_attempts)
+        retryable_transaction(fun, @max_transaction_attempts, true)
 
       [[level]] ->
         raise "development seed does not support transaction isolation #{inspect(level)}"
@@ -73,11 +77,14 @@ defmodule ProductCompare.DevSeeds.Support do
     end
   end
 
-  defp serializable_transaction(fun, attempts_left) do
+  defp retryable_transaction(fun, attempts_left, set_serializable?) do
     result =
       Repo.transaction(
         fn ->
-          Repo.query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+          if set_serializable? do
+            Repo.query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+          end
+
           fun.()
         end,
         timeout: :infinity
@@ -85,7 +92,7 @@ defmodule ProductCompare.DevSeeds.Support do
 
     case result do
       {:error, {:retry_seed_transaction, _reason}} when attempts_left > 1 ->
-        serializable_transaction(fun, attempts_left - 1)
+        retryable_transaction(fun, attempts_left - 1, set_serializable?)
 
       result ->
         result
@@ -93,7 +100,7 @@ defmodule ProductCompare.DevSeeds.Support do
   rescue
     error in Postgrex.Error ->
       if retryable_transaction_error?(error) and attempts_left > 1 do
-        serializable_transaction(fun, attempts_left - 1)
+        retryable_transaction(fun, attempts_left - 1, set_serializable?)
       else
         reraise error, __STACKTRACE__
       end

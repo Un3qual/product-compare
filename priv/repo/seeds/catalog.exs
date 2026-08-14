@@ -408,7 +408,10 @@ defmodule ProductCompare.DevSeeds.Catalog do
       end)
 
     Product
-    |> where([product], like(product.slug, "dev-%"))
+    |> where(
+      [product],
+      fragment("? ~ ?", product.slug, "^dev-(mon|tv|proj)-[0-9]{3}$")
+    )
     |> Repo.all()
     |> Enum.each(fn product ->
       case Map.fetch(expected, product.slug) do
@@ -432,8 +435,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
          true <- product.entropy_id == expected_entropy_id do
       Repo.delete!(product)
     else
-      _ ->
-        raise "Refusing to delete unowned development product #{product.slug}"
+      _ -> :ok
     end
   end
 
@@ -866,14 +868,15 @@ defmodule ProductCompare.DevSeeds.Catalog do
     claims_by_entropy_id = Map.new(claims, &{&1.entropy_id, &1})
 
     current_rows =
-      Enum.map(rows, fn row ->
+      Enum.zip(entries, rows)
+      |> Enum.map(fn {entry, row} ->
         claim = Map.fetch!(claims_by_entropy_id, row.entropy_id)
 
         %{
           entropy_id:
             Support.stable_uuid(
               "development-product-current",
-              "#{row.product_id}:#{row.attribute_id}"
+              "#{entry.fixture.key}:#{entry.attribute.code}"
             ),
           product_id: row.product_id,
           attribute_id: row.attribute_id,
@@ -885,7 +888,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
       end)
 
     Repo.insert_all(ProductAttributeCurrent, current_rows,
-      on_conflict: {:replace, [:claim_id, :selected_by, :selected_at]},
+      on_conflict: {:replace, [:entropy_id, :claim_id, :selected_by, :selected_at]},
       conflict_target: [:product_id, :attribute_id]
     )
 
