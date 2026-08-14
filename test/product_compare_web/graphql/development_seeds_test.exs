@@ -41,6 +41,32 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
     assert [_ | _] = review_edges
     assert [_ | _] = question_edges
 
+    assert %{
+             "data" => %{
+               "products" => %{
+                 "edges" => first_catalog_page,
+                 "pageInfo" => %{"endCursor" => first_end_cursor, "hasNextPage" => true}
+               }
+             }
+           } = graphql(conn, catalog_page_query(), %{"first" => 100})
+
+    assert length(first_catalog_page) == 100
+
+    assert %{
+             "data" => %{
+               "products" => %{
+                 "edges" => second_catalog_page,
+                 "pageInfo" => %{"hasPreviousPage" => true}
+               }
+             }
+           } =
+             graphql(conn, catalog_page_query(), %{
+               "first" => 100,
+               "after" => first_end_cursor
+             })
+
+    assert length(second_catalog_page) == 100
+
     shopper = Repo.get_by!(User, email: "shopper@example.com")
     shopper_conn = conn |> log_in_user(shopper) |> put_req_header_same_origin()
 
@@ -169,6 +195,17 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
           questions { id moderationStatus viewerCanEdit }
           answers { id moderationStatus viewerCanEdit }
         }
+      }
+    }
+    """
+  end
+
+  defp catalog_page_query do
+    """
+    query DevelopmentCatalogPage($first: Int!, $after: String) {
+      products(first: $first, after: $after) {
+        edges { cursor node { id slug } }
+        pageInfo { endCursor hasNextPage hasPreviousPage }
       }
     }
     """

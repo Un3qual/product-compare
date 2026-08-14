@@ -5,6 +5,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
 
   alias ProductCompare.Catalog
   alias ProductCompare.DevSeeds.CorrectionSafety
+  alias ProductCompare.DevSeeds.Dictionary
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Ingestion.SpecificationObservation
   alias ProductCompare.Repo
@@ -12,7 +13,10 @@ defmodule ProductCompare.DevSeeds.Catalog do
   alias ProductCompare.Taxonomy
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.ProductIdentifier
+  alias ProductCompareSchemas.Catalog.ProductMedia
+  alias ProductCompareSchemas.Specs.ClaimEvidence
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
+  alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
   alias ProductCompareSchemas.Specs.TaxonAttribute
@@ -33,7 +37,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
   def seed!(
         accounts,
         %DateTime{} = anchor,
-        _profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
+        profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
       ) do
     Taxonomy.seed_default_taxonomies()
     |> Support.expect!("default taxonomies")
@@ -43,13 +47,17 @@ defmodule ProductCompare.DevSeeds.Catalog do
 
     taxons = seed_taxons!(type_taxonomy, use_case_taxonomy)
     definitions = seed_definitions!(taxons)
-    products = seed_products!(taxons)
-    seed_use_cases!(products, taxons, accounts.admin)
+    {products, generated} = seed_products!(taxons, profile)
+    all_products = named_product_inventory(products) ++ Enum.map(generated, & &1.product)
+    seed_use_cases!(products, generated, taxons, accounts.admin)
 
     {source, artifact} = seed_source_evidence!(anchor)
     identifiers = seed_identifiers!(products, artifact, anchor)
     seed_media!(products, artifact, anchor)
     claims = seed_claims!(products, definitions, accounts, artifact)
+    generated_identifiers = seed_generated_identifiers!(generated, artifact, anchor)
+    seed_generated_media!(generated, artifact, anchor)
+    generated_claims = seed_generated_claims!(generated, definitions, accounts, artifact)
 
     %{
       taxons: taxons,
@@ -57,10 +65,13 @@ defmodule ProductCompare.DevSeeds.Catalog do
       units: definitions.units,
       enum_options: definitions.enum_options,
       products: products,
+      all_products: all_products,
       identifiers: identifiers,
+      generated_identifiers: generated_identifiers,
       source: source,
       artifact: artifact,
-      claims: claims
+      claims: claims,
+      generated_claims: generated_claims
     }
   end
 
@@ -235,7 +246,15 @@ defmodule ProductCompare.DevSeeds.Catalog do
           dimension_id: length_dimension.id,
           is_filterable: true
         })
-        |> Support.expect!("diagonal attribute")
+        |> Support.expect!("diagonal attribute"),
+      finish:
+        Specs.upsert_attribute(%{
+          code: "finish",
+          display_name: "Finish",
+          data_type: :text,
+          is_filterable: false
+        })
+        |> Support.expect!("finish attribute")
     }
 
     for taxon <- [taxons.monitor, taxons.tv, taxons.projector],
@@ -249,6 +268,10 @@ defmodule ProductCompare.DevSeeds.Catalog do
       upsert_taxon_attribute!(taxon, attribute, sort_order)
     end
 
+    for taxon <- [taxons.monitor, taxons.tv, taxons.projector] do
+      upsert_taxon_attribute!(taxon, attributes.finish, 4, false)
+    end
+
     %{
       attributes: attributes,
       enum_options: enum_options,
@@ -256,11 +279,11 @@ defmodule ProductCompare.DevSeeds.Catalog do
     }
   end
 
-  defp upsert_taxon_attribute!(taxon, attribute, sort_order) do
+  defp upsert_taxon_attribute!(taxon, attribute, sort_order, required? \\ true) do
     attrs = %{
       taxon_id: taxon.id,
       attribute_id: attribute.id,
-      is_required: true,
+      is_required: required?,
       sort_order: sort_order,
       min_rep_to_edit: 0,
       compare_group_label: "Display"
@@ -273,7 +296,32 @@ defmodule ProductCompare.DevSeeds.Catalog do
     |> Support.expect!("#{taxon.code} attribute #{attribute.code}")
   end
 
-  defp seed_products!(taxons) do
+  defp seed_products!(taxons, profile) do
+    named = seed_named_products!(taxons)
+    fixtures = Dictionary.product_fixtures(profile)
+    reconcile_generated_products!(fixtures)
+
+    brands =
+      fixtures
+      |> Enum.map(& &1.brand)
+      |> Enum.uniq()
+      |> Map.new(fn name ->
+        brand = Catalog.upsert_brand(%{name: name}) |> Support.expect!("brand #{name}")
+        {name, brand}
+      end)
+
+    generated =
+      Enum.map(fixtures, fn fixture ->
+        taxon = Map.fetch!(taxons, fixture.type)
+        brand = Map.fetch!(brands, fixture.brand)
+        product = seed_generated_product!(fixture, brand, taxon)
+        %{fixture: fixture, product: product}
+      end)
+
+    {named, generated}
+  end
+
+  defp seed_named_products!(taxons) do
     brand =
       Catalog.upsert_brand(%{name: "Acme Display"})
       |> Support.expect!("Acme Display brand")
@@ -307,12 +355,89 @@ defmodule ProductCompare.DevSeeds.Catalog do
           product -> Catalog.update_product(product, attrs)
         end
         |> Support.expect!("product #{slug}")
+        |> then(&Repo.get!(Product, &1.id))
 
       {key, product}
     end)
   end
 
-  defp seed_use_cases!(products, taxons, admin) do
+  defp named_product_inventory(products) do
+    Enum.map(
+      [:monitor_16_9, :monitor_ultrawide, :monitor_import_feed, :tv, :projector],
+      &Map.fetch!(products, &1)
+    )
+  end
+
+  defp seed_generated_product!(fixture, brand, taxon) do
+    entropy_id = Support.stable_uuid("development-product", fixture.key)
+
+    attrs = %{
+      brand_id: brand.id,
+      primary_type_taxon_id: taxon.id,
+      name: fixture.name,
+      model_number: fixture.model_number,
+      slug: fixture.slug,
+      description: fixture.description
+    }
+
+    product = Repo.get_by(Product, slug: fixture.slug)
+
+    case product do
+      nil ->
+        attrs
+        |> Catalog.create_product()
+        |> Support.expect!("product #{fixture.slug}")
+        |> Ecto.Changeset.change(entropy_id: entropy_id)
+        |> Repo.update()
+        |> Support.expect!("product entropy #{fixture.slug}")
+
+      %Product{entropy_id: ^entropy_id} = product ->
+        Catalog.update_product(product, attrs)
+        |> Support.expect!("product #{fixture.slug}")
+
+      %Product{entropy_id: conflicting_entropy_id} ->
+        raise "Refusing to adopt generated product #{fixture.slug} with entropy #{conflicting_entropy_id}"
+    end
+    |> then(&Repo.get!(Product, &1.id))
+  end
+
+  defp reconcile_generated_products!(fixtures) do
+    expected =
+      Map.new(fixtures, fn fixture ->
+        {fixture.slug, Support.stable_uuid("development-product", fixture.key)}
+      end)
+
+    Product
+    |> where([product], like(product.slug, "dev-%"))
+    |> Repo.all()
+    |> Enum.each(fn product ->
+      case Map.fetch(expected, product.slug) do
+        {:ok, expected_entropy_id} when expected_entropy_id == product.entropy_id ->
+          :ok
+
+        {:ok, _expected_entropy_id} ->
+          raise "Refusing to adopt generated product #{product.slug} with entropy #{product.entropy_id}"
+
+        :error ->
+          reconcile_obsolete_generated_product!(product)
+      end
+    end)
+  end
+
+  defp reconcile_obsolete_generated_product!(product) do
+    with [number] <-
+           Regex.run(~r/^dev-(?:mon|tv|proj)-(\d{3})$/, product.slug, capture: :all_but_first),
+         expected_entropy_id =
+           Support.stable_uuid("development-product", "generated-product-#{number}"),
+         true <- product.entropy_id == expected_entropy_id do
+      Repo.delete!(product)
+    else
+      _ ->
+        raise "Refusing to delete unowned development product #{product.slug}"
+    end
+  end
+
+  defp seed_use_cases!(products, generated, taxons, admin) do
     for {product, use_case, confidence} <- [
           {products.monitor_16_9, taxons.gaming, "0.95"},
           {products.monitor_16_9, taxons.office, "0.85"},
@@ -331,6 +456,21 @@ defmodule ProductCompare.DevSeeds.Catalog do
       )
       |> Support.expect!("use case #{product.slug}/#{use_case.code}")
     end
+
+    use_cases = [taxons.gaming, taxons.office, taxons.creative, taxons.home_theater]
+
+    Enum.each(generated, fn %{fixture: fixture, product: product} ->
+      use_case = Enum.at(use_cases, rem(fixture.specification_index - 1, length(use_cases)))
+
+      Taxonomy.assign_use_case(
+        product.id,
+        use_case.id,
+        admin.id,
+        :editorial,
+        Decimal.new("0.80")
+      )
+      |> Support.expect!("use case #{product.slug}/#{use_case.code}")
+    end)
   end
 
   defp seed_source_evidence!(anchor) do
@@ -417,6 +557,49 @@ defmodule ProductCompare.DevSeeds.Catalog do
     |> Map.new()
   end
 
+  defp seed_generated_identifiers!(generated, artifact, anchor) do
+    Enum.map(generated, fn %{fixture: fixture, product: product} ->
+      entropy_id = Support.stable_uuid("development-product-identifier", fixture.key)
+
+      attrs = %{
+        product_id: product.id,
+        scheme: :mpn,
+        normalized_value: fixture.model_number,
+        display_value: fixture.model_number,
+        verification_status: :validated,
+        source_artifact_id: artifact.id,
+        verified_at: anchor
+      }
+
+      identifier =
+        Repo.get_by(ProductIdentifier,
+          scheme: :mpn,
+          normalized_value: fixture.model_number,
+          verification_status: :validated
+        )
+
+      case identifier do
+        nil ->
+          attrs
+          |> Catalog.create_product_identifier()
+          |> Support.expect!("MPN #{fixture.model_number}")
+          |> Ecto.Changeset.change(entropy_id: entropy_id)
+          |> Repo.update()
+          |> Support.expect!("MPN entropy #{fixture.model_number}")
+
+        %ProductIdentifier{product_id: product_id, entropy_id: ^entropy_id} = identifier
+        when product_id == product.id ->
+          identifier
+          |> ProductIdentifier.changeset(attrs)
+          |> Repo.update()
+          |> Support.expect!("MPN #{fixture.model_number}")
+
+        %ProductIdentifier{} = conflicting ->
+          raise "Refusing to adopt generated MPN #{fixture.model_number} from product #{conflicting.product_id}"
+      end
+    end)
+  end
+
   defp seed_media!(products, artifact, anchor) do
     Enum.each(products, fn {_key, product} ->
       result =
@@ -440,6 +623,47 @@ defmodule ProductCompare.DevSeeds.Catalog do
 
         other ->
           Support.expect!({:error, other}, "media for #{product.slug}")
+      end
+    end)
+  end
+
+  defp seed_generated_media!(generated, artifact, anchor) do
+    Enum.each(generated, fn %{fixture: fixture, product: product} ->
+      url = "https://images.example/products/#{product.slug}.jpg"
+      entropy_id = Support.stable_uuid("development-product-media", fixture.key)
+      existing = Repo.get_by(ProductMedia, product_id: product.id, url: url)
+
+      if existing && existing.entropy_id != entropy_id do
+        raise "Refusing to adopt generated media for #{product.slug}"
+      end
+
+      result =
+        Catalog.upsert_product_media(
+          product,
+          artifact.id,
+          [
+            %{
+              url: url,
+              role: :primary,
+              position: 0,
+              alt_text: "Synthetic development image for #{product.name}"
+            }
+          ],
+          anchor
+        )
+
+      case result do
+        %{persisted: 1, rejected: 0} -> :ok
+        other -> Support.expect!({:error, other}, "media for #{product.slug}")
+      end
+
+      media = Repo.get_by!(ProductMedia, product_id: product.id, url: url)
+
+      if is_nil(existing) do
+        media
+        |> Ecto.Changeset.change(entropy_id: entropy_id)
+        |> Repo.update()
+        |> Support.expect!("media entropy #{product.slug}")
       end
     end)
   end
@@ -523,6 +747,183 @@ defmodule ProductCompare.DevSeeds.Catalog do
     )
 
     Map.put(claims, {products.monitor_import_feed.slug, attrs.refresh_rate.code}, imported_claim)
+  end
+
+  defp seed_generated_claims!(generated, definitions, accounts, artifact) do
+    attrs = definitions.attributes
+    units = definitions.units
+    options = definitions.enum_options
+    panel_options = [options.ips, options.oled, options.mini_led]
+    finishes = ["Matte Black", "Silver", "Graphite", "Warm White"]
+
+    entries =
+      Enum.flat_map(generated, fn %{fixture: fixture, product: product} ->
+        index = fixture.specification_index
+
+        typed_values = [
+          {attrs.hdr_supported, %{value_bool: rem(index, 2) == 0}},
+          {attrs.panel_tech,
+           %{enum_option_id: Enum.at(panel_options, rem(index, length(panel_options))).id}},
+          {attrs.diagonal,
+           %{
+             value_num: Decimal.new(Integer.to_string(24 + rem(index, 8) * 5)),
+             value_num_base:
+               Decimal.mult(
+                 Decimal.new(Integer.to_string(24 + rem(index, 8) * 5)),
+                 Decimal.new("25.4")
+               ),
+             unit_id: units.inches.id
+           }}
+        ]
+
+        typed_values =
+          if rem(index, 11) == 0 do
+            typed_values
+          else
+            value = Decimal.new(Integer.to_string(60 + rem(index, 9) * 15))
+
+            [
+              {attrs.refresh_rate,
+               %{value_num: value, value_num_base: value, unit_id: units.hz.id}}
+              | typed_values
+            ]
+          end
+
+        typed_values =
+          if rem(index, 17) == 0 do
+            [
+              {attrs.finish, %{value_text: Enum.at(finishes, rem(index, length(finishes)))}}
+              | typed_values
+            ]
+          else
+            typed_values
+          end
+
+        Enum.map(typed_values, fn {attribute, typed_value} ->
+          %{fixture: fixture, product: product, attribute: attribute, typed_value: typed_value}
+        end)
+      end)
+
+    seed_generated_claim_rows!(entries, accounts, artifact)
+  end
+
+  @claim_value_fields [
+    :value_bool,
+    :value_int,
+    :value_num,
+    :unit_id,
+    :value_num_base,
+    :value_num_base_min,
+    :value_num_base_max,
+    :value_text,
+    :value_date,
+    :value_ts,
+    :enum_option_id,
+    :value_json
+  ]
+
+  defp seed_generated_claim_rows!(entries, accounts, artifact) do
+    inserted_at = artifact.fetched_at
+
+    rows =
+      Enum.map(entries, fn entry ->
+        entropy_id =
+          Support.stable_uuid(
+            "development-product-claim",
+            "#{entry.fixture.key}:#{entry.attribute.code}"
+          )
+
+        @claim_value_fields
+        |> Map.new(&{&1, nil})
+        |> Map.merge(entry.typed_value)
+        |> Map.merge(%{
+          entropy_id: entropy_id,
+          product_id: entry.product.id,
+          attribute_id: entry.attribute.id,
+          source_type: :user,
+          status: :accepted,
+          created_by: accounts.admin.id,
+          confidence: Decimal.new("0.88"),
+          inserted_at: inserted_at
+        })
+      end)
+
+    verify_generated_claim_ownership!(rows)
+
+    Repo.insert_all(ProductAttributeClaim, rows,
+      on_conflict:
+        {:replace, [:status, :created_by, :confidence, :inserted_at] ++ @claim_value_fields},
+      conflict_target: [:entropy_id]
+    )
+
+    entropy_ids = Enum.map(rows, & &1.entropy_id)
+
+    claims =
+      ProductAttributeClaim
+      |> where([claim], claim.entropy_id in ^entropy_ids)
+      |> Repo.all()
+
+    claims_by_entropy_id = Map.new(claims, &{&1.entropy_id, &1})
+
+    current_rows =
+      Enum.map(rows, fn row ->
+        claim = Map.fetch!(claims_by_entropy_id, row.entropy_id)
+
+        %{
+          entropy_id:
+            Support.stable_uuid(
+              "development-product-current",
+              "#{row.product_id}:#{row.attribute_id}"
+            ),
+          product_id: row.product_id,
+          attribute_id: row.attribute_id,
+          claim_id: claim.id,
+          selected_by: accounts.moderator.id,
+          selected_at: inserted_at,
+          inserted_at: inserted_at
+        }
+      end)
+
+    Repo.insert_all(ProductAttributeCurrent, current_rows,
+      on_conflict: {:replace, [:claim_id, :selected_by, :selected_at]},
+      conflict_target: [:product_id, :attribute_id]
+    )
+
+    evidence_rows =
+      Enum.map(claims, fn claim ->
+        %{
+          entropy_id:
+            Support.stable_uuid(
+              "development-product-claim-evidence",
+              "#{claim.entropy_id}:#{artifact.id}"
+            ),
+          claim_id: claim.id,
+          artifact_id: artifact.id,
+          excerpt: "Synthetic deterministic development specification.",
+          inserted_at: inserted_at
+        }
+      end)
+
+    Repo.insert_all(ClaimEvidence, evidence_rows,
+      on_conflict: :nothing,
+      conflict_target: [:claim_id, :artifact_id]
+    )
+
+    claims
+  end
+
+  defp verify_generated_claim_ownership!(rows) do
+    expected = Map.new(rows, &{&1.entropy_id, {&1.product_id, &1.attribute_id}})
+
+    ProductAttributeClaim
+    |> where([claim], claim.entropy_id in ^Map.keys(expected))
+    |> select([claim], {claim.entropy_id, claim.product_id, claim.attribute_id})
+    |> Repo.all()
+    |> Enum.each(fn {entropy_id, product_id, attribute_id} ->
+      if Map.fetch!(expected, entropy_id) != {product_id, attribute_id} do
+        raise "Refusing to adopt generated claim #{entropy_id}"
+      end
+    end)
   end
 
   defp ensure_current_claim!(product, attribute, typed_value, provenance, moderator) do

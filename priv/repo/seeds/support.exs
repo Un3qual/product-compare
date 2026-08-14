@@ -11,7 +11,7 @@ defmodule ProductCompare.DevSeeds.Support do
   def serializable_transaction(fun) when is_function(fun, 0) do
     case Repo.query!("SHOW transaction_isolation").rows do
       [[level]] when level in ["repeatable read", "serializable"] ->
-        Repo.transaction(fun)
+        Repo.transaction(fun, timeout: :infinity)
 
       [["read committed"]] ->
         serializable_transaction(fun, @max_transaction_attempts)
@@ -75,10 +75,13 @@ defmodule ProductCompare.DevSeeds.Support do
 
   defp serializable_transaction(fun, attempts_left) do
     result =
-      Repo.transaction(fn ->
-        Repo.query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-        fun.()
-      end)
+      Repo.transaction(
+        fn ->
+          Repo.query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+          fun.()
+        end,
+        timeout: :infinity
+      )
 
     case result do
       {:error, {:retry_seed_transaction, _reason}} when attempts_left > 1 ->

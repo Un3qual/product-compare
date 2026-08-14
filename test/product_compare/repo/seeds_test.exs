@@ -156,6 +156,42 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert output =~ "Density: full"
   end
 
+  test "bounded seeds generate an ordered deterministic 300-product catalog" do
+    seed = run_seed(["--density", "bounded"])
+
+    assert length(seed.catalog.all_products) == 300
+    assert Repo.aggregate(Product, :count, :id) >= 300
+    assert seed.catalog.all_products |> Enum.uniq_by(& &1.slug) |> length() == 300
+
+    assert seed.catalog.all_products |> Enum.take(5) |> Enum.map(& &1.slug) == [
+             "acme-vision-27g",
+             "acme-vision-27uw",
+             "acme-vision-27i-import",
+             "acme-cinema-55o",
+             "acme-beam-4k"
+           ]
+
+    generated = Enum.drop(seed.catalog.all_products, 5)
+
+    assert generated
+           |> Enum.frequencies_by(& &1.primary_type_taxon_id)
+           |> map_size() == 3
+
+    assert Enum.any?(generated, fn product ->
+             not Map.has_key?(current_attributes_by_code(product), "refresh_rate")
+           end)
+
+    assert Enum.any?(generated, fn product ->
+             Map.has_key?(current_attributes_by_code(product), "finish")
+           end)
+
+    identities = Enum.map(seed.catalog.all_products, &{&1.slug, &1.entropy_id})
+    assert Enum.all?(identities, fn {_slug, entropy_id} -> not is_nil(entropy_id) end)
+
+    rerun = run_seed(["--density", "bounded"])
+    assert Enum.map(rerun.catalog.all_products, &{&1.slug, &1.entropy_id}) == identities
+  end
+
   test "seed transaction retries explicit stale-snapshot conflicts on a fresh transaction" do
     assert {{:ok, :seeded}, 2} =
              Sandbox.unboxed_run(Repo, fn ->
@@ -3056,6 +3092,11 @@ defmodule ProductCompare.Repo.SeedsTest do
     product.id
     |> Specs.list_current_attributes_for_product()
     |> Map.new(&{&1.attribute.code, &1.claim})
+  end
+
+  defp run_seed(argv) do
+    capture_io(fn -> Process.put(:seed_result, ProductCompare.DevSeeds.run!(argv)) end)
+    Process.delete(:seed_result)
   end
 
   defp latest_offer_summary(offer, now) do
