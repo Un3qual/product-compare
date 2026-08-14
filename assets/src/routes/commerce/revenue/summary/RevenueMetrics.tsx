@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { buildRevenueDashboardMetrics } from "./revenue-summary-data";
+import type { buildRevenueDashboardMetrics } from "./revenue-summary-data";
 
 const styles = create({
   summaryModules: {

@@ -1,4 +1,5 @@
 import { create, props } from "@stylexjs/stylex";
+import { useId } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";
@@ -11,13 +12,6 @@ import {
 
 type RevenueControlData = ReturnType<typeof buildRevenueSummaryControls>;
 type RevenueFilterFormValues = ReturnType<typeof buildRevenueSummaryFilterFormData>["values"];
-
-const LABEL_IDS = {
-  currency: "revenue-filter-currency-label",
-  from: "revenue-filter-from-label",
-  network: "revenue-filter-network-label",
-  to: "revenue-filter-to-label",
-} as const;
 
 const styles = create({
   band: {
@@ -96,12 +90,20 @@ export function RevenueControls({
 }
 
 function RevenueFilterForm({ values }: { values: RevenueFilterFormValues }) {
+  const labelPrefix = useId();
+  const labelIds = {
+    currency: `${labelPrefix}-currency`,
+    from: `${labelPrefix}-from`,
+    network: `${labelPrefix}-network`,
+    to: `${labelPrefix}-to`,
+  };
+
   return (
     <form aria-label="Revenue filters" method="get" {...props(styles.form)}>
       <div {...props(styles.field, styles.textField)}>
-        <span id={LABEL_IDS.network}>Network</span>
+        <span id={labelIds.network}>Network</span>
         <Input
-          aria-labelledby={LABEL_IDS.network}
+          aria-labelledby={labelIds.network}
           autoComplete="off"
           defaultValue={values.network}
           name="network"
@@ -109,9 +111,9 @@ function RevenueFilterForm({ values }: { values: RevenueFilterFormValues }) {
         />
       </div>
       <div {...props(styles.field, styles.textField)}>
-        <span id={LABEL_IDS.currency}>Currency</span>
+        <span id={labelIds.currency}>Currency</span>
         <Input
-          aria-labelledby={LABEL_IDS.currency}
+          aria-labelledby={labelIds.currency}
           autoComplete="off"
           defaultValue={values.currency}
           maxLength={3}
@@ -120,17 +122,12 @@ function RevenueFilterForm({ values }: { values: RevenueFilterFormValues }) {
         />
       </div>
       <div {...props(styles.field, styles.dateField)}>
-        <span id={LABEL_IDS.from}>From</span>
-        <Input
-          aria-labelledby={LABEL_IDS.from}
-          defaultValue={values.from}
-          name="from"
-          type="date"
-        />
+        <span id={labelIds.from}>From</span>
+        <Input aria-labelledby={labelIds.from} defaultValue={values.from} name="from" type="date" />
       </div>
       <div {...props(styles.field, styles.dateField)}>
-        <span id={LABEL_IDS.to}>To</span>
-        <Input aria-labelledby={LABEL_IDS.to} defaultValue={values.to} name="to" type="date" />
+        <span id={labelIds.to}>To</span>
+        <Input aria-labelledby={labelIds.to} defaultValue={values.to} name="to" type="date" />
       </div>
       <Button type="submit">Apply filters</Button>
       <Link to="/commerce/revenue">Clear filters</Link>

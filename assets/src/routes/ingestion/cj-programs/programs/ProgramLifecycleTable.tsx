@@ -114,11 +114,83 @@ export function ProgramLifecycleTable({
   pagination: ProgramPagination;
   programs: ProgramsConnection;
 }) {
+  return (
+    <>
+      <LifecycleSummary counts={counts} />
+      <ProgramAttention programs={programs} />
+      <ProgramsWorkQueue pagination={pagination} programs={programs} />
+    </>
+  );
+}
+
+function LifecycleSummary({
+  counts,
+}: {
+  counts: CJProgramsRouteQuery["response"]["cjProgramStageCounts"];
+}) {
   const lifecycleId = useId();
-  const attentionId = useId();
   const lifecycle = buildCJLifecycleSummary(counts);
+
+  return (
+    <section aria-labelledby={lifecycleId} {...props(styles.lifecycle)}>
+      <h2 id={lifecycleId} {...props(styles.lifecycleTitle)}>
+        CJ program lifecycle summary
+      </h2>
+      <dl {...props(styles.lifecycleMetrics)}>
+        {lifecycle.map((item) => (
+          <div key={item.label} {...props(styles.lifecycleMetric)}>
+            <dt {...props(styles.lifecycleLabel)}>{item.label}</dt>
+            <dd {...props(styles.lifecycleValue)}>{item.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+function ProgramAttention({ programs }: { programs: ProgramsConnection }) {
+  const attentionId = useId();
   const programNodes = programs.edges.map(({ node }) => node);
   const attention = selectCJProgramAttention(programNodes);
+
+  return (
+    <section aria-labelledby={attentionId} {...props(styles.attention)}>
+      <header {...props(styles.attentionHeader)}>
+        <h2 id={attentionId} {...props(styles.attentionTitle)}>
+          Program attention
+        </h2>
+        <p {...props(styles.attentionCount)}>Needs attention on this page</p>
+      </header>
+      <p {...props(styles.attentionCount)}>
+        {attention.count === 1
+          ? "1 program on this page needs attention"
+          : `${attention.count} programs on this page need attention`}
+      </p>
+      {attention.program ? (
+        <>
+          <p {...props(styles.attentionProgram)}>
+            {attention.program.advertiserName ?? attention.program.advertiserId}
+          </p>
+          <p {...props(styles.attentionAction)}>{attention.requiredAction}</p>
+          <a href="#cj-program-work-queue" {...props(styles.attentionLink)}>
+            Review programs
+          </a>
+        </>
+      ) : (
+        <p {...props(styles.attentionAction)}>No loaded programs need action.</p>
+      )}
+    </section>
+  );
+}
+
+function ProgramsWorkQueue({
+  pagination,
+  programs,
+}: {
+  pagination: ProgramPagination;
+  programs: ProgramsConnection;
+}) {
+  const programNodes = programs.edges.map(({ node }) => node);
   const table = useTable({
     columns,
     data: programNodes,
@@ -127,94 +199,53 @@ export function ProgramLifecycleTable({
   });
 
   return (
-    <>
-      <section aria-labelledby={lifecycleId} {...props(styles.lifecycle)}>
-        <h2 id={lifecycleId} {...props(styles.lifecycleTitle)}>
-          CJ program lifecycle summary
+    <section aria-labelledby="cj-program-work-queue" {...props(styles.programs)}>
+      <header {...props(styles.programsHeader)}>
+        <h2 id="cj-program-work-queue" {...props(styles.programsTitle)}>
+          Programs work queue
         </h2>
-        <dl {...props(styles.lifecycleMetrics)}>
-          {lifecycle.map((item) => (
-            <div key={item.label} {...props(styles.lifecycleMetric)}>
-              <dt {...props(styles.lifecycleLabel)}>{item.label}</dt>
-              <dd {...props(styles.lifecycleValue)}>{item.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-      <section aria-labelledby={attentionId} {...props(styles.attention)}>
-        <header {...props(styles.attentionHeader)}>
-          <h2 id={attentionId} {...props(styles.attentionTitle)}>
-            Program attention
-          </h2>
-          <p {...props(styles.attentionCount)}>Needs attention on this page</p>
-        </header>
-        <p {...props(styles.attentionCount)}>
-          {attention.count === 1
-            ? "1 program on this page needs attention"
-            : `${attention.count} programs on this page need attention`}
+        <p {...props(styles.programsCount)}>
+          {programs.edges.length} {programs.edges.length === 1 ? "program" : "programs"} on this
+          page
         </p>
-        {attention.program ? (
-          <>
-            <p {...props(styles.attentionProgram)}>
-              {attention.program.advertiserName ?? attention.program.advertiserId}
-            </p>
-            <p {...props(styles.attentionAction)}>{attention.requiredAction}</p>
-            <a href="#cj-program-work-queue" {...props(styles.attentionLink)}>
-              Review programs
-            </a>
-          </>
-        ) : (
-          <p {...props(styles.attentionAction)}>No loaded programs need action.</p>
-        )}
-      </section>
-      <section aria-labelledby="cj-program-work-queue" {...props(styles.programs)}>
-        <header {...props(styles.programsHeader)}>
-          <h2 id="cj-program-work-queue" {...props(styles.programsTitle)}>
-            Programs work queue
-          </h2>
-          <p {...props(styles.programsCount)}>
-            {programs.edges.length} {programs.edges.length === 1 ? "program" : "programs"} on this
-            page
-          </p>
-        </header>
-        {programs.edges.length > 0 ? (
-          <Table aria-label="CJ program lifecycle ledger" style={styles.table}>
-            <colgroup>
-              <col {...props(styles.merchantColumn)} />
-              <col {...props(styles.lifecycleColumn)} />
-              <col {...props(styles.lastChangeColumn)} />
-              <col {...props(styles.actionColumn)} />
-            </colgroup>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} scope="col">
-                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <ProgramLifecycleRow key={row.id} program={row.original} />
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <p {...props(styles.empty)}>No CJ programs captured yet.</p>
-        )}
-        <div {...props(styles.pagination)}>
-          <Pagination
-            firstHref={pagination.firstHref}
-            firstLabel="First programs"
-            label="CJ program pages"
-            nextHref={pagination.nextHref}
-            nextLabel="Next programs"
-          />
-        </div>
-      </section>
-    </>
+      </header>
+      {programs.edges.length > 0 ? (
+        <Table aria-label="CJ program lifecycle ledger" style={styles.table} tabIndex={0}>
+          <colgroup>
+            <col {...props(styles.merchantColumn)} />
+            <col {...props(styles.lifecycleColumn)} />
+            <col {...props(styles.lastChangeColumn)} />
+            <col {...props(styles.actionColumn)} />
+          </colgroup>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} scope="col">
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
+              <ProgramLifecycleRow key={row.id} program={row.original} />
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <p {...props(styles.empty)}>No CJ programs captured yet.</p>
+      )}
+      <div {...props(styles.pagination)}>
+        <Pagination
+          firstHref={pagination.firstHref}
+          firstLabel="First programs"
+          label="CJ program pages"
+          nextHref={pagination.nextHref}
+          nextLabel="Next programs"
+        />
+      </div>
+    </section>
   );
 }

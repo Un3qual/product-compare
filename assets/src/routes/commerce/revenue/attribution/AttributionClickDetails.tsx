@@ -38,60 +38,79 @@ type AttributionClick = AttributionLedger_row$data[number];
 
 export function AttributionClickDetails({
   click,
+  id,
   label,
 }: {
   click: AttributionClick;
+  id: string;
+  label: string;
+}) {
+  return (
+    <TableRow style={styles.row}>
+      <TableCell colSpan={7} style={styles.cell}>
+        <AttributionDetailGroups click={click} id={id} label={label} />
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function AttributionDetailGroups({
+  click,
+  id,
+  label,
+}: {
+  click: AttributionClick;
+  id: string;
   label: string;
 }) {
   const touchpointId = useId();
   const requestId = useId();
   const commerceId = useId();
+
+  return (
+    <div aria-label={label} id={id} role="region" {...props(styles.details)}>
+      <DetailGroup id={touchpointId} title="Touchpoint">
+        <Fact label="Source" value={sourceSurfaceCopy(click.sourceSurface)} />
+        <Fact label="Link type" value={linkTypeCopy(click.linkType)} />
+        <Fact label="Referrer" value={referrerCopy(click.referrer)} />
+      </DetailGroup>
+      <DetailGroup id={requestId} title="Request evidence">
+        <Fact code label="User agent" value={userAgentCopy(click.userAgent)} />
+        <Fact code label="IP address" value={click.ipAddress ?? "IP not captured"} />
+      </DetailGroup>
+      <DetailGroup id={commerceId} title="Commerce">
+        <Fact label="Merchant" value={click.merchantName} />
+        <Fact label="Product" value={click.productName ?? "No product"} />
+        <Fact label="Network" value={click.affiliateNetworkName ?? "No network"} />
+        <Fact code label="Merchant SKU" value={click.merchantProductExternalSku ?? "No SKU"} />
+        <Fact code label="Program" value={click.affiliateProgramCode ?? "No affiliate program"} />
+      </DetailGroup>
+      <ConversionList conversions={click.matchedConversions} />
+    </div>
+  );
+}
+
+function ConversionList({ conversions }: { conversions: AttributionClick["matchedConversions"] }) {
   const conversionId = useId();
 
   return (
-    <TableRow style={styles.row}>
-      <TableCell colSpan={7} style={styles.cell}>
-        <div aria-label={label} role="region" {...props(styles.details)}>
-          <DetailGroup id={touchpointId} title="Touchpoint">
-            <Fact label="Source" value={sourceSurfaceCopy(click.sourceSurface)} />
-            <Fact label="Link type" value={linkTypeCopy(click.linkType)} />
-            <Fact label="Referrer" value={referrerCopy(click.referrer)} />
-          </DetailGroup>
-          <DetailGroup id={requestId} title="Request evidence">
-            <Fact code label="User agent" value={userAgentCopy(click.userAgent)} />
-            <Fact code label="IP address" value={click.ipAddress ?? "IP not captured"} />
-          </DetailGroup>
-          <DetailGroup id={commerceId} title="Commerce">
-            <Fact label="Merchant" value={click.merchantName} />
-            <Fact label="Product" value={click.productName ?? "No product"} />
-            <Fact label="Network" value={click.affiliateNetworkName ?? "No network"} />
-            <Fact code label="Merchant SKU" value={click.merchantProductExternalSku ?? "No SKU"} />
-            <Fact
-              code
-              label="Program"
-              value={click.affiliateProgramCode ?? "No affiliate program"}
+    <section aria-labelledby={conversionId} {...props(styles.group)}>
+      <h3 id={conversionId} {...props(styles.title)}>
+        Conversion
+      </h3>
+      {conversions.length === 0 ? (
+        <p {...props(styles.empty)}>No matched conversions</p>
+      ) : (
+        <ul aria-label="Matched conversions" {...props(styles.conversionList)}>
+          {conversions.map((conversion) => (
+            <ConversionDetails
+              conversion={conversion}
+              key={`${conversion.affiliateNetworkCode}:${conversion.networkConversionRef}`}
             />
-          </DetailGroup>
-          <section aria-labelledby={conversionId} {...props(styles.group)}>
-            <h3 id={conversionId} {...props(styles.title)}>
-              Conversion
-            </h3>
-            {click.matchedConversions.length === 0 ? (
-              <p {...props(styles.empty)}>No matched conversions</p>
-            ) : (
-              <ul aria-label="Matched conversions" {...props(styles.conversionList)}>
-                {click.matchedConversions.map((conversion, index) => (
-                  <ConversionDetails
-                    conversion={conversion}
-                    key={`${conversion.affiliateNetworkCode}:${conversion.networkConversionRef}:${index}`}
-                  />
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
-      </TableCell>
-    </TableRow>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -140,14 +159,7 @@ export function linkTypeCopy(value: AttributionClick["linkType"]) {
 }
 
 export function referrerCopy(value: AttributionClick["referrer"]) {
-  if (!value) return "Not captured";
-
-  try {
-    const url = new URL(value);
-    return `${url.hostname}${url.pathname === "/" ? "" : ` ${url.pathname}`}`;
-  } catch {
-    return value;
-  }
+  return value ?? "Not captured";
 }
 
 export function userAgentCopy(value: AttributionClick["userAgent"]) {

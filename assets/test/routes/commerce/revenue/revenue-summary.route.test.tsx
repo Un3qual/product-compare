@@ -9,10 +9,12 @@ import {
   type RelayRouteQueryDescriptor,
   useRoutePreloadedQuery,
 } from "../../../../src/relay/route-preload";
-import { RevenueSummaryRoute } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
+import {
+  RevenueSummaryRoute,
+  type RevenueSummaryLoaderData,
+} from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import { RevenueControls } from "../../../../src/routes/commerce/revenue/summary/RevenueControls";
 import { RevenueMetrics } from "../../../../src/routes/commerce/revenue/summary/RevenueMetrics";
-import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import {
   ATTRIBUTION_LEDGER_PAGE_SIZE,
   buildRevenueDatePresetLinks,
@@ -161,7 +163,7 @@ const ATTRIBUTION_LEDGER_PAGE = {
           merchantProductId: "merchant-product-1",
           productId: "product-1",
           productName: "Example camera",
-          referrer: "https://example.test/compare",
+          referrer: "https://example.test/compare?campaign=summer#offer",
           sourceSurface: "WEB",
           userAgent: "ExampleBrowser/1.0",
           userEmail: "operator@example.test",
@@ -246,6 +248,24 @@ test("revenue presentation exposes filters, presets, active filters, and metrics
   expect(screen.getByRole("region", { name: "Revenue outcome" })).toBeVisible();
   expect(screen.getByText("25%")).toBeVisible();
   expect(screen.queryByRole("region", { name: "Summary" })).not.toBeInTheDocument();
+});
+
+test("revenue controls scope field labels to each rendered instance", () => {
+  render(
+    <MemoryRouter>
+      <RevenueControls activeFilters={[]} datePresetLinks={[]} filters={{ currency: "USD" }} />
+      <RevenueControls activeFilters={[]} datePresetLinks={[]} filters={{ currency: "EUR" }} />
+    </MemoryRouter>,
+  );
+
+  const networkLabelIds = screen
+    .getAllByLabelText("Network")
+    .map((input) => input.getAttribute("aria-labelledby"));
+
+  expect(new Set(networkLabelIds).size).toBe(2);
+  expect(
+    networkLabelIds.every((id) => id && document.getElementById(id)?.textContent === "Network"),
+  ).toBe(true);
 });
 
 test("revenue route identifies recorded attribution data as a preview", () => {
@@ -349,6 +369,7 @@ test("revenue route renders customer-facing visit and purchase details without i
   const details = screen.getByRole("region", {
     name: /Attribution details for operator@example\.test/,
   });
+  expect(detailsButton).toHaveAttribute("aria-controls", details.id);
   expect(details.closest("td")).toHaveAttribute("colspan", "7");
   expect(visitRow.nextElementSibling).toBe(details.closest("tr"));
   expect(within(details).getByText("Touchpoint")).toBeVisible();
@@ -357,7 +378,9 @@ test("revenue route renders customer-facing visit and purchase details without i
   expect(within(details).getByText("Conversion")).toBeVisible();
   expect(within(details).getByText("Product Compare website")).toBeInTheDocument();
   expect(within(details).getByText("Partner link")).toBeInTheDocument();
-  expect(within(details).getByText("example.test /compare")).toBeInTheDocument();
+  expect(
+    within(details).getByText("https://example.test/compare?campaign=summer#offer"),
+  ).toBeInTheDocument();
   expect(within(details).getByText("ExampleBrowser 1.0")).toBeInTheDocument();
   expect(within(details).getByText("203.0.113.44")).toBeInTheDocument();
   expect(within(details).getByText("Impact")).toBeInTheDocument();

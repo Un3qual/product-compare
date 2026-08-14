@@ -3,6 +3,7 @@ import { graphql, useFragment } from "react-relay";
 import type {
   CommerceAttributionConfidence,
   CommerceConversionStatus,
+  ConversionDetails_conversion$data,
   ConversionDetails_conversion$key,
 } from "$generated/ConversionDetails_conversion.graphql";
 import { formatProductDateTimeLabel } from "$frontend/formatting";
@@ -97,55 +98,80 @@ export function ConversionDetails({
         role="group"
         {...props(styles.conversion)}
       >
-        <div {...props(styles.primaryLine)}>
-          <span {...props(styles.labeledFact)}>
-            <span {...props(styles.label)}>Order value</span>
-            <strong>{formatCurrencyAmount(conversion.orderAmount, conversion.currency)}</strong>
-          </span>
-          <StatusBadge tone={conversionStatusTone(conversion.status)}>
-            {conversionStatusCopy(conversion.status)}
-          </StatusBadge>
-          <span {...props(styles.labeledFact)}>
-            <span {...props(styles.label)}>Commission</span>
-            <strong>
-              {formatCurrencyAmount(conversion.commissionAmount, conversion.currency)}
-            </strong>
-          </span>
-          <StatusBadge tone={attributionConfidenceTone(conversion.attributionConfidence)}>
-            {attributionConfidenceCopy(conversion.attributionConfidence)}
-          </StatusBadge>
-        </div>
-        <div {...props(styles.supportingLine)}>
-          <strong>{conversion.merchantName ?? "No merchant"}</strong>
-          <span aria-hidden="true">·</span>
-          <span>{conversion.productName ?? "No product"}</span>
-          <span aria-hidden="true">·</span>
-          <span>{conversion.affiliateNetworkName ?? "No affiliate network"}</span>
-        </div>
-        <div {...props(styles.diagnosticLine)}>
-          <span>
-            <span {...props(styles.label)}>Purchased</span>{" "}
-            {conversion.purchasedAt ? (
-              <time dateTime={conversion.purchasedAt}>
-                {formatProductDateTimeLabel(conversion.purchasedAt)}
-              </time>
-            ) : (
-              "Not recorded"
-            )}
-          </span>
-          <span aria-hidden="true">→</span>
-          <span>
-            <span {...props(styles.label)}>Reported</span>{" "}
-            <time dateTime={conversion.reportedAt}>
-              {formatProductDateTimeLabel(conversion.reportedAt)}
-            </time>
-          </span>
-          <code title="Conversion reference" {...props(styles.code)}>
-            {conversion.networkConversionRef}
-          </code>
-        </div>
+        <ConversionPrimaryLine conversion={conversion} />
+        <ConversionCommerceLine conversion={conversion} />
+        <ConversionTimingLine conversion={conversion} />
       </div>
     </li>
+  );
+}
+
+function ConversionPrimaryLine({ conversion }: { conversion: ConversionDetails_conversion$data }) {
+  return (
+    <div {...props(styles.primaryLine)}>
+      <LabeledAmount
+        label="Order value"
+        value={formatCurrencyAmount(conversion.orderAmount, conversion.currency)}
+      />
+      <StatusBadge tone={conversionStatusTone(conversion.status)}>
+        {conversionStatusCopy(conversion.status)}
+      </StatusBadge>
+      <LabeledAmount
+        label="Commission"
+        value={formatCurrencyAmount(conversion.commissionAmount, conversion.currency)}
+      />
+      <StatusBadge tone={attributionConfidenceTone(conversion.attributionConfidence)}>
+        {attributionConfidenceCopy(conversion.attributionConfidence)}
+      </StatusBadge>
+    </div>
+  );
+}
+
+function LabeledAmount({ label, value }: { label: string; value: string }) {
+  return (
+    <span {...props(styles.labeledFact)}>
+      <span {...props(styles.label)}>{label}</span>
+      <strong>{value}</strong>
+    </span>
+  );
+}
+
+function ConversionCommerceLine({ conversion }: { conversion: ConversionDetails_conversion$data }) {
+  return (
+    <div {...props(styles.supportingLine)}>
+      <strong>{conversion.merchantName ?? "No merchant"}</strong>
+      <span aria-hidden="true">·</span>
+      <span>{conversion.productName ?? "No product"}</span>
+      <span aria-hidden="true">·</span>
+      <span>{conversion.affiliateNetworkName ?? "No affiliate network"}</span>
+    </div>
+  );
+}
+
+function ConversionTimingLine({ conversion }: { conversion: ConversionDetails_conversion$data }) {
+  return (
+    <div {...props(styles.diagnosticLine)}>
+      <span>
+        <span {...props(styles.label)}>Purchased</span>{" "}
+        {conversion.purchasedAt ? (
+          <time dateTime={conversion.purchasedAt}>
+            {formatProductDateTimeLabel(conversion.purchasedAt)}
+          </time>
+        ) : (
+          "Not recorded"
+        )}
+      </span>
+      <span aria-hidden="true">→</span>
+      <span>
+        <span {...props(styles.label)}>Reported</span>{" "}
+        <time dateTime={conversion.reportedAt}>
+          {formatProductDateTimeLabel(conversion.reportedAt)}
+        </time>
+      </span>
+      <code title="Conversion reference" {...props(styles.code)}>
+        {conversion.networkConversionRef}
+      </code>
+    </div>
   );
 }
 

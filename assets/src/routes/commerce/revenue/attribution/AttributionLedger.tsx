@@ -1,7 +1,7 @@
 import { create, props } from "@stylexjs/stylex";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { graphql, useFragment, usePaginationFragment } from "react-relay";
 import type { AttributionLedger_connection$key } from "$generated/AttributionLedger_connection.graphql";
 import type { AttributionLedgerPaginationQuery } from "$generated/AttributionLedgerPaginationQuery.graphql";
@@ -229,65 +229,101 @@ export function AttributionLedger({
   return (
     <>
       <RecentConversion clicks={clicks} />
-      <section aria-labelledby="attribution-ledger-heading" {...props(styles.wrapper)}>
-        <header {...props(styles.header)}>
-          <div {...props(styles.heading)}>
-            <h2 id="attribution-ledger-heading" {...props(styles.title)}>
-              Attribution clicks
-            </h2>
-            <p {...props(styles.description)}>
-              Individual visits and purchases for the active revenue filters.
-            </p>
-          </div>
-          <AttributionPaginationControl
-            failed={paginationFailed}
-            hasNext={hasNext}
-            isLoadingNext={isLoadingNext}
-            onLoadMore={loadMore}
-          />
-        </header>
-        {clicks.length === 0 ? (
-          <p {...props(styles.pagination)}>No attribution clicks match these filters.</p>
-        ) : (
-          <Table aria-label="Attribution ledger" style={styles.table} tabIndex={0}>
-            <colgroup>
-              <col {...props(styles.visitColumn)} />
-              <col {...props(styles.customerColumn)} />
-              <col {...props(styles.commerceColumn)} />
-              <col {...props(styles.amountColumn)} />
-              <col {...props(styles.amountColumn)} />
-              <col {...props(styles.stateColumn)} />
-              <col {...props(styles.actionColumn)} />
-            </colgroup>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} scope="col">
-                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <AttributionLedgerRow click={row.original} key={row.id}>
-                  {row
-                    .getAllCells()
-                    .slice(0, -1)
-                    .map((cell) => (
-                      <TableCell key={cell.id} style={styles.cell}>
-                        <table.FlexRender cell={cell} />
-                      </TableCell>
-                    ))}
-                </AttributionLedgerRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </section>
+      <AttributionLedgerTable
+        failed={paginationFailed}
+        hasNext={hasNext}
+        isLoadingNext={isLoadingNext}
+        onLoadMore={loadMore}
+        table={table}
+      />
     </>
+  );
+}
+
+function AttributionLedgerTable({
+  failed,
+  hasNext,
+  isLoadingNext,
+  onLoadMore,
+  table,
+}: {
+  failed: boolean;
+  hasNext: boolean;
+  isLoadingNext: boolean;
+  onLoadMore: () => void;
+  table: ReturnType<typeof useTable<typeof tableModel, AttributionClick>>;
+}) {
+  const rows = table.getRowModel().rows;
+
+  return (
+    <section aria-labelledby="attribution-ledger-heading" {...props(styles.wrapper)}>
+      <header {...props(styles.header)}>
+        <div {...props(styles.heading)}>
+          <h2 id="attribution-ledger-heading" {...props(styles.title)}>
+            Attribution clicks
+          </h2>
+          <p {...props(styles.description)}>
+            Individual visits and purchases for the active revenue filters.
+          </p>
+        </div>
+        <AttributionPaginationControl
+          failed={failed}
+          hasNext={hasNext}
+          isLoadingNext={isLoadingNext}
+          onLoadMore={onLoadMore}
+        />
+      </header>
+      {rows.length === 0 ? (
+        <p {...props(styles.pagination)}>No attribution clicks match these filters.</p>
+      ) : (
+        <AttributionTable table={table} />
+      )}
+    </section>
+  );
+}
+
+function AttributionTable({
+  table,
+}: {
+  table: ReturnType<typeof useTable<typeof tableModel, AttributionClick>>;
+}) {
+  return (
+    <Table aria-label="Attribution ledger" style={styles.table} tabIndex={0}>
+      <colgroup>
+        <col {...props(styles.visitColumn)} />
+        <col {...props(styles.customerColumn)} />
+        <col {...props(styles.commerceColumn)} />
+        <col {...props(styles.amountColumn)} />
+        <col {...props(styles.amountColumn)} />
+        <col {...props(styles.stateColumn)} />
+        <col {...props(styles.actionColumn)} />
+      </colgroup>
+      <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id}>
+            {headerGroup.headers.map((header) => (
+              <TableHead key={header.id} scope="col">
+                {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+              </TableHead>
+            ))}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows.map((row) => (
+          <AttributionLedgerRow click={row.original} key={row.id}>
+            {row
+              .getAllCells()
+              .slice(0, -1)
+              .map((cell) => (
+                <TableCell key={cell.id} style={styles.cell}>
+                  <table.FlexRender cell={cell} />
+                </TableCell>
+              ))}
+          </AttributionLedgerRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -303,6 +339,7 @@ function AttributionLedgerRow({
   const identity = attributionIdentityCopy(click);
   const target = `${identity} at ${time}`;
   const detailsLabel = `Attribution details for ${target}`;
+  const detailsId = useId();
 
   return (
     <>
@@ -310,6 +347,7 @@ function AttributionLedgerRow({
         {children}
         <TableCell style={[styles.cell, styles.actionCell]}>
           <Button
+            aria-controls={detailsId}
             aria-expanded={isExpanded}
             aria-label={`${isExpanded ? "Close" : "Show"} details for ${target}`}
             onClick={() => setIsExpanded((expanded) => !expanded)}
@@ -327,7 +365,9 @@ function AttributionLedgerRow({
           </Button>
         </TableCell>
       </TableRow>
-      {isExpanded ? <AttributionClickDetails click={click} label={detailsLabel} /> : null}
+      {isExpanded ? (
+        <AttributionClickDetails click={click} id={detailsId} label={detailsLabel} />
+      ) : null}
     </>
   );
 }

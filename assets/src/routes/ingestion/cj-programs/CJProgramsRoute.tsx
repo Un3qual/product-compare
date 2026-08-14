@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Await, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, usePreloadedQuery } from "react-relay";
@@ -85,6 +85,10 @@ export type CJProgramsLoaderData =
   | {
       status: "error";
       pagination: CJProgramsPagination;
+      unmatchedQuery:
+        | Promise<RelayRouteQueryDescriptor<UnmatchedFeedsQuery["variables"]> | null>
+        | RelayRouteQueryDescriptor<UnmatchedFeedsQuery["variables"]>
+        | null;
     };
 
 export async function cjProgramsLoader({
@@ -123,6 +127,7 @@ export async function cjProgramsLoader({
       {
         status: "error",
         pagination,
+        unmatchedQuery,
       },
     );
   }
@@ -167,7 +172,8 @@ const styles = create({
     display: "grid",
     gap: "1rem",
     gridTemplateAreas: {
-      default: '"lifecycle lifecycle" "attention feedHealth" "programs programs" "unmatched unmatched"',
+      default:
+        '"lifecycle lifecycle" "attention feedHealth" "programs programs" "unmatched unmatched"',
       "@media (max-width: 48rem)": '"lifecycle" "attention" "feedHealth" "programs" "unmatched"',
     },
     gridTemplateColumns: {
@@ -197,16 +203,16 @@ export function CJProgramsRoute() {
             resetToken={loaderData.query}
           >
             <Suspense fallback={<FeedbackState kind="loading" title="Loading CJ programs..." />}>
-              <CJProgramsPanel
-                pagination={loaderData.pagination}
-                query={loaderData.query}
-                unmatchedQuery={loaderData.unmatchedQuery}
-              />
+              <CJProgramsPanel pagination={loaderData.pagination} query={loaderData.query} />
             </Suspense>
           </ResettableErrorBoundary>
         ) : (
           <CJProgramsUnavailableFallback />
         )}
+        <DeferredUnmatchedFeedsBoundary
+          pagination={loaderData.pagination}
+          query={loaderData.unmatchedQuery}
+        />
       </section>
     </PageShell>
   );
@@ -215,11 +221,9 @@ export function CJProgramsRoute() {
 function CJProgramsPanel({
   pagination,
   query,
-  unmatchedQuery,
 }: {
   pagination: CJProgramsPagination;
   query: Extract<CJProgramsLoaderData, { status: "ready" }>["query"];
-  unmatchedQuery: Extract<CJProgramsLoaderData, { status: "ready" }>["unmatchedQuery"];
 }) {
   const queryRef = useRoutePreloadedQuery<CJProgramsRouteQuery>(cjProgramsRouteQuery, query);
   const data = usePreloadedQuery<CJProgramsRouteQuery>(cjProgramsRouteQuery, queryRef);
@@ -227,14 +231,11 @@ function CJProgramsPanel({
   const paginationData = buildCJProgramPageData(pagination, data.cjPrograms.pageInfo);
 
   return (
-    <>
-      <ProgramLifecycleTable
-        counts={data.cjProgramStageCounts}
-        pagination={paginationData}
-        programs={data.cjPrograms}
-      />
-      <DeferredUnmatchedFeedsBoundary pagination={pagination} query={unmatchedQuery} />
-    </>
+    <ProgramLifecycleTable
+      counts={data.cjProgramStageCounts}
+      pagination={paginationData}
+      programs={data.cjPrograms}
+    />
   );
 }
 
@@ -245,6 +246,17 @@ function DeferredUnmatchedFeedsBoundary({
   pagination: CJProgramsPagination;
   query: Extract<CJProgramsLoaderData, { status: "ready" }>["unmatchedQuery"];
 }) {
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // SSR waits for all Suspense work, so subscribe to this optional query only after hydration.
+  if (!isHydrated) {
+    return <UnmatchedFeedsLoadingFallback />;
+  }
+
   return (
     <Suspense fallback={<UnmatchedFeedsLoadingFallback />}>
       <Await resolve={query} errorElement={<UnmatchedFeedsUnavailableFallback />}>

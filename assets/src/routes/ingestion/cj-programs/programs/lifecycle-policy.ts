@@ -71,6 +71,19 @@ export function cjProgramWarningMessages(codes: readonly CJProgramWarningCode[])
   return codes.map(cjProgramWarningCopy).filter((warning) => warning !== null);
 }
 
+const CJ_PROGRAM_REQUIRED_ACTIONS = {
+  NEW: "Decide whether to pursue",
+  CONSIDERING: "Complete program review",
+  SELECTED: "Submit application",
+  APPLIED: "Monitor application",
+  ACCEPTED: "Inspect available feeds",
+  NOT_PURSUING: "No action required",
+  DECLINED: "No action required",
+  "%future added value": "Review new lifecycle stage",
+} as const satisfies Record<GeneratedCJProgramStage, string>;
+
+const CJ_PROGRAM_TERMINAL_STAGES = new Set<GeneratedCJProgramStage>(["NOT_PURSUING", "DECLINED"]);
+
 export function cjProgramRequiredAction(
   stage: GeneratedCJProgramStage,
   warningCodes: readonly CJProgramWarningCode[],
@@ -79,28 +92,14 @@ export function cjProgramRequiredAction(
     return "Review feed warnings";
   }
 
-  switch (stage) {
-    case "NEW":
-      return "Decide whether to pursue";
-    case "CONSIDERING":
-      return "Complete program review";
-    case "SELECTED":
-      return "Submit application";
-    case "APPLIED":
-      return "Monitor application";
-    case "ACCEPTED":
-      return "Inspect available feeds";
-    case "NOT_PURSUING":
-    case "DECLINED":
-      return "No action required";
-    default:
-      return "Review new lifecycle stage";
-  }
+  return CJ_PROGRAM_REQUIRED_ACTIONS[stage];
 }
 
 export function cjProgramNeedsAttention(
   stage: GeneratedCJProgramStage,
   warningCodes: readonly CJProgramWarningCode[],
 ) {
-  return cjProgramRequiredAction(stage, warningCodes) !== "No action required";
+  return (
+    cjProgramWarningMessages(warningCodes).length > 0 || !CJ_PROGRAM_TERMINAL_STAGES.has(stage)
+  );
 }

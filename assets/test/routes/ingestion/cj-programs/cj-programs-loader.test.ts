@@ -164,7 +164,7 @@ test("cjProgramsLoader preserves each normalized connection cursor and page size
   );
 });
 
-test("cjProgramsLoader returns the existing error shape for unavailable data", async () => {
+test("cjProgramsLoader preserves unmatched feeds when program data is unavailable", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
     "https://app.example.test/ingestion/cj-programs?first=30&after=program-cursor",
@@ -177,9 +177,9 @@ test("cjProgramsLoader returns the existing error shape for unavailable data", a
     .mockResolvedValueOnce(unmatchedFeedsQueryDescriptor({ first: 10, after: null }));
 
   try {
-    await expect(
-      cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request })),
-    ).resolves.toEqual({
+    const result = await cjProgramsLoader(buildCJProgramsLoaderArgs({ environment, request }));
+
+    expect(result).toMatchObject({
       status: "error",
       pagination: {
         first: 30,
@@ -190,6 +190,9 @@ test("cjProgramsLoader returns the existing error shape for unavailable data", a
         unmatchedAfter: null,
       },
     });
+    await expect((result as { unmatchedQuery: Promise<unknown> }).unmatchedQuery).resolves.toEqual(
+      unmatchedFeedsQueryDescriptor({ first: 10, after: null }),
+    );
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload CJ programs route query.", {
       error: preloadError,

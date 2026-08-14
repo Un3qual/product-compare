@@ -93,14 +93,17 @@ for (const viewport of VIEWPORTS) {
     await expect(ledger).toBeVisible();
     await expectTableContained(ledger, { compact: viewport.name !== "mobile" });
     expect(
-      await controls.evaluate(
-        (element, nextElement) =>
-          Boolean(
-            nextElement &&
-            element.compareDocumentPosition(nextElement) & Node.DOCUMENT_POSITION_FOLLOWING,
-          ),
-        await performance.elementHandle(),
-      ),
+      await controls.evaluate((element) => {
+        const performanceHeading = Array.from(document.querySelectorAll("h2")).find(
+          (heading) => heading.textContent === "Attribution performance",
+        );
+        const performanceRegion = performanceHeading?.closest("section");
+
+        return Boolean(
+          performanceRegion &&
+          element.compareDocumentPosition(performanceRegion) & Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+      }),
     ).toBe(true);
     await expect(ledger.getByRole("columnheader", { name: "Visit" })).toBeVisible();
     await expect(ledger.getByRole("columnheader", { name: "Customer" })).toBeVisible();

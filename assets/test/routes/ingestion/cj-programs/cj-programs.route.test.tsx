@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
 import { useFragment, useMutation, usePreloadedQuery, useQueryLoader } from "react-relay";
 import {
@@ -166,9 +167,7 @@ test("CJ programs route renders full-dataset stage counts and lifecycle controls
   expect(within(summary).queryByRole("progressbar")).not.toBeInTheDocument();
 
   expect(screen.getByRole("form", { name: "CJ program filters" })).toBeVisible();
-  expect(
-    screen.queryByRole("complementary", { name: "Program controls" }),
-  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("complementary", { name: "Program controls" })).not.toBeInTheDocument();
   const attention = screen.getByRole("region", { name: "Program attention" });
   expect(attention).toHaveTextContent("Needs attention on this page");
   expect(attention).toHaveTextContent("5 programs on this page need attention");
@@ -194,6 +193,7 @@ test("CJ programs route presents a scannable lifecycle ledger with exact change 
     "Last change",
     "Action",
   ]);
+  expect(ledger).toHaveAttribute("tabindex", "0");
   expect(within(ledger).queryByRole("heading")).not.toBeInTheDocument();
   expect(within(ledger).getByRole("rowheader", { name: /New Merchant/ })).toBeInTheDocument();
 
@@ -571,6 +571,61 @@ test("an unavailable unmatched-feed region leaves the program lifecycle ledger u
   expect(screen.queryByText("CJ programs unavailable.")).not.toBeInTheDocument();
 });
 
+test("CJ programs route does not subscribe to optional unmatched feeds during server rendering", () => {
+  const unmatchedQuery = new Promise<never>(() => undefined);
+  const thenSpy = vi.spyOn(unmatchedQuery, "then");
+  mockedUseLoaderData.mockReturnValue({
+    ...buildReadyLoaderData(),
+    unmatchedQuery,
+  } as never);
+
+  renderToString(
+    <MemoryRouter>
+      <CJProgramsRoute />
+    </MemoryRouter>,
+  );
+
+  expect(thenSpy).not.toHaveBeenCalled();
+});
+
+test("CJ programs route keeps unmatched feeds available when the program query fails", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "error",
+    pagination: buildReadyLoaderData().pagination,
+    unmatchedQuery: Promise.resolve(UNMATCHED_FEEDS_QUERY_DESCRIPTOR),
+  } as never);
+
+  renderCJProgramsRoute();
+
+  expect(screen.getByText("CJ programs unavailable.")).toBeVisible();
+  expect(await screen.findByRole("region", { name: "Feed health" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Unmatched feeds" })).toBeVisible();
+});
+
+test("CJ programs route shows loading and error feedback for promise-shaped unmatched feeds", async () => {
+  const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const unmatchedQuery =
+    deferredPromise<RelayRouteQueryDescriptor<UnmatchedFeedsQuery["variables"]>>();
+  mockedUseLoaderData.mockReturnValue({
+    ...buildReadyLoaderData(),
+    unmatchedQuery: unmatchedQuery.promise,
+  } as never);
+
+  try {
+    renderCJProgramsRoute();
+
+    expect(await screen.findByText("Loading feed health...")).toBeVisible();
+    expect(screen.getByText("Loading unmatched feeds...")).toBeVisible();
+
+    unmatchedQuery.reject(new Error("unmatched feeds failed"));
+
+    expect(await screen.findByText("Feed health unavailable.")).toBeVisible();
+    expect(screen.getByText("Unmatched feeds unavailable.")).toBeVisible();
+  } finally {
+    consoleError.mockRestore();
+  }
+});
+
 test("expanded CJ program rows render bounded feed facts and replace only their feed page", () => {
   mockedUseQueryLoader.mockReturnValue([
     FEED_QUERY_REF,
@@ -640,7 +695,11 @@ test("program and unmatched feed pagination keep their independent cursors", () 
   expect(feedHealth).toHaveTextContent("250 products");
 
   const feeds = screen.getByRole("table", { name: "Unmatched CJ feeds" });
-  expect(within(feeds).getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
+  expect(
+    within(feeds)
+      .getAllByRole("columnheader")
+      .map((header) => header.textContent),
+  ).toEqual([
     "Provider feed",
     "Last seen",
     "Products",
@@ -723,12 +782,13 @@ test("CJ programs route renders its unavailable state when the loader cannot aut
       unmatchedFirst: 10,
       unmatchedAfter: null,
     },
+    unmatchedQuery: null,
   } satisfies CJProgramsLoaderData);
 
   renderCJProgramsRoute();
 
   expect(screen.getByRole("heading", { name: "CJ programs" })).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent("CJ programs unavailable.");
+  expect(screen.getByText("CJ programs unavailable.")).toBeVisible();
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
@@ -764,7 +824,7 @@ test("CJ programs route renders unavailable feedback for GraphQL payload failure
   try {
     renderCJProgramsRoute();
 
-    expect(screen.getByRole("alert")).toHaveTextContent("CJ programs unavailable.");
+    expect(screen.getByText("CJ programs unavailable.")).toBeVisible();
   } finally {
     consoleError.mockRestore();
   }
@@ -838,6 +898,17 @@ function buildReadyLoaderData(
       },
     },
   } satisfies CJProgramsLoaderData;
+}
+
+function deferredPromise<T>() {
+  let reject!: (reason: unknown) => void;
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
 }
 
 function buildCJProgramsData() {
