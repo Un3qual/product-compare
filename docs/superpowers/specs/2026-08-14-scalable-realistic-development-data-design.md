@@ -26,7 +26,7 @@ with a runtime choice between practical and data-heavy related-record density.
 
 ## Goals
 
-- Seed approximately 300 products and 70 merchants in both density profiles.
+- Seed exactly 300 products and 70 merchants in both density profiles.
 - Preserve the existing hand-authored products, merchants, and named lifecycle
   scenarios as stable behavioral anchors.
 - Generate the remaining names and facts deterministically from small checked-in
@@ -95,8 +95,8 @@ logical row addressable on every run.
 
 ## Bounded Profile
 
-The bounded profile targets approximately 1,800 seed-owned offers across the
-300 products:
+The bounded profile targets 1,700 to 1,900 seed-owned offers across the 300
+products:
 
 - ordinary products generally have four to eight offers;
 - representative products have twelve to twenty-five offers so product-offer
@@ -118,9 +118,9 @@ scaling with every product-offer pair.
 
 ## Full Profile
 
-The full profile keeps the same 300 products and 70 merchants and targets
-approximately 3,000 seed-owned offers, averaging about ten offers per product.
-Representative products may exceed that average to guarantee multi-page offer
+The full profile keeps the same 300 products and 70 merchants and targets 2,900
+to 3,100 seed-owned offers, averaging about ten offers per product.
+Representative products exceed that average to guarantee multi-page offer
 views; lower-coverage products keep the total within the profile range.
 
 Its additional density comes primarily from related facts:
@@ -140,11 +140,12 @@ referential integrity merely to reduce runtime.
 
 ## Deterministic Time And Scenario Data
 
-The execution anchor remains current enough for freshness-sensitive product
-behavior, but seed identities and the expected set of observations are derived
-from a deterministic truncated anchor and named offsets. Repeating a profile at
-the same anchor yields the same logical rows. Advancing the anchor reconciles
-obsolete seed-owned observations rather than accumulating unbounded history.
+The execution anchor is the start of the current UTC hour. It remains current
+enough for freshness-sensitive product behavior while giving repeated local runs
+a stable timestamp boundary. Seed identities and the expected observation set
+are derived from that anchor and named offsets. Repeating a profile within the
+hour yields the same logical rows. A later run reconciles obsolete seed-owned
+observations rather than accumulating unbounded history.
 
 Prices use authored Decimal bases plus deterministic merchant, product, and
 scenario adjustments. Currencies, stock states, coupon windows, community
@@ -192,9 +193,12 @@ The existing transaction and domain-oriented modules remain the architecture:
 7. the guide prints the selected density, stable credentials, counts, and
    representative local URLs.
 
-Small generation helpers may live in `priv/repo/seeds/support.exs` or a focused
-seed data module. Production contexts remain the write authority; there is no
-new generic repository, seed behavior, or callback layer.
+`priv/repo/seeds/profile.exs` owns strict CLI parsing and the two configuration
+maps. `priv/repo/seeds/dictionary.exs` owns the checked-in word lists and ordered
+fixture generation. Existing domain seed modules own reconciliation and may use
+small domain-neutral helpers from `priv/repo/seeds/support.exs`. Production
+contexts remain the write authority; there is no new generic repository, seed
+behavior, or callback layer.
 
 ## Error Handling
 
