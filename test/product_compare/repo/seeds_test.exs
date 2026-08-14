@@ -9,6 +9,7 @@ Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/marketplace.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/community_writes.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/generated_engagement.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/engagement.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/generated_operations.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/operations.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/guide.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/runner.exs"))
@@ -309,6 +310,53 @@ defmodule ProductCompare.Repo.SeedsTest do
                attribute_id: correction.attribute_id
              )
     end
+  end
+
+  test "operations densities scale ingestion and attribution coverage" do
+    bounded = run_seed(["--density", "bounded"])
+
+    assert %{
+             cj_feeds: 70,
+             import_runs: 40,
+             clicks: 120,
+             conversions: 80
+           } == operations_counts(bounded)
+
+    assert Enum.any?(bounded.operations.all_clicks, &is_nil(&1.user_id))
+    assert Enum.any?(bounded.operations.all_clicks, &(not is_nil(&1.user_id)))
+    assert Enum.any?(bounded.operations.all_conversions, &is_nil(&1.click_session_id))
+    assert Enum.any?(bounded.operations.all_conversions, &(not is_nil(&1.click_session_id)))
+
+    assert bounded.operations.all_conversions
+           |> MapSet.new(& &1.currency)
+           |> MapSet.size() > 1
+
+    assert MapSet.new(bounded.operations.all_conversions, & &1.status) ==
+             MapSet.new([:pending, :approved, :reversed, :paid])
+
+    assert length(Enum.chunk_every(bounded.operations.all_import_runs, 20)) >= 2
+
+    revenue =
+      CommerceAttribution.dashboard_revenue_summary(
+        currency: "CAD",
+        from: Date.add(DateTime.to_date(bounded.anchor), -2),
+        to: Date.add(DateTime.to_date(bounded.anchor), 1)
+      )
+
+    assert revenue["metrics"]["conversions"] > 0
+
+    assert revenue["metrics"]["commission_revenue"]
+           |> Decimal.new()
+           |> Decimal.positive?()
+
+    full = run_seed(["--density", "full"])
+
+    assert %{
+             cj_feeds: 210,
+             import_runs: 120,
+             clicks: 600,
+             conversions: 400
+           } == operations_counts(full)
   end
 
   test "seed transaction retries explicit stale-snapshot conflicts on a fresh transaction" do
@@ -3231,6 +3279,15 @@ defmodule ProductCompare.Repo.SeedsTest do
       reviews: length(seed.engagement.all_reviews),
       questions: length(seed.engagement.all_questions),
       corrections: length(seed.engagement.all_corrections)
+    }
+  end
+
+  defp operations_counts(seed) do
+    %{
+      cj_feeds: length(seed.operations.all_cj_feeds),
+      import_runs: length(seed.operations.all_import_runs),
+      clicks: length(seed.operations.all_clicks),
+      conversions: length(seed.operations.all_conversions)
     }
   end
 

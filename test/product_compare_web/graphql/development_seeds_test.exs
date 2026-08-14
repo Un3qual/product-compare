@@ -161,12 +161,31 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
                  "edges" => [%{"node" => %{"status" => "PENDING"}} | _]
                },
                "cjProgramStageCounts" => stage_counts,
-               "cjPrograms" => %{"edges" => cj_program_edges},
-               "unmatchedCjFeeds" => %{"edges" => unmatched_feed_edges},
+               "cjPrograms" => %{
+                 "edges" => cj_program_edges,
+                 "pageInfo" => %{
+                   "endCursor" => cj_program_end_cursor,
+                   "hasNextPage" => true
+                 }
+               },
+               "unmatchedCjFeeds" => %{
+                 "edges" => unmatched_feed_edges,
+                 "pageInfo" => %{
+                   "endCursor" => unmatched_feed_end_cursor,
+                   "hasNextPage" => true
+                 }
+               },
+               "commerceAttributionClicks" => %{
+                 "edges" => attribution_edges,
+                 "pageInfo" => %{
+                   "endCursor" => attribution_end_cursor,
+                   "hasNextPage" => true
+                 }
+               },
                "activeCoupons" => %{"edges" => coupon_edges},
                "revenueSummary" => %{
                  "metrics" => %{
-                   "clicks" => 4,
+                   "clicks" => 120,
                    "commissionRevenue" => "145.00",
                    "conversions" => 2,
                    "currency" => "USD"
@@ -178,18 +197,36 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
                "merchantId" => relay_id(:merchant, merchant.id)
              })
 
-    assert stage_counts == %{
-             "accepted" => 1,
-             "applied" => 1,
-             "considering" => 1,
-             "declined" => 1,
-             "new" => 1,
-             "notPursuing" => 1,
-             "selected" => 1
-           }
+    assert stage_counts
+           |> Map.values()
+           |> Enum.all?(&(&1 > 0))
 
-    assert [_, _, _, _, _, _, _] = cj_program_edges
-    assert [_] = unmatched_feed_edges
+    assert length(cj_program_edges) == 20
+    assert length(unmatched_feed_edges) == 10
+    assert length(attribution_edges) == 20
+
+    assert %{
+             "data" => %{
+               "cjPrograms" => %{
+                 "edges" => [_ | _],
+                 "pageInfo" => %{"hasPreviousPage" => true}
+               },
+               "unmatchedCjFeeds" => %{
+                 "edges" => [_ | _],
+                 "pageInfo" => %{"hasPreviousPage" => true}
+               },
+               "commerceAttributionClicks" => %{
+                 "edges" => [_ | _],
+                 "pageInfo" => %{"hasPreviousPage" => true}
+               }
+             }
+           } =
+             graphql(operator_conn, operator_page_query(), %{
+               "programAfter" => cj_program_end_cursor,
+               "feedAfter" => unmatched_feed_end_cursor,
+               "clickAfter" => attribution_end_cursor
+             })
+
     assert Enum.any?(coupon_edges, &(get_in(&1, ["node", "code"]) == "DEV-ACTIVE-10"))
   end
 
@@ -297,15 +334,44 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
       }
       cjPrograms(first: 20, sort: NAME_ASC) {
         edges { node { advertiserId advertiserName stage feedCount warningCodes } }
+        pageInfo { endCursor hasNextPage }
       }
-      unmatchedCjFeeds(first: 20) {
+      unmatchedCjFeeds(first: 10) {
         edges { node { providerFeedId advertiserName } }
+        pageInfo { endCursor hasNextPage }
+      }
+      commerceAttributionClicks(first: 20) {
+        edges { node { clickId anonymousVisitor sourceSurface matchedConversions { status } } }
+        pageInfo { endCursor hasNextPage }
       }
       activeCoupons(first: 20, merchantId: $merchantId) {
         edges { node { code description } }
       }
       revenueSummary(input: {currency: "USD"}) {
         metrics { clicks commissionRevenue conversions currency }
+      }
+    }
+    """
+  end
+
+  defp operator_page_query do
+    """
+    query DevelopmentOperatorPage(
+      $programAfter: String,
+      $feedAfter: String,
+      $clickAfter: String
+    ) {
+      cjPrograms(first: 20, after: $programAfter, sort: NAME_ASC) {
+        edges { node { advertiserId } }
+        pageInfo { hasPreviousPage }
+      }
+      unmatchedCjFeeds(first: 10, after: $feedAfter) {
+        edges { node { providerFeedId } }
+        pageInfo { hasPreviousPage }
+      }
+      commerceAttributionClicks(first: 20, after: $clickAfter) {
+        edges { node { clickId } }
+        pageInfo { hasPreviousPage }
       }
     }
     """
