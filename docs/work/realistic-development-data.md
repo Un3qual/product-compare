@@ -4,17 +4,19 @@
 
 - Status: ready
 - Priority: P1
-- Plan: `docs/superpowers/plans/2026-08-12-realistic-development-data-implementation-plan.md`
+- Plan: `docs/superpowers/plans/2026-08-14-scalable-realistic-development-data-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-12-product-experience-and-code-simplification-design.md`
-- Last verified: 2026-08-12 against the existing domain seed modules, immutable
-  ownership/rerun tests, current five-product/two-merchant dataset, and shipped
-  shopper/operator GraphQL surfaces.
+- Last verified: 2026-08-14 against the approved scalable seed design, existing
+  domain seed modules, immutable ownership/rerun tests, current
+  five-product/two-merchant dataset, and shipped shopper/operator GraphQL
+  surfaces.
 
 ## Target Outcome
 
-The offline deterministic seed dataset has realistic catalog, marketplace,
-account, community, attribution, and operator depth while preserving unrelated
-local rows and prohibiting external effects.
+The offline deterministic seed system offers bounded and full profiles with
+exactly 300 products, 70 merchants, realistic marketplace, account, community,
+attribution, and operator depth while preserving unrelated local rows and
+prohibiting external effects.
 
 ## Owned Paths
 

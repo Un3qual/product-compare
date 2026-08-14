@@ -34,7 +34,7 @@ residual audit:
 - `docs/superpowers/plans/2026-08-12-product-discovery-evaluation-implementation-plan.md`
 - `docs/superpowers/plans/2026-08-12-comparison-auth-continuity-implementation-plan.md`
 - `docs/superpowers/plans/2026-08-12-operator-workspaces-implementation-plan.md`
-- `docs/superpowers/plans/2026-08-12-realistic-development-data-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-14-scalable-realistic-development-data-implementation-plan.md`
 - `docs/superpowers/plans/2026-08-12-type-validation-and-slop-remediation-implementation-plan.md`
 
 The first five are the current live ready rows. The type/validation/slop plan is

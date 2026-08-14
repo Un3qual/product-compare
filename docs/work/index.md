@@ -53,13 +53,13 @@ No work is currently claimed.
 
 Status: ready
 Lane: Realistic development data
-Plan: `docs/superpowers/plans/2026-08-12-realistic-development-data-implementation-plan.md`
-Batch outcome: Deterministic offline development data exercises realistic
-catalog, marketplace, comparison, account, community, attribution, and
-operator states at useful pagination depth without adopting unrelated rows or
-causing external effects.
-Next action: Run Task 1's RED scale, scenario, rerun, pagination, ownership, and
-zero-external-side-effect characterization.
+Plan: `docs/superpowers/plans/2026-08-14-scalable-realistic-development-data-implementation-plan.md`
+Batch outcome: Deterministic bounded and full offline profiles exercise exactly
+300 products, 70 merchants, realistic marketplace breadth, and profile-sized
+comparison, account, community, attribution, and operator states without
+adopting unrelated rows or causing external effects.
+Next action: Run Task 1's RED profile, dictionary, UTC-hour, strict-option, and
+unchanged named-scenario characterization.
 Owned paths:
 
 - `priv/repo/seeds/**`, `priv/repo/seeds.exs` only if orchestration changes,
