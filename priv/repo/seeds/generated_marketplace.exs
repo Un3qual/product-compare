@@ -505,7 +505,7 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
         end
       end)
 
-    referenced_price_point_ids =
+    captured_price_point_ids =
       changed_rows
       |> Enum.flat_map(fn row ->
         case Map.get(existing_by_entropy_id, row.entropy_id) do
@@ -513,13 +513,13 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
           point -> [point.id]
         end
       end)
-      |> price_point_ids_referenced_by_purchase_facts()
+      |> price_point_ids_with_captured_evidence()
 
     changed_rows =
       Enum.reject(changed_rows, fn row ->
         case Map.get(existing_by_entropy_id, row.entropy_id) do
           nil -> false
-          point -> MapSet.member?(referenced_price_point_ids, point.id)
+          point -> MapSet.member?(captured_price_point_ids, point.id)
         end
       end)
 
@@ -538,14 +538,26 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
     Enum.map(rows, &Map.fetch!(persisted_by_entropy_id, &1.entropy_id))
   end
 
-  defp price_point_ids_referenced_by_purchase_facts([]), do: MapSet.new()
+  defp price_point_ids_with_captured_evidence([]), do: MapSet.new()
 
-  defp price_point_ids_referenced_by_purchase_facts(price_point_ids) do
-    PurchasePriceFact
-    |> where([fact], fact.price_observation_id in ^price_point_ids)
-    |> select([fact], fact.price_observation_id)
-    |> Repo.all()
-    |> MapSet.new()
+  defp price_point_ids_with_captured_evidence(price_point_ids) do
+    Enum.reduce(
+      [
+        {PurchasePriceFact, :price_observation_id},
+        {AlertEvent, :triggering_price_point_id}
+      ],
+      MapSet.new(),
+      fn {schema, field_name}, referenced_ids ->
+        ids =
+          schema
+          |> where([record], field(record, ^field_name) in ^price_point_ids)
+          |> select([record], field(record, ^field_name))
+          |> Repo.all()
+          |> MapSet.new()
+
+        MapSet.union(referenced_ids, ids)
+      end
+    )
   end
 
   defp verify_price_point_ownership!(rows) do

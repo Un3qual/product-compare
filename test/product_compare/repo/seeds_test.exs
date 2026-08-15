@@ -3927,6 +3927,53 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Decimal.equal?(Repo.get!(PurchasePriceFact, fact.id).observed_price, observation.price)
   end
 
+  test "reruns do not rewrite generated observations referenced by alert events" do
+    first_anchor = ~U[2026-08-14 20:00:00.000000Z]
+    second_anchor = DateTime.add(first_anchor, 3_600, :second)
+    profile = DevSeedProfile.config!(:full)
+    accounts = DevSeedAccounts.seed!(@seed_password, first_anchor)
+    catalog = DevSeedCatalog.seed!(accounts, first_anchor, profile)
+    marketplace = DevSeedMarketplace.seed!(catalog, first_anchor, profile)
+
+    observation =
+      Enum.find(marketplace.all_price_points, fn point ->
+        not is_nil(point.entropy_id) and point.observed_at == first_anchor
+      end)
+
+    assert %PricePoint{} = observation
+    offer = Repo.get!(MerchantProduct, observation.merchant_product_id)
+
+    assert {:ok, watch} =
+             Alerts.create_watch(accounts.participant.id, %{
+               product_id: offer.product_id,
+               merchant_product_id: offer.id,
+               rule_type: :target_price,
+               currency: offer.currency,
+               target_amount: "999999.00",
+               cooldown_seconds: 86_400
+             })
+
+    assert {:ok, %{events_created: 1}} =
+             Alerts.evaluate_price_point(observation.id, now: observation.observed_at)
+
+    event =
+      Repo.get_by!(AlertEvent,
+        watch_rule_id: watch.id,
+        triggering_price_point_id: observation.id
+      )
+
+    attempt = Repo.get_by!(AlertDeliveryAttempt, alert_event_id: event.id)
+
+    DevSeedMarketplace.seed!(catalog, second_anchor, profile)
+    preserved_observation = Repo.get!(PricePoint, observation.id)
+
+    assert preserved_observation.observed_at == observation.observed_at
+    assert Decimal.equal?(preserved_observation.price, observation.price)
+    assert event.observed_at == preserved_observation.observed_at
+    assert Decimal.equal?(event.item_price, preserved_observation.price)
+    assert Repo.get!(AlertDeliveryAttempt, attempt.id).alert_event_id == event.id
+  end
+
   test "reruns preserve price points after their reserved key is changed" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
