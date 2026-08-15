@@ -1,22 +1,23 @@
 import { isRouteErrorResponse, useRouteError } from "react-router-dom";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
-import { getRouteErrorViewData, type RouteErrorContext } from "./route-error-view-data";
 
 type RouteErrorBoundaryProps = {
   resourceName?: string;
   title?: string;
 };
 
+type RouteErrorContext =
+  | { readonly kind: "error"; readonly error: Error }
+  | { readonly kind: "response"; readonly status: number }
+  | { readonly kind: "unknown" };
+
 export function RouteErrorBoundary({
   resourceName = "comparison",
   title = "Compare products",
 }: RouteErrorBoundaryProps = {}) {
   const error = useRouteError();
-  const { errorMessage, retryGuidance } = getRouteErrorViewData({
-    error: normalizeRouteError(error),
-    resourceName,
-  });
+  const { errorMessage, retryGuidance } = routeErrorViewData(normalizeRouteError(error), resourceName);
 
   return (
     <PageShell eyebrow="Page unavailable" title={title}>
@@ -35,4 +36,66 @@ function normalizeRouteError(error: unknown): RouteErrorContext {
   }
 
   return { kind: "unknown" };
+}
+
+function routeErrorViewData(
+  error: ReturnType<typeof normalizeRouteError>,
+  resourceName: string,
+) {
+  if (error.kind === "response") {
+    if (error.status >= 500) {
+      return {
+        errorMessage: `A server error occurred while loading the ${resourceName}.`,
+        retryGuidance: "Please try refreshing the page or come back later.",
+      };
+    }
+
+    if (error.status === 404) {
+      return {
+        errorMessage: `The requested ${resourceName} could not be found.`,
+        retryGuidance: "Please check the URL and try again.",
+      };
+    }
+
+    if (error.status === 401 || error.status === 403) {
+      return {
+        errorMessage: `You don't have permission to view this ${resourceName}.`,
+        retryGuidance: "Please sign in or contact support if you believe this is an error.",
+      };
+    }
+
+    return {
+      errorMessage: `An error occurred while loading the ${resourceName}.`,
+      retryGuidance: "Please try refreshing the page.",
+    };
+  }
+
+  if (error.kind === "error") {
+    const normalizedMessage = error.error.message.toLowerCase();
+    const isNetworkError =
+      normalizedMessage.includes("network") ||
+      normalizedMessage.includes("fetch") ||
+      error.error.name === "NetworkError";
+
+    if (isNetworkError) {
+      return {
+        errorMessage: `A network error occurred while loading the ${resourceName}.`,
+        retryGuidance: "Please check your internet connection and try again.",
+      };
+    }
+
+    return {
+      errorMessage: `An unexpected error occurred while loading the ${resourceName}.`,
+      retryGuidance: "Please try refreshing the page or come back later.",
+    };
+  }
+
+  return {
+    errorMessage: `${capitalizeResourceName(resourceName)} unavailable.`,
+    retryGuidance: "Please try again later.",
+  };
+}
+
+function capitalizeResourceName(resourceName: string) {
+  return `${resourceName.charAt(0).toUpperCase()}${resourceName.slice(1)}`;
 }

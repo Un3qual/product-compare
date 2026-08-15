@@ -16,7 +16,9 @@ import { DetailTabs } from "$ui/components/layout/DetailTabs";
 import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { Button } from "$ui/primitives/Button";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { HOME_PAGE_SIZE, homeDealViewData, homeDealsViewData } from "./home-view-data";
+import { homeProductDetailPath } from "./home-paths";
+
+const HOME_PAGE_SIZE = 6;
 
 const homeDealsRouteQuery = graphql`
   query HomeDealsQuery($selectedSlugs: [String!]!, $first: Int!) {
@@ -176,12 +178,35 @@ function HomeDealsPanel({
   selectedSlugs: readonly string[];
 }) {
   const data = usePreloadedQuery<HomeDealsQuery>(homeDealsRouteQuery, queryRef);
-  const viewData = homeDealsViewData(data.homeDeals, hasViewer);
+  const tabs = [
+    {
+      deals: data.homeDeals.new.edges,
+      emptyTitle: "No new offers to show yet.",
+      label: "New",
+      value: "new",
+    },
+    {
+      deals: data.homeDeals.trending.edges,
+      emptyTitle: "No trending offers to show yet.",
+      label: "Trending",
+      value: "trending",
+    },
+    ...(hasViewer && data.homeDeals.forYou.edges.length > 0
+      ? [
+          {
+            deals: data.homeDeals.forYou.edges,
+            emptyTitle: "No offers for you to show yet.",
+            label: "For you",
+            value: "for-you",
+          },
+        ]
+      : []),
+  ];
 
   return (
     <DetailTabs
       defaultValue="new"
-      items={viewData.tabs.map((tab) => ({
+      items={tabs.map((tab) => ({
         content:
           tab.deals.length > 0 ? (
             <ul
@@ -189,10 +214,10 @@ function HomeDealsPanel({
               data-slot="home-deals-list"
               {...props(styles.list)}
             >
-              {tab.deals.map((deal) => (
+              {tab.deals.map(({ cursor, ...deal }) => (
                 <HomeDealRow
-                  fragmentRef={deal.fragmentRef}
-                  key={deal.cursor}
+                  fragmentRef={deal}
+                  key={cursor}
                   selectedSlugs={selectedSlugs}
                   tone={tab.value === "trending" ? "warning" : "accent"}
                 />
@@ -218,24 +243,88 @@ function HomeDealRow({
   selectedSlugs: readonly string[];
   tone: "accent" | "warning";
 }) {
-  const deal = homeDealViewData(useFragment(homeDealFragment, fragmentRef), selectedSlugs);
+  const deal = useFragment(homeDealFragment, fragmentRef);
+  const reason = deal.reasons[0]
+    ? homeDealReasonCopy(deal.reasons[0], deal.offer.currency)
+    : "Current offer";
 
   return (
     <li data-slot="home-deals-item" {...props(styles.item)}>
-      <Link data-slot="home-deals-link" to={deal.href} {...props(styles.link)}>
-        {deal.name}
+      <Link
+        data-slot="home-deals-link"
+        to={homeProductDetailPath(deal.node.slug, selectedSlugs)}
+        {...props(styles.link)}
+      >
+        {deal.node.name}
         <span aria-hidden {...props(styles.linkArrow)}>
           →
         </span>
       </Link>
       <p data-slot="home-deals-offer" {...props(styles.offer)}>
-        {deal.offer}
+        {formatOffer(deal.offer)}
       </p>
       <StatusBadge data-slot="home-deals-reason" style={styles.reason} tone={tone}>
-        {deal.reason}
+        {reason}
       </StatusBadge>
     </li>
   );
+}
+
+function homeDealReasonCopy(
+  reason: { code: string; watchTarget: string | null },
+  currency: string,
+) {
+  switch (reason.code) {
+    case "NEW_OFFER":
+      return "New offer";
+    case "TRENDING_BELOW_MEDIAN":
+      return "Below the 30-day price";
+    case "WATCH_TARGET":
+      return reason.watchTarget?.trim()
+        ? `Matches your ${formatCurrency(reason.watchTarget, currency)} price watch`
+        : "Matches your price watch";
+    case "SAVED_COMPARISON":
+      return "In your saved comparison";
+    case "CURRENT_COMPARISON":
+      return "In your current comparison";
+    default:
+      return "Current offer";
+  }
+}
+
+function formatOffer(offer: { currency: string; landedPrice: string; merchantName: string }) {
+  return `${formatCurrency(offer.landedPrice, offer.currency)} at ${offer.merchantName}`;
+}
+
+function formatCurrency(value: string, currency: string) {
+  const match = /^([+-]?)(\d+)(?:\.(\d+))?$/.exec(value.trim());
+
+  if (!match) return value;
+
+  try {
+    const [, sign, whole = "0", rawFraction = ""] = match;
+    const fraction = rawFraction.padEnd(3, "0");
+    let minorUnits = BigInt(whole) * 100n + BigInt(fraction.slice(0, 2));
+
+    if (fraction[2] >= "5") minorUnits += 1n;
+
+    const formatted = new Intl.NumberFormat("en-US", {
+      currency,
+      currencyDisplay: "narrowSymbol",
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+      style: "currency",
+    })
+      .formatToParts(minorUnits / 100n)
+      .map((part) =>
+        part.type === "fraction" ? (minorUnits % 100n).toString().padStart(2, "0") : part.value,
+      )
+      .join("");
+
+    return sign === "-" && minorUnits !== 0n ? `-${formatted}` : formatted;
+  } catch {
+    return `${value} ${currency}`;
+  }
 }
 
 function HomeDealsUnavailable({ onRetry }: { onRetry: () => void }) {

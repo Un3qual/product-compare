@@ -11,8 +11,6 @@ import type {
 } from "$generated/BrowseProductList_products.graphql";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { selectBrowseProductSpecificationHighlights } from "./browse-product-list-data";
-
 const browseProductListFragment = graphql`
   fragment BrowseProductList_products on ProductConnection {
     edges {
@@ -191,7 +189,28 @@ function SpecificationHighlights({
 }: {
   attributes: BrowseProductList_item$data["currentAttributes"];
 }) {
-  const highlights = selectBrowseProductSpecificationHighlights(attributes);
+  const highlights = attributes
+    .map((attribute, index) => ({ attribute, index }))
+    .sort((left, right) => {
+      const leftSortOrder = left.attribute.sortOrder;
+      const rightSortOrder = right.attribute.sortOrder;
+
+      if (leftSortOrder === null && rightSortOrder === null) {
+        return left.index - right.index;
+      }
+
+      if (leftSortOrder === null) {
+        return 1;
+      }
+
+      if (rightSortOrder === null) {
+        return -1;
+      }
+
+      return leftSortOrder - rightSortOrder || left.index - right.index;
+    })
+    .slice(0, 3)
+    .map(({ attribute }) => attribute);
 
   if (highlights.length === 0) {
     return null;
