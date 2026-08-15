@@ -37,14 +37,16 @@ residual audit:
 - `docs/superpowers/plans/2026-08-14-scalable-realistic-development-data-implementation-plan.md`
 - `docs/superpowers/plans/2026-08-12-type-validation-and-slop-remediation-implementation-plan.md`
 
-The first five outcomes are complete. Task 1 refreshed the type/validation/slop
-inventory on 2026-08-15, discarded already-removed stale targets, and promoted
-its one exact cross-stack residual outcome in `docs/work/index.md`; the checked
-provenance and owned paths are in `docs/work/type-validation-slop-remediation.md`.
-The Ready Floor Exception remains because splitting frontend route/type and
-backend trusted-ID work would manufacture two milestones for one reviewer
-decision. The previous four production-UI rows remain below as
-completion/supersession history rather than live dispatch sources.
+All six outcomes are complete. The final type/validation/slop closeout on
+2026-08-15 retained the required Babel declaration and independent input,
+authorization, database, and concurrency owners; removed four one-use route
+helpers; and replaced recreated Relay shapes with generated ownership. Its
+checked provenance, production-file delta, and full-gate evidence are in
+`docs/work/type-validation-slop-remediation.md`. Fresh curation found no
+source-backed successor, so the live queue retains a complete Ready Floor
+Exception rather than manufacturing cleanup rows. The previous four
+production-UI rows remain below as completion/supersession history rather than
+live dispatch sources.
 
 The approved homepage query-scaling outcome is complete through:
 

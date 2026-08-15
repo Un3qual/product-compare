@@ -49,123 +49,20 @@ No work is currently claimed.
 
 ## Ready Work
 
-### 1. Consolidated Type, Validation, And Route Simplification
-
-Status: ready
-Lane: Type validation and slop remediation
-Plan: `docs/superpowers/plans/2026-08-12-type-validation-and-slop-remediation-implementation-plan.md`
-Batch outcome: Generated Relay types own GraphQL APIs; the required local
-Babel-plugin declaration, one-use route projections, and duplicate trusted-ID
-guards preserve their actual boundaries without weakening untrusted-input,
-authorization, database, or concurrency behavior.
-Next action: Execute the inventory-backed internal slices in
-`docs/work/type-validation-slop-remediation.md`; characterize every public and
-direct context guard before its removal.
-Owned paths:
-
-- `assets/src/routes/catalog/results/browse-product-list-data.ts`
-- `assets/src/routes/catalog/results/BrowseProductList.tsx`
-- `assets/src/routes/categories/category-view-data.ts`
-- `assets/src/routes/commerce/revenue/attribution/attribution-ledger-data.ts`
-- `assets/src/routes/commerce/revenue/attribution/AttributionLedger.tsx`
-- `assets/src/routes/commerce/revenue/attribution/RecentConversion.tsx`
-- `assets/src/routes/compare/recommendation-view-data.ts`
-- `assets/src/routes/compare/route-error-view-data.ts`
-- `assets/src/routes/compare/RouteErrorBoundary.tsx`
-- `assets/src/routes/compare/shared/shared-comparison-view-data.ts`
-- `assets/src/routes/home/home-view-data.ts`
-- `assets/src/routes/home/HomeRoute.tsx`
-- `assets/src/routes/home/HomeDeals.tsx`
-- `assets/src/routes/home/HomeProductLedger.tsx`
-- `assets/src/routes/ingestion/cj-programs/programs/program-dashboard-data.ts`
-- `assets/src/routes/merchants/detail/merchant-detail-view-data.ts`
-- `assets/src/routes/merchants/merchant-directory-view-data.ts`
-- `lib/product_compare/catalog.ex`
-- `lib/product_compare/catalog/products.ex`
-- `lib/product_compare/pricing.ex`
-- `lib/product_compare/pricing/current_offers.ex`
-- `lib/product_compare/pricing/merchants.ex`
-- `lib/product_compare/pricing/offers.ex`
-- `lib/product_compare/pricing/price_history.ex`
-- `lib/product_compare/alerts.ex`
-- `lib/product_compare/alerts/evaluation.ex`
-- `lib/product_compare/alerts/inbox.ex`
-- `lib/product_compare/alerts/watch_rules.ex`
-- `lib/product_compare/specs.ex`
-- `lib/product_compare/specs/definitions.ex`
-- `lib/product_compare/specs/reads/artifacts.ex`
-- `lib/product_compare/specs/reads/current_attributes.ex`
-- `lib/product_compare/specs/reads/reference_data.ex`
-- `assets/test/routes/catalog/results/browse-product-list-data.test.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `assets/test/routes/categories/category-view-data.test.ts`
-- `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`
-- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
-- `assets/test/routes/compare/recommendation-view-data.test.ts`
-- `assets/test/routes/compare/route-error-view-data.test.ts`
-- `assets/test/routes/compare/compare.route.test.tsx`
-- `assets/test/routes/compare/shared-comparison-view-data.test.ts`
-- `assets/test/routes/home/home-view-data.test.ts`
-- `assets/test/routes/home/home.route.test.tsx`
-- `assets/test/routes/ingestion/cj-programs/cj-program-data.test.ts`
-- `assets/test/routes/merchants/merchant-detail-view-data.test.ts`
-- `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
-- `test/product_compare/alerts/alerts_test.exs`
-- `test/product_compare/alerts/concurrency_test.exs`
-- `test/product_compare/catalog/product_lookup_test.exs`
-- `test/product_compare/pricing/merchant_detail_test.exs`
-- `test/product_compare/pricing/pricing_test.exs`
-- `test/product_compare/specs/read_helpers_test.exs`
-- `test/product_compare_web/graphql/catalog_queries_test.exs`
-- `test/product_compare_web/graphql/node_query_test.exs`
-- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
-- `test/product_compare_web/graphql/pricing_queries_test.exs`
-- `docs/work/type-validation-slop-remediation.md`
-
-Internal slices:
-
-- Generated Relay ownership while retaining the required Babel-plugin declaration.
-- Exactly four frontend merge rows, their direct consumers, helper-test
-  migration into owning route suites, and only HomeProductLedger
-  ordinary-recency consolidation.
-- Trusted-ID duplicate-guard retirement with focused contracts.
-- Full anti-slop verification and closeout.
-
-Prerequisites:
-
-- Task 1's 2026-08-15 inventory remains current; no active row overlaps its
-  exact owned paths.
-- Docker-backed backend database is available for required database tests; no
-  fallback database is permitted.
-
-Verification:
-
-- Focused frontend route/data tests plus Relay, typecheck, lint, unit, and
-  build gates.
-- Focused backend global-ID/connection/pricing/alert/catalog/spec tests plus
-  `mix format --check-formatted`, `mix typecheck`, `mix quality`, and Docker-
-  backed `mix test`.
-- Re-run the inventory searches, `mix work_queue.validate`, and `git diff --check`.
-
-Exit condition: One reviewer can verify fewer production files and no recreated
-generated API or duplicate trusted-ID bound, while all retained boundaries
-and repository gates remain intact.
-
 ## Ready Floor Exception
 
-Reason: The five product cohorts are complete, and the refreshed inventory
-validates exactly one remaining independently reviewable outcome: consolidated
-type, route-projection, and trusted-ID simplification. No second coherent
-outcome survives the stale-target and real-boundary review.
-Rejected split: A frontend generated-type/route milestone and a backend bigint-
-validation milestone would both change the same cross-stack ownership rule and
-require the same reviewer decision; path and command separation alone do not
-justify two rows. The inventory itself and Tasks 2 through 4 are internal
-slices, not queue rows.
-Replenishment action: On completion, return the queue to coordinator curation.
-Re-check current product behavior, tests, architecture gaps, and lane evidence
-for every useful non-overlapping successor; retain this exception unless that
-fresh evidence validates at least three coherent ready outcomes.
+Reason: The 2026-08-15 closeout curation found the Product Experience And Code
+Simplification program complete. Current product behavior, full repository
+gates, active lane evidence, and the catalog expose no source-backed,
+independently reviewable successor; historical and superseded entries are not
+live candidates.
+Rejected split: Reopening completed generated-type, route-projection,
+trusted-ID, or formatter work as file- or test-sized rows would manufacture
+cleanup milestones with no new product invariant or reviewer decision.
+Replenishment action: At the next coordinator dispatch, re-check current
+product behavior, failing or coverage gaps, architecture, and lane evidence;
+write and validate every coherent successor found, then remove this exception
+only when at least three complete ready outcomes exist.
 
 ## Superseded Work
 

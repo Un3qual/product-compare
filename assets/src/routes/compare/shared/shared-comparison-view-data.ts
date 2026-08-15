@@ -37,7 +37,9 @@ export function buildSharedComparisonViewData(
 }
 
 function projectProduct(
-  product: NonNullable<SharedComparisonRouteQuery["response"]["comparisonSnapshot"]>["products"][number],
+  product: NonNullable<
+    SharedComparisonRouteQuery["response"]["comparisonSnapshot"]
+  >["products"][number],
 ) {
   const brandName = nonBlankText(product.brandName) ?? "Unknown brand";
   const modelNumber = nonBlankText(product.modelNumber);

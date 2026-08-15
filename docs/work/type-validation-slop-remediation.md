@@ -2,13 +2,13 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P1
 - Plan: `docs/superpowers/plans/2026-08-12-type-validation-and-slop-remediation-implementation-plan.md`
 - Inventory refreshed: 2026-08-15 from the checked worktree after the five
   completed product cohorts.
 
-## Target Outcome
+## Batch Outcome
 
 One reviewable cross-stack simplification keeps generated Relay types at their
 real boundaries, retains the required local declaration for the untyped Babel
@@ -16,6 +16,12 @@ plugin, folds one-use route projections into their owning routes, and removes
 only bigint checks that repeat a preceding trusted-ID boundary. It preserves
 URL, storage, SSR bootstrap, transport, cached-record, global-ID, cursor,
 authorization, changeset, constraint, and transaction owners.
+
+The completed batch removed the six recreated Relay shapes in favor of their
+generated operation/fragment types, folded four one-use route helpers into
+their direct consumers, and removed only downstream repeated bigint bounds
+after their named trusted boundary. The retained Babel declaration and all
+independent input, authorization, database, and concurrency owners remain.
 
 ## Inventory Method
 
@@ -194,3 +200,43 @@ Stop rather than widen this row if a proposed guard is reached by untrusted
 input without `GlobalId`, cursor, URL/FormData, transport, or equivalent named
 normalization; if a same-row constraint lacks its changeset/database contract;
 or if a change requires a migration, public API decision, or concurrency design.
+
+## Completion Evidence
+
+- Closed: 2026-08-15 at `6fc520ea` plus the closeout commit.
+- Deleted source helpers: `browse-product-list-data.ts`,
+  `attribution-ledger-data.ts`, `route-error-view-data.ts`, and
+  `home-view-data.ts`. The five earlier stale targets remain absent.
+- Production-file baseline: `3ca7113e` is the reviewed post-inventory,
+  pre-production-change commit. `assets/src` plus `lib` contains 685 files at
+  that commit and 681 at closeout: **-4**, exactly the four merged helpers.
+- Provenance rerun: the original frontend search returned 54 deliberately
+  boundary-owned matches across 22 files; the route/declaration inventory has
+  32 files; and the backend search returned 290 broad validation matches.
+  The six formerly recreated Relay projections have zero remaining manual
+  `Record<string, unknown>`, `Input`, or `Enum` declarations.
+- Retained frontend matches are owned by Relay SSR/transport/response parsing,
+  root cached-record narrowing, pending-intent storage and safe return URLs,
+  route FormData and metadata normalization, generated-query descriptors,
+  and component/library props. They are reachable untyped-input or
+  responsibility-bearing presentation boundaries, not recreated GraphQL APIs.
+- Every exact bigint maximum owner was re-read: public `GlobalId` and node ID
+  decoders; cursor overflow arithmetic; `ProductCompare.Input`; Catalog,
+  Pricing, Alerts, and Specs direct context contracts; current/home-offer and
+  specs-read APIs with direct invalid-input behavior; and revenue filter
+  normalization. No removed internal Catalog/Pricing/Alerts/Specs guard was
+  reintroduced. Changeset validation and `check_constraint/3`, authorization,
+  `Repo.exists?/1` availability/cycle/dedupe facts, locks, and transactions
+  remain separate fail-closed owners.
+- Replacement-slop review: the production diff adds no source files, generic
+  adapter, fallback layer, status union, barrel, or validation layer. External
+  URL handling, pending-intent validation, database constraints, and
+  concurrency ownership are unchanged and fail closed.
+- Docker evidence: `product_compare_db` reported `running healthy` before the
+  full test gate. No native, temporary, or fallback database was used.
+- Gates: pinned `mise exec -- pnpm run check`; `mix format --check-formatted`;
+  `mix typecheck`; `mix quality` (Credo: 538 source files / 4,953 mods-funs / no
+  issues; ExDNA clone budget 3/3); full `mix test`; `mix work_queue.validate`;
+  and `git diff --check` completed at closeout. The sandboxed frontend gate
+  could not access Watchman's state directory and sandboxed `mix quality`
+  could not open Mix PubSub; their permitted retries completed successfully.
