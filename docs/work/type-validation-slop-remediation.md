@@ -10,10 +10,11 @@
 
 ## Target Outcome
 
-One reviewable cross-stack simplification keeps generated Relay and installed
-library types at their real boundaries, folds one-use route projections into
-their owning routes, and removes only bigint checks that repeat a preceding
-trusted-ID boundary. It preserves URL, storage, transport, global-ID, cursor,
+One reviewable cross-stack simplification keeps generated Relay types at their
+real boundaries, retains the required local declaration for the untyped Babel
+plugin, folds one-use route projections into their owning routes, and removes
+only bigint checks that repeat a preceding trusted-ID boundary. It preserves
+URL, storage, SSR bootstrap, transport, cached-record, global-ID, cursor,
 authorization, changeset, constraint, and transaction owners.
 
 ## Inventory Method
@@ -44,8 +45,13 @@ records a stale, already-absent target.
 
 | symbol/file | current owner | real boundary | consumers | action |
 | --- | --- | --- | --- | --- |
-| `assets/src/babel-plugin-relay.d.ts` (6 lines) | local declaration shim | installed `babel-plugin-relay` package | Babel/TypeScript resolution | library |
+| `assets/src/babel-plugin-relay.d.ts` (6 lines) | local declaration shim | untyped `babel-plugin-relay` import | `assets/stylex-plugin.ts`; frontend typecheck/build | retain |
 | `assets/src/vite-env.d.ts` (1 line) | Vite client reference | compiler-provided Vite globals | frontend compilation | retain |
+| `assets/src/routes/auth/continuity/pending-intent.ts` (238 lines) | authentication-continuity owner | session-storage JSON, expiry, exact-key narrowing, and safe relative return URL | login/register routes, auth dialog/hook, compare route, price-watch control; `pending-intent.test.ts`, compare save feedback | retain |
+| `assets/src/relay/ssr.ts` (59 lines) | Relay SSR bootstrap owner | escaped server record serialization and untrusted DOM JSON record-map narrowing | client/server entry points; route-preload and server error-handling tests | retain |
+| `assets/src/relay/fetch-graphql.ts` (209 lines) | Relay transport owner | endpoint/origin selection, request serialization, and untrusted response-envelope validation | Relay environment and route loaders; `fetch-graphql.test.ts`, `environment.test.ts` | retain |
+| `assets/src/routes/root/viewer.ts` (17 lines) | root-route cache projection | untrusted cached Relay record narrowing to the generated root viewer shape | `RootRoute`; `root-viewer-data.test.ts` | retain |
+| `assets/src/routes/compare/saved/saved-view-state.ts` (152 lines) | saved-comparison list presentation owner | post-fragment summarized data, local deletion/filter/sort state, and visible status copy | `SavedComparisonSetList`; `saved-comparisons-view-state.test.ts` | retain |
 | `category-view-data.ts` (44 lines) | category route projection | `CategoryRouteQuery` generated response and category loader | `CategoryRoute`, focused data test | generated |
 | `recommendation-view-data.ts` (92 lines) | comparison recommendation presentation | generated comparison/recommendation data; copy is route presentation | `RecommendationPanel`, shared snapshot projection, focused test | generated |
 | `shared-comparison-view-data.ts` (122 lines) | immutable shared-comparison projection | `SharedComparisonRouteQuery` generated response | `SharedComparisonRoute`, focused test | generated |
@@ -96,17 +102,19 @@ owners and are explicitly retained.
 ## Classification Summary
 
 - 5 stale paths: `delete` (already absent; excluded from owned paths).
-- 1 installed declaration: `library`.
+- 0 installed declaration deletions: `babel-plugin-relay` 21.0.1 ships no
+  declarations, so the local six-line declaration is retained for
+  `assets/stylex-plugin.ts`.
 - 6 frontend generated-type projections: `generated`.
 - 4 frontend one-use/date projections: `merge`.
 - 4 backend facade/read clusters comprising 16 exact source files: `merge`.
-- 1 Vite declaration, 10 substantial domain data files, all real input/global-ID/
-  cursor/authorization/changeset/concurrency owners, and 5 `Repo.exists?/1`
-  query owners: `retain`.
+- The two required declaration files, 10 substantial domain data files,
+  `saved-view-state.ts`, all real storage/return-URL/SSR-bootstrap/transport/
+  cached-record/global-ID/cursor/authorization/changeset/concurrency owners,
+  and 5 `Repo.exists?/1` query owners: `retain`.
 
 ## Owned Paths For The Promoted Batch
 
-- `assets/src/babel-plugin-relay.d.ts`
 - `assets/src/routes/catalog/results/browse-product-list-data.ts`
 - `assets/src/routes/categories/category-view-data.ts`
 - `assets/src/routes/commerce/revenue/attribution/attribution-ledger-data.ts`
@@ -157,8 +165,8 @@ owners and are explicitly retained.
 
 ## Internal Slices
 
-1. Remove the installed declaration shim and replace only the listed recreated
-   Relay projections with generated ownership.
+1. Retain the required untyped-Babel-plugin declaration and replace only the
+   listed recreated Relay projections with generated ownership.
 2. Fold listed one-use route projections into their owners and move home
    observation recency to the shared leaf while preserving exact-primary dates.
 3. Characterize public and direct context calls, then retire only duplicate

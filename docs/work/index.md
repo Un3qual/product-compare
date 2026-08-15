@@ -54,15 +54,15 @@ No work is currently claimed.
 Status: ready
 Lane: Type validation and slop remediation
 Plan: `docs/superpowers/plans/2026-08-12-type-validation-and-slop-remediation-implementation-plan.md`
-Batch outcome: Generated Relay and installed-library types own their APIs; one-use
-route projections and duplicate trusted-ID guards are removed without weakening
-untrusted-input, authorization, database, or concurrency boundaries.
+Batch outcome: Generated Relay types own GraphQL APIs; the required local
+Babel-plugin declaration, one-use route projections, and duplicate trusted-ID
+guards preserve their actual boundaries without weakening untrusted-input,
+authorization, database, or concurrency behavior.
 Next action: Execute the inventory-backed internal slices in
 `docs/work/type-validation-slop-remediation.md`; characterize every public and
 direct context guard before its removal.
 Owned paths:
 
-- `assets/src/babel-plugin-relay.d.ts`
 - `assets/src/routes/catalog/results/browse-product-list-data.ts`
 - `assets/src/routes/categories/category-view-data.ts`
 - `assets/src/routes/commerce/revenue/attribution/attribution-ledger-data.ts`
@@ -113,7 +113,7 @@ Owned paths:
 
 Internal slices:
 
-- Generated/library declaration ownership.
+- Generated Relay ownership while retaining the required Babel-plugin declaration.
 - One-use route projection and ordinary-recency consolidation.
 - Trusted-ID duplicate-guard retirement with focused contracts.
 - Full anti-slop verification and closeout.
@@ -135,7 +135,7 @@ Verification:
 - Re-run the inventory searches, `mix work_queue.validate`, and `git diff --check`.
 
 Exit condition: One reviewer can verify fewer production files and no recreated
-Relay/library API or duplicate trusted-ID bound, while all retained boundaries
+generated API or duplicate trusted-ID bound, while all retained boundaries
 and repository gates remain intact.
 
 ## Ready Floor Exception
