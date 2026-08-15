@@ -127,13 +127,15 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
           |> reserve_generated_program!(index, existing_program)
 
         stage = Enum.at(CJProgram.stages(), rem(index - 1, length(CJProgram.stages())))
+        note = "Generated development lifecycle #{stage}"
 
-        if program.entropy_id != program_entropy_id(index) or program.stage == stage do
+        if program.entropy_id != program_entropy_id(index) or
+             (program.stage == stage and program.note == note) do
           program
         else
           Ingestion.update_cj_program_lifecycle(
             program.entropy_id,
-            %{stage: stage, note: "Generated development lifecycle #{stage}"},
+            %{stage: stage, note: note},
             DateTime.add(anchor, -index * 1_800, :second)
           )
           |> Support.expect!("generated CJ program #{index}")

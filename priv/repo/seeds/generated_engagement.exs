@@ -453,6 +453,8 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
         CommunityWrites.submit_review(owner.id, product.id, attrs, key)
         |> Support.expect!("generated review #{index}")
 
+      reset_moderation? = status == :pending or review.moderation_status == :removed
+
       review =
         review
         |> ProductReview.changeset(%{
@@ -461,10 +463,10 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
           body_md: attrs.body
         })
         |> Ecto.Changeset.change(
-          moderation_status: if(status == :pending, do: :pending, else: review.moderation_status),
-          moderation_note: if(status == :pending, do: nil, else: review.moderation_note),
-          moderated_by: if(status == :pending, do: nil, else: review.moderated_by),
-          moderated_at: if(status == :pending, do: nil, else: review.moderated_at)
+          moderation_status: if(reset_moderation?, do: :pending, else: review.moderation_status),
+          moderation_note: if(reset_moderation?, do: nil, else: review.moderation_note),
+          moderated_by: if(reset_moderation?, do: nil, else: review.moderated_by),
+          moderated_at: if(reset_moderation?, do: nil, else: review.moderated_at)
         )
         |> Repo.update!()
 
@@ -484,8 +486,26 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
     if selected_count < full_count do
       Enum.each((selected_count + 1)..full_count, fn index ->
         fixture = review_fixture(accounts, products, index)
+        ensure_review_reconciliation_safe!(fixture)
         delete_receipt_content!(:review, fixture.owner, fixture.product, fixture.key)
       end)
+    end
+  end
+
+  defp ensure_review_reconciliation_safe!(fixture) do
+    with %CommunityWriteReceipt{} = receipt <-
+           Repo.get_by(CommunityWriteReceipt,
+             user_id: fixture.owner.id,
+             content_type: :review,
+             idempotency_key: fixture.key
+           ),
+         %ProductReview{} = review <-
+           Repo.get_by(ProductReview, entropy_id: receipt.content_entropy_id),
+         true <-
+           Repo.exists?(from report in CommunityReport, where: report.review_id == ^review.id) do
+      raise "Refusing to delete full-only review #{review.entropy_id} with reports"
+    else
+      _ -> :ok
     end
   end
 
@@ -511,15 +531,17 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
         )
         |> Support.expect!("generated question #{index}")
 
+      reset_moderation? = status == :pending or question.moderation_status == :removed
+
       question =
         question
         |> ProductThread.changeset(%{title: attrs.title, body_md: attrs.body})
         |> Ecto.Changeset.change(
           moderation_status:
-            if(status == :pending, do: :pending, else: question.moderation_status),
-          moderation_note: if(status == :pending, do: nil, else: question.moderation_note),
-          moderated_by: if(status == :pending, do: nil, else: question.moderated_by),
-          moderated_at: if(status == :pending, do: nil, else: question.moderated_at)
+            if(reset_moderation?, do: :pending, else: question.moderation_status),
+          moderation_note: if(reset_moderation?, do: nil, else: question.moderation_note),
+          moderated_by: if(reset_moderation?, do: nil, else: question.moderated_by),
+          moderated_at: if(reset_moderation?, do: nil, else: question.moderated_at)
         )
         |> Repo.update!()
 
@@ -561,10 +583,17 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
       |> Support.expect!("generated answer #{index}")
 
     status = if(rem(index, 4) == 0, do: :hidden, else: :published)
+    reset_moderation? = answer.moderation_status == :removed
 
     answer =
       answer
       |> ThreadPost.changeset(%{body_md: body})
+      |> Ecto.Changeset.change(
+        moderation_status: if(reset_moderation?, do: :pending, else: answer.moderation_status),
+        moderation_note: if(reset_moderation?, do: nil, else: answer.moderation_note),
+        moderated_by: if(reset_moderation?, do: nil, else: answer.moderated_by),
+        moderated_at: if(reset_moderation?, do: nil, else: answer.moderated_at)
+      )
       |> Repo.update!()
 
     moderate_content!(:answer, answer, status, accounts.moderator, anchor)

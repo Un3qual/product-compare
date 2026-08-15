@@ -543,6 +543,7 @@ defmodule ProductCompare.Repo.SeedsTest do
           not MapSet.member?(bounded_question_ids, question.entropy_id)
       end)
 
+    assert %ProductThread{} = question
     moderator = Repo.get_by!(User, email: "moderator@example.com")
     answer_key = "developer-full-only-answer-v1"
 
@@ -581,6 +582,7 @@ defmodule ProductCompare.Repo.SeedsTest do
           not MapSet.member?(bounded_question_ids, question.entropy_id)
       end)
 
+    assert %ProductThread{} = question
     moderator = Repo.get_by!(User, email: "moderator@example.com")
 
     assert {:ok, report} =
@@ -599,6 +601,150 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get!(CommunityReport, report.id).thread_id == question.id
   end
 
+  test "full to bounded fails closed before deleting a report on a full-only review" do
+    bounded = run_seed(["--density", "bounded"])
+    bounded_review_ids = MapSet.new(bounded.engagement.all_reviews, & &1.entropy_id)
+    full = run_seed(["--density", "full"])
+
+    review =
+      Enum.find(full.engagement.all_reviews, fn review ->
+        review.moderation_status == :published and
+          not MapSet.member?(bounded_review_ids, review.entropy_id)
+      end)
+
+    assert %ProductReview{} = review
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+
+    assert {:ok, report} =
+             DevSeedCommunityWrites.report(
+               moderator.id,
+               :review,
+               review.entropy_id,
+               "Keep this developer report attached to its review"
+             )
+
+    assert_raise RuntimeError,
+                 ~r/Refusing to delete full-only review .* reports/,
+                 fn -> run_seed(["--density", "bounded"]) end
+
+    assert Repo.get!(ProductReview, review.id).entropy_id == review.entropy_id
+    assert Repo.get!(CommunityReport, report.id).review_id == review.id
+  end
+
+  test "full to bounded fails closed before unlinking a local purchase fact" do
+    bounded = run_seed(["--density", "bounded"])
+    bounded_offer_ids = MapSet.new(bounded.marketplace.all_offers, & &1.id)
+    bounded_price_ids = MapSet.new(bounded.marketplace.all_price_points, & &1.entropy_id)
+    full = run_seed(["--density", "full"])
+
+    observation =
+      Enum.find(full.marketplace.all_price_points, fn point ->
+        MapSet.member?(bounded_offer_ids, point.merchant_product_id) and
+          not MapSet.member?(bounded_price_ids, point.entropy_id)
+      end)
+
+    assert %PricePoint{} = observation
+    offer = Repo.get!(MerchantProduct, observation.merchant_product_id)
+
+    assert {:ok, conversion} =
+             CommerceAttribution.ingest_conversion(%{
+               source_network: "development_affiliate",
+               network_conversion_ref: "LOCAL-FULL-ONLY-OBSERVATION",
+               status: :approved,
+               currency: offer.currency,
+               reported_at: observation.observed_at
+             })
+
+    assert {:ok, fact} =
+             CommerceAttribution.create_purchase_price_fact(%{
+               conversion_id: conversion.id,
+               reported_paid_price: observation.price,
+               currency: offer.currency,
+               price_observation_id: observation.id,
+               observed_at: observation.observed_at,
+               observed_price: observation.price
+             })
+
+    assert_raise RuntimeError,
+                 ~r/Refusing to delete full-only price observations referenced by purchase facts/,
+                 fn -> run_seed(["--density", "bounded"]) end
+
+    assert Repo.get!(PricePoint, observation.id).entropy_id == observation.entropy_id
+    assert Repo.get!(PurchasePriceFact, fact.id).price_observation_id == observation.id
+  end
+
+  test "reruns restore removed generated community content before moderation" do
+    seed = run_seed(["--density", "bounded"])
+
+    review =
+      Enum.find(seed.engagement.all_reviews, fn review ->
+        String.starts_with?(review.title || "", "Development review ")
+      end)
+
+    question =
+      Enum.find(seed.engagement.all_questions, fn question ->
+        question.moderation_status == :published and
+          String.starts_with?(question.title, "Development question ")
+      end)
+
+    assert %ProductReview{} = review
+    assert %ProductThread{} = question
+
+    answer =
+      ThreadPost
+      |> where([post], post.thread_id == ^question.id)
+      |> Repo.one!()
+
+    review_status = review.moderation_status
+    question_status = question.moderation_status
+    answer_status = answer.moderation_status
+
+    assert {:ok, %ProductReview{moderation_status: :removed}} =
+             Discussions.remove_owned(review.user_id, :review, review.entropy_id)
+
+    run_seed(["--density", "bounded"])
+    assert Repo.get!(ProductReview, review.id).moderation_status == review_status
+
+    assert {:ok, %ProductThread{moderation_status: :removed}} =
+             Discussions.remove_owned(question.created_by, :question, question.entropy_id)
+
+    run_seed(["--density", "bounded"])
+    assert Repo.get!(ProductThread, question.id).moderation_status == question_status
+
+    assert {:ok, %ThreadPost{moderation_status: :removed}} =
+             Discussions.remove_owned(answer.user_id, :answer, answer.entropy_id)
+
+    run_seed(["--density", "bounded"])
+    assert Repo.get!(ThreadPost, answer.id).moderation_status == answer_status
+  end
+
+  test "reruns restore generated CJ program lifecycle notes" do
+    seed = run_seed(["--density", "bounded"])
+
+    feed =
+      Enum.find(seed.operations.all_cj_feeds, fn feed ->
+        feed.provider_feed_id == "DEV-CJ-GEN-FEED-001"
+      end)
+
+    assert %MerchantFeedCandidate{} = feed
+    expected_note = "Generated development lifecycle new"
+
+    assert %CJProgram{stage: :new, note: ^expected_note} =
+             program = Repo.get!(CJProgram, feed.cj_program_id)
+
+    assert {:ok, %CJProgram{stage: :new, note: "Developer lifecycle note"}} =
+             Ingestion.update_cj_program_lifecycle(
+               program.entropy_id,
+               %{stage: :new, note: "Developer lifecycle note"},
+               DateTime.add(seed.anchor, 60, :second)
+             )
+
+    run_seed(["--density", "bounded"])
+
+    assert %CJProgram{stage: :new, note: ^expected_note} =
+             Repo.get!(CJProgram, program.id)
+  end
+
   test "full to bounded retains a generated CJ program shared by a local feed" do
     bounded = run_seed(["--density", "bounded"])
     bounded_feed_ids = MapSet.new(bounded.operations.all_cj_feeds, & &1.entropy_id)
@@ -610,6 +756,7 @@ defmodule ProductCompare.Repo.SeedsTest do
           not MapSet.member?(bounded_feed_ids, feed.entropy_id)
       end)
 
+    assert %MerchantFeedCandidate{} = generated_feed
     source = Repo.get!(Source, generated_feed.source_id)
 
     assert {:ok, local_feed} =
@@ -695,6 +842,7 @@ defmodule ProductCompare.Repo.SeedsTest do
           not MapSet.member?(bounded_correction_ids, correction.entropy_id)
       end)
 
+    assert %SpecificationCorrection{} = correction
     generated_claim = Repo.get!(ProductAttributeClaim, correction.claim_id)
     moderator = Repo.get_by!(User, email: "moderator@example.com")
 
@@ -739,6 +887,8 @@ defmodule ProductCompare.Repo.SeedsTest do
           is_nil(conversion.click_session_id)
       end)
 
+    assert %CommerceConversion{} = generated
+    assert %CommerceConversion{} = unmatched_generated
     network = Repo.get!(AffiliateNetwork, generated.affiliate_network_id)
 
     other_click =
@@ -747,6 +897,7 @@ defmodule ProductCompare.Repo.SeedsTest do
           click.merchant_product_id != generated.merchant_product_id
       end)
 
+    assert %CommerceClickSession{} = other_click
     later_reported_at = DateTime.add(generated.reported_at, 7, :day)
 
     assert {:ok, exercised} =

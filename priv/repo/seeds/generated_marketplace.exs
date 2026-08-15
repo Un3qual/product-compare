@@ -12,6 +12,7 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
   alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
+  alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Ingestion.ImportObservation
   alias ProductCompareSchemas.Pricing.Merchant
@@ -422,6 +423,8 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
            else: []
       end)
 
+    ensure_no_purchase_fact_references!(obsolete_ids)
+
     obsolete_ids
     |> Enum.chunk_every(5_000)
     |> Enum.each(fn ids ->
@@ -442,6 +445,17 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
            from point in PricePoint, where: point.artifact_id == ^artifacts.monthly.id
          ) do
       Repo.delete!(artifacts.monthly)
+    end
+  end
+
+  defp ensure_no_purchase_fact_references!([]), do: :ok
+
+  defp ensure_no_purchase_fact_references!(price_point_ids) do
+    if Repo.exists?(
+         from fact in PurchasePriceFact,
+           where: fact.price_observation_id in ^price_point_ids
+       ) do
+      raise "Refusing to delete full-only price observations referenced by purchase facts"
     end
   end
 
