@@ -86,26 +86,37 @@
 
 ---
 
-### Task 2: Remove declaration shims and remaining recreated Relay types
+### Task 2: Replace remaining recreated Relay types
 
 **Files:**
-- Delete if official package passes: `assets/src/babel-plugin-relay.d.ts`
-- Keep only if required: `assets/src/vite-env.d.ts`
-- Modify only inventory rows classified `action: generated | library`
-- Modify focused compile-time/runtime tests tied to deleted helpers
+- Retain without editing: `assets/src/babel-plugin-relay.d.ts` and
+  `assets/src/vite-env.d.ts`
+- Modify only these six Task 1 `action: generated` rows:
+  `assets/src/routes/categories/category-view-data.ts`,
+  `assets/src/routes/compare/recommendation-view-data.ts`,
+  `assets/src/routes/compare/shared/shared-comparison-view-data.ts`,
+  `assets/src/routes/ingestion/cj-programs/programs/program-dashboard-data.ts`,
+  `assets/src/routes/merchants/detail/merchant-detail-view-data.ts`, and
+  `assets/src/routes/merchants/merchant-directory-view-data.ts`
+- Modify only their direct consumers when necessary and their focused tests:
+  `CategoryRoute.tsx`, `RecommendationPanel.tsx`, `SharedComparisonRoute.tsx`,
+  `ProgramLifecycleTable.tsx`, `MerchantDetailRoute.tsx`,
+  `MerchantDirectoryView.tsx`, and the matching six focused data tests
 
 **Interfaces:**
-- Consumes: Task 1 inventory rows classified `action: generated | library`, each with an exact source path, current owner, real boundary, and consumers.
-- Uses official `react-relay`, `relay-runtime`, `babel-plugin-relay`, React, and Vite declarations.
-- A retained upstream gap becomes one narrowly named augmentation under `assets/src/types/<library>-augmentation.d.ts` with an upstream issue/reference and only the missing symbol.
+- Consumes: exactly the six Task 1 inventory rows classified `action: generated`,
+  each with an exact source path, current owner, real boundary, and consumers.
+- Uses the generated operation/fragment exports already emitted by Relay. No
+  `action: library` row, declaration shim, or retained untrusted-data boundary
+  is in this task's edit set.
 
-- [ ] **Step 1: Delete each shim independently and typecheck**
+- [ ] **Step 1: Preserve declaration boundaries and typecheck**
 
   Record the already-absent `react-relay.d.ts` as removed by an earlier cohort.
-  Delete `babel-plugin-relay.d.ts`; run typecheck. Restore only missing
-  declarations proven by compiler output, never the full recreated API. Verify
-  `vite-env.d.ts` independently and keep its Vite client reference only while
-  the installed compiler requires it.
+  Retain `babel-plugin-relay.d.ts`: the installed `babel-plugin-relay` 21.0.1
+  package supplies no declarations, and `assets/stylex-plugin.ts` imports its
+  default plugin. Do not delete, relocate, or replace this narrow shim. Verify
+  that it and `vite-env.d.ts` continue to typecheck without editing either file.
 
 - [ ] **Step 2: Replace remaining manual GraphQL types**
 
@@ -120,7 +131,7 @@
   ```bash
   cd assets && pnpm run relay:check && pnpm run typecheck && pnpm run lint && pnpm run test:unit
   git add assets/src assets/test
-  git commit -m "refactor: use generated and library type ownership"
+  git commit -m "refactor: use generated Relay type ownership"
   ```
 
 ---

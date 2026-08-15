@@ -353,8 +353,11 @@ The audit starts with, but is not limited to, these known clusters:
 - remove the hand-written `react-relay.d.ts` API recreation when the installed
   package and official type package cover the used hooks; keep only a narrowly
   named augmentation for a demonstrated upstream gap;
-- remove or relocate `babel-plugin-relay.d.ts` after verifying upstream plugin
-  types;
+- retain the narrow `babel-plugin-relay.d.ts` shim: verified installed
+  `babel-plugin-relay` 21.0.1 ships no TypeScript declarations, while
+  `assets/stylex-plugin.ts` imports its default plugin; do not remove or
+  relocate this required declaration unless a real upstream declaration source
+  is adopted and verified;
 - replace manual `ProductFiltersInput`, numeric, boolean, enum, and sort types
   with the types generated for the catalog operation;
 - replace the manual price-watch enum and input/payload types with the generated
@@ -441,7 +444,10 @@ do not replace them with preflight queries.
   revalidation in the root router module.
 - Remove `react-relay.d.ts` if official types pass. Preserve only proven gaps as
   narrow declarations under a dedicated type boundary.
-- Remove or relocate `babel-plugin-relay.d.ts` using the same rule.
+- Retain the narrow root `babel-plugin-relay.d.ts` declaration: the verified
+  installed 21.0.1 package has no declaration source and `stylex-plugin.ts`
+  consumes its default import. Do not remove or relocate this shim without a
+  verified replacement declaration source.
 - Keep `vite-env.d.ts` only if Vite/TypeScript still require it.
 
 Moving code out of the root is not success by itself. Every new destination
