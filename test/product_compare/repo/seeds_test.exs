@@ -468,6 +468,54 @@ defmodule ProductCompare.Repo.SeedsTest do
     end
   end
 
+  test "reruns preserve the current claim required by a newer pending correction" do
+    seed = run_seed(["--density", "bounded"])
+    moderator = seed.accounts.moderator
+
+    generated_correction =
+      Repo.get_by!(
+        SpecificationCorrection,
+        entropy_id: DevSeedSupport.stable_uuid("development-generated-correction", "1")
+      )
+
+    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+             Specs.moderate_correction(
+               generated_correction.id,
+               moderator.id,
+               :accepted,
+               %{moderation_note: "Developer accepted the generated fixture"}
+             )
+
+    assert {:ok, follow_up} =
+             Specs.propose_correction(
+               generated_correction.product_id,
+               generated_correction.attribute_id,
+               moderator.id,
+               %{value_text: "Developer follow-up after the generated fixture"},
+               %{
+                 reason: "Preserve the current claim required by this follow-up",
+                 explanation: "The pending correction must remain moderatable after reseeding."
+               }
+             )
+
+    follow_up_claim = Repo.get!(ProductAttributeClaim, follow_up.claim_id)
+    assert follow_up_claim.supersedes_claim_id == generated_correction.claim_id
+
+    run_seed(["--density", "bounded"])
+
+    assert Repo.get!(SpecificationCorrection, generated_correction.id).status == :accepted
+
+    assert Repo.get_by!(ProductAttributeCurrent,
+             product_id: generated_correction.product_id,
+             attribute_id: generated_correction.attribute_id
+           ).claim_id == generated_correction.claim_id
+
+    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+             Specs.moderate_correction(follow_up.id, moderator.id, :accepted, %{
+               moderation_note: "Developer accepted the follow-up"
+             })
+  end
+
   test "operations densities scale ingestion and attribution coverage" do
     bounded = run_seed(["--density", "bounded"])
 
@@ -746,6 +794,76 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get!(PurchasePriceFact, fact.id).price_observation_id == observation.id
   end
 
+  test "full to bounded fails closed before unlinking a product watch from a price point" do
+    bounded = run_seed(["--density", "bounded"])
+    bounded_offer_ids = MapSet.new(bounded.marketplace.all_offers, & &1.entropy_id)
+    full = run_seed(["--density", "full"])
+
+    full_only_offer =
+      Enum.find(full.marketplace.all_offers, fn offer ->
+        not MapSet.member?(bounded_offer_ids, offer.entropy_id) and offer.is_active
+      end)
+
+    observation =
+      Enum.find(full.marketplace.all_price_points, fn point ->
+        point.merchant_product_id == full_only_offer.id
+      end)
+
+    participant = Repo.get_by!(User, email: "participant@example.com")
+
+    assert {:ok, watch} =
+             Alerts.create_watch(participant.id, %{
+               product_id: full_only_offer.product_id,
+               rule_type: :target_price,
+               currency: full_only_offer.currency,
+               target_amount: "100.00",
+               cooldown_seconds: 86_400
+             })
+
+    watch
+    |> PriceWatchRule.evaluation_changeset(%{
+      last_evaluated_price_point_id: observation.id,
+      last_evaluated_at: observation.observed_at
+    })
+    |> Repo.update!()
+
+    assert_raise RuntimeError,
+                 ~r/Refusing to delete full-only price observations referenced by unowned watches/,
+                 fn -> run_seed(["--density", "bounded"]) end
+
+    assert Repo.get!(PricePoint, observation.id).entropy_id == observation.entropy_id
+
+    assert Repo.get!(PriceWatchRule, watch.id).last_evaluated_price_point_id == observation.id
+  end
+
+  test "full to bounded retains a monthly artifact referenced by a local coupon" do
+    full = run_seed(["--density", "full"])
+
+    monthly_artifact =
+      Repo.get_by!(SourceArtifact,
+        content_hash: :crypto.hash(:sha256, "development-marketplace-generated-full-monthly-v1")
+      )
+
+    merchant = hd(full.marketplace.all_merchants)
+    network = Repo.get_by!(AffiliateNetwork, name: "Development Affiliate Network")
+
+    assert {:ok, coupon} =
+             Affiliate.create_coupon(%{
+               merchant_id: merchant.id,
+               affiliate_network_id: network.id,
+               artifact_id: monthly_artifact.id,
+               code: "LOCAL-MONTHLY-ARTIFACT",
+               description: "Developer coupon backed by the monthly seed artifact",
+               discount_type: :percent,
+               discount_value: Decimal.new("15")
+             })
+
+    run_seed(["--density", "bounded"])
+
+    assert Repo.get!(SourceArtifact, monthly_artifact.id).id == monthly_artifact.id
+    assert Repo.get!(Coupon, coupon.id).artifact_id == monthly_artifact.id
+  end
+
   test "reruns restore removed generated community content before moderation" do
     seed = run_seed(["--density", "bounded"])
 
@@ -943,6 +1061,57 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Repo.get!(ProductAttributeClaim, newer_claim.id).supersedes_claim_id ==
              generated_claim.id
+  end
+
+  test "full expansion fails closed before superseding a local current with a generated fixture" do
+    bounded = run_seed(["--density", "bounded"])
+
+    product =
+      bounded.catalog.all_products
+      |> Enum.drop(5)
+      |> Enum.with_index(1)
+      |> Enum.reject(fn {_product, specification_index} ->
+        rem(specification_index, 17) == 0
+      end)
+      |> Enum.at(22)
+      |> elem(0)
+
+    attribute = bounded.catalog.attributes.finish
+    participant = bounded.accounts.participant
+    moderator = bounded.accounts.moderator
+
+    refute Repo.get_by(ProductAttributeCurrent,
+             product_id: product.id,
+             attribute_id: attribute.id
+           )
+
+    assert {:ok, local_correction} =
+             Specs.propose_correction(
+               product.id,
+               attribute.id,
+               participant.id,
+               %{value_text: "Developer-selected full expansion finish"},
+               %{
+                 reason: "Keep this developer current across profile expansion",
+                 explanation: "The full profile must not supersede this local selection."
+               }
+             )
+
+    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+             Specs.moderate_correction(local_correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer selected this finish"
+             })
+
+    assert_raise RuntimeError,
+                 ~r/Refusing to create generated accepted correction 23 over unowned current claim/,
+                 fn -> run_seed(["--density", "full"]) end
+
+    assert Repo.get!(SpecificationCorrection, local_correction.id).status == :accepted
+
+    assert Repo.get_by!(ProductAttributeCurrent,
+             product_id: product.id,
+             attribute_id: attribute.id
+           ).claim_id == local_correction.claim_id
   end
 
   test "reruns restore generated conversions after a newer ingestion update" do
@@ -3535,6 +3704,56 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Decimal.equal?(preserved_fact.reported_paid_price, Decimal.new("1479.99"))
     assert preserved_fact.observed_at == observation.observed_at
     assert Decimal.equal?(preserved_fact.observed_price, observation.price)
+  end
+
+  test "reruns do not rewrite generated observations referenced by purchase facts" do
+    first_anchor = ~U[2026-08-14 20:00:00.000000Z]
+    second_anchor = DateTime.add(first_anchor, 3_600, :second)
+    profile = DevSeedProfile.config!(:full)
+    accounts = DevSeedAccounts.seed!(@seed_password, first_anchor)
+    catalog = DevSeedCatalog.seed!(accounts, first_anchor, profile)
+    marketplace = DevSeedMarketplace.seed!(catalog, first_anchor, profile)
+
+    observation =
+      Enum.find(marketplace.all_price_points, fn point ->
+        not is_nil(point.entropy_id) and point.observed_at == first_anchor
+      end)
+
+    assert %PricePoint{} = observation
+    offer = Repo.get!(MerchantProduct, observation.merchant_product_id)
+
+    assert {:ok, conversion} =
+             CommerceAttribution.ingest_conversion(%{
+               source_network: "development_affiliate",
+               network_conversion_ref: "LOCAL-IMMUTABLE-GENERATED-OBSERVATION",
+               status: :approved,
+               currency: offer.currency,
+               reported_at: observation.observed_at
+             })
+
+    assert {:ok, fact} =
+             CommerceAttribution.create_purchase_price_fact(%{
+               conversion_id: conversion.id,
+               reported_paid_price: observation.price,
+               currency: offer.currency,
+               price_observation_id: observation.id,
+               observed_at: observation.observed_at,
+               observed_price: observation.price
+             })
+
+    rerun = DevSeedMarketplace.seed!(catalog, second_anchor, profile)
+    preserved_observation = Repo.get!(PricePoint, observation.id)
+
+    assert preserved_observation.observed_at == observation.observed_at
+    assert Decimal.equal?(preserved_observation.price, observation.price)
+
+    returned_observation =
+      Enum.find(rerun.all_price_points, &(&1.entropy_id == observation.entropy_id))
+
+    assert returned_observation.observed_at == observation.observed_at
+
+    assert Repo.get!(PurchasePriceFact, fact.id).observed_at == observation.observed_at
+    assert Decimal.equal?(Repo.get!(PurchasePriceFact, fact.id).observed_price, observation.price)
   end
 
   test "reruns preserve price points after their reserved key is changed" do

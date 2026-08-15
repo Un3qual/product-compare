@@ -6,6 +6,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
   alias ProductCompare.Alerts
   alias ProductCompare.Catalog
   alias ProductCompare.DevSeeds.CommunityWrites
+  alias ProductCompare.DevSeeds.CorrectionSafety
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Discussions
   alias ProductCompare.Repo
@@ -1325,6 +1326,8 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
       correction =
         case Repo.get_by(SpecificationCorrection, entropy_id: entropy_id) do
           nil ->
+            ensure_no_current_for_new_accepted_fixture!(fixture)
+
             Specs.propose_correction(
               fixture.product.id,
               fixture.attribute.id,
@@ -1346,8 +1349,19 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
             verify_correction_owner!(correction, fixture)
         end
 
+      preserve_current? =
+        fixture.status == :pending and
+          CorrectionSafety.preserve_current_for_pending?(
+            fixture.product.id,
+            fixture.attribute.id,
+            correction.claim_id
+          )
+
       correction =
         cond do
+          fixture.status == :pending and correction.status != :pending and preserve_current? ->
+            correction
+
           fixture.status == :pending and correction.status != :pending ->
             reset_correction_to_pending!(correction, fixture)
 
@@ -1364,7 +1378,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
             |> Support.expect!("moderate generated correction #{fixture.index}")
         end
 
-      if fixture.status == :pending do
+      if fixture.status == :pending and not preserve_current? do
         ProductAttributeCurrent
         |> where(
           [current],
@@ -1376,6 +1390,23 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
 
       Repo.get!(SpecificationCorrection, correction.id)
     end)
+  end
+
+  defp ensure_no_current_for_new_accepted_fixture!(%{status: status})
+       when status != :accepted,
+       do: :ok
+
+  defp ensure_no_current_for_new_accepted_fixture!(fixture) do
+    case Repo.get_by(ProductAttributeCurrent,
+           product_id: fixture.product.id,
+           attribute_id: fixture.attribute.id
+         ) do
+      nil ->
+        :ok
+
+      %ProductAttributeCurrent{claim_id: claim_id} ->
+        raise "Refusing to create generated accepted correction #{fixture.index} over unowned current claim #{claim_id}"
+    end
   end
 
   defp correction_fixtures(accounts, catalog, count) do

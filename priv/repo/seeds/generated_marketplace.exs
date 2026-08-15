@@ -8,8 +8,11 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateLink
+  alias ProductCompareSchemas.Affiliate.Coupon
   alias ProductCompareSchemas.Alerts.AlertEvent
   alias ProductCompareSchemas.Alerts.PriceWatchRule
+  alias ProductCompareSchemas.Catalog.ProductIdentifier
+  alias ProductCompareSchemas.Catalog.ProductMedia
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
@@ -18,6 +21,7 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Specs.ClaimEvidence
   alias ProductCompareSchemas.Specs.SourceArtifact
 
   @current_hash Support.sha256("development-marketplace-generated-current-v1")
@@ -53,6 +57,10 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
 
     selected_rows = price_rows(selected_entries, artifacts, anchor, profile.density)
     full_owned_entropy_ids = full_entries |> owned_price_entropy_ids() |> MapSet.new()
+    selected_offer_entropy_ids = MapSet.new(selected_fixtures, & &1.entropy_id)
+    full_offer_entropy_ids = MapSet.new(full_fixtures, & &1.entropy_id)
+
+    ensure_no_unowned_offer_watches!(selected_offer_entropy_ids, full_offer_entropy_ids)
 
     reconcile_price_points!(
       artifacts,
@@ -63,10 +71,7 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
 
     price_points = seed_price_rows!(selected_rows)
 
-    reconcile_offers!(
-      MapSet.new(selected_fixtures, & &1.entropy_id),
-      MapSet.new(full_fixtures, & &1.entropy_id)
-    )
+    reconcile_offers!(selected_offer_entropy_ids, full_offer_entropy_ids)
 
     %{
       all_merchants: all_merchants,
@@ -427,6 +432,7 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
       end)
 
     ensure_no_purchase_fact_references!(obsolete_ids)
+    ensure_no_unowned_watch_references!(obsolete_ids)
 
     obsolete_ids
     |> Enum.chunk_every(5_000)
@@ -443,10 +449,7 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
       PricePoint |> where([point], point.id in ^ids) |> Repo.delete_all()
     end)
 
-    if density == :bounded and
-         not Repo.exists?(
-           from point in PricePoint, where: point.artifact_id == ^artifacts.monthly.id
-         ) do
+    if density == :bounded and not artifact_referenced?(artifacts.monthly.id) do
       Repo.delete!(artifacts.monthly)
     end
   end
@@ -462,6 +465,35 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
     end
   end
 
+  defp ensure_no_unowned_watch_references!([]), do: :ok
+
+  defp ensure_no_unowned_watch_references!(price_point_ids) do
+    if Repo.exists?(
+         from watch in PriceWatchRule,
+           where:
+             (watch.baseline_price_point_id in ^price_point_ids or
+                watch.last_evaluated_price_point_id in ^price_point_ids) and
+               (is_nil(watch.entropy_id) or watch.entropy_id not in ^@seed_watch_entropy_ids)
+       ) do
+      raise "Refusing to delete full-only price observations referenced by unowned watches"
+    end
+  end
+
+  defp artifact_referenced?(artifact_id) do
+    Enum.any?(
+      [
+        {PricePoint, :artifact_id},
+        {Coupon, :artifact_id},
+        {ClaimEvidence, :artifact_id},
+        {ProductIdentifier, :source_artifact_id},
+        {ProductMedia, :source_artifact_id}
+      ],
+      fn {schema, field_name} ->
+        Repo.exists?(from record in schema, where: field(record, ^field_name) == ^artifact_id)
+      end
+    )
+  end
+
   defp seed_price_rows!(rows) do
     existing_by_entropy_id = verify_price_point_ownership!(rows)
 
@@ -469,7 +501,25 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
       Enum.reject(rows, fn row ->
         case Map.get(existing_by_entropy_id, row.entropy_id) do
           nil -> false
-          point -> PricePoint.changeset(struct!(PricePoint, point), row).changes == %{}
+          point -> PricePoint.changeset(point, row).changes == %{}
+        end
+      end)
+
+    referenced_price_point_ids =
+      changed_rows
+      |> Enum.flat_map(fn row ->
+        case Map.get(existing_by_entropy_id, row.entropy_id) do
+          nil -> []
+          point -> [point.id]
+        end
+      end)
+      |> price_point_ids_referenced_by_purchase_facts()
+
+    changed_rows =
+      Enum.reject(changed_rows, fn row ->
+        case Map.get(existing_by_entropy_id, row.entropy_id) do
+          nil -> false
+          point -> MapSet.member?(referenced_price_point_ids, point.id)
         end
       end)
 
@@ -484,23 +534,18 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
       )
     end)
 
-    missing_entropy_ids =
-      rows
-      |> Enum.reject(&Map.has_key?(existing_by_entropy_id, &1.entropy_id))
-      |> Enum.map(& &1.entropy_id)
+    persisted_by_entropy_id = fetch_expected_price_point_metadata(rows)
+    Enum.map(rows, &Map.fetch!(persisted_by_entropy_id, &1.entropy_id))
+  end
 
-    metadata_by_entropy_id =
-      existing_by_entropy_id
-      |> Map.merge(
-        rows
-        |> fetch_expected_price_point_metadata()
-        |> Map.take(missing_entropy_ids)
-      )
+  defp price_point_ids_referenced_by_purchase_facts([]), do: MapSet.new()
 
-    Enum.map(rows, fn row ->
-      metadata = Map.fetch!(metadata_by_entropy_id, row.entropy_id)
-      struct!(PricePoint, Map.put(row, :id, metadata.id))
-    end)
+  defp price_point_ids_referenced_by_purchase_facts(price_point_ids) do
+    PurchasePriceFact
+    |> where([fact], fact.price_observation_id in ^price_point_ids)
+    |> select([fact], fact.price_observation_id)
+    |> Repo.all()
+    |> MapSet.new()
   end
 
   defp verify_price_point_ownership!(rows) do
@@ -525,32 +570,13 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
 
     PricePoint
     |> where([point], point.artifact_id in ^artifact_ids)
-    |> select(
-      [point],
-      map(point, [
-        :id,
-        :entropy_id,
-        :merchant_product_id,
-        :observed_at,
-        :price,
-        :shipping,
-        :in_stock,
-        :artifact_id
-      ])
-    )
     |> Repo.all()
     |> Enum.filter(&MapSet.member?(expected_entropy_ids, &1.entropy_id))
     |> Map.new(&{&1.entropy_id, &1})
   end
 
   defp reconcile_offers!(selected_entropy_ids, full_entropy_ids) do
-    obsolete_entropy_ids = MapSet.difference(full_entropy_ids, selected_entropy_ids)
-
-    obsolete_offer_ids =
-      MerchantProduct
-      |> where([offer], offer.entropy_id in ^MapSet.to_list(obsolete_entropy_ids))
-      |> select([offer], offer.id)
-      |> Repo.all()
+    obsolete_offer_ids = obsolete_offer_ids(selected_entropy_ids, full_entropy_ids)
 
     reconcile_seed_offer_watches!(obsolete_offer_ids)
 
@@ -571,6 +597,27 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
     |> Enum.each(fn offer_ids ->
       MerchantProduct |> where([offer], offer.id in ^offer_ids) |> Repo.delete_all()
     end)
+  end
+
+  defp ensure_no_unowned_offer_watches!(selected_entropy_ids, full_entropy_ids) do
+    obsolete_offer_ids = obsolete_offer_ids(selected_entropy_ids, full_entropy_ids)
+
+    if Repo.exists?(
+         from watch in PriceWatchRule,
+           where: watch.merchant_product_id in ^obsolete_offer_ids,
+           where: is_nil(watch.entropy_id) or watch.entropy_id not in ^@seed_watch_entropy_ids
+       ) do
+      raise "Refusing to delete full-only offers referenced by unowned watches"
+    end
+  end
+
+  defp obsolete_offer_ids(selected_entropy_ids, full_entropy_ids) do
+    obsolete_entropy_ids = MapSet.difference(full_entropy_ids, selected_entropy_ids)
+
+    MerchantProduct
+    |> where([offer], offer.entropy_id in ^MapSet.to_list(obsolete_entropy_ids))
+    |> select([offer], offer.id)
+    |> Repo.all()
   end
 
   defp reconcile_seed_offer_watches!([]), do: :ok
