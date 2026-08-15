@@ -244,7 +244,7 @@ defmodule ProductCompare.Repo.SeedsTest do
     {_seed, queries} =
       DatabaseTestHelpers.capture_queries(fn -> run_seed(["--density", "full"]) end)
 
-    assert length(queries) < 4_000
+    assert Enum.count_until(queries, 4_000) < 4_000
   end
 
   test "bounded seeds generate an ordered deterministic 300-product catalog" do
@@ -563,7 +563,7 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert differing_identity_keys(seed_identity_inventory(full_second), full_identities) == []
     assert operation_database_id_inventory(full_second) == full_operation_ids
-    assert length(unchanged_full_queries) < 3_000
+    assert Enum.count_until(unchanged_full_queries, 3_000) < 3_000
 
     bounded_again = run_seed(["--density", "bounded"])
 
