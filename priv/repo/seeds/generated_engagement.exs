@@ -453,26 +453,45 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
         CommunityWrites.submit_review(owner.id, product.id, attrs, key)
         |> Support.expect!("generated review #{index}")
 
-      reset_moderation? = status == :pending or review.moderation_status == :removed
+      case active_replacement_review(review) do
+        %ProductReview{} = replacement ->
+          replacement
 
-      review =
-        review
-        |> ProductReview.changeset(%{
-          rating: attrs.rating,
-          title: attrs.title,
-          body_md: attrs.body
-        })
-        |> Ecto.Changeset.change(
-          moderation_status: if(reset_moderation?, do: :pending, else: review.moderation_status),
-          moderation_note: if(reset_moderation?, do: nil, else: review.moderation_note),
-          moderated_by: if(reset_moderation?, do: nil, else: review.moderated_by),
-          moderated_at: if(reset_moderation?, do: nil, else: review.moderated_at)
-        )
-        |> Repo.update!()
+        nil ->
+          reset_moderation? = status == :pending or review.moderation_status == :removed
 
-      moderate_content!(:review, review, status, accounts.moderator, anchor)
+          review =
+            review
+            |> ProductReview.changeset(%{
+              rating: attrs.rating,
+              title: attrs.title,
+              body_md: attrs.body
+            })
+            |> Ecto.Changeset.change(
+              moderation_status:
+                if(reset_moderation?, do: :pending, else: review.moderation_status),
+              moderation_note: if(reset_moderation?, do: nil, else: review.moderation_note),
+              moderated_by: if(reset_moderation?, do: nil, else: review.moderated_by),
+              moderated_at: if(reset_moderation?, do: nil, else: review.moderated_at)
+            )
+            |> Repo.update!()
+
+          moderate_content!(:review, review, status, accounts.moderator, anchor)
+      end
     end)
   end
+
+  defp active_replacement_review(%ProductReview{moderation_status: :removed} = review) do
+    Repo.one(
+      from replacement in ProductReview,
+        where:
+          replacement.user_id == ^review.user_id and
+            replacement.product_id == ^review.product_id and
+            replacement.moderation_status != :removed
+    )
+  end
+
+  defp active_replacement_review(%ProductReview{}), do: nil
 
   defp review_fixture(accounts, products, index) do
     %{

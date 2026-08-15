@@ -18,6 +18,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   use ProductCompare.DataCase, async: false
 
   @moduletag sandbox_isolation: "REPEATABLE READ"
+  @moduletag ownership_timeout: 300_000
   @moduletag timeout: :infinity
 
   import ExUnit.CaptureIO
@@ -2716,6 +2717,40 @@ defmodule ProductCompare.Repo.SeedsTest do
            } = Repo.get!(ProductReview, replacement_review.id)
   end
 
+  test "reruns preserve a replacement review after a generated review is removed" do
+    run_seed(["--density", "bounded"])
+
+    generated_review = Repo.get_by!(ProductReview, title: "Development review 001")
+    owner = Repo.get!(User, generated_review.user_id)
+
+    assert {:ok, %ProductReview{moderation_status: :removed}} =
+             Discussions.remove_owned(owner.id, :review, generated_review.entropy_id)
+
+    assert {:ok, replacement_review} =
+             Discussions.submit_review(
+               owner.id,
+               generated_review.product_id,
+               %{
+                 rating: 4,
+                 title: "Generated review replacement",
+                 body: "This developer-created replacement must survive generated reseeding."
+               },
+               "developer-generated-review-replacement-v1"
+             )
+
+    run_seed(["--density", "bounded"])
+
+    assert %ProductReview{moderation_status: :removed} =
+             Repo.get!(ProductReview, generated_review.id)
+
+    assert %ProductReview{
+             moderation_status: :pending,
+             rating: 4,
+             title: "Generated review replacement",
+             body_md: "This developer-created replacement must survive generated reseeding."
+           } = Repo.get!(ProductReview, replacement_review.id)
+  end
+
   test "reruns restore a superseded imported claim as current" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
@@ -2844,6 +2879,64 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert {:ok, %SpecificationCorrection{status: :accepted}} =
              Specs.moderate_correction(pending_correction.id, moderator.id, :accepted, %{
                moderation_note: "Developer accepted the preserved follow-up correction"
+             })
+  end
+
+  test "reruns keep a pending correction over a generated current claim usable" do
+    seed = run_seed(["--density", "bounded"])
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+    product = Repo.get_by!(Product, slug: "dev-mon-001")
+
+    generated_current =
+      Repo.get_by!(ProductAttributeCurrent,
+        product_id: product.id,
+        attribute_id: seed.catalog.attributes.hdr_supported.id
+      )
+
+    generated_claim = Repo.get!(ProductAttributeClaim, generated_current.claim_id)
+
+    assert {:ok, accepted_correction} =
+             Specs.propose_correction(
+               product.id,
+               generated_claim.attribute_id,
+               shopper.id,
+               %{value_bool: not generated_claim.value_bool},
+               %{
+                 reason: "Developer accepted a generated-attribute correction",
+                 explanation: "Establishes the current claim for a follow-up correction."
+               }
+             )
+
+    assert {:ok, %SpecificationCorrection{claim_id: accepted_claim_id}} =
+             Specs.moderate_correction(accepted_correction.id, moderator.id, :accepted, %{})
+
+    assert {:ok, pending_correction} =
+             Specs.propose_correction(
+               product.id,
+               generated_claim.attribute_id,
+               shopper.id,
+               %{value_bool: generated_claim.value_bool},
+               %{
+                 reason: "Developer queued a generated-attribute follow-up",
+                 explanation: "Pending moderation must remain usable after reseeding."
+               }
+             )
+
+    assert Repo.get!(ProductAttributeClaim, pending_correction.claim_id).supersedes_claim_id ==
+             accepted_claim_id
+
+    run_seed(["--density", "bounded"])
+
+    assert Repo.get_by!(ProductAttributeCurrent,
+             product_id: product.id,
+             attribute_id: generated_claim.attribute_id
+           ).claim_id == accepted_claim_id
+
+    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+             Specs.moderate_correction(pending_correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer accepted the preserved generated follow-up"
              })
   end
 

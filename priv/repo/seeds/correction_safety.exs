@@ -48,4 +48,40 @@ defmodule ProductCompare.DevSeeds.CorrectionSafety do
 
     Repo.exists?(query)
   end
+
+  @spec without_pending_current_replacements([map()]) :: [map()]
+  def without_pending_current_replacements([]), do: []
+
+  def without_pending_current_replacements(current_rows) do
+    product_ids = current_rows |> Enum.map(& &1.product_id) |> Enum.uniq()
+    attribute_ids = current_rows |> Enum.map(& &1.attribute_id) |> Enum.uniq()
+
+    preserved_scopes =
+      SpecificationCorrection
+      |> join(:inner, [correction], claim in ProductAttributeClaim,
+        on: claim.id == correction.claim_id
+      )
+      |> join(:left, [correction], current in ProductAttributeCurrent,
+        on:
+          current.product_id == correction.product_id and
+            current.attribute_id == correction.attribute_id
+      )
+      |> where(
+        [correction],
+        correction.status == :pending and correction.product_id in ^product_ids and
+          correction.attribute_id in ^attribute_ids
+      )
+      |> where(
+        [_correction, claim, current],
+        claim.supersedes_claim_id == current.claim_id or
+          (is_nil(claim.supersedes_claim_id) and is_nil(current.id))
+      )
+      |> select([correction], {correction.product_id, correction.attribute_id})
+      |> Repo.all()
+      |> MapSet.new()
+
+    Enum.reject(current_rows, fn row ->
+      MapSet.member?(preserved_scopes, {row.product_id, row.attribute_id})
+    end)
+  end
 end

@@ -886,6 +886,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
           inserted_at: inserted_at
         }
       end)
+      |> CorrectionSafety.without_pending_current_replacements()
 
     Repo.insert_all(ProductAttributeCurrent, current_rows,
       on_conflict: {:replace, [:entropy_id, :claim_id, :selected_by, :selected_at]},
