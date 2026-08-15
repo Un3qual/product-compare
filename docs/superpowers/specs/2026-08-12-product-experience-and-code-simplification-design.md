@@ -601,6 +601,32 @@ create separate executable plans and queue outcomes for:
 The type-and-validation audit is applied during every cohort and completed by
 the residual remediation cohort. It is not postponed wholesale until the end.
 
+### Residual cohort batch boundary
+
+The cross-stack residual remediation is one queue row and one reviewer
+decision. Its frontend simplification work is an internal milestone, not a
+second batch beside the consolidated outcome. The shared acceptance invariant
+is that types, validation, fallbacks, and file boundaries remain only at their
+real ownership boundary while current behavior and fail-closed contracts stay
+intact.
+
+Execution uses these milestone commits inside that one batch:
+
+1. refresh the repository inventory and promote the exact owned paths;
+2. replace recreated declarations and manual GraphQL types with official or
+   generated ownership;
+3. merge trivial route indirection and finish relative-date adoption;
+4. remove repeated bigint and backend validation after trusted boundaries; and
+5. run the repository-wide anti-slop review and complete gates.
+
+The inventory is coordinator curation and cannot be promoted as a standalone
+implementation outcome. It must also discard stale targets that earlier
+cohorts already removed. Split the backend work into a successor only if the
+fresh trace discovers a materially different reviewer decision, such as a
+database schema change, public API contract change, migration, or concurrency
+redesign. Ordinary path separation or differing test commands are not enough
+to split the batch.
+
 ## Traceability To Reported Issues
 
 | Reported issue | Design owner |
