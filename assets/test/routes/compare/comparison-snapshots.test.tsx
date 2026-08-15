@@ -730,10 +730,12 @@ test("SharedComparisonRoute renders unavailable captured details safely", () => 
 
   expect(screen.getByRole("heading", { name: "Shared product comparison" })).toBeVisible();
   expect(screen.getByText("No supported winner", { selector: "strong" })).toBeVisible();
+  expect(screen.getByText("One or more products need verified product details.")).toBeVisible();
+  expect(screen.queryByText("Accepted specification evidence is unavailable")).not.toBeInTheDocument();
   expect(screen.getByText("Unknown brand")).toBeVisible();
   expect(screen.getByText("Source details unavailable")).toBeVisible();
   expect(screen.getByText("Unknown merchant: Current total price unavailable")).toBeVisible();
-  expect(screen.getByRole("article").querySelectorAll(":scope > p")).toHaveLength(2);
+  expect(screen.queryByText(/\(checked/i)).not.toBeInTheDocument();
 });
 
 test("SharedComparisonRoute links an empty captured product list to the base comparison", () => {
