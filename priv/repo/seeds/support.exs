@@ -1,6 +1,8 @@
 defmodule ProductCompare.DevSeeds.Support do
   @moduledoc false
 
+  import Ecto.Query
+
   alias ProductCompare.Repo
 
   @max_transaction_attempts 3
@@ -50,6 +52,66 @@ defmodule ProductCompare.DevSeeds.Support do
 
     {:ok, uuid} = Ecto.UUID.cast(uuid)
     uuid
+  end
+
+  @spec validated_row!(Ecto.Changeset.t(), [atom()], keyword()) :: map()
+  def validated_row!(%Ecto.Changeset{} = changeset, persisted_fields, options)
+      when is_list(persisted_fields) and is_list(options) do
+    stage = Keyword.fetch!(options, :stage)
+    seed_fields = options |> Keyword.delete(:stage) |> Map.new()
+
+    case Ecto.Changeset.apply_action(changeset, :insert) do
+      {:ok, struct} -> struct |> Map.take(persisted_fields) |> Map.merge(seed_fields)
+      {:error, invalid_changeset} -> expect!({:error, invalid_changeset}, stage)
+    end
+  end
+
+  @spec sync_owned_rows!(module(), [map()], [atom()], keyword()) :: [struct()]
+  def sync_owned_rows!(schema, rows, persisted_fields, options)
+      when is_atom(schema) and is_list(rows) and is_list(persisted_fields) and is_list(options) do
+    stage = Keyword.fetch!(options, :stage)
+    chunk_size = Keyword.get(options, :chunk_size, 1_000)
+    entropy_ids = Enum.map(rows, &Map.fetch!(&1, :entropy_id))
+
+    if length(Enum.uniq(entropy_ids)) != length(entropy_ids) do
+      raise "development seed #{stage} contains duplicate entropy identifiers"
+    end
+
+    existing_by_entropy_id = fetch_by_entropy_ids(schema, entropy_ids, chunk_size)
+
+    changed_rows =
+      Enum.reject(rows, fn row ->
+        case Map.get(existing_by_entropy_id, row.entropy_id) do
+          nil -> false
+          existing -> persisted_values_equal?(schema, existing, row, persisted_fields)
+        end
+      end)
+
+    persisted_by_entropy_id =
+      if changed_rows == [] do
+        existing_by_entropy_id
+      else
+        timestamp_fields =
+          if :updated_at in schema.__schema__(:fields), do: [:updated_at], else: []
+
+        replace_fields = Enum.uniq(persisted_fields ++ timestamp_fields)
+
+        changed_rows
+        |> Enum.chunk_every(chunk_size)
+        |> Enum.each(fn chunk ->
+          Repo.insert_all(schema, chunk,
+            on_conflict: {:replace, replace_fields},
+            conflict_target: [:entropy_id]
+          )
+        end)
+
+        fetch_by_entropy_ids(schema, entropy_ids, chunk_size)
+      end
+
+    Enum.map(entropy_ids, fn entropy_id ->
+      Map.get(persisted_by_entropy_id, entropy_id) ||
+        raise "development seed #{stage} did not persist #{entropy_id}"
+    end)
   end
 
   @spec expect!({:ok, value} | {:error, term()}, String.t()) :: value when value: var
@@ -135,6 +197,26 @@ defmodule ProductCompare.DevSeeds.Support do
     do: code in [:serialization_failure, :deadlock_detected]
 
   defp retryable_transaction_error?(%Postgrex.Error{}), do: false
+
+  defp fetch_by_entropy_ids(_schema, [], _chunk_size), do: %{}
+
+  defp fetch_by_entropy_ids(schema, entropy_ids, chunk_size) do
+    entropy_ids
+    |> Enum.chunk_every(chunk_size)
+    |> Enum.flat_map(fn chunk ->
+      schema
+      |> where([record], record.entropy_id in ^chunk)
+      |> Repo.all()
+    end)
+    |> Map.new(&{&1.entropy_id, &1})
+  end
+
+  defp persisted_values_equal?(schema, existing, expected, fields) do
+    Enum.all?(fields, fn field ->
+      type = schema.__schema__(:type, field)
+      Ecto.Type.equal?(type, Map.fetch!(existing, field), Map.fetch!(expected, field))
+    end)
+  end
 
   defp format_reason(%Ecto.Changeset{} = changeset), do: inspect(changeset.errors)
   defp format_reason(reason), do: inspect(reason)

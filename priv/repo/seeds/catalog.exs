@@ -21,6 +21,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
   alias ProductCompareSchemas.Specs.SourceArtifact
   alias ProductCompareSchemas.Specs.TaxonAttribute
   alias ProductCompareSchemas.Taxonomy.Taxon
+  alias ProductCompareSchemas.Taxonomy.ProductTaxon
   alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
   @source_name "Development Manufacturer Evidence"
@@ -47,9 +48,9 @@ defmodule ProductCompare.DevSeeds.Catalog do
 
     taxons = seed_taxons!(type_taxonomy, use_case_taxonomy)
     definitions = seed_definitions!(taxons)
-    {products, generated} = seed_products!(taxons, profile)
+    {products, generated} = seed_products!(taxons, profile, anchor)
     all_products = named_product_inventory(products) ++ Enum.map(generated, & &1.product)
-    seed_use_cases!(products, generated, taxons, accounts.admin)
+    seed_use_cases!(products, generated, taxons, accounts.admin, anchor)
 
     {source, artifact} = seed_source_evidence!(anchor)
     identifiers = seed_identifiers!(products, artifact, anchor)
@@ -296,7 +297,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
     |> Support.expect!("#{taxon.code} attribute #{attribute.code}")
   end
 
-  defp seed_products!(taxons, profile) do
+  defp seed_products!(taxons, profile, anchor) do
     named = seed_named_products!(taxons)
     fixtures = Dictionary.product_fixtures(profile)
     reconcile_generated_products!(fixtures)
@@ -310,11 +311,39 @@ defmodule ProductCompare.DevSeeds.Catalog do
         {name, brand}
       end)
 
-    generated =
+    rows =
       Enum.map(fixtures, fn fixture ->
         taxon = Map.fetch!(taxons, fixture.type)
         brand = Map.fetch!(brands, fixture.brand)
-        product = seed_generated_product!(fixture, brand, taxon)
+
+        %Product{}
+        |> Product.changeset(%{
+          brand_id: brand.id,
+          primary_type_taxon_id: taxon.id,
+          name: fixture.name,
+          model_number: fixture.model_number,
+          slug: fixture.slug,
+          description: fixture.description
+        })
+        |> Support.validated_row!(
+          [:brand_id, :primary_type_taxon_id, :name, :model_number, :slug, :description],
+          entropy_id: Support.stable_uuid("development-product", fixture.key),
+          inserted_at: anchor,
+          updated_at: anchor,
+          stage: "product #{fixture.slug}"
+        )
+      end)
+
+    products =
+      Support.sync_owned_rows!(
+        Product,
+        rows,
+        [:brand_id, :primary_type_taxon_id, :name, :model_number, :slug, :description],
+        stage: "generated products"
+      )
+
+    generated =
+      Enum.zip_with(fixtures, products, fn fixture, product ->
         %{fixture: fixture, product: product}
       end)
 
@@ -368,39 +397,6 @@ defmodule ProductCompare.DevSeeds.Catalog do
     )
   end
 
-  defp seed_generated_product!(fixture, brand, taxon) do
-    entropy_id = Support.stable_uuid("development-product", fixture.key)
-
-    attrs = %{
-      brand_id: brand.id,
-      primary_type_taxon_id: taxon.id,
-      name: fixture.name,
-      model_number: fixture.model_number,
-      slug: fixture.slug,
-      description: fixture.description
-    }
-
-    product = Repo.get_by(Product, slug: fixture.slug)
-
-    case product do
-      nil ->
-        attrs
-        |> Catalog.create_product()
-        |> Support.expect!("product #{fixture.slug}")
-        |> Ecto.Changeset.change(entropy_id: entropy_id)
-        |> Repo.update()
-        |> Support.expect!("product entropy #{fixture.slug}")
-
-      %Product{entropy_id: ^entropy_id} = product ->
-        Catalog.update_product(product, attrs)
-        |> Support.expect!("product #{fixture.slug}")
-
-      %Product{entropy_id: conflicting_entropy_id} ->
-        raise "Refusing to adopt generated product #{fixture.slug} with entropy #{conflicting_entropy_id}"
-    end
-    |> then(&Repo.get!(Product, &1.id))
-  end
-
   defp reconcile_generated_products!(fixtures) do
     expected =
       Map.new(fixtures, fn fixture ->
@@ -439,7 +435,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
     end
   end
 
-  defp seed_use_cases!(products, generated, taxons, admin) do
+  defp seed_use_cases!(products, generated, taxons, admin, anchor) do
     for {product, use_case, confidence} <- [
           {products.monitor_16_9, taxons.gaming, "0.95"},
           {products.monitor_16_9, taxons.office, "0.85"},
@@ -461,18 +457,64 @@ defmodule ProductCompare.DevSeeds.Catalog do
 
     use_cases = [taxons.gaming, taxons.office, taxons.creative, taxons.home_theater]
 
-    Enum.each(generated, fn %{fixture: fixture, product: product} ->
-      use_case = Enum.at(use_cases, rem(fixture.specification_index - 1, length(use_cases)))
+    generated_rows =
+      Enum.map(generated, fn %{fixture: fixture, product: product} ->
+        use_case = Enum.at(use_cases, rem(fixture.specification_index - 1, length(use_cases)))
 
-      Taxonomy.assign_use_case(
-        product.id,
-        use_case.id,
-        admin.id,
-        :editorial,
-        Decimal.new("0.80")
+        %ProductTaxon{}
+        |> ProductTaxon.changeset(%{
+          product_id: product.id,
+          taxon_id: use_case.id,
+          created_by: admin.id,
+          source_type: :editorial,
+          confidence: Decimal.new("0.80")
+        })
+        |> Support.validated_row!(
+          [:product_id, :taxon_id, :created_by, :source_type, :confidence],
+          entropy_id:
+            Support.stable_uuid(
+              "development-generated-product-use-case",
+              "#{fixture.key}:#{use_case.code}"
+            ),
+          inserted_at: anchor,
+          stage: "use case #{product.slug}/#{use_case.code}"
+        )
+      end)
+
+    product_ids = Enum.map(generated_rows, & &1.product_id)
+
+    existing_by_pair =
+      ProductTaxon
+      |> where([assignment], assignment.product_id in ^product_ids)
+      |> Repo.all()
+      |> Map.new(&{{&1.product_id, &1.taxon_id}, &1})
+
+    rows =
+      Enum.map(generated_rows, fn row ->
+        case Map.get(existing_by_pair, {row.product_id, row.taxon_id}) do
+          nil -> row
+          assignment -> %{row | entropy_id: assignment.entropy_id}
+        end
+      end)
+
+    changed_rows =
+      Enum.reject(rows, fn row ->
+        case Map.get(existing_by_pair, {row.product_id, row.taxon_id}) do
+          nil ->
+            false
+
+          assignment ->
+            assignment.created_by == row.created_by and assignment.source_type == row.source_type and
+              Decimal.equal?(assignment.confidence, row.confidence)
+        end
+      end)
+
+    if changed_rows != [] do
+      Repo.insert_all(ProductTaxon, changed_rows,
+        on_conflict: {:replace, [:created_by, :source_type, :confidence]},
+        conflict_target: [:product_id, :taxon_id]
       )
-      |> Support.expect!("use case #{product.slug}/#{use_case.code}")
-    end)
+    end
   end
 
   defp seed_source_evidence!(anchor) do
@@ -560,46 +602,75 @@ defmodule ProductCompare.DevSeeds.Catalog do
   end
 
   defp seed_generated_identifiers!(generated, artifact, anchor) do
-    Enum.map(generated, fn %{fixture: fixture, product: product} ->
-      entropy_id = Support.stable_uuid("development-product-identifier", fixture.key)
+    model_numbers = Enum.map(generated, & &1.fixture.model_number)
 
-      attrs = %{
-        product_id: product.id,
-        scheme: :mpn,
-        normalized_value: fixture.model_number,
-        display_value: fixture.model_number,
-        verification_status: :validated,
-        source_artifact_id: artifact.id,
-        verified_at: anchor
-      }
+    existing_by_value =
+      ProductIdentifier
+      |> where(
+        [identifier],
+        identifier.scheme == :mpn and identifier.verification_status == :validated and
+          identifier.normalized_value in ^model_numbers
+      )
+      |> Repo.all()
+      |> Map.new(&{&1.normalized_value, &1})
 
-      identifier =
-        Repo.get_by(ProductIdentifier,
+    rows =
+      Enum.map(generated, fn %{fixture: fixture, product: product} ->
+        entropy_id = Support.stable_uuid("development-product-identifier", fixture.key)
+
+        case Map.get(existing_by_value, fixture.model_number) do
+          nil ->
+            :ok
+
+          %ProductIdentifier{product_id: product_id, entropy_id: ^entropy_id}
+          when product_id == product.id ->
+            :ok
+
+          %ProductIdentifier{} = conflicting ->
+            raise "Refusing to adopt generated MPN #{fixture.model_number} from product #{conflicting.product_id}"
+        end
+
+        %ProductIdentifier{}
+        |> ProductIdentifier.changeset(%{
+          product_id: product.id,
           scheme: :mpn,
           normalized_value: fixture.model_number,
-          verification_status: :validated
+          display_value: fixture.model_number,
+          verification_status: :validated,
+          source_artifact_id: artifact.id,
+          verified_at: anchor
+        })
+        |> Support.validated_row!(
+          [
+            :product_id,
+            :scheme,
+            :normalized_value,
+            :display_value,
+            :verification_status,
+            :source_artifact_id,
+            :verified_at
+          ],
+          entropy_id: entropy_id,
+          inserted_at: anchor,
+          updated_at: anchor,
+          stage: "MPN #{fixture.model_number}"
         )
+      end)
 
-      case identifier do
-        nil ->
-          attrs
-          |> Catalog.create_product_identifier()
-          |> Support.expect!("MPN #{fixture.model_number}")
-          |> Ecto.Changeset.change(entropy_id: entropy_id)
-          |> Repo.update()
-          |> Support.expect!("MPN entropy #{fixture.model_number}")
-
-        %ProductIdentifier{product_id: product_id, entropy_id: ^entropy_id} = identifier
-        when product_id == product.id ->
-          identifier
-          |> ProductIdentifier.changeset(attrs)
-          |> Repo.update()
-          |> Support.expect!("MPN #{fixture.model_number}")
-
-        %ProductIdentifier{} = conflicting ->
-          raise "Refusing to adopt generated MPN #{fixture.model_number} from product #{conflicting.product_id}"
-      end
-    end)
+    Support.sync_owned_rows!(
+      ProductIdentifier,
+      rows,
+      [
+        :product_id,
+        :scheme,
+        :normalized_value,
+        :display_value,
+        :verification_status,
+        :source_artifact_id,
+        :verified_at
+      ],
+      stage: "generated product identifiers"
+    )
   end
 
   defp seed_media!(products, artifact, anchor) do
@@ -630,44 +701,50 @@ defmodule ProductCompare.DevSeeds.Catalog do
   end
 
   defp seed_generated_media!(generated, artifact, anchor) do
-    Enum.each(generated, fn %{fixture: fixture, product: product} ->
-      url = "https://images.example/products/#{product.slug}.jpg"
-      entropy_id = Support.stable_uuid("development-product-media", fixture.key)
-      existing = Repo.get_by(ProductMedia, product_id: product.id, url: url)
+    product_ids = Enum.map(generated, & &1.product.id)
 
-      if existing && existing.entropy_id != entropy_id do
-        raise "Refusing to adopt generated media for #{product.slug}"
-      end
+    existing_by_pair =
+      ProductMedia
+      |> where([media], media.product_id in ^product_ids)
+      |> Repo.all()
+      |> Map.new(&{{&1.product_id, &1.url}, &1})
 
-      result =
-        Catalog.upsert_product_media(
-          product,
-          artifact.id,
-          [
-            %{
-              url: url,
-              role: :primary,
-              position: 0,
-              alt_text: "Synthetic development image for #{product.name}"
-            }
-          ],
-          anchor
+    rows =
+      Enum.map(generated, fn %{fixture: fixture, product: product} ->
+        url = "https://images.example/products/#{product.slug}.jpg"
+        entropy_id = Support.stable_uuid("development-product-media", fixture.key)
+
+        case Map.get(existing_by_pair, {product.id, url}) do
+          nil -> :ok
+          %ProductMedia{entropy_id: ^entropy_id} -> :ok
+          %ProductMedia{} -> raise "Refusing to adopt generated media for #{product.slug}"
+        end
+
+        %ProductMedia{}
+        |> ProductMedia.changeset(%{
+          product_id: product.id,
+          source_artifact_id: artifact.id,
+          url: url,
+          role: :primary,
+          position: 0,
+          alt_text: "Synthetic development image for #{product.name}",
+          observed_at: anchor
+        })
+        |> Support.validated_row!(
+          [:product_id, :source_artifact_id, :url, :role, :position, :alt_text, :observed_at],
+          entropy_id: entropy_id,
+          inserted_at: anchor,
+          updated_at: anchor,
+          stage: "media for #{product.slug}"
         )
+      end)
 
-      case result do
-        %{persisted: 1, rejected: 0} -> :ok
-        other -> Support.expect!({:error, other}, "media for #{product.slug}")
-      end
-
-      media = Repo.get_by!(ProductMedia, product_id: product.id, url: url)
-
-      if is_nil(existing) do
-        media
-        |> Ecto.Changeset.change(entropy_id: entropy_id)
-        |> Repo.update()
-        |> Support.expect!("media entropy #{product.slug}")
-      end
-    end)
+    Support.sync_owned_rows!(
+      ProductMedia,
+      rows,
+      [:product_id, :source_artifact_id, :url, :role, :position, :alt_text, :observed_at],
+      stage: "generated product media"
+    )
   end
 
   defp seed_claims!(products, definitions, accounts, artifact) do

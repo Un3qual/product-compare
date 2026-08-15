@@ -191,19 +191,22 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
 
     verify_offer_ownership!(rows)
 
-    rows
-    |> Enum.chunk_every(3_000)
-    |> Enum.each(fn chunk ->
-      Repo.insert_all(MerchantProduct, chunk,
-        on_conflict: {:replace, [:external_sku, :last_seen_at, :is_active, :updated_at]},
-        conflict_target: [:entropy_id]
-      )
-    end)
-
     offers_by_entropy_id =
-      rows
-      |> Enum.map(& &1.entropy_id)
-      |> fetch_by_entropy_ids(MerchantProduct)
+      Support.sync_owned_rows!(
+        MerchantProduct,
+        rows,
+        [
+          :merchant_id,
+          :product_id,
+          :external_sku,
+          :url,
+          :currency,
+          :last_seen_at,
+          :is_active
+        ],
+        stage: "generated offers",
+        chunk_size: 3_000
+      )
       |> Map.new(&{&1.entropy_id, &1})
 
     Enum.zip(fixtures, rows)
@@ -460,9 +463,17 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
   end
 
   defp seed_price_rows!(rows) do
-    verify_price_point_ownership!(rows)
+    existing_by_entropy_id = verify_price_point_ownership!(rows)
 
-    rows
+    changed_rows =
+      Enum.reject(rows, fn row ->
+        case Map.get(existing_by_entropy_id, row.entropy_id) do
+          nil -> false
+          point -> PricePoint.changeset(struct!(PricePoint, point), row).changes == %{}
+        end
+      end)
+
+    changed_rows
     |> Enum.chunk_every(3_000)
     |> Enum.each(fn chunk ->
       Repo.insert_all(PricePoint, chunk,
@@ -473,22 +484,63 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
       )
     end)
 
-    rows
-    |> Enum.map(& &1.entropy_id)
-    |> fetch_by_entropy_ids(PricePoint)
+    missing_entropy_ids =
+      rows
+      |> Enum.reject(&Map.has_key?(existing_by_entropy_id, &1.entropy_id))
+      |> Enum.map(& &1.entropy_id)
+
+    metadata_by_entropy_id =
+      existing_by_entropy_id
+      |> Map.merge(
+        rows
+        |> fetch_expected_price_point_metadata()
+        |> Map.take(missing_entropy_ids)
+      )
+
+    Enum.map(rows, fn row ->
+      metadata = Map.fetch!(metadata_by_entropy_id, row.entropy_id)
+      struct!(PricePoint, Map.put(row, :id, metadata.id))
+    end)
   end
 
   defp verify_price_point_ownership!(rows) do
     expected = Map.new(rows, &{&1.entropy_id, &1.merchant_product_id})
 
-    expected
-    |> Map.keys()
-    |> fetch_by_entropy_ids(PricePoint)
-    |> Enum.each(fn point ->
-      if Map.fetch!(expected, point.entropy_id) != point.merchant_product_id do
-        raise "Refusing to adopt generated price point #{point.entropy_id}"
+    existing = fetch_expected_price_point_metadata(rows)
+
+    Enum.each(existing, fn {entropy_id, metadata} ->
+      if Map.fetch!(expected, entropy_id) != metadata.merchant_product_id do
+        raise "Refusing to adopt generated price point #{entropy_id}"
       end
     end)
+
+    existing
+  end
+
+  defp fetch_expected_price_point_metadata([]), do: %{}
+
+  defp fetch_expected_price_point_metadata(rows) do
+    expected_entropy_ids = MapSet.new(rows, & &1.entropy_id)
+    artifact_ids = rows |> Enum.map(& &1.artifact_id) |> Enum.uniq()
+
+    PricePoint
+    |> where([point], point.artifact_id in ^artifact_ids)
+    |> select(
+      [point],
+      map(point, [
+        :id,
+        :entropy_id,
+        :merchant_product_id,
+        :observed_at,
+        :price,
+        :shipping,
+        :in_stock,
+        :artifact_id
+      ])
+    )
+    |> Repo.all()
+    |> Enum.filter(&MapSet.member?(expected_entropy_ids, &1.entropy_id))
+    |> Map.new(&{&1.entropy_id, &1})
   end
 
   defp reconcile_offers!(selected_entropy_ids, full_entropy_ids) do

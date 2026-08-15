@@ -160,6 +160,68 @@ defmodule ProductCompare.Repo.SeedsTest do
              DevSeedSupport.stable_uuid("development-product", "generated-product-002")
   end
 
+  test "validated seed rows fail before persistence when their schema changeset is invalid" do
+    changeset = Product.changeset(%Product{}, %{name: "Invalid", slug: "not valid"})
+
+    assert_raise RuntimeError, ~r/development seed invalid product failed/, fn ->
+      DevSeedSupport.validated_row!(
+        changeset,
+        [:name, :slug],
+        entropy_id: DevSeedSupport.stable_uuid("support-test", "invalid-product"),
+        inserted_at: ~U[2026-08-14 20:00:00.000000Z],
+        updated_at: ~U[2026-08-14 20:00:00.000000Z],
+        stage: "invalid product"
+      )
+    end
+
+    refute Repo.get_by(Product, slug: "not valid")
+  end
+
+  test "owned row synchronization skips unchanged writes and restores changed rows in order" do
+    anchor = ~U[2026-08-14 20:00:00.000000Z]
+
+    rows =
+      for index <- [2, 1] do
+        entropy_id = DevSeedSupport.stable_uuid("support-test-product", Integer.to_string(index))
+
+        %Product{}
+        |> Product.changeset(%{
+          name: "Support product #{index}",
+          slug: "support-product-#{index}"
+        })
+        |> DevSeedSupport.validated_row!(
+          [:name, :slug],
+          entropy_id: entropy_id,
+          inserted_at: anchor,
+          updated_at: anchor,
+          stage: "support product #{index}"
+        )
+      end
+
+    inserted =
+      DevSeedSupport.sync_owned_rows!(Product, rows, [:name, :slug], stage: "support products")
+
+    assert Enum.map(inserted, & &1.slug) == ["support-product-2", "support-product-1"]
+
+    {_unchanged, unchanged_queries} =
+      DatabaseTestHelpers.capture_queries(fn ->
+        DevSeedSupport.sync_owned_rows!(Product, rows, [:name, :slug], stage: "support products")
+      end)
+
+    refute Enum.any?(unchanged_queries, &String.starts_with?(&1, "INSERT"))
+
+    inserted
+    |> hd()
+    |> Product.changeset(%{name: "Locally changed"})
+    |> Repo.update!()
+
+    restored =
+      DevSeedSupport.sync_owned_rows!(Product, rows, [:name, :slug], stage: "support products")
+
+    assert Enum.map(restored, & &1.name) == ["Support product 2", "Support product 1"]
+    assert Enum.map(restored, & &1.id) == Enum.map(inserted, & &1.id)
+  end
+
   test "generated alert keys fail when price history cannot satisfy the target" do
     fixtures = [%{index: 1, points: [%{id: 1}]}]
 
@@ -176,6 +238,13 @@ defmodule ProductCompare.Repo.SeedsTest do
     output = capture_io(fn -> ProductCompare.DevSeeds.run!(["--density", "full"]) end)
 
     assert output =~ "Density: full"
+  end
+
+  test "full profile batches generated first-run writes" do
+    {_seed, queries} =
+      DatabaseTestHelpers.capture_queries(fn -> run_seed(["--density", "full"]) end)
+
+    assert length(queries) < 4_000
   end
 
   test "bounded seeds generate an ordered deterministic 300-product catalog" do
@@ -489,9 +558,12 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert length(full_identities.offers) > length(bounded_identities.offers)
     assert length(full_identities.conversions) > length(bounded_identities.conversions)
 
-    full_second = run_seed(["--density", "full"])
+    {full_second, unchanged_full_queries} =
+      DatabaseTestHelpers.capture_queries(fn -> run_seed(["--density", "full"]) end)
+
     assert differing_identity_keys(seed_identity_inventory(full_second), full_identities) == []
     assert operation_database_id_inventory(full_second) == full_operation_ids
+    assert length(unchanged_full_queries) < 3_000
 
     bounded_again = run_seed(["--density", "bounded"])
 
