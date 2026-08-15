@@ -149,12 +149,16 @@ owners and are explicitly retained.
 - `lib/product_compare/specs/reads/current_attributes.ex`
 - `lib/product_compare/specs/reads/reference_data.ex`
 - `assets/test/routes/catalog/results/browse-product-list-data.test.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
 - `assets/test/routes/categories/category-view-data.test.ts`
 - `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`
+- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
 - `assets/test/routes/compare/recommendation-view-data.test.ts`
 - `assets/test/routes/compare/route-error-view-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
 - `assets/test/routes/compare/shared-comparison-view-data.test.ts`
 - `assets/test/routes/home/home-view-data.test.ts`
+- `assets/test/routes/home/home.route.test.tsx`
 - `assets/test/routes/ingestion/cj-programs/cj-program-data.test.ts`
 - `assets/test/routes/merchants/merchant-detail-view-data.test.ts`
 - `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
@@ -175,9 +179,10 @@ owners and are explicitly retained.
 1. Retain the required untyped-Babel-plugin declaration and replace only the
    listed recreated Relay projections with generated ownership.
 2. Fold exactly the four frontend `action: merge` rows into their direct owners;
-   move only HomeProductLedger's ordinary price-observation recency to the
-   shared leaf while preserving exact-primary dates. Backend merge rows remain
-   Task 4, and the five already-absent delete rows remain records only.
+   transfer each helper test's meaningful assertions to its named owning route
+   suite, and move only HomeProductLedger's ordinary price-observation recency
+   to the shared leaf while preserving exact-primary dates. Backend merge rows
+   remain Task 4, and the five already-absent delete rows remain records only.
 3. Characterize public and direct context calls, then retire only duplicate
    downstream bigint guards in the listed facade/read clusters.
 4. Run focused frontend/backend contracts, source searches, full gates, and a

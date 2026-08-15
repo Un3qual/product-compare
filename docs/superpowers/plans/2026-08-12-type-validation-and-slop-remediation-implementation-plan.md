@@ -151,19 +151,25 @@
   `assets/src/routes/compare/RouteErrorBoundary.tsx`,
   `assets/src/routes/home/HomeRoute.tsx`, `assets/src/routes/home/HomeDeals.tsx`,
   and `assets/src/routes/home/HomeProductLedger.tsx`
-- Modify only their focused behavior tests:
+- Keep these helper tests in deletion/migration scope only:
   `assets/test/routes/catalog/results/browse-product-list-data.test.ts`,
   `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`,
   `assets/test/routes/compare/route-error-view-data.test.ts`, and
   `assets/test/routes/home/home-view-data.test.ts`
+- Move meaningful assertions into these owning route behavior suites before a
+  helper test is deleted: `assets/test/routes/catalog/browse.route.test.tsx`,
+  `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`,
+  `assets/test/routes/compare/compare.route.test.tsx`, and
+  `assets/test/routes/home/home.route.test.tsx`
 - Record the five already-absent `action: delete` paths; do not recreate or
   otherwise add them to this task's edit set. Backend `action: merge` rows are
   exclusively Task 4 work.
 
 **Interfaces:**
 - Consumes: exactly the four frontend Task 1 `action: merge` rows, their direct
-  consumers, and their named behavior tests. It does not consume backend merge
-  rows, any retained data owner, or an already-absent delete target.
+  consumers, four helper tests in deletion/migration scope, and four owning
+  route behavior suites. It does not consume backend merge rows, any retained
+  data owner, or an already-absent delete target.
 - `BrowseProductList` owns its stable generated-attribute highlight selection.
   `AttributionLedger` and `RecentConversion` own their respective conversion
   projections. `RouteErrorBoundary` owns its route-error copy and narrowing.
@@ -179,14 +185,17 @@
 
   Fold the four named helpers into only their direct consumers. Preserve the
   current selection order, conversion outcome, error-copy, home projection, and
-  ordinary-recency behavior in the four named tests; remove a helper test only
-  when its assertions have moved into its owning behavior test.
+  ordinary-recency behavior by moving assertions respectively into
+  `browse.route.test.tsx`, `revenue-summary.route.test.tsx`,
+  `compare.route.test.tsx`, and `home.route.test.tsx`. Remove a helper test
+  only after its meaningful assertions live in its owning route suite.
 
 - [ ] **Step 2: Verify direct imports and file-count reduction**
 
   Confirm that only the four named helper files were removed or merged, every
-  direct consumer imports its local implementation, and no new barrel,
-  cross-route utility, or circular import was introduced.
+  direct consumer imports its local implementation, each route suite preserves
+  the migrated behavior, and no new barrel, cross-route utility, or circular
+  import was introduced.
 
 - [ ] **Step 3: Complete only the owned relative-date adoption**
 
@@ -203,9 +212,13 @@
     assets/src/routes/compare/{route-error-view-data.ts,RouteErrorBoundary.tsx} \
     assets/src/routes/home/{home-view-data.ts,HomeRoute.tsx,HomeDeals.tsx,HomeProductLedger.tsx} \
     assets/test/routes/catalog/results/browse-product-list-data.test.ts \
+    assets/test/routes/catalog/browse.route.test.tsx \
     assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts \
+    assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx \
     assets/test/routes/compare/route-error-view-data.test.ts \
-    assets/test/routes/home/home-view-data.test.ts
+    assets/test/routes/compare/compare.route.test.tsx \
+    assets/test/routes/home/home-view-data.test.ts \
+    assets/test/routes/home/home.route.test.tsx
   git commit -m "refactor: merge route helper projections"
   ```
 

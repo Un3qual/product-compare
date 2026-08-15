@@ -97,12 +97,16 @@ Owned paths:
 - `lib/product_compare/specs/reads/current_attributes.ex`
 - `lib/product_compare/specs/reads/reference_data.ex`
 - `assets/test/routes/catalog/results/browse-product-list-data.test.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
 - `assets/test/routes/categories/category-view-data.test.ts`
 - `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`
+- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
 - `assets/test/routes/compare/recommendation-view-data.test.ts`
 - `assets/test/routes/compare/route-error-view-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
 - `assets/test/routes/compare/shared-comparison-view-data.test.ts`
 - `assets/test/routes/home/home-view-data.test.ts`
+- `assets/test/routes/home/home.route.test.tsx`
 - `assets/test/routes/ingestion/cj-programs/cj-program-data.test.ts`
 - `assets/test/routes/merchants/merchant-detail-view-data.test.ts`
 - `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
@@ -121,8 +125,9 @@ Owned paths:
 Internal slices:
 
 - Generated Relay ownership while retaining the required Babel-plugin declaration.
-- Exactly four frontend merge rows, their direct consumers/tests, and only
-  HomeProductLedger ordinary-recency consolidation.
+- Exactly four frontend merge rows, their direct consumers, helper-test
+  migration into owning route suites, and only HomeProductLedger
+  ordinary-recency consolidation.
 - Trusted-ID duplicate-guard retirement with focused contracts.
 - Full anti-slop verification and closeout.
 
