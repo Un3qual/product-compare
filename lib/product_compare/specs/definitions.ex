@@ -11,9 +11,6 @@ defmodule ProductCompare.Specs.Definitions do
   alias ProductCompareSchemas.Specs.EnumSet
   alias ProductCompareSchemas.Specs.Unit
 
-  @max_bigint_id 9_223_372_036_854_775_807
-  defguardp valid_id_guard(id) when is_integer(id) and id > 0 and id <= @max_bigint_id
-
   @spec upsert_dimension(map()) :: {:ok, Dimension.t()} | {:error, Ecto.Changeset.t()}
   def upsert_dimension(attrs) do
     upsert_by_conflict(Dimension, attrs, [:code])
@@ -122,14 +119,12 @@ defmodule ProductCompare.Specs.Definitions do
 
   @spec convert_to_base(Decimal.t() | number() | binary(), term()) ::
           {:ok, Decimal.t()} | {:error, :unit_not_found | :invalid_decimal}
-  def convert_to_base(value_num, unit_id) when valid_id_guard(unit_id) do
+  def convert_to_base(value_num, unit_id) do
     case Repo.get(Unit, unit_id) do
       nil -> {:error, :unit_not_found}
       unit -> to_base(value_num, unit)
     end
   end
-
-  def convert_to_base(_value_num, _unit_id), do: {:error, :unit_not_found}
 
   @doc false
   @spec to_base(Decimal.t() | number() | binary(), Unit.t()) ::

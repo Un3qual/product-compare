@@ -17,6 +17,21 @@ defmodule ProductCompare.AlertsTest do
     {:ok, now: DateTime.utc_now() |> DateTime.truncate(:second)}
   end
 
+  test "direct alert APIs reject an out-of-range ID before querying" do
+    out_of_range_id = 9_223_372_036_854_775_808
+    entropy_id = Ecto.UUID.generate()
+
+    {evaluation, queries} =
+      capture_select_queries(fn -> Alerts.evaluate_price_point(out_of_range_id) end)
+
+    assert evaluation == {:error, :price_point_not_found}
+    assert queries == []
+    assert Alerts.create_watch(out_of_range_id, %{}) == {:error, :invalid_argument}
+    assert Alerts.update_watch(out_of_range_id, entropy_id, %{}) == {:error, :not_found}
+    assert Alerts.delete_watch(out_of_range_id, entropy_id) == {:error, :not_found}
+    assert Alerts.mark_alert_read(out_of_range_id, entropy_id) == {:error, :not_found}
+  end
+
   test "target watches fire once per edge or cooled qualifying observation", %{now: now} do
     user = AccountsFixtures.user_fixture()
     %{product: product, merchant_product: offer} = offer_fixture("USD")

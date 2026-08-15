@@ -6,8 +6,6 @@ defmodule ProductCompare.Pricing.Offers do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
-  @max_bigint_id 9_223_372_036_854_775_807
-
   @spec list_merchant_offers_query(pos_integer(), boolean()) :: Ecto.Query.t()
   def list_merchant_offers_query(merchant_id, active_only \\ true) do
     MerchantProduct
@@ -152,11 +150,8 @@ defmodule ProductCompare.Pricing.Offers do
   end
 
   @spec get_merchant_product(pos_integer()) :: MerchantProduct.t() | nil
-  def get_merchant_product(merchant_product_id)
-      when is_integer(merchant_product_id) and merchant_product_id > 0 and
-             merchant_product_id <= @max_bigint_id do
-    Repo.get(MerchantProduct, merchant_product_id)
-  end
+  def get_merchant_product(merchant_product_id),
+    do: Repo.get(MerchantProduct, merchant_product_id)
 
   defp resolve_merchant_product_upsert(
          {:ok, %MerchantProduct{id: nil}},
@@ -222,13 +217,13 @@ defmodule ProductCompare.Pricing.Offers do
 
   defp normalize_merchant_ids(merchant_ids) do
     merchant_ids
-    |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
+    |> Enum.filter(&(is_integer(&1) and &1 > 0))
     |> Enum.uniq()
   end
 
   defp normalize_product_ids(product_ids) do
     product_ids
-    |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
+    |> Enum.filter(&(is_integer(&1) and &1 > 0))
     |> Enum.uniq()
   end
 

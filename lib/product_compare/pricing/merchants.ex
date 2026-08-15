@@ -10,8 +10,6 @@ defmodule ProductCompare.Pricing.Merchants do
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
-  @max_bigint_id 9_223_372_036_854_775_807
-
   @spec upsert_merchant(map()) :: {:ok, Merchant.t()} | {:error, Ecto.Changeset.t()}
   def upsert_merchant(attrs) do
     now = DateTime.utc_now()
@@ -48,9 +46,7 @@ defmodule ProductCompare.Pricing.Merchants do
   def get_merchant!(merchant_id), do: Repo.get!(Merchant, merchant_id)
 
   @spec get_merchant(pos_integer()) :: Merchant.t() | nil
-  def get_merchant(merchant_id)
-      when is_integer(merchant_id) and merchant_id > 0 and merchant_id <= @max_bigint_id,
-      do: Repo.get(Merchant, merchant_id)
+  def get_merchant(merchant_id), do: Repo.get(Merchant, merchant_id)
 
   @spec get_merchant_by_slug(String.t()) :: Merchant.t() | nil
   def get_merchant_by_slug(slug) when is_binary(slug) do
