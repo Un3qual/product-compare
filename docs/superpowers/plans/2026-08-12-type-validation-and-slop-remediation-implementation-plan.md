@@ -2,15 +2,18 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Remove the remaining recreated Relay/library types, redundant validation, repeated bigint bounds, generic route helpers, and unjustified file indirection after the product cohorts land.
+**Goal:** Complete one cross-stack residual remediation batch that removes the remaining recreated Relay/library types, redundant validation, repeated bigint bounds, generic route helpers, and unjustified file indirection after the product cohorts land.
 
-**Architecture:** Type ownership follows Relay-generated data first, library types second, application domain types third, and component projections last. Validation occurs once where untyped data enters: URL/FormData/browser storage/transport/external URL/public GraphQL ID/cursor/database. A post-cohort inventory proves every retained manual type, validator, fallback, barrel, and backend check has a distinct responsibility.
+**Architecture:** Type ownership follows Relay-generated data first, library types second, application domain types third, and component projections last. Validation occurs once where untyped data enters: URL/FormData/browser storage/transport/external URL/public GraphQL ID/cursor/database. A post-cohort inventory fixes the exact owned paths, then frontend type ownership, frontend route/date simplification, backend validation centralization, and final verification ship as milestone commits inside one queue row and one reviewer decision.
 
 **Tech Stack:** TypeScript 5.9, Relay 20, React 19, Elixir 1.19, Absinthe Relay, Ecto/PostgreSQL, repository static-analysis gates
 
 ## Global Constraints
 
 - This plan is promoted only after the foundation, product, comparison/auth, operator, and seed outcomes complete and the residual inventory is refreshed.
+- Execute Tasks 2 through 5 as internal milestones of one queue row; frontend simplification is not a second implementation batch beside this consolidated outcome.
+- Task 1 is coordinator curation, not a standalone implementation outcome. Its inventory must discard stale targets that earlier cohorts already removed.
+- Split backend remediation into a successor only if tracing proves a materially different database schema, public API, migration, or concurrency decision. Path separation and different test commands do not justify a split.
 - Never hand-edit Relay artifacts. Generated operation/fragment/enum/input/payload types own successful GraphQL data.
 - Retain validation for URL parameters, FormData, browser storage, transport/error envelopes, external URLs, SSR bootstrap, decoded public global IDs, Relay cursors, authorization, changesets/constraints, and concurrency boundaries.
 - Retain application same-row changeset validation, `check_constraint/3`, changeset tests, and direct database tests required by `AGENTS.md`; those layers have distinct feedback and database-authority roles.
@@ -28,7 +31,7 @@
 
 **Files:**
 - Create during execution: `docs/work/type-validation-slop-remediation.md`
-- Inspect: `assets/src/**`, `lib/product_compare/**`, `lib/product_compare_web/**`, relevant tests
+- Inspect: `assets/src/**`, `assets/test/**`, `lib/product_compare/**`, `lib/product_compare_web/**`, `test/product_compare/**`, `test/product_compare_web/**`
 
 **Interfaces:**
 - Produces: a checked inventory with columns `symbol/file`, `current owner`, `real boundary`, `consumers`, and `action: generated | library | retain | merge | delete`.
@@ -55,9 +58,26 @@
 
   Trace each value from public input through resolver/context/changeset/query and distinguish duplicate guards from independent authorization/database/concurrency owners.
 
-- [ ] **Step 4: Commit the executable inventory with queue promotion**
+- [ ] **Step 4: Validate one coherent queue row**
 
-  Replace this plan's prerequisite-only catalog entry with one ready dispatcher row whose exact owned paths are the inventory's residual files and do not overlap active work.
+  Replace this plan's prerequisite-only catalog entry with one ready dispatcher
+  row whose exact owned paths are the inventory's retained residual files and
+  do not overlap active work. Keep a complete Ready Floor Exception when this
+  is the only coherent outcome: name the rejected frontend/backend milestone
+  split and state that completion returns the queue to coordinator curation.
+  Do not count the inventory or Tasks 2 through 4 as separate rows.
+
+  Run:
+
+  ```bash
+  mix work_queue.validate
+  git diff --check
+  ```
+
+  Expected: the validator reports one ready row covered by a complete Ready
+  Floor Exception, and the diff check prints no output.
+
+- [ ] **Step 5: Commit the executable inventory with queue promotion**
 
   ```bash
   git add docs/work/type-validation-slop-remediation.md docs/work/index.md docs/plans/INDEX.md
@@ -69,19 +89,23 @@
 ### Task 2: Remove declaration shims and remaining recreated Relay types
 
 **Files:**
-- Delete if official packages pass: `assets/src/react-relay.d.ts`
 - Delete if official package passes: `assets/src/babel-plugin-relay.d.ts`
 - Keep only if required: `assets/src/vite-env.d.ts`
-- Modify exact residual route files from Task 1
+- Modify only inventory rows classified `action: generated | library`
 - Modify focused compile-time/runtime tests tied to deleted helpers
 
 **Interfaces:**
+- Consumes: Task 1 inventory rows classified `action: generated | library`, each with an exact source path, current owner, real boundary, and consumers.
 - Uses official `react-relay`, `relay-runtime`, `babel-plugin-relay`, React, and Vite declarations.
 - A retained upstream gap becomes one narrowly named augmentation under `assets/src/types/<library>-augmentation.d.ts` with an upstream issue/reference and only the missing symbol.
 
 - [ ] **Step 1: Delete each shim independently and typecheck**
 
-  Remove `react-relay.d.ts`; run typecheck. Restore only missing declarations proven by compiler output, never the full recreated API. Repeat for Babel Relay and Vite declarations.
+  Record the already-absent `react-relay.d.ts` as removed by an earlier cohort.
+  Delete `babel-plugin-relay.d.ts`; run typecheck. Restore only missing
+  declarations proven by compiler output, never the full recreated API. Verify
+  `vite-env.d.ts` independently and keep its Vite client reference only while
+  the installed compiler requires it.
 
 - [ ] **Step 2: Replace remaining manual GraphQL types**
 
@@ -104,16 +128,14 @@
 ### Task 3: Remove generic route remnants and simplify route boundaries
 
 **Files:**
-- Delete/merge if still present: `assets/src/routes/route-params.ts`
-- Delete/merge if still present: `assets/src/routes/route-errors.ts`
-- Delete/merge if still present: `assets/src/routes/relay-pagination.ts`
-- Delete/merge if still present: `assets/src/routes/form-data.ts`
-- Delete/merge remaining trivial `*-data.ts` and `*-view-data.ts` files from Task 1
+- Modify or delete only inventory rows classified `action: merge | delete`
+- Record already-absent `assets/src/routes/route-params.ts`, `assets/src/routes/route-errors.ts`, `assets/src/routes/relay-pagination.ts`, and `assets/src/routes/form-data.ts`; do not recreate them
 - Modify corresponding consumers and behavior tests
 - Modify remaining home, merchant, comparison, alert, community, and lifecycle
   date consumers identified by Task 1
 
 **Interfaces:**
+- Consumes: Task 1 inventory rows classified `action: merge | delete`, each with an exact source path, owning consumer, and preserved behavior test.
 - Canonical slug/parameter presence checks live in the loader that owns the route parameter.
 - Mutation transport failures live in the shared Relay mutation boundary; domain payload errors remain typed per operation.
 - Cursor advancement remains with the connection/pagination owner and consumes generated `pageInfo`.
@@ -154,11 +176,11 @@
 ### Task 4: Remove repeated bigint and backend validation
 
 **Files:**
-- Modify residual files identified under `lib/product_compare/**`
-- Modify residual resolver/input files under `lib/product_compare_web/**`
+- Modify only backend inventory rows classified `action: merge | delete`
 - Modify focused tests for each retained boundary
 
 **Interfaces:**
+- Consumes: Task 1 backend inventory rows classified `action: merge | delete`, each with an exact source path, public-input trace, trusted boundary, consumers, and preserved contract tests.
 - `GlobalId.decode_integer/2` remains the positive PostgreSQL-bigint public ID boundary.
 - `ProductCompareWeb.GraphQL.Connection` remains the Relay cursor decode/arithmetic boundary.
 - Context functions accept trusted positive IDs where all callers have crossed those boundaries; functions also used by internal callers retain only domain-meaningful guards.
