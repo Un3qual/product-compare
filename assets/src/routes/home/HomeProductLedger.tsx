@@ -62,7 +62,7 @@ export function HomeProductLedger({
   selectedSlugs,
 }: {
   products: HomeProductLedger_products$key;
-  referenceTime?: string;
+  referenceTime: string;
   selectedSlugs: readonly string[];
 }) {
   const data = useFragment(homeProductLedgerFragment, products);
@@ -127,7 +127,7 @@ function HomeLedgerActions({
 function homeLedgerRow(
   { highlights, node: product, offer }: HomeProductLedger_products$data["edges"][number],
   selectedSlugs: readonly string[],
-  referenceTime: string | undefined,
+  referenceTime: string,
 ) {
   return {
     freshness: priceObservationFreshness(offer.observedAt, referenceTime),
@@ -141,21 +141,8 @@ function homeLedgerRow(
   };
 }
 
-function priceObservationFreshness(observedAt: string | null, referenceTime: string | undefined) {
-  if (!observedAt || Number.isNaN(Date.parse(observedAt))) {
-    return "Last checked unavailable";
-  }
-
-  if (!referenceTime) {
-    return `Last checked ${new Intl.DateTimeFormat("en-US", {
-      day: "numeric",
-      month: "short",
-      timeZone: "UTC",
-      year: "numeric",
-    }).format(new Date(observedAt))}`;
-  }
-
-  return <RelativeDateTime prefix="Last checked" referenceTime={referenceTime} value={observedAt} />;
+function priceObservationFreshness(observedAt: string | null, referenceTime: string) {
+  return <RelativeDateTime prefix="Last checked" referenceTime={referenceTime} value={observedAt ?? ""} />;
 }
 
 function formatHighlights(highlights: ReadonlyArray<{ label: string; value: string }>) {

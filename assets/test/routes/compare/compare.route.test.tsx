@@ -7,6 +7,7 @@ import {
   Outlet,
   Route,
   Routes,
+  UNSAFE_ErrorResponseImpl,
   useLoaderData,
   useLocation,
   useRouteError,
@@ -3256,6 +3257,46 @@ test("compare error boundary supports route-specific resource copy", () => {
   expect(
     screen.queryByText(/compare the product details and offer signals/i),
   ).not.toBeInTheDocument();
+});
+
+test.each([
+  [
+    503,
+    "A server error occurred while loading the comparison.",
+    "Please try refreshing the page or come back later.",
+  ],
+  [404, "The requested comparison could not be found.", "Please check the URL and try again."],
+  [
+    401,
+    "You don't have permission to view this comparison.",
+    "Please sign in or contact support if you believe this is an error.",
+  ],
+  [
+    403,
+    "You don't have permission to view this comparison.",
+    "Please sign in or contact support if you believe this is an error.",
+  ],
+  [422, "An error occurred while loading the comparison.", "Please try refreshing the page."],
+] as const)("compare route renders response status %s with its customer guidance", (status, title, guidance) => {
+  mockedUseRouteError.mockReturnValue(
+    new UNSAFE_ErrorResponseImpl(status, "Request failed", null),
+  );
+
+  render(<RouteErrorBoundary />);
+
+  expect(screen.getByRole("heading", { name: "Compare products" })).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent(title);
+  expect(screen.getByRole("alert")).toHaveTextContent(guidance);
+});
+
+test("compare route renders unknown route failures without treating them as exceptions", () => {
+  mockedUseRouteError.mockReturnValue({});
+
+  render(<RouteErrorBoundary />);
+
+  expect(screen.getByRole("alert")).toHaveTextContent("Comparison unavailable.");
+  expect(screen.getByRole("alert")).toHaveTextContent("Please try again later.");
+  expect(screen.getByRole("alert")).not.toHaveTextContent("unexpected error");
 });
 
 test("compare route saves the current ready-state selection", async () => {

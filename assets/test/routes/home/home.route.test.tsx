@@ -85,6 +85,7 @@ const DEALS_DESCRIPTOR = {
     variables: { first: 6, selectedSlugs: ["model-1"] },
   },
 };
+const HOME_REFERENCE_TIME = "2026-08-12T12:00:00.000Z";
 
 beforeEach(() => {
   mockedPreloadRouteQuery.mockReset();
@@ -105,21 +106,28 @@ beforeEach(() => {
 test("home loader returns only serializable essential workspace state", async () => {
   const environment = createRelayEnvironment();
   mockedPreloadRouteQuery.mockResolvedValueOnce(WORKSPACE_DESCRIPTOR);
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(HOME_REFERENCE_TIME));
 
-  const result = await homeLoader({
-    context: createRelayRouterContext(environment),
-    request: new Request("https://app.example/?slug=model-1&slug=model-2&slug=model-1"),
-  } as never);
+  try {
+    const result = await homeLoader({
+      context: createRelayRouterContext(environment),
+      request: new Request("https://app.example/?slug=model-1&slug=model-2&slug=model-1"),
+    } as never);
 
-  expect(result.workspace).toBe(WORKSPACE_DESCRIPTOR);
-  expect(result.selectedSlugs).toEqual(["model-1", "model-2"]);
-  expect(result).not.toHaveProperty("deals");
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledTimes(1);
-  expect(mockedPreloadRouteQuery.mock.calls[0]?.[2]).toEqual({
-    first: 6,
-    selectedSlugs: ["model-1", "model-2"],
-  });
-  expect(mockedPreloadRouteQuery.mock.calls[0]?.[3]).toEqual({ signal: expect.any(AbortSignal) });
+    expect(result.workspace).toBe(WORKSPACE_DESCRIPTOR);
+    expect(result.referenceTime).toBe(HOME_REFERENCE_TIME);
+    expect(result.selectedSlugs).toEqual(["model-1", "model-2"]);
+    expect(result).not.toHaveProperty("deals");
+    expect(mockedPreloadRouteQuery).toHaveBeenCalledTimes(1);
+    expect(mockedPreloadRouteQuery.mock.calls[0]?.[2]).toEqual({
+      first: 6,
+      selectedSlugs: ["model-1", "model-2"],
+    });
+    expect(mockedPreloadRouteQuery.mock.calls[0]?.[3]).toEqual({ signal: expect.any(AbortSignal) });
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("home loader preserves an aborted essential workspace request", async () => {
@@ -139,6 +147,7 @@ test("home loader preserves an aborted essential workspace request", async () =>
 
 test("home workspace recovery keeps search, category entry, and retry independent", () => {
   mockedUseLoaderData.mockReturnValue({
+    referenceTime: HOME_REFERENCE_TIME,
     workspace: null,
     selectedSlugs: [],
   });
@@ -162,6 +171,7 @@ test("home workspace recovery keeps search, category entry, and retry independen
 
 test("home actions use the canonical resolved comparison instead of stale URL slugs", () => {
   mockedUseLoaderData.mockReturnValue({
+    referenceTime: HOME_REFERENCE_TIME,
     workspace: WORKSPACE_DESCRIPTOR,
     selectedSlugs: ["missing-1", "missing-2", "missing-3"],
   });
@@ -203,6 +213,7 @@ test("home actions use the canonical resolved comparison instead of stale URL sl
 
 test("home maps a rejected client deals query to the local retry state", async () => {
   mockedUseLoaderData.mockReturnValue({
+    referenceTime: HOME_REFERENCE_TIME,
     workspace: WORKSPACE_DESCRIPTOR,
     selectedSlugs: [],
   });
@@ -232,12 +243,252 @@ test("home maps a rejected client deals query to the local retry state", async (
   expect(loadDealsQueryMock).toHaveBeenCalledTimes(2);
 });
 
+test("home keeps missing and malformed price observations explicitly unavailable", () => {
+  mockedUseLoaderData.mockReturnValue({
+    referenceTime: HOME_REFERENCE_TIME,
+    workspace: WORKSPACE_DESCRIPTOR,
+    selectedSlugs: [],
+  });
+  mockedUsePreloadedQuery.mockReturnValueOnce({
+    homeWorkspace: {
+      categories: { edges: [] },
+      selectedProducts: [],
+      products: {
+        edges: [
+          {
+            cursor: "missing-observation",
+            node: { id: "missing", name: "Missing observation", slug: "missing" },
+            highlights: [],
+            offer: {
+              merchantName: "Camera Shop",
+              currency: "USD",
+              landedPrice: "499.00",
+              priceSignal: "BELOW_30_DAY_MEDIAN",
+              observedAt: null,
+            },
+          },
+          {
+            cursor: "invalid-observation",
+            node: { id: "invalid", name: "Invalid observation", slug: "invalid" },
+            highlights: [],
+            offer: {
+              merchantName: "Camera Shop",
+              currency: "USD",
+              landedPrice: "599.00",
+              priceSignal: "BELOW_30_DAY_MEDIAN",
+              observedAt: "not-a-date",
+            },
+          },
+        ],
+      },
+    },
+  } as never);
+
+  render(
+    <MemoryRouter>
+      <HomeRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getAllByText("Unavailable")).toHaveLength(2);
+  expect(screen.queryByText("Last checked unavailable")).not.toBeInTheDocument();
+});
+
+test("home preserves every workspace row with category and fallback market context", () => {
+  mockedUseLoaderData.mockReturnValue({
+    referenceTime: HOME_REFERENCE_TIME,
+    workspace: WORKSPACE_DESCRIPTOR,
+    selectedSlugs: ["model-1"],
+  });
+  const products = Array.from({ length: 7 }, (_, index) => ({
+    cursor: `workspace-product-${index + 1}`,
+    node: {
+      id: `product-${index + 1}`,
+      name: `Model ${index + 1}`,
+      slug: `model-${index + 1}`,
+    },
+    highlights: [],
+    offer: {
+      merchantName: "Camera Shop",
+      currency: "USD",
+      landedPrice: "499.00",
+      priceSignal: "BELOW_30_DAY_MEDIAN",
+      observedAt: "2026-08-10T12:00:00Z",
+    },
+  }));
+  products[1] = {
+    ...products[1],
+    offer: {
+      ...products[1].offer,
+      landedPrice: "9007199254740993.005",
+      merchantName: "Exact Shop",
+      priceSignal: "%future-price-signal",
+    },
+  };
+  mockedUsePreloadedQuery.mockReturnValueOnce({
+    homeWorkspace: {
+      categories: {
+        edges: [
+          {
+            node: {
+              id: "category-cameras",
+              name: "Cameras",
+              slug: "cameras",
+              description: "Capture stills and video.",
+            },
+          },
+        ],
+      },
+      selectedProducts: [{ id: "product-1", name: "Model 1", slug: "model-1" }],
+      products: { edges: products },
+    },
+  } as never);
+
+  render(
+    <MemoryRouter>
+      <HomeRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole("link", { name: "Cameras" })).toHaveAttribute(
+    "href",
+    "/products?first=12&typeTaxonId=category-cameras&includeTypeDescendants=1&slug=model-1",
+  );
+  const productResults = screen.getByRole("list", { name: "Product results" });
+  expect(within(productResults).getAllByRole("article")).toHaveLength(7);
+  expect(
+    within(within(productResults).getByRole("article", { name: "Model 2" })).getByText(
+      "$9,007,199,254,740,993.01 at Exact Shop",
+    ),
+  ).toBeVisible();
+  expect(
+    within(within(productResults).getByRole("article", { name: "Model 2" })).getByText(
+      "No 30-day price history",
+    ),
+  ).toBeVisible();
+});
+
+test("home renders typed deal reasons and safe fallback copy for guests", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    referenceTime: HOME_REFERENCE_TIME,
+    workspace: WORKSPACE_DESCRIPTOR,
+    selectedSlugs: [],
+  });
+  useQueryLoaderMock.mockReturnValue([DEALS_DESCRIPTOR, loadDealsQueryMock, disposeDealsQueryMock]);
+  mockedUsePreloadedQuery
+    .mockReturnValueOnce({
+      homeWorkspace: {
+        categories: { edges: [] },
+        selectedProducts: [],
+        products: { edges: [] },
+      },
+    } as never)
+    .mockReturnValueOnce({
+      homeDeals: {
+        new: {
+          edges: [
+            {
+              cursor: "watch-deal",
+              node: { id: "watch-product", name: "Watched Model", slug: "watched-model" },
+              offer: {
+                merchantName: "Watch Shop",
+                currency: "USD",
+                landedPrice: "450.00",
+                observedAt: "2026-08-10T12:00:00Z",
+              },
+              reasons: [{ code: "WATCH_TARGET", watchTarget: "500.00" }],
+            },
+          ],
+        },
+        trending: {
+          edges: [
+            {
+              cursor: "fallback-deal",
+              node: { id: "fallback-product", name: "Fallback Model", slug: "fallback-model" },
+              offer: {
+                merchantName: "Fallback Shop",
+                currency: "USD",
+                landedPrice: "550.00",
+                observedAt: "2026-08-10T12:00:00Z",
+              },
+              reasons: [{ code: "%future-reason", watchTarget: null }],
+            },
+          ],
+        },
+        forYou: {
+          edges: [
+            {
+              cursor: "personal-deal",
+              node: { id: "personal-product", name: "Personal Model", slug: "personal-model" },
+              offer: {
+                merchantName: "Personal Shop",
+                currency: "USD",
+                landedPrice: "650.00",
+                observedAt: "2026-08-10T12:00:00Z",
+              },
+              reasons: [],
+            },
+          ],
+        },
+      },
+    } as never);
+
+  render(
+    <MemoryRouter>
+      <HomeRoute />
+    </MemoryRouter>,
+  );
+
+  expect(await screen.findByText("Matches your $500.00 price watch")).toBeVisible();
+  expect(screen.queryByRole("tab", { name: "For you" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("tab", { name: "Trending" }));
+  expect(await screen.findByText("Current offer")).toBeVisible();
+  expect(screen.queryByText("%future-reason")).not.toBeInTheDocument();
+});
+
+test("home keeps new and trending empty states available to guests", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    referenceTime: HOME_REFERENCE_TIME,
+    workspace: WORKSPACE_DESCRIPTOR,
+    selectedSlugs: [],
+  });
+  useQueryLoaderMock.mockReturnValue([DEALS_DESCRIPTOR, loadDealsQueryMock, disposeDealsQueryMock]);
+  mockedUsePreloadedQuery
+    .mockReturnValueOnce({
+      homeWorkspace: {
+        categories: { edges: [] },
+        selectedProducts: [],
+        products: { edges: [] },
+      },
+    } as never)
+    .mockReturnValueOnce({
+      homeDeals: {
+        new: { edges: [] },
+        trending: { edges: [] },
+        forYou: { edges: [] },
+      },
+    } as never);
+
+  render(
+    <MemoryRouter>
+      <HomeRoute />
+    </MemoryRouter>,
+  );
+
+  expect(await screen.findByText("No new offers to show yet.")).toBeVisible();
+  expect(screen.getByRole("tab", { name: "Trending" })).toBeVisible();
+  expect(screen.queryByRole("tab", { name: "For you" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("tab", { name: "Trending" }));
+  expect(await screen.findByText("No trending offers to show yet.")).toBeVisible();
+});
+
 test("home keeps the optional deals loading shell stable through hydration and client success", async () => {
   const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
   const container = document.createElement("div");
   let root: ReturnType<typeof hydrateRoot> | null = null;
 
   mockedUseLoaderData.mockReturnValue({
+    referenceTime: HOME_REFERENCE_TIME,
     workspace: WORKSPACE_DESCRIPTOR,
     selectedSlugs: [],
   });
@@ -303,6 +554,7 @@ test("HomeDeals reloads once when normalized slug values change", async () => {
 
 test("home keeps the workspace available while the client deals query fails", async () => {
   mockedUseLoaderData.mockReturnValue({
+    referenceTime: HOME_REFERENCE_TIME,
     workspace: WORKSPACE_DESCRIPTOR,
     selectedSlugs: [],
   });
@@ -335,6 +587,7 @@ test("home keeps the workspace available while the client deals query fails", as
 
 test("home renders a decision-led product list and restrained deal rows", async () => {
   mockedUseLoaderData.mockReturnValue({
+    referenceTime: HOME_REFERENCE_TIME,
     workspace: WORKSPACE_DESCRIPTOR,
     selectedSlugs: ["model-1"],
   });
@@ -398,7 +651,7 @@ test("home renders a decision-led product list and restrained deal rows", async 
     "Model 1Details available on the product page",
   );
   expect(product.querySelector('[data-slot="product-ledger-market"]')).toHaveTextContent(
-    "$499.00 at Camera ShopBelow the 30-day priceLast checked Aug 10, 2026",
+    "$499.00 at Camera ShopBelow the 30-day priceLast checked 2 days ago",
   );
   expect(screen.queryByText("Highlights", { exact: true })).not.toBeInTheDocument();
   expect(screen.queryByText("Price signal", { exact: true })).not.toBeInTheDocument();
