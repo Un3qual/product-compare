@@ -203,7 +203,11 @@ or if a change requires a migration, public API decision, or concurrency design.
 
 ## Completion Evidence
 
-- Closed: 2026-08-15 at `6fc520ea` plus the closeout commit.
+- Durable milestone commits: Task 4's trusted-boundary implementation is
+  `6fc520ea` (`refactor: centralize validation at trusted boundaries`); the
+  initial closeout is `5c83ee4c` (`refactor: complete type and validation
+  simplification`); and the supervised full-test evidence is `0ab1aaaa`
+  (`docs: record full verification result`).
 - Deleted source helpers: `browse-product-list-data.ts`,
   `attribution-ledger-data.ts`, `route-error-view-data.ts`, and
   `home-view-data.ts`. The five earlier stale targets remain absent.
