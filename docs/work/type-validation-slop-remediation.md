@@ -236,7 +236,9 @@ or if a change requires a migration, public API decision, or concurrency design.
   full test gate. No native, temporary, or fallback database was used.
 - Gates: pinned `mise exec -- pnpm run check`; `mix format --check-formatted`;
   `mix typecheck`; `mix quality` (Credo: 538 source files / 4,953 mods-funs / no
-  issues; ExDNA clone budget 3/3); full `mix test`; `mix work_queue.validate`;
-  and `git diff --check` completed at closeout. The sandboxed frontend gate
-  could not access Watchman's state directory and sandboxed `mix quality`
-  could not open Mix PubSub; their permitted retries completed successfully.
+  issues; ExDNA clone budget 3/3); and Docker-only
+  `mix test --max-cases 10 --no-color` (seed 126328: 1,537 tests, 0 failures,
+  922.9 seconds); `mix work_queue.validate`; and `git diff --check` completed
+  at closeout. The sandboxed frontend gate could not access Watchman's state
+  directory and sandboxed `mix quality` could not open Mix PubSub; their
+  permitted retries completed successfully.
