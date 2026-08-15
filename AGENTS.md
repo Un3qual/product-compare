@@ -63,6 +63,9 @@
 - Don't create new types when relay has already generated one that works.
 - Prefer concise solutions for current problems. Still keep in mind future plans, but channel "YAGNI". Don't overcomplicate a solution "just in case" things may change or requirements may expand in the future.
 
+## Tests
+- Don't add unnecessary regression tests for every single review comment. Analyze whether it is worth adding a regression test before blindly adding one when the issue may just be something like a one time typo or mistake.
+
 ## Auth Contract
 
 - Frontend-facing browser auth flows must use GraphQL over `/api/graphql`.

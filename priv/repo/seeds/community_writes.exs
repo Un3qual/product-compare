@@ -117,6 +117,18 @@ defmodule ProductCompare.DevSeeds.CommunityWrites do
     end
   end
 
+  @doc false
+  @spec submission_digest!(Ecto.Changeset.t(), atom(), [atom()], term()) :: binary()
+  def submission_digest!(changeset, mutation_kind, fields, target \\ nil) do
+    case submission_digest(changeset, mutation_kind, fields, target) do
+      {:ok, digest} ->
+        digest
+
+      {:error, invalid_changeset} ->
+        raise "invalid generated community write: #{inspect(invalid_changeset.errors)}"
+    end
+  end
+
   defp submission_digest(changeset, mutation_kind, fields, target \\ nil) do
     if changeset.valid? do
       values = Enum.map(fields, &{&1, Ecto.Changeset.get_field(changeset, &1)})

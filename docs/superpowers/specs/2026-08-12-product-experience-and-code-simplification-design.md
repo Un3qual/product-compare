@@ -268,6 +268,11 @@ authorization are preserved.
 
 ## Realistic Offline Development Data
 
+The scale, runtime-profile, deterministic-generation, and profile-reconciliation
+details in this section are superseded by
+`docs/superpowers/specs/2026-08-14-scalable-realistic-development-data-design.md`.
+The behavioral scenarios and safety constraints below remain authoritative.
+
 Extend the existing deterministic, domain-oriented seed system rather than
 replacing it. The target dataset includes:
 

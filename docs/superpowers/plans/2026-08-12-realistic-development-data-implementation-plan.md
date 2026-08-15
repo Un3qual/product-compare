@@ -1,5 +1,8 @@
 # Realistic Development Data Implementation Plan
 
+> Superseded on 2026-08-14 by
+> `docs/superpowers/plans/2026-08-14-scalable-realistic-development-data-implementation-plan.md`.
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Expand the deterministic offline seed dataset so development renders realistic shopper, account, community, attribution, and operator states at useful pagination depth.

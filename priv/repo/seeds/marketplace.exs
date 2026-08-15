@@ -4,6 +4,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
   import Ecto.Query
 
   alias ProductCompare.Affiliate
+  alias ProductCompare.DevSeeds.GeneratedMarketplace
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
@@ -28,14 +29,23 @@ defmodule ProductCompare.DevSeeds.Marketplace do
     out_of_stock: "d3ca0000-0000-4000-8000-000000000508",
     inactive: "d3ca0000-0000-4000-8000-000000000509"
   }
+  @max_observed_at_offset 1_000
 
-  @spec seed!(map(), DateTime.t()) :: map()
-  def seed!(catalog, %DateTime{} = anchor) do
+  @spec seed!(map(), DateTime.t(), map()) :: map()
+  def seed!(
+        catalog,
+        %DateTime{} = anchor,
+        profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
+      ) do
     {source, artifact} = seed_source_evidence!(anchor)
     merchants = seed_merchants!()
     offers = seed_offers!(catalog.products, merchants, anchor)
     restore_unobserved_offer!(offers.unobserved)
     price_history = seed_price_points!(offers, source, anchor)
+
+    generated =
+      GeneratedMarketplace.seed!(catalog, merchants, offers, source, anchor, profile)
+
     affiliate = seed_affiliate!(merchants, offers, anchor)
     coupons = seed_coupons!(merchants.example_mart, affiliate.network, artifact, anchor)
 
@@ -43,8 +53,11 @@ defmodule ProductCompare.DevSeeds.Marketplace do
       source: source,
       artifact: artifact,
       merchants: merchants,
+      all_merchants: generated.all_merchants,
       offers: offers,
+      all_offers: generated.all_offers,
       price_points: price_history.points,
+      all_price_points: Map.values(price_history.points) ++ generated.price_points,
       price_artifacts: price_history.artifacts,
       affiliate: affiliate,
       coupons: coupons
@@ -226,6 +239,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
     entropy_id = Map.fetch!(@price_point_entropy_ids, key)
 
     price_point = Repo.get_by(PricePoint, entropy_id: entropy_id)
+    attrs = available_price_point_attrs(attrs, price_point && price_point.id)
 
     case price_point do
       nil ->
@@ -247,6 +261,30 @@ defmodule ProductCompare.DevSeeds.Marketplace do
         raise "development seed #{key} price point belongs to offer #{conflicting_offer_id}"
     end
     |> Support.expect!("price point #{offer.external_sku}/#{key}")
+  end
+
+  defp available_price_point_attrs(attrs, current_id, offset \\ 0)
+
+  defp available_price_point_attrs(attrs, _current_id, offset)
+       when offset > @max_observed_at_offset do
+    raise "development seed could not find a free observation time for offer #{attrs.merchant_product_id} and artifact #{attrs.artifact_id}"
+  end
+
+  defp available_price_point_attrs(attrs, current_id, offset) do
+    observed_at = DateTime.add(attrs.observed_at, offset, :microsecond)
+
+    existing =
+      Repo.get_by(PricePoint,
+        merchant_product_id: attrs.merchant_product_id,
+        artifact_id: attrs.artifact_id,
+        observed_at: observed_at
+      )
+
+    if is_nil(existing) or existing.id == current_id do
+      Map.put(attrs, :observed_at, observed_at)
+    else
+      available_price_point_attrs(attrs, current_id, offset + 1)
+    end
   end
 
   defp delete_alert_evaluation_jobs!([]), do: :ok

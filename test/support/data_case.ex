@@ -30,6 +30,7 @@ defmodule ProductCompare.DataCase do
     opts =
       [shared: not tags[:async]]
       |> maybe_put_sandbox_isolation(tags[:sandbox_isolation])
+      |> maybe_put_ownership_timeout(tags[:ownership_timeout])
 
     pid = Ecto.Adapters.SQL.Sandbox.start_owner!(ProductCompare.Repo, opts)
     on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
@@ -39,6 +40,11 @@ defmodule ProductCompare.DataCase do
 
   defp maybe_put_sandbox_isolation(opts, isolation),
     do: Keyword.put(opts, :isolation, isolation)
+
+  defp maybe_put_ownership_timeout(opts, nil), do: opts
+
+  defp maybe_put_ownership_timeout(opts, timeout),
+    do: Keyword.put(opts, :ownership_timeout, timeout)
 
   @doc """
   A helper that transforms changeset errors into a map of messages.

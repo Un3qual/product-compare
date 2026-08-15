@@ -4,6 +4,7 @@ defmodule ProductCompare.DevSeeds.Operations do
   import Ecto.Query
 
   alias ProductCompare.CommerceAttribution
+  alias ProductCompare.DevSeeds.GeneratedOperations
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
@@ -35,19 +36,41 @@ defmodule ProductCompare.DevSeeds.Operations do
                     |> Enum.with_index(1)
                     |> Map.new(fn {{stage, _label}, index} -> {stage, index} end)
 
-  @spec seed!(map(), map(), map(), DateTime.t()) :: map()
-  def seed!(accounts, catalog, marketplace, %DateTime{} = anchor) do
+  @spec seed!(map(), map(), map(), DateTime.t(), map()) :: map()
+  def seed!(
+        accounts,
+        catalog,
+        marketplace,
+        %DateTime{} = anchor,
+        profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
+      ) do
     source = seed_cj_source!()
     {programs, feeds} = seed_cj_programs_and_feeds!(source, anchor)
     runs = seed_import_runs!(source, anchor)
     commerce = seed_commerce!(accounts, catalog, marketplace, anchor)
 
+    generated =
+      GeneratedOperations.seed!(
+        accounts,
+        catalog,
+        marketplace,
+        source,
+        anchor,
+        profile,
+        %{feeds: Map.values(feeds), imports: Map.values(runs), commerce: commerce}
+      )
+
     %{
       cj_source: source,
       cj_programs: programs,
       cj_feeds: feeds,
+      all_cj_feeds: Map.values(feeds) ++ generated.feeds,
       import_runs: runs,
-      commerce: commerce
+      all_import_runs: Map.values(runs) ++ generated.imports,
+      commerce: commerce,
+      all_clicks: Map.values(commerce.clicks) ++ generated.clicks,
+      all_conversions: Map.values(commerce.conversions) ++ generated.conversions,
+      all_purchase_facts: Map.values(commerce.purchase_price_facts) ++ generated.purchase_facts
     }
   end
 
@@ -148,43 +171,62 @@ defmodule ProductCompare.DevSeeds.Operations do
       {:feeds_failed, "shoppingProductFeeds", :failed, "development-feeds-failed"}
     ]
 
-    scenario_names = Enum.map(scenarios, fn {_key, _surface, _status, name} -> name end)
-
-    ImportRun
-    |> where([run], run.source_id == ^source.id)
-    |> where([run], fragment("?->>'seedScenario'", run.query) in ^scenario_names)
-    |> Repo.all()
-    |> Enum.each(fn run ->
-      Repo.delete(run)
-      |> Support.expect!("delete synthetic import run #{run.query["seedScenario"]}")
-    end)
-
     scenarios
     |> Enum.with_index(1)
     |> Map.new(fn {{key, surface, status, scenario}, index} ->
       started_at = hours(anchor, -(index * 6))
+      entropy_id = Support.stable_uuid("development-import", scenario)
+
+      base_attrs = %{
+        source_id: source.id,
+        provider: "cj",
+        surface: surface,
+        query: %{
+          "seedScenario" => scenario,
+          "synthetic" => true,
+          "advertiserCountry" => "US"
+        },
+        status: :running,
+        started_at: started_at,
+        finished_at: nil,
+        cursor_start: 0,
+        cursor_end: nil,
+        page_size: 100,
+        pages_requested: 1,
+        pages_fetched: 0,
+        records_fetched: 0,
+        records_normalized: 0,
+        records_persisted: 0,
+        records_failed: 0,
+        error_summary: nil
+      }
 
       run =
-        Ingestion.start_import_run(%{
-          source_id: source.id,
-          provider: "cj",
-          surface: surface,
-          query: %{
-            "seedScenario" => scenario,
-            "synthetic" => true,
-            "advertiserCountry" => "US"
-          },
-          started_at: started_at,
-          cursor_start: 0,
-          page_size: 100,
-          pages_requested: 1
-        })
-        |> Support.expect!("start synthetic import run #{scenario}")
+        case import_run_for_scenario(source, scenario) do
+          nil ->
+            Ingestion.start_import_run(base_attrs)
+            |> Support.expect!("start synthetic import run #{scenario}")
+            |> Ecto.Changeset.change(entropy_id: entropy_id)
+            |> Repo.update()
+            |> Support.expect!("reserve synthetic import run #{scenario}")
 
-      completion_attrs =
+          %ImportRun{entropy_id: ^entropy_id} = run ->
+            run
+
+          %ImportRun{query: %{"synthetic" => true, "seedScenario" => ^scenario}} = run ->
+            run
+            |> Ecto.Changeset.change(entropy_id: entropy_id)
+            |> Repo.update()
+            |> Support.expect!("adopt legacy synthetic import run #{scenario}")
+
+          %ImportRun{} ->
+            raise "Synthetic import run #{scenario} has an unexpected owner"
+        end
+
+      final_attrs =
         case status do
           :succeeded ->
-            %{
+            Map.merge(base_attrs, %{
               status: :succeeded,
               finished_at: DateTime.add(started_at, 120, :second),
               cursor_end: 100,
@@ -193,10 +235,10 @@ defmodule ProductCompare.DevSeeds.Operations do
               records_normalized: 24,
               records_persisted: 23,
               records_failed: 1
-            }
+            })
 
           :failed ->
-            %{
+            Map.merge(base_attrs, %{
               status: :failed,
               finished_at: DateTime.add(started_at, 45, :second),
               cursor_end: 0,
@@ -207,15 +249,33 @@ defmodule ProductCompare.DevSeeds.Operations do
               records_failed: 1,
               error_summary:
                 "Synthetic development failure; no provider request was made and no credential was used."
-            }
+            })
         end
 
       completed =
-        Ingestion.complete_import_run(run, completion_attrs)
-        |> Support.expect!("complete synthetic import run #{scenario}")
+        run
+        |> ImportRun.changeset(final_attrs)
+        |> Repo.update()
+        |> Support.expect!("restore synthetic import run #{scenario}")
 
       {key, completed}
     end)
+  end
+
+  defp import_run_for_scenario(source, scenario) do
+    matches =
+      ImportRun
+      |> where([run], run.source_id == ^source.id)
+      |> where([run], fragment("?->>'seedScenario'", run.query) == ^scenario)
+      |> order_by([run], desc: run.started_at, desc: run.id)
+      |> limit(2)
+      |> Repo.all()
+
+    case matches do
+      [] -> nil
+      [run] -> run
+      _duplicates -> raise "multiple synthetic import runs for #{scenario} on source #{source.id}"
+    end
   end
 
   defp seed_commerce!(accounts, catalog, marketplace, anchor) do
@@ -277,6 +337,7 @@ defmodule ProductCompare.DevSeeds.Operations do
               |> Repo.update()
           end
           |> Support.expect!("commerce click #{status}")
+          |> then(&Repo.get!(CommerceClickSession, &1.id))
 
         {status, click}
       end)
@@ -371,6 +432,7 @@ defmodule ProductCompare.DevSeeds.Operations do
               |> Repo.update()
           end
           |> Support.expect!("purchase price fact #{status}")
+          |> then(&Repo.get!(PurchasePriceFact, &1.id))
 
         {status, fact}
       end)

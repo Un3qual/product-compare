@@ -7,11 +7,26 @@ defmodule ProductCompare.DevSeeds.Guide do
     catalog = seed.catalog
     marketplace = seed.marketplace
     engagement = seed.engagement
+    operations = seed.operations
 
     IO.puts("""
 
     Development testing guide
     =========================
+
+    Density: #{seed.profile.density}
+
+    Inventory
+    ---------
+    Products: #{length(catalog.all_products)}
+    Merchants: #{length(marketplace.all_merchants)}
+    Offers: #{length(marketplace.all_offers)}
+    Price observations: #{length(marketplace.all_price_points)}
+    Saved comparisons: #{length(engagement.all_saved_sets)}
+    Watches / alerts: #{length(engagement.all_watches)} / #{length(engagement.all_alerts)}
+    Reviews / questions / corrections: #{length(engagement.all_reviews)} / #{length(engagement.all_questions)} / #{length(engagement.all_corrections)}
+    CJ feeds / import runs: #{length(operations.all_cj_feeds)} / #{length(operations.all_import_runs)}
+    Clicks / conversions / purchase facts: #{length(operations.all_clicks)} / #{length(operations.all_conversions)} / #{length(operations.all_purchase_facts)}
 
     Accounts
     --------
@@ -31,7 +46,7 @@ defmodule ProductCompare.DevSeeds.Guide do
     Shopper routes
     --------------
     Catalog: /products
-    Product: /products/#{catalog.products.monitor_16_9.slug}
+    Product (price history + community): /products/#{catalog.products.monitor_16_9.slug}
     Category: /categories/#{catalog.taxons.monitor.seo_slug}
     Offers: /offers
     Merchant: /merchants/#{marketplace.merchants.example_mart.slug}
@@ -46,6 +61,7 @@ defmodule ProductCompare.DevSeeds.Guide do
     Affiliate setup: /affiliate/setup
     CJ programs: /ingestion/cj-programs
     Revenue preview: /commerce/revenue
+    CAD revenue filter: /commerce/revenue?currency=CAD
 
     Synthetic data
     --------------
