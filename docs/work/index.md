@@ -64,12 +64,19 @@ direct context guard before its removal.
 Owned paths:
 
 - `assets/src/routes/catalog/results/browse-product-list-data.ts`
+- `assets/src/routes/catalog/results/BrowseProductList.tsx`
 - `assets/src/routes/categories/category-view-data.ts`
 - `assets/src/routes/commerce/revenue/attribution/attribution-ledger-data.ts`
+- `assets/src/routes/commerce/revenue/attribution/AttributionLedger.tsx`
+- `assets/src/routes/commerce/revenue/attribution/RecentConversion.tsx`
 - `assets/src/routes/compare/recommendation-view-data.ts`
 - `assets/src/routes/compare/route-error-view-data.ts`
+- `assets/src/routes/compare/RouteErrorBoundary.tsx`
 - `assets/src/routes/compare/shared/shared-comparison-view-data.ts`
 - `assets/src/routes/home/home-view-data.ts`
+- `assets/src/routes/home/HomeRoute.tsx`
+- `assets/src/routes/home/HomeDeals.tsx`
+- `assets/src/routes/home/HomeProductLedger.tsx`
 - `assets/src/routes/ingestion/cj-programs/programs/program-dashboard-data.ts`
 - `assets/src/routes/merchants/detail/merchant-detail-view-data.ts`
 - `assets/src/routes/merchants/merchant-directory-view-data.ts`
@@ -114,7 +121,8 @@ Owned paths:
 Internal slices:
 
 - Generated Relay ownership while retaining the required Babel-plugin declaration.
-- One-use route projection and ordinary-recency consolidation.
+- Exactly four frontend merge rows, their direct consumers/tests, and only
+  HomeProductLedger ordinary-recency consolidation.
 - Trusted-ID duplicate-guard retirement with focused contracts.
 - Full anti-slop verification and closeout.
 

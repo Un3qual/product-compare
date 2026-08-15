@@ -136,50 +136,77 @@
 
 ---
 
-### Task 3: Remove generic route remnants and simplify route boundaries
+### Task 3: Merge four frontend helper projections
 
 **Files:**
-- Modify or delete only inventory rows classified `action: merge | delete`
-- Record already-absent `assets/src/routes/route-params.ts`, `assets/src/routes/route-errors.ts`, `assets/src/routes/relay-pagination.ts`, and `assets/src/routes/form-data.ts`; do not recreate them
-- Modify corresponding consumers and behavior tests
-- Modify remaining home, merchant, comparison, alert, community, and lifecycle
-  date consumers identified by Task 1
+- Modify only these four Task 1 frontend `action: merge` rows:
+  `assets/src/routes/catalog/results/browse-product-list-data.ts`,
+  `assets/src/routes/commerce/revenue/attribution/attribution-ledger-data.ts`,
+  `assets/src/routes/compare/route-error-view-data.ts`, and
+  `assets/src/routes/home/home-view-data.ts`
+- Modify only their direct consumers when necessary:
+  `assets/src/routes/catalog/results/BrowseProductList.tsx`,
+  `assets/src/routes/commerce/revenue/attribution/AttributionLedger.tsx`,
+  `assets/src/routes/commerce/revenue/attribution/RecentConversion.tsx`,
+  `assets/src/routes/compare/RouteErrorBoundary.tsx`,
+  `assets/src/routes/home/HomeRoute.tsx`, `assets/src/routes/home/HomeDeals.tsx`,
+  and `assets/src/routes/home/HomeProductLedger.tsx`
+- Modify only their focused behavior tests:
+  `assets/test/routes/catalog/results/browse-product-list-data.test.ts`,
+  `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`,
+  `assets/test/routes/compare/route-error-view-data.test.ts`, and
+  `assets/test/routes/home/home-view-data.test.ts`
+- Record the five already-absent `action: delete` paths; do not recreate or
+  otherwise add them to this task's edit set. Backend `action: merge` rows are
+  exclusively Task 4 work.
 
 **Interfaces:**
-- Consumes: Task 1 inventory rows classified `action: merge | delete`, each with an exact source path, owning consumer, and preserved behavior test.
-- Canonical slug/parameter presence checks live in the loader that owns the route parameter.
-- Mutation transport failures live in the shared Relay mutation boundary; domain payload errors remain typed per operation.
-- Cursor advancement remains with the connection/pagination owner and consumes generated `pageInfo`.
-- Native `FormData.get()` plus route-local normalization replaces one-line generic wrappers.
-- The shared `RelativeDateTime` leaf owns recency formatting and exact tooltip
-  access; route-specific date formatters remain only for exact-primary domains.
+- Consumes: exactly the four frontend Task 1 `action: merge` rows, their direct
+  consumers, and their named behavior tests. It does not consume backend merge
+  rows, any retained data owner, or an already-absent delete target.
+- `BrowseProductList` owns its stable generated-attribute highlight selection.
+  `AttributionLedger` and `RecentConversion` own their respective conversion
+  projections. `RouteErrorBoundary` owns its route-error copy and narrowing.
+  The three home components own their route/fragment projections.
+- The only relative-date change in this task is the ordinary price-observation
+  recency currently projected by `home-view-data.ts` and rendered by
+  `HomeProductLedger.tsx`. It moves to the shared `RelativeDateTime` leaf with
+  its exact tooltip. Do not alter exact-primary dates or date consumers in
+  merchant, comparison, alert, community, lifecycle, revenue, security, or CJ
+  cohorts.
 
 - [ ] **Step 1: Merge one-use helpers into owners**
 
-  Move copy selection, prop projection, default labels, status switches, mutation result strings, and simple field extraction to their sole consuming route/capability. Delete production/helper tests and preserve behavior in route tests.
+  Fold the four named helpers into only their direct consumers. Preserve the
+  current selection order, conversion outcome, error-copy, home projection, and
+  ordinary-recency behavior in the four named tests; remove a helper test only
+  when its assertions have moved into its owning behavior test.
 
-- [ ] **Step 2: Rename substantial survivors**
+- [ ] **Step 2: Verify direct imports and file-count reduction**
 
-  Retain Decimal comparison, URL serialization, list merge, pagination state, and multi-consumer transformations, but rename files after those responsibilities rather than `data` or `view-data`.
+  Confirm that only the four named helper files were removed or merged, every
+  direct consumer imports its local implementation, and no new barrel,
+  cross-route utility, or circular import was introduced.
 
-- [ ] **Step 3: Verify file-count reduction and imports**
+- [ ] **Step 3: Complete only the owned relative-date adoption**
 
-  Compare before/after production file count, inspect circular imports, and confirm leaf barrels have multiple consumers without pulling route chunks eagerly.
+  Characterize and migrate only HomeProductLedger's ordinary price-observation
+  recency. Add fixed-reference SSR, hydration, mouse, keyboard, and touch
+  coverage only when required by that owned rendering path.
 
-- [ ] **Step 4: Complete relative-date adoption**
-
-  Replace remaining price-check, offer-freshness, recent-content, and ordinary
-  lifecycle labels with the shared semantic component. Add fixed-reference SSR,
-  hydration, mouse, keyboard, and touch tests. Keep exact dates primary for
-  revenue ranges, coupon/token expiration, security events, and CJ/revenue
-  reconciliation.
-
-- [ ] **Step 5: Verify and commit**
+- [ ] **Step 4: Verify and commit**
 
   ```bash
   cd assets && pnpm run typecheck && pnpm run lint && pnpm run test:unit && pnpm run build
-  git add assets/src assets/test
-  git commit -m "refactor: remove generic route indirection"
+  git add assets/src/routes/catalog/results/{browse-product-list-data.ts,BrowseProductList.tsx} \
+    assets/src/routes/commerce/revenue/attribution/{attribution-ledger-data.ts,AttributionLedger.tsx,RecentConversion.tsx} \
+    assets/src/routes/compare/{route-error-view-data.ts,RouteErrorBoundary.tsx} \
+    assets/src/routes/home/{home-view-data.ts,HomeRoute.tsx,HomeDeals.tsx,HomeProductLedger.tsx} \
+    assets/test/routes/catalog/results/browse-product-list-data.test.ts \
+    assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts \
+    assets/test/routes/compare/route-error-view-data.test.ts \
+    assets/test/routes/home/home-view-data.test.ts
+  git commit -m "refactor: merge route helper projections"
   ```
 
 ---

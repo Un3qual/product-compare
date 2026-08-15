@@ -116,12 +116,19 @@ owners and are explicitly retained.
 ## Owned Paths For The Promoted Batch
 
 - `assets/src/routes/catalog/results/browse-product-list-data.ts`
+- `assets/src/routes/catalog/results/BrowseProductList.tsx`
 - `assets/src/routes/categories/category-view-data.ts`
 - `assets/src/routes/commerce/revenue/attribution/attribution-ledger-data.ts`
+- `assets/src/routes/commerce/revenue/attribution/AttributionLedger.tsx`
+- `assets/src/routes/commerce/revenue/attribution/RecentConversion.tsx`
 - `assets/src/routes/compare/recommendation-view-data.ts`
 - `assets/src/routes/compare/route-error-view-data.ts`
+- `assets/src/routes/compare/RouteErrorBoundary.tsx`
 - `assets/src/routes/compare/shared/shared-comparison-view-data.ts`
 - `assets/src/routes/home/home-view-data.ts`
+- `assets/src/routes/home/HomeRoute.tsx`
+- `assets/src/routes/home/HomeDeals.tsx`
+- `assets/src/routes/home/HomeProductLedger.tsx`
 - `assets/src/routes/ingestion/cj-programs/programs/program-dashboard-data.ts`
 - `assets/src/routes/merchants/detail/merchant-detail-view-data.ts`
 - `assets/src/routes/merchants/merchant-directory-view-data.ts`
@@ -167,8 +174,10 @@ owners and are explicitly retained.
 
 1. Retain the required untyped-Babel-plugin declaration and replace only the
    listed recreated Relay projections with generated ownership.
-2. Fold listed one-use route projections into their owners and move home
-   observation recency to the shared leaf while preserving exact-primary dates.
+2. Fold exactly the four frontend `action: merge` rows into their direct owners;
+   move only HomeProductLedger's ordinary price-observation recency to the
+   shared leaf while preserving exact-primary dates. Backend merge rows remain
+   Task 4, and the five already-absent delete rows remain records only.
 3. Characterize public and direct context calls, then retire only duplicate
    downstream bigint guards in the listed facade/read clusters.
 4. Run focused frontend/backend contracts, source searches, full gates, and a
