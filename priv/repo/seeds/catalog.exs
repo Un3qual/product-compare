@@ -489,16 +489,21 @@ defmodule ProductCompare.DevSeeds.Catalog do
       |> Repo.all()
       |> Map.new(&{{&1.product_id, &1.taxon_id}, &1})
 
-    rows =
-      Enum.map(generated_rows, fn row ->
-        case Map.get(existing_by_pair, {row.product_id, row.taxon_id}) do
-          nil -> row
-          assignment -> %{row | entropy_id: assignment.entropy_id}
-        end
-      end)
+    Enum.each(generated_rows, fn row ->
+      case Map.get(existing_by_pair, {row.product_id, row.taxon_id}) do
+        nil ->
+          :ok
+
+        %ProductTaxon{entropy_id: entropy_id} when entropy_id == row.entropy_id ->
+          :ok
+
+        %ProductTaxon{} ->
+          raise "Refusing to adopt generated use case #{row.product_id}/#{row.taxon_id}"
+      end
+    end)
 
     changed_rows =
-      Enum.reject(rows, fn row ->
+      Enum.reject(generated_rows, fn row ->
         case Map.get(existing_by_pair, {row.product_id, row.taxon_id}) do
           nil ->
             false

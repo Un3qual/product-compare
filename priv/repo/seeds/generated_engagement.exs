@@ -43,6 +43,14 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
     }
   }
 
+  @watch_evaluation_fields [
+    :last_evaluated_price_point_id,
+    :last_condition_met,
+    :last_evaluated_at,
+    :last_event_at,
+    :updated_at
+  ]
+
   @spec seed!(map(), map(), map(), DateTime.t(), map(), map()) :: map()
   def seed!(accounts, catalog, marketplace, anchor, profile, named) do
     targets = Map.fetch!(@targets, profile.density)
@@ -320,14 +328,47 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
 
     entropy_ids = Enum.map(rows, & &1.entropy_id)
 
-    PriceWatchRule
-    |> where([watch], watch.entropy_id in ^entropy_ids)
-    |> Repo.all()
-    |> Enum.each(fn watch ->
+    existing_watches =
+      PriceWatchRule
+      |> where([watch], watch.entropy_id in ^entropy_ids)
+      |> Repo.all()
+
+    Enum.each(existing_watches, fn watch ->
       if watch.user_id != shopper.id do
         raise "Generated watch #{watch.entropy_id} belongs to another user"
       end
     end)
+
+    existing_by_entropy_id = Map.new(existing_watches, &{&1.entropy_id, &1})
+    existing_watch_ids = Enum.map(existing_watches, & &1.id)
+    seed_alert_entropy_ids = seed_alert_entropy_ids()
+
+    locally_evaluated_watch_ids =
+      AlertEvent
+      |> where(
+        [event],
+        event.watch_rule_id in ^existing_watch_ids and
+          event.entropy_id not in ^seed_alert_entropy_ids
+      )
+      |> select([event], event.watch_rule_id)
+      |> distinct(true)
+      |> Repo.all()
+      |> MapSet.new()
+
+    rows =
+      Enum.map(rows, fn row ->
+        case Map.get(existing_by_entropy_id, row.entropy_id) do
+          %PriceWatchRule{id: watch_id} = watch ->
+            if MapSet.member?(locally_evaluated_watch_ids, watch_id) do
+              Map.merge(row, Map.take(watch, @watch_evaluation_fields))
+            else
+              row
+            end
+
+          nil ->
+            row
+        end
+      end)
 
     watches =
       Support.sync_owned_rows!(
@@ -427,8 +468,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
         {watch_id, Map.fetch!(indexes_by_entropy_id, entropy_id)}
       end)
 
-    seed_alert_entropy_ids =
-      for index <- indexes, round <- 0..1, do: event_entropy_id(index, round)
+    seed_alert_entropy_ids = seed_alert_entropy_ids(indexes)
 
     unexpected_watch_id =
       AlertEvent
@@ -557,6 +597,10 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
 
   defp event_entropy_id(watch_index, round) do
     Support.stable_uuid("development-generated-alert", "#{watch_index}:#{round}")
+  end
+
+  defp seed_alert_entropy_ids(indexes \\ 1..(@targets.full.watches - 4)) do
+    for index <- indexes, round <- 0..1, do: event_entropy_id(index, round)
   end
 
   defp reconcile_alerts!(selected_keys, full_keys) do

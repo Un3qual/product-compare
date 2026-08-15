@@ -49,6 +49,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompare.Specs
+  alias ProductCompare.Taxonomy, as: ProductTaxonomy
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Accounts.UserReputation
@@ -91,6 +92,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Specs.SpecificationCorrection
   alias ProductCompareSchemas.Taxonomy.Taxon
   alias ProductCompareSchemas.Taxonomy.Taxonomy
+  alias ProductCompareSchemas.Taxonomy.ProductTaxon
 
   @seed_password "supersecretpass123"
   @named_watch_entropy_ids [
@@ -285,6 +287,33 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     rerun = run_seed(["--density", "bounded"])
     assert Enum.map(rerun.catalog.all_products, &{&1.slug, &1.entropy_id}) == identities
+  end
+
+  test "reruns fail closed rather than adopt a recreated generated use-case assignment" do
+    run_seed(["--density", "bounded"])
+    product = Repo.get_by!(Product, slug: "dev-mon-001")
+    generated_assignment = Repo.get_by!(ProductTaxon, product_id: product.id)
+    participant = Repo.get_by!(User, email: "participant@example.com")
+
+    assert {:ok, 1} =
+             ProductTaxonomy.unassign_use_case(product.id, generated_assignment.taxon_id)
+
+    assert {:ok, local_assignment} =
+             ProductTaxonomy.assign_use_case(
+               product.id,
+               generated_assignment.taxon_id,
+               participant.id,
+               :user,
+               Decimal.new("0.35")
+             )
+
+    refute local_assignment.entropy_id == generated_assignment.entropy_id
+
+    assert_raise RuntimeError,
+                 ~r/Refusing to adopt generated use case/,
+                 fn -> run_seed(["--density", "bounded"]) end
+
+    assert Repo.get!(ProductTaxon, local_assignment.id) == local_assignment
   end
 
   test "generated current selections use fixture identities rather than database ids" do
@@ -3765,9 +3794,11 @@ defmodule ProductCompare.Repo.SeedsTest do
                in_stock: true
              })
 
+    first_evaluated_at = DateTime.add(observed_at, 1, :second)
+
     assert {:ok, %{events_created: 1}} =
              Alerts.evaluate_price_point(observation.id,
-               now: DateTime.add(observed_at, 1, :second)
+               now: first_evaluated_at
              )
 
     event =
@@ -3777,11 +3808,34 @@ defmodule ProductCompare.Repo.SeedsTest do
       )
 
     attempt = Repo.get_by!(AlertDeliveryAttempt, alert_event_id: event.id)
+    exercised_watch = Repo.get!(PriceWatchRule, watch.id)
 
     run_seed(["--density", "bounded"])
 
     assert Repo.get!(AlertEvent, event.id).watch_rule_id == watch.id
     assert Repo.get!(AlertDeliveryAttempt, attempt.id).alert_event_id == event.id
+
+    preserved_watch = Repo.get!(PriceWatchRule, watch.id)
+    assert preserved_watch.last_evaluated_price_point_id == observation.id
+    assert preserved_watch.last_condition_met
+    assert preserved_watch.last_evaluated_at == exercised_watch.last_evaluated_at
+    assert preserved_watch.last_event_at == exercised_watch.last_event_at
+
+    second_observed_at = DateTime.add(observed_at, 2, :microsecond)
+
+    assert {:ok, second_observation} =
+             Pricing.add_price_point(%{
+               merchant_product_id: watch.merchant_product_id,
+               observed_at: second_observed_at,
+               price: Decimal.new("1.00"),
+               shipping: Decimal.new("0.00"),
+               in_stock: true
+             })
+
+    assert {:ok, %{events_created: 0}} =
+             Alerts.evaluate_price_point(second_observation.id,
+               now: DateTime.add(first_evaluated_at, 1, :second)
+             )
   end
 
   test "full to bounded fails closed before deleting locally evaluated generated alerts" do
