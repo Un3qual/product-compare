@@ -33,6 +33,19 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
                                    Integer.to_string(index)
                                  )
                                end)
+  @generated_alert_entropy_ids (for index <- 1..156, round <- 0..1 do
+                                  Support.stable_uuid(
+                                    "development-generated-alert",
+                                    "#{index}:#{round}"
+                                  )
+                                end)
+  @named_alert_entropy_ids Enum.map([:target, :percentage_drop, :back_in_stock], fn key ->
+                             Support.stable_uuid(
+                               "development-named-alert",
+                               Atom.to_string(key)
+                             )
+                           end)
+  @seed_alert_entropy_ids @named_alert_entropy_ids ++ @generated_alert_entropy_ids
   @seed_watch_entropy_ids [
                             "d3ca0000-0000-4000-8000-000000000001",
                             "d3ca0000-0000-4000-8000-000000000002",
@@ -442,16 +455,16 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
 
     ensure_no_purchase_fact_references!(obsolete_ids)
     ensure_no_unowned_watch_references!(obsolete_ids)
+    ensure_no_local_alert_event_references!(obsolete_ids)
 
     obsolete_ids
     |> Enum.chunk_every(5_000)
     |> Enum.each(fn ids ->
       AlertEvent
-      |> join(:inner, [event], watch in PriceWatchRule, on: watch.id == event.watch_rule_id)
       |> where(
-        [event, watch],
+        [event],
         event.triggering_price_point_id in ^ids and
-          watch.entropy_id in ^@seed_watch_entropy_ids
+          event.entropy_id in ^@seed_alert_entropy_ids
       )
       |> Repo.delete_all()
 
@@ -485,6 +498,20 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
                (is_nil(watch.entropy_id) or watch.entropy_id not in ^@seed_watch_entropy_ids)
        ) do
       raise "Refusing to delete full-only price observations referenced by unowned watches"
+    end
+  end
+
+  defp ensure_no_local_alert_event_references!([]), do: :ok
+
+  defp ensure_no_local_alert_event_references!(price_point_ids) do
+    if Repo.exists?(
+         from event in AlertEvent,
+           where: event.triggering_price_point_id in ^price_point_ids,
+           where:
+             is_nil(event.entropy_id) or
+               event.entropy_id not in ^@seed_alert_entropy_ids
+       ) do
+      raise "Refusing to delete full-only price observations referenced by local alert events"
     end
   end
 

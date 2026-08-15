@@ -936,6 +936,58 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get!(PriceWatchRule, watch.id).last_evaluated_price_point_id == observation.id
   end
 
+  test "full to bounded fails closed before deleting local alert evidence from a seed watch" do
+    bounded = run_seed(["--density", "bounded"])
+    bounded_offer_ids = MapSet.new(bounded.marketplace.all_offers, & &1.entropy_id)
+    full = run_seed(["--density", "full"])
+    watch = full.engagement.alerts.watches.target
+
+    full_only_offer =
+      Enum.find(full.marketplace.all_offers, fn offer ->
+        offer.product_id == watch.product_id and
+          offer.currency == watch.currency and
+          not MapSet.member?(bounded_offer_ids, offer.entropy_id) and offer.is_active
+      end)
+
+    observation =
+      full.marketplace.all_price_points
+      |> Enum.filter(&(&1.merchant_product_id == full_only_offer.id))
+      |> Enum.max_by(& &1.observed_at, DateTime)
+
+    evaluation_now = DateTime.add(full.anchor, 2 * 86_400, :second)
+
+    observation =
+      observation
+      |> PricePoint.changeset(%{
+        observed_at: DateTime.add(evaluation_now, -1, :second),
+        price: Decimal.new("1.00"),
+        shipping: Decimal.new("0.00"),
+        in_stock: true
+      })
+      |> Repo.update!()
+
+    assert {:ok, %{events_created: events_created}} =
+             Alerts.evaluate_price_point(observation.id, now: evaluation_now)
+
+    assert events_created > 0
+
+    event =
+      Repo.get_by!(AlertEvent,
+        watch_rule_id: watch.id,
+        triggering_price_point_id: observation.id
+      )
+
+    attempt = Repo.get_by!(AlertDeliveryAttempt, alert_event_id: event.id)
+
+    assert_raise RuntimeError,
+                 ~r/Refusing to delete full-only price observations referenced by local alert events/,
+                 fn -> run_seed(["--density", "bounded"]) end
+
+    assert Repo.get!(PricePoint, observation.id).entropy_id == observation.entropy_id
+    assert Repo.get!(AlertEvent, event.id).triggering_price_point_id == observation.id
+    assert Repo.get!(AlertDeliveryAttempt, attempt.id).alert_event_id == event.id
+  end
+
   test "full to bounded retains a monthly artifact referenced by a local coupon" do
     full = run_seed(["--density", "full"])
 

@@ -43,6 +43,13 @@ defmodule ProductCompare.DevSeeds.Engagement do
     back_in_stock: "d3ca0000-0000-4000-8000-000000000003",
     newly_available: Support.unobserved_watch_entropy_id()
   }
+  @alert_entropy_ids Map.new([:target, :percentage_drop, :back_in_stock], fn key ->
+                       {key,
+                        Support.stable_uuid(
+                          "development-named-alert",
+                          Atom.to_string(key)
+                        )}
+                     end)
 
   @spec seed!(map(), map(), map(), DateTime.t(), map()) :: map()
   def seed!(
@@ -263,6 +270,10 @@ defmodule ProductCompare.DevSeeds.Engagement do
 
     restore_seed_alert_event_observation!(reserved_watch_ids, trigger)
 
+    reserve_seed_alert_entropy_id!(target, :target)
+    reserve_seed_alert_entropy_id!(percentage_drop, :percentage_drop)
+    reserve_seed_alert_entropy_id!(back_in_stock, :back_in_stock)
+
     newly_available =
       recreate_seed_watch!(shopper.id, :newly_available, %{
         product_id: products.projector.id,
@@ -321,6 +332,13 @@ defmodule ProductCompare.DevSeeds.Engagement do
       event.watch_rule_id in ^watch_ids and event.triggering_price_point_id == ^trigger.id
     )
     |> Repo.update_all(set: [observed_at: trigger.observed_at])
+  end
+
+  defp reserve_seed_alert_entropy_id!(watch, key) do
+    Repo.get_by!(AlertEvent, watch_rule_id: watch.id)
+    |> Ecto.Changeset.change(entropy_id: Map.fetch!(@alert_entropy_ids, key))
+    |> Repo.update()
+    |> Support.expect!("reserve #{key} alert")
   end
 
   defp recreate_seed_watch!(shopper_id, key, attrs) do
