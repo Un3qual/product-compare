@@ -1,13 +1,8 @@
 import type { MerchantDirectoryView_item$data } from "$generated/MerchantDirectoryView_item.graphql";
+import type { MerchantDirectoryView_merchants$data } from "$generated/MerchantDirectoryView_merchants.graphql";
 import { externalWebsiteHref } from "$frontend/navigation/external-links";
 
-export type MerchantDirectoryViewDataMerchant = {
-  name: string;
-};
-
-export type MerchantDirectoryResultNode = Omit<MerchantDirectoryView_item$data, " $fragmentType">;
-
-export function buildMerchantDirectoryRows(merchants: readonly MerchantDirectoryResultNode[]) {
+export function buildMerchantDirectoryRows(merchants: readonly MerchantDirectoryView_item$data[]) {
   return merchants.map((merchant) => ({
     detailHref: `/merchants/${encodeURIComponent(merchant.slug)}`,
     domain: merchant.domain,
@@ -17,8 +12,8 @@ export function buildMerchantDirectoryRows(merchants: readonly MerchantDirectory
   }));
 }
 
-export function getMerchantDirectoryViewData<T extends MerchantDirectoryViewDataMerchant>(
-  merchants: readonly T[],
+export function getMerchantDirectoryViewData(
+  merchants: readonly MerchantDirectoryView_merchants$data["edges"][number]["node"][],
   filterText: string,
 ) {
   const normalizedFilterText = filterText.trim().toLowerCase();

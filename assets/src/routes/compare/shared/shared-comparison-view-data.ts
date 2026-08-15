@@ -5,54 +5,9 @@ import {
   recommendationReasonCopy,
 } from "../recommendation-view-data";
 
-type SharedComparisonSnapshotNode = NonNullable<
-  SharedComparisonRouteQuery["response"]["comparisonSnapshot"]
->;
-type SharedComparisonProductNode = SharedComparisonSnapshotNode["products"][number];
-type SharedComparisonAttributeNode = SharedComparisonProductNode["attributes"][number];
-type SharedComparisonEvidenceNode = SharedComparisonAttributeNode["evidence"][number];
-type SharedComparisonOfferNode = SharedComparisonProductNode["offers"][number];
-type SharedComparisonRecommendationNode = SharedComparisonSnapshotNode["recommendation"];
-type SharedComparisonRankingNode = SharedComparisonRecommendationNode["rankings"][number];
-
-type SharedComparisonAttributeInput = Pick<
-  SharedComparisonAttributeNode,
-  "claimId" | "displayName" | "valueText"
-> & {
-  readonly evidence: ReadonlyArray<Pick<SharedComparisonEvidenceNode, "sourceName">>;
-};
-
-type SharedComparisonOfferInput = Pick<
-  SharedComparisonOfferNode,
-  "currency" | "landedPrice" | "merchantName" | "observedAt" | "pricePointId"
->;
-
-type SharedComparisonProductInput = Pick<
-  SharedComparisonProductNode,
-  "brandName" | "description" | "id" | "modelNumber" | "name" | "slug"
-> & {
-  readonly attributes: readonly SharedComparisonAttributeInput[];
-  readonly offers: readonly SharedComparisonOfferInput[];
-};
-
-type SharedComparisonRecommendationInput = Pick<
-  SharedComparisonRecommendationNode,
-  "evaluatedAt" | "missingInputs" | "winnerProductId"
-> & {
-  readonly rankings: ReadonlyArray<
-    Pick<SharedComparisonRankingNode, "productId" | "productName" | "reasons">
-  >;
-};
-
-type SharedComparisonSnapshotInput = Pick<
-  SharedComparisonSnapshotNode,
-  "capturedAt" | "disclaimer" | "title"
-> & {
-  readonly products: readonly SharedComparisonProductInput[];
-  readonly recommendation: SharedComparisonRecommendationInput;
-};
-
-export function buildSharedComparisonViewData(snapshot: SharedComparisonSnapshotInput) {
+export function buildSharedComparisonViewData(
+  snapshot: NonNullable<SharedComparisonRouteQuery["response"]["comparisonSnapshot"]>,
+) {
   const products = snapshot.products;
   const recommendation = snapshot.recommendation;
   const winner = recommendation.rankings.find(
@@ -81,7 +36,9 @@ export function buildSharedComparisonViewData(snapshot: SharedComparisonSnapshot
   };
 }
 
-function projectProduct(product: SharedComparisonProductInput) {
+function projectProduct(
+  product: NonNullable<SharedComparisonRouteQuery["response"]["comparisonSnapshot"]>["products"][number],
+) {
   const brandName = nonBlankText(product.brandName) ?? "Unknown brand";
   const modelNumber = nonBlankText(product.modelNumber);
 

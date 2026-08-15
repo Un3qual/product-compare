@@ -1,23 +1,13 @@
-import type {
-  CJProgramStage,
-  CJProgramWarningCode,
-} from "$generated/ProgramLifecycleRow_program.graphql";
+import type { CJProgramsRouteQuery } from "$generated/CJProgramsRouteQuery.graphql";
 import {
   CJ_PROGRAM_STAGES,
   cjProgramNeedsAttention,
   cjProgramRequiredAction,
 } from "./lifecycle-policy";
 
-type StageCounts = Readonly<Record<(typeof CJ_PROGRAM_STAGES)[number]["countKey"], number>>;
-
-type AttentionProgram = {
-  readonly advertiserId: string;
-  readonly advertiserName: string | null;
-  readonly stage: CJProgramStage;
-  readonly warningCodes: readonly CJProgramWarningCode[];
-};
-
-export function buildCJLifecycleSummary(counts: StageCounts) {
+export function buildCJLifecycleSummary(
+  counts: CJProgramsRouteQuery["response"]["cjProgramStageCounts"],
+) {
   const stageItems = CJ_PROGRAM_STAGES.map(({ countKey, label }) => ({
     label,
     value: counts[countKey],
@@ -29,9 +19,12 @@ export function buildCJLifecycleSummary(counts: StageCounts) {
   ];
 }
 
-export function selectCJProgramAttention(programs: readonly AttentionProgram[]) {
+export function selectCJProgramAttention(
+  programs: readonly CJProgramsRouteQuery["response"]["cjPrograms"]["edges"][number]["node"][],
+) {
   let count = 0;
-  let selected: AttentionProgram | null = null;
+  let selected: CJProgramsRouteQuery["response"]["cjPrograms"]["edges"][number]["node"] | null =
+    null;
 
   for (const program of programs) {
     if (!cjProgramNeedsAttention(program.stage, program.warningCodes)) continue;
