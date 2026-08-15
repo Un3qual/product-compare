@@ -1345,44 +1345,56 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
     fixtures = correction_fixtures(accounts, catalog, full_count)
     reconcile_corrections!(Enum.drop(fixtures, selected_count))
 
-    fixtures
-    |> Enum.take(selected_count)
-    |> Enum.map(fn fixture ->
-      entropy_id = correction_entropy_id(fixture.index)
+    selected =
+      fixtures
+      |> Enum.take(selected_count)
+      |> Enum.map(fn fixture ->
+        entropy_id = correction_entropy_id(fixture.index)
 
-      correction =
-        case Repo.get_by(SpecificationCorrection, entropy_id: entropy_id) do
-          nil ->
-            ensure_no_current_for_new_accepted_fixture!(fixture)
+        correction =
+          case Repo.get_by(SpecificationCorrection, entropy_id: entropy_id) do
+            nil ->
+              ensure_no_current_for_new_accepted_fixture!(fixture)
 
-            Specs.propose_correction(
-              fixture.product.id,
-              fixture.attribute.id,
-              fixture.owner.id,
-              %{value_text: "Development finish correction #{fixture.index}"},
-              %{
-                reason: "Generated development specification correction #{fixture.index}",
-                source_url:
-                  "https://manufacturer.example/development/corrections/#{fixture.index}",
-                explanation: "Deterministic correction lifecycle coverage."
-              }
-            )
-            |> Support.expect!("generated correction #{fixture.index}")
-            |> Ecto.Changeset.change(entropy_id: entropy_id)
-            |> Repo.update()
-            |> Support.expect!("reserve generated correction #{fixture.index}")
+              Specs.propose_correction(
+                fixture.product.id,
+                fixture.attribute.id,
+                fixture.owner.id,
+                %{value_text: "Development finish correction #{fixture.index}"},
+                %{
+                  reason: "Generated development specification correction #{fixture.index}",
+                  source_url:
+                    "https://manufacturer.example/development/corrections/#{fixture.index}",
+                  explanation: "Deterministic correction lifecycle coverage."
+                }
+              )
+              |> Support.expect!("generated correction #{fixture.index}")
+              |> Ecto.Changeset.change(entropy_id: entropy_id)
+              |> Repo.update()
+              |> Support.expect!("reserve generated correction #{fixture.index}")
 
-          %SpecificationCorrection{} = correction ->
-            verify_correction_owner!(correction, fixture)
-        end
+            %SpecificationCorrection{} = correction ->
+              verify_correction_owner!(correction, fixture)
+          end
 
+        {fixture, correction}
+      end)
+
+    preserved_scopes =
+      selected
+      |> Enum.map(fn {fixture, correction} ->
+        %{
+          product_id: fixture.product.id,
+          attribute_id: fixture.attribute.id,
+          claim_id: correction.claim_id
+        }
+      end)
+      |> CorrectionSafety.preserved_current_scopes()
+
+    Enum.map(selected, fn {fixture, correction} ->
       preserve_current? =
         fixture.status == :pending and
-          CorrectionSafety.preserve_current_for_pending?(
-            fixture.product.id,
-            fixture.attribute.id,
-            correction.claim_id
-          )
+          MapSet.member?(preserved_scopes, {fixture.product.id, fixture.attribute.id})
 
       correction =
         cond do

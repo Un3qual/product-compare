@@ -87,12 +87,19 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
     |> Enum.map(fn fixture ->
       entropy_id = Support.stable_uuid("development-merchant", fixture.key)
 
-      existing =
-        Repo.get_by(Merchant, domain: fixture.domain) || Repo.get_by(Merchant, name: fixture.name)
+      owned_merchant = Repo.get_by(Merchant, entropy_id: entropy_id)
+
+      natural_key_matches =
+        Merchant
+        |> where(
+          [merchant],
+          merchant.domain == ^fixture.domain or merchant.name == ^fixture.name
+        )
+        |> Repo.all()
 
       merchant =
-        case existing do
-          nil ->
+        cond do
+          is_nil(owned_merchant) and natural_key_matches == [] ->
             fixture
             |> Pricing.upsert_merchant()
             |> Support.expect!("merchant #{fixture.domain}")
@@ -100,12 +107,14 @@ defmodule ProductCompare.DevSeeds.GeneratedMarketplace do
             |> Repo.update()
             |> Support.expect!("merchant entropy #{fixture.domain}")
 
-          %Merchant{entropy_id: ^entropy_id, domain: domain, name: name}
-          when domain == fixture.domain and name == fixture.name ->
-            Pricing.upsert_merchant(fixture)
+          not is_nil(owned_merchant) and
+              Enum.all?(natural_key_matches, &(&1.id == owned_merchant.id)) ->
+            owned_merchant
+            |> Merchant.changeset(fixture)
+            |> Repo.update()
             |> Support.expect!("merchant #{fixture.domain}")
 
-          %Merchant{} ->
+          true ->
             raise "Refusing to adopt generated merchant #{fixture.domain}"
         end
 

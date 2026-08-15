@@ -39,6 +39,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompare.DevSeeds.Engagement, as: DevSeedEngagement
   alias ProductCompare.DevSeeds.GeneratedEngagement, as: DevSeedGeneratedEngagement
   alias ProductCompare.DevSeeds.Marketplace, as: DevSeedMarketplace
+  alias ProductCompare.DevSeeds.Operations, as: DevSeedOperations
   alias ProductCompare.DevSeeds.Profile, as: DevSeedProfile
   alias ProductCompare.DevSeeds.Support, as: DevSeedSupport
   alias ProductCompare.Discussions
@@ -513,10 +514,20 @@ defmodule ProductCompare.Repo.SeedsTest do
              attribute_id: generated_correction.attribute_id
            ).claim_id == generated_correction.claim_id
 
-    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+    assert {:ok, %SpecificationCorrection{status: :accepted} = accepted_follow_up} =
              Specs.moderate_correction(follow_up.id, moderator.id, :accepted, %{
                moderation_note: "Developer accepted the follow-up"
              })
+
+    run_seed(["--density", "bounded"])
+
+    assert Repo.get!(SpecificationCorrection, generated_correction.id).status == :accepted
+    assert Repo.get!(SpecificationCorrection, follow_up.id).status == :accepted
+
+    assert Repo.get_by!(ProductAttributeCurrent,
+             product_id: generated_correction.product_id,
+             attribute_id: generated_correction.attribute_id
+           ).claim_id == accepted_follow_up.claim_id
   end
 
   test "operations densities scale ingestion and attribution coverage" do
@@ -687,6 +698,23 @@ defmodule ProductCompare.Repo.SeedsTest do
         import_run_id: full_only_run.id,
         external_product_id: external_product.id
       )
+
+    observed_run = Repo.get!(ImportRun, full_only_run.id)
+    second_anchor = DateTime.add(full.anchor, 3_600, :second)
+
+    rerun_operations =
+      DevSeedOperations.seed!(
+        full.accounts,
+        full.catalog,
+        full.marketplace,
+        second_anchor,
+        full.profile
+      )
+
+    assert Repo.get!(ImportRun, full_only_run.id) == observed_run
+
+    assert Enum.find(rerun_operations.all_import_runs, &(&1.id == full_only_run.id)) ==
+             observed_run
 
     assert_raise RuntimeError,
                  ~r/Refusing to delete full-only import .* with reconciliation observations/,
@@ -2257,6 +2285,11 @@ defmodule ProductCompare.Repo.SeedsTest do
     seeded_merchant = Repo.get_by!(Merchant, domain: "examplemart.test")
     seeded_network = Repo.get_by!(AffiliateNetwork, name: "Development Affiliate Network")
 
+    generated_merchant_fixture =
+      DevSeedProfile.config!(:bounded) |> DevSeedDictionary.merchant_fixtures() |> hd()
+
+    generated_merchant = Repo.get_by!(Merchant, domain: generated_merchant_fixture.domain)
+
     assert {:ok, _renamed_product} =
              Catalog.update_product(seeded_product, %{name: "Corrupted development product"})
 
@@ -2267,6 +2300,14 @@ defmodule ProductCompare.Repo.SeedsTest do
                program_code: "DEV-EXAMPLEMART",
                status: "paused"
              })
+
+    assert {:ok, %Merchant{id: generated_merchant_id}} =
+             Pricing.upsert_merchant(%{
+               name: "Ingestion-renamed generated merchant",
+               domain: generated_merchant.domain
+             })
+
+    assert generated_merchant_id == generated_merchant.id
 
     assert {:ok, unrelated_user} =
              Accounts.register_user(%{
@@ -2310,6 +2351,13 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert seed_scope_counts() == first_counts
     assert Repo.get_by!(Product, slug: "acme-vision-27g").name == "Acme Vision 27G"
+
+    restored_generated_merchant =
+      Repo.get_by!(Merchant, entropy_id: generated_merchant.entropy_id)
+
+    assert restored_generated_merchant.id == generated_merchant_id
+    assert restored_generated_merchant.name == generated_merchant_fixture.name
+    assert restored_generated_merchant.domain == generated_merchant_fixture.domain
 
     assert %AffiliateProgram{status: "active"} =
              Repo.get_by!(AffiliateProgram,

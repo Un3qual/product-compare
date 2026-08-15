@@ -290,6 +290,8 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
       |> Repo.all()
       |> Map.new(&{&1.query["seedScenario"], &1})
 
+    observed_import_run_ids = observed_import_run_ids(existing_by_scenario)
+
     persisted_fields = [
       :source_id,
       :surface,
@@ -327,17 +329,45 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
         attrs = import_attrs(source, anchor, index)
         final_attrs = final_import_attrs(attrs, index)
 
-        %ImportRun{}
-        |> ImportRun.changeset(final_attrs)
-        |> Support.validated_row!(persisted_fields,
-          entropy_id: entropy_id,
-          inserted_at: anchor,
-          updated_at: anchor,
-          stage: "generated import #{index}"
-        )
+        row =
+          %ImportRun{}
+          |> ImportRun.changeset(final_attrs)
+          |> Support.validated_row!(persisted_fields,
+            entropy_id: entropy_id,
+            inserted_at: anchor,
+            updated_at: anchor,
+            stage: "generated import #{index}"
+          )
+
+        case Map.get(existing_by_scenario, scenario) do
+          %ImportRun{id: run_id} = run ->
+            if MapSet.member?(observed_import_run_ids, run_id) do
+              Map.take(run, [:entropy_id, :inserted_at, :updated_at | persisted_fields])
+            else
+              row
+            end
+
+          nil ->
+            row
+        end
       end)
 
     Support.sync_owned_rows!(ImportRun, rows, persisted_fields, stage: "generated imports")
+  end
+
+  defp observed_import_run_ids(existing_by_scenario) do
+    run_ids = existing_by_scenario |> Map.values() |> Enum.map(& &1.id)
+
+    if run_ids == [] do
+      MapSet.new()
+    else
+      ImportObservation
+      |> where([observation], observation.import_run_id in ^run_ids)
+      |> select([observation], observation.import_run_id)
+      |> distinct(true)
+      |> Repo.all()
+      |> MapSet.new()
+    end
   end
 
   defp import_attrs(source, anchor, index) do
