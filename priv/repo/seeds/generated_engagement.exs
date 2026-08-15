@@ -392,6 +392,8 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
 
   defp reconcile_watches!(shopper, selected_count, full_count) do
     if selected_count < full_count do
+      ensure_full_only_watches_have_only_seed_alerts!(selected_count, full_count)
+
       Enum.each((selected_count + 1)..full_count, fn index ->
         case Repo.get_by(PriceWatchRule, entropy_id: watch_entropy_id(index)) do
           nil ->
@@ -407,6 +409,41 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
             raise "Full-only watch #{index} belongs to another user"
         end
       end)
+    end
+  end
+
+  defp ensure_full_only_watches_have_only_seed_alerts!(selected_count, full_count) do
+    indexes = Enum.to_list((selected_count + 1)..full_count)
+    indexes_by_entropy_id = Map.new(indexes, &{watch_entropy_id(&1), &1})
+
+    watches =
+      PriceWatchRule
+      |> where([watch], watch.entropy_id in ^Map.keys(indexes_by_entropy_id))
+      |> select([watch], {watch.id, watch.entropy_id})
+      |> Repo.all()
+
+    indexes_by_watch_id =
+      Map.new(watches, fn {watch_id, entropy_id} ->
+        {watch_id, Map.fetch!(indexes_by_entropy_id, entropy_id)}
+      end)
+
+    seed_alert_entropy_ids =
+      for index <- indexes, round <- 0..1, do: event_entropy_id(index, round)
+
+    unexpected_watch_id =
+      AlertEvent
+      |> where(
+        [event],
+        event.watch_rule_id in ^Map.keys(indexes_by_watch_id) and
+          event.entropy_id not in ^seed_alert_entropy_ids
+      )
+      |> select([event], event.watch_rule_id)
+      |> limit(1)
+      |> Repo.one()
+
+    if unexpected_watch_id do
+      index = Map.fetch!(indexes_by_watch_id, unexpected_watch_id)
+      raise "Refusing to delete full-only watch #{index} with locally evaluated alerts"
     end
   end
 
@@ -465,16 +502,6 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
 
       raise "Generated alert plan contains duplicate watch/observation pairs: #{inspect(duplicate_pairs)}"
     end
-
-    watch_ids = Enum.map(watches, & &1.id)
-    expected_entropy_ids = Enum.map(rows, & &1.entropy_id)
-
-    AlertEvent
-    |> where(
-      [event],
-      event.watch_rule_id in ^watch_ids and event.entropy_id not in ^expected_entropy_ids
-    )
-    |> Repo.delete_all()
 
     persisted_fields = [
       :watch_rule_id,

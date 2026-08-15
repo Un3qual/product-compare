@@ -13,6 +13,7 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Ingestion.CJProgram
+  alias ProductCompareSchemas.Ingestion.ImportObservation
   alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
 
@@ -411,6 +412,13 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
           %ImportRun{} = run ->
             if run.entropy_id != import_entropy_id(index) do
               raise "Full-only import #{import_scenario(index)} has an unexpected owner"
+            end
+
+            if Repo.exists?(
+                 from observation in ImportObservation,
+                   where: observation.import_run_id == ^run.id
+               ) do
+              raise "Refusing to delete full-only import #{import_scenario(index)} with reconciliation observations"
             end
 
             Repo.delete!(run)

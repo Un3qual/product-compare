@@ -49,14 +49,40 @@ defmodule ProductCompare.DevSeeds.CorrectionSafety do
     Repo.exists?(query)
   end
 
-  @spec without_pending_current_replacements([map()]) :: [map()]
-  def without_pending_current_replacements([]), do: []
+  @spec preserved_current_scopes([map()]) :: MapSet.t({pos_integer(), pos_integer()})
+  def preserved_current_scopes([]), do: MapSet.new()
 
-  def without_pending_current_replacements(current_rows) do
+  def preserved_current_scopes(current_rows) do
     product_ids = current_rows |> Enum.map(& &1.product_id) |> Enum.uniq()
     attribute_ids = current_rows |> Enum.map(& &1.attribute_id) |> Enum.uniq()
 
-    preserved_scopes =
+    seed_claim_ids =
+      Map.new(current_rows, fn row ->
+        {{row.product_id, row.attribute_id}, row.claim_id}
+      end)
+
+    accepted_replacement_scopes =
+      ProductAttributeCurrent
+      |> join(:inner, [current], claim in ProductAttributeClaim, on: claim.id == current.claim_id)
+      |> where(
+        [current, claim],
+        current.product_id in ^product_ids and current.attribute_id in ^attribute_ids and
+          claim.status == :accepted
+      )
+      |> select([current], {current.product_id, current.attribute_id, current.claim_id})
+      |> Repo.all()
+      |> Enum.flat_map(fn {product_id, attribute_id, current_claim_id} ->
+        scope = {product_id, attribute_id}
+
+        case Map.fetch(seed_claim_ids, scope) do
+          {:ok, ^current_claim_id} -> []
+          {:ok, _seed_claim_id} -> [scope]
+          :error -> []
+        end
+      end)
+      |> MapSet.new()
+
+    pending_scopes =
       SpecificationCorrection
       |> join(:inner, [correction], claim in ProductAttributeClaim,
         on: claim.id == correction.claim_id
@@ -80,8 +106,6 @@ defmodule ProductCompare.DevSeeds.CorrectionSafety do
       |> Repo.all()
       |> MapSet.new()
 
-    Enum.reject(current_rows, fn row ->
-      MapSet.member?(preserved_scopes, {row.product_id, row.attribute_id})
-    end)
+    MapSet.union(accepted_replacement_scopes, pending_scopes)
   end
 end

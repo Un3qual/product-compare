@@ -56,6 +56,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Affiliate.Coupon
+  alias ProductCompareSchemas.Alerts.AlertDeliveryAttempt
   alias ProductCompareSchemas.Alerts.AlertEvent
   alias ProductCompareSchemas.Alerts.Cooldown
   alias ProductCompareSchemas.Alerts.PriceWatchRule
@@ -77,9 +78,11 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Ingestion.CJProgram
+  alias ProductCompareSchemas.Ingestion.ImportObservation
   alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.ClaimEvidence
+  alias ProductCompareSchemas.Specs.ExternalProduct
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.Source
@@ -651,6 +654,46 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Repo.get!(PriceWatchRule, watch.id).merchant_product_id == full_only_offer.id
     assert Repo.get!(MerchantProduct, full_only_offer.id).entropy_id == full_only_offer.entropy_id
+  end
+
+  test "full to bounded fails closed before deleting a generated import with local observations" do
+    full = run_seed(["--density", "full"])
+
+    full_only_run =
+      Enum.find(full.operations.all_import_runs, fn run ->
+        run.query["seedScenario"] == "development-generated-import-116"
+      end)
+
+    external_product =
+      %ExternalProduct{}
+      |> ExternalProduct.changeset(%{
+        source_id: full.operations.cj_source.id,
+        external_id: "developer-generated-import-observation",
+        product_id: hd(full.catalog.all_products).id,
+        last_seen_at: full.anchor
+      })
+      |> Repo.insert!()
+
+    merchant_product = hd(full.marketplace.all_offers)
+
+    assert :ok =
+             ProductCompare.Ingestion.Reconciliation.observe(full_only_run, %{
+               external_product: external_product,
+               merchant_product: merchant_product
+             })
+
+    observation =
+      Repo.get_by!(ImportObservation,
+        import_run_id: full_only_run.id,
+        external_product_id: external_product.id
+      )
+
+    assert_raise RuntimeError,
+                 ~r/Refusing to delete full-only import .* with reconciliation observations/,
+                 fn -> run_seed(["--density", "bounded"]) end
+
+    assert Repo.get!(ImportRun, full_only_run.id).entropy_id == full_only_run.entropy_id
+    assert Repo.get!(ImportObservation, observation.id).import_run_id == full_only_run.id
   end
 
   test "full to bounded fails closed before deleting a user answer on a full-only question" do
@@ -3181,6 +3224,49 @@ defmodule ProductCompare.Repo.SeedsTest do
              })
   end
 
+  test "reruns preserve an accepted correction on a generated attribute" do
+    seed = run_seed(["--density", "bounded"])
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+    product = Repo.get_by!(Product, slug: "dev-mon-001")
+
+    generated_current =
+      Repo.get_by!(ProductAttributeCurrent,
+        product_id: product.id,
+        attribute_id: seed.catalog.attributes.hdr_supported.id
+      )
+
+    generated_claim = Repo.get!(ProductAttributeClaim, generated_current.claim_id)
+
+    assert {:ok, correction} =
+             Specs.propose_correction(
+               product.id,
+               generated_claim.attribute_id,
+               shopper.id,
+               %{value_bool: not generated_claim.value_bool},
+               %{
+                 reason: "Developer accepted a generated-attribute correction",
+                 explanation: "The accepted local selection must remain current after reseeding."
+               }
+             )
+
+    assert {:ok, %SpecificationCorrection{claim_id: accepted_claim_id}} =
+             Specs.moderate_correction(correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer selected the local correction"
+             })
+
+    run_seed(["--density", "bounded"])
+
+    assert Repo.get_by!(ProductAttributeCurrent,
+             product_id: product.id,
+             attribute_id: generated_claim.attribute_id
+           ).claim_id == accepted_claim_id
+
+    assert Repo.get!(ProductAttributeClaim, accepted_claim_id).status == :accepted
+    assert Repo.get!(ProductAttributeClaim, generated_claim.id).status == :superseded
+  end
+
   test "reruns preserve an empty current claim required by a pending correction" do
     anchor = ~U[2026-07-31 12:00:00.000000Z]
     accounts = DevSeedAccounts.seed!(@seed_password, anchor)
@@ -3607,6 +3693,91 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Repo.get!(PricePoint, observation.id).merchant_product_id == offer.id
     assert Repo.get!(AlertEvent, event.id).watch_rule_id == watch.id
+  end
+
+  test "reruns preserve locally evaluated alerts on generated watches" do
+    seed = run_seed(["--density", "bounded"])
+
+    watch =
+      Enum.find(seed.engagement.all_watches, fn watch ->
+        watch.rule_type == :target_price and watch.enabled and
+          is_integer(watch.merchant_product_id) and
+          watch.entropy_id not in @named_watch_entropy_ids
+      end)
+
+    latest = Pricing.latest_price(watch.merchant_product_id)
+    observed_at = DateTime.add(latest.observed_at, 1, :microsecond)
+
+    assert {:ok, observation} =
+             Pricing.add_price_point(%{
+               merchant_product_id: watch.merchant_product_id,
+               observed_at: observed_at,
+               price: Decimal.new("1.00"),
+               shipping: Decimal.new("0.00"),
+               in_stock: true
+             })
+
+    assert {:ok, %{events_created: 1}} =
+             Alerts.evaluate_price_point(observation.id,
+               now: DateTime.add(observed_at, 1, :second)
+             )
+
+    event =
+      Repo.get_by!(AlertEvent,
+        watch_rule_id: watch.id,
+        triggering_price_point_id: observation.id
+      )
+
+    attempt = Repo.get_by!(AlertDeliveryAttempt, alert_event_id: event.id)
+
+    run_seed(["--density", "bounded"])
+
+    assert Repo.get!(AlertEvent, event.id).watch_rule_id == watch.id
+    assert Repo.get!(AlertDeliveryAttempt, attempt.id).alert_event_id == event.id
+  end
+
+  test "full to bounded fails closed before deleting locally evaluated generated alerts" do
+    run_seed(["--density", "full"])
+
+    watch =
+      Repo.get_by!(PriceWatchRule,
+        entropy_id: DevSeedSupport.stable_uuid("development-generated-watch", "45")
+      )
+
+    latest = Pricing.latest_price(watch.merchant_product_id)
+    observed_at = DateTime.add(latest.observed_at, 1, :microsecond)
+
+    assert {:ok, observation} =
+             Pricing.add_price_point(%{
+               merchant_product_id: watch.merchant_product_id,
+               observed_at: observed_at,
+               price: Decimal.new("1.00"),
+               shipping: Decimal.new("0.00"),
+               in_stock: true
+             })
+
+    assert {:ok, %{events_created: events_created}} =
+             Alerts.evaluate_price_point(observation.id,
+               now: DateTime.add(observed_at, 1, :second)
+             )
+
+    assert events_created > 0
+
+    event =
+      Repo.get_by!(AlertEvent,
+        watch_rule_id: watch.id,
+        triggering_price_point_id: observation.id
+      )
+
+    attempt = Repo.get_by!(AlertDeliveryAttempt, alert_event_id: event.id)
+
+    assert_raise RuntimeError,
+                 ~r/Refusing to delete full-only watch .* with locally evaluated alerts/,
+                 fn -> run_seed(["--density", "bounded"]) end
+
+    assert Repo.get!(PriceWatchRule, watch.id).entropy_id == watch.entropy_id
+    assert Repo.get!(AlertEvent, event.id).watch_rule_id == watch.id
+    assert Repo.get!(AlertDeliveryAttempt, attempt.id).alert_event_id == event.id
   end
 
   test "reruns preserve an unobserved price referenced by another user's watch" do

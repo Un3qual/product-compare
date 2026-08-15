@@ -929,13 +929,37 @@ defmodule ProductCompare.DevSeeds.Catalog do
 
     verify_generated_claim_ownership!(rows)
 
-    Repo.insert_all(ProductAttributeClaim, rows,
+    entropy_ids = Enum.map(rows, & &1.entropy_id)
+
+    existing_claims_by_entropy_id =
+      ProductAttributeClaim
+      |> where([claim], claim.entropy_id in ^entropy_ids)
+      |> Repo.all()
+      |> Map.new(&{&1.entropy_id, &1})
+
+    preservation_candidates =
+      Enum.map(rows, fn row ->
+        %{
+          product_id: row.product_id,
+          attribute_id: row.attribute_id,
+          claim_id: get_in(existing_claims_by_entropy_id, [row.entropy_id, Access.key(:id)])
+        }
+      end)
+
+    preserved_current_scopes =
+      CorrectionSafety.preserved_current_scopes(preservation_candidates)
+
+    rows_to_sync =
+      Enum.reject(rows, fn row ->
+        Map.has_key?(existing_claims_by_entropy_id, row.entropy_id) and
+          MapSet.member?(preserved_current_scopes, {row.product_id, row.attribute_id})
+      end)
+
+    Repo.insert_all(ProductAttributeClaim, rows_to_sync,
       on_conflict:
         {:replace, [:status, :created_by, :confidence, :inserted_at] ++ @claim_value_fields},
       conflict_target: [:entropy_id]
     )
-
-    entropy_ids = Enum.map(rows, & &1.entropy_id)
 
     claims =
       ProductAttributeClaim
@@ -963,7 +987,9 @@ defmodule ProductCompare.DevSeeds.Catalog do
           inserted_at: inserted_at
         }
       end)
-      |> CorrectionSafety.without_pending_current_replacements()
+      |> Enum.reject(fn row ->
+        MapSet.member?(preserved_current_scopes, {row.product_id, row.attribute_id})
+      end)
 
     Repo.insert_all(ProductAttributeCurrent, current_rows,
       on_conflict: {:replace, [:entropy_id, :claim_id, :selected_by, :selected_at]},
