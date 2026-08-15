@@ -139,10 +139,18 @@ test("merchant directory view renders only supplied safe actions", () => {
 test("merchant directory view filters names case-insensitively and explains no matches", () => {
   renderMerchantDirectoryView();
 
+  expect(screen.getByRole("heading", { name: "2 merchants on this page" })).toBeInTheDocument();
+
+  fireEvent.change(screen.getByRole("searchbox", { name: "Filter merchants on this page" }), {
+    target: { value: "  " },
+  });
+  expect(screen.getByRole("heading", { name: "2 merchants on this page" })).toBeInTheDocument();
+
   fireEvent.change(screen.getByRole("searchbox", { name: "Filter merchants on this page" }), {
     target: { value: "aCmE" },
   });
 
+  expect(screen.getByRole("heading", { name: "1 of 2 merchants shown" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Acme Market" })).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Unsafe Seller" })).not.toBeInTheDocument();
 
@@ -151,6 +159,7 @@ test("merchant directory view filters names case-insensitively and explains no m
   });
 
   expect(screen.getByText("No merchants on this page match this filter.")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "0 of 2 merchants shown" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Next merchants" })).toBeInTheDocument();
 });
 

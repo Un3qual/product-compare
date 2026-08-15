@@ -667,3 +667,111 @@ test("SharedComparisonRoute renders captured facts, warning, and a live comparis
     "/compare?slug=second-camera&slug=first-camera",
   );
 });
+
+test("SharedComparisonRoute renders unavailable captured details safely", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: {
+      __relayQuery: {
+        operationName: "SharedComparisonRouteQuery",
+        text: 'query SharedComparisonRouteQuery { comparisonSnapshot(token: "x") { id } }',
+        variables: { token: "x" },
+      },
+    },
+  } as never);
+  mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
+  mockedUsePreloadedQuery.mockReturnValue({
+    comparisonSnapshot: {
+      id: "snapshot-1",
+      title: null,
+      capturedAt: "2026-07-13T23:00:00Z",
+      disclaimer: "This is a captured snapshot.",
+      recommendation: {
+        evaluatedAt: "2026-07-13T23:00:00Z",
+        winnerProductId: null,
+        missingInputs: ["Accepted specification evidence is unavailable"],
+        rankings: [],
+      },
+      products: [
+        {
+          id: "product-1",
+          name: "Unbranded camera",
+          slug: "unbranded-camera",
+          description: "",
+          modelNumber: null,
+          brandName: null,
+          attributes: [
+            {
+              claimId: "claim-1",
+              displayName: "Resolution",
+              valueText: "24 MP",
+              evidence: [],
+            },
+          ],
+          offers: [
+            {
+              pricePointId: "point-1",
+              merchantName: " ",
+              currency: " ",
+              landedPrice: " ",
+              observedAt: " ",
+            },
+          ],
+        },
+      ],
+    },
+  } as never);
+
+  render(
+    <MemoryRouter>
+      <SharedComparisonRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole("heading", { name: "Shared product comparison" })).toBeVisible();
+  expect(screen.getByText("No supported winner", { selector: "strong" })).toBeVisible();
+  expect(screen.getByText("Unknown brand")).toBeVisible();
+  expect(screen.getByText("Source details unavailable")).toBeVisible();
+  expect(screen.getByText("Unknown merchant: Current total price unavailable")).toBeVisible();
+  expect(screen.getByRole("article").querySelectorAll(":scope > p")).toHaveLength(2);
+});
+
+test("SharedComparisonRoute links an empty captured product list to the base comparison", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: {
+      __relayQuery: {
+        operationName: "SharedComparisonRouteQuery",
+        text: 'query SharedComparisonRouteQuery { comparisonSnapshot(token: "x") { id } }',
+        variables: { token: "x" },
+      },
+    },
+  } as never);
+  mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
+  mockedUsePreloadedQuery.mockReturnValue({
+    comparisonSnapshot: {
+      id: "snapshot-1",
+      title: "Camera shortlist",
+      capturedAt: "2026-07-13T23:00:00Z",
+      disclaimer: "This is a captured snapshot.",
+      recommendation: {
+        evaluatedAt: "2026-07-13T23:00:00Z",
+        winnerProductId: null,
+        missingInputs: [],
+        rankings: [],
+      },
+      products: [],
+    },
+  } as never);
+
+  render(
+    <MemoryRouter>
+      <SharedComparisonRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole("link", { name: "Open a live comparison" })).toHaveAttribute(
+    "href",
+    "/compare",
+  );
+});

@@ -181,6 +181,52 @@ test("CJ programs route renders full-dataset stage counts and lifecycle controls
   expect(screen.getByRole("option", { name: "Last changed" })).toBeInTheDocument();
 });
 
+test("CJ program attention ignores terminal-only pages and selects future stages for review", () => {
+  const terminalOnly = buildCJProgramsData();
+  terminalOnly.cjPrograms.edges = [
+    {
+      ...terminalOnly.cjPrograms.edges[0],
+      node: {
+        ...terminalOnly.cjPrograms.edges[0].node,
+        advertiserName: "Terminal Merchant",
+        stage: "NOT_PURSUING",
+        warningCodes: [],
+      },
+    },
+  ];
+  mockedUsePreloadedQuery.mockReturnValue(terminalOnly as never);
+
+  const { rerender } = renderCJProgramsRoute();
+  const terminalAttention = screen.getByRole("region", { name: "Program attention" });
+  expect(terminalAttention).toHaveTextContent("0 programs on this page need attention");
+  expect(terminalAttention).toHaveTextContent("No loaded programs need action.");
+
+  const futureStage = buildCJProgramsData();
+  futureStage.cjPrograms.edges = [
+    {
+      ...futureStage.cjPrograms.edges[0],
+      node: {
+        ...futureStage.cjPrograms.edges[0].node,
+        advertiserName: "Future Merchant",
+        stage: "%future added value",
+        warningCodes: [],
+      },
+    },
+  ] as never;
+  mockedUsePreloadedQuery.mockReturnValue(futureStage as never);
+
+  rerender(
+    <MemoryRouter>
+      <CJProgramsRoute />
+    </MemoryRouter>,
+  );
+
+  const futureAttention = screen.getByRole("region", { name: "Program attention" });
+  expect(futureAttention).toHaveTextContent("1 program on this page needs attention");
+  expect(futureAttention).toHaveTextContent("Future Merchant");
+  expect(futureAttention).toHaveTextContent("Review new lifecycle stage");
+});
+
 test("CJ programs route presents a scannable lifecycle ledger with exact change times", () => {
   renderCJProgramsRoute();
 

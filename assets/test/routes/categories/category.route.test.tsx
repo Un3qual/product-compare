@@ -191,3 +191,114 @@ test("CategoryRoute suppresses a repeated next-page cursor", () => {
   );
   expect(screen.queryByRole("link", { name: "Next products" })).not.toBeInTheDocument();
 });
+
+test("CategoryRoute keeps source product and highlight order while encoding its next page", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: {
+      __relayQuery: {
+        operationName: "CategoryRouteQuery",
+        text: 'query CategoryRouteQuery { category(slug: "cameras") { id } }',
+        variables: { slug: "cameras", first: 12, after: null },
+      },
+    },
+  } as never);
+  mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
+  mockedUsePreloadedQuery.mockReturnValue({
+    category: {
+      id: "taxon-1",
+      name: "Cameras",
+      slug: "cameras / mirrorless?",
+      description: null,
+      qualifiedProductCount: 2,
+      indexable: true,
+      products: {
+        edges: [
+          {
+            node: {
+              id: "product-second",
+              name: "Second product",
+              slug: "second-product",
+              description: null,
+              brand: null,
+              currentAttributes: [],
+            },
+          },
+          {
+            node: {
+              id: "product-first",
+              name: "First product",
+              slug: "first-product",
+              description: null,
+              brand: { id: "brand-1", name: "Acme" },
+              currentAttributes: [
+                { attributeId: "fourth", displayName: "Fourth", valueText: "4", sortOrder: 4 },
+                { attributeId: "second", displayName: "Second", valueText: "2", sortOrder: 2 },
+                { attributeId: "fifth", displayName: "Fifth", valueText: "5", sortOrder: 5 },
+                { attributeId: "first", displayName: "First", valueText: "1", sortOrder: 1 },
+              ],
+            },
+          },
+        ],
+        pageInfo: { hasNextPage: true, endCursor: "cursor + /?" },
+      },
+    },
+  } as never);
+
+  render(
+    <MemoryRouter>
+      <CategoryRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+    "Second product",
+    "First product",
+  ]);
+  expect(screen.getByText("Unknown brand · Current qualifying offers available")).toBeVisible();
+  expect(
+    screen
+      .getByRole("list", { name: "First product specification highlights" })
+      .querySelectorAll("li"),
+  ).toHaveLength(3);
+  expect(screen.getByText("Fourth:").parentElement?.textContent).toBe("Fourth: 4");
+  expect(screen.getByText("Second:").parentElement?.textContent).toBe("Second: 2");
+  expect(screen.getByText("Fifth:").parentElement?.textContent).toBe("Fifth: 5");
+  expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
+    "href",
+    "/categories/cameras%20%2F%20mirrorless%3F?after=cursor%20%2B%20%2F%3F",
+  );
+});
+
+test("CategoryRoute renders its empty result state", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: {
+      __relayQuery: {
+        operationName: "CategoryRouteQuery",
+        text: 'query CategoryRouteQuery { category(slug: "cameras") { id } }',
+        variables: { slug: "cameras", first: 12, after: null },
+      },
+    },
+  } as never);
+  mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
+  mockedUsePreloadedQuery.mockReturnValue({
+    category: {
+      id: "taxon-1",
+      name: "Cameras",
+      slug: "cameras",
+      description: null,
+      qualifiedProductCount: 0,
+      indexable: true,
+      products: { edges: [], pageInfo: { hasNextPage: false, endCursor: null } },
+    },
+  } as never);
+
+  render(
+    <MemoryRouter>
+      <CategoryRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByText("No qualifying products are available yet.")).toBeVisible();
+});
