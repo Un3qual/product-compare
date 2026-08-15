@@ -142,7 +142,11 @@ function homeLedgerRow(
 }
 
 function priceObservationFreshness(observedAt: string | null, referenceTime: string) {
-  return <RelativeDateTime prefix="Last checked" referenceTime={referenceTime} value={observedAt ?? ""} />;
+  if (!observedAt || Number.isNaN(Date.parse(observedAt))) {
+    return "Last checked unavailable";
+  }
+
+  return <RelativeDateTime prefix="Last checked" referenceTime={referenceTime} value={observedAt} />;
 }
 
 function formatHighlights(highlights: ReadonlyArray<{ label: string; value: string }>) {

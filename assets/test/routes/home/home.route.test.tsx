@@ -290,8 +290,8 @@ test("home keeps missing and malformed price observations explicitly unavailable
     </MemoryRouter>,
   );
 
-  expect(screen.getAllByText("Unavailable")).toHaveLength(2);
-  expect(screen.queryByText("Last checked unavailable")).not.toBeInTheDocument();
+  expect(screen.getAllByText("Last checked unavailable")).toHaveLength(2);
+  expect(screen.queryByText("Unavailable")).not.toBeInTheDocument();
 });
 
 test("home preserves every workspace row with category and fallback market context", () => {
