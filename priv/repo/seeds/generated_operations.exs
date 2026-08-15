@@ -66,6 +66,13 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
       unmatched? = rem(index, 5) == 0
       advertiser_id = if unmatched?, do: "", else: advertiser_id(index)
 
+      existing_program =
+        if unmatched? do
+          nil
+        else
+          Repo.get_by(CJProgram, source_id: source.id, advertiser_id: advertiser_id)
+        end
+
       case Repo.get_by(MerchantFeedCandidate,
              source_id: source.id,
              provider_feed_id: provider_feed_id
@@ -114,10 +121,14 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
         |> Repo.update()
         |> Support.expect!("restore generated unmatched feed #{index}")
       else
-        program = Repo.get!(CJProgram, feed.cj_program_id)
+        program =
+          CJProgram
+          |> Repo.get!(feed.cj_program_id)
+          |> reserve_generated_program!(index, existing_program)
+
         stage = Enum.at(CJProgram.stages(), rem(index - 1, length(CJProgram.stages())))
 
-        if program.stage == stage do
+        if program.entropy_id != program_entropy_id(index) or program.stage == stage do
           program
         else
           Ingestion.update_cj_program_lifecycle(
@@ -132,6 +143,15 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
       end
     end)
   end
+
+  defp reserve_generated_program!(program, index, nil) do
+    program
+    |> Ecto.Changeset.change(entropy_id: program_entropy_id(index))
+    |> Repo.update()
+    |> Support.expect!("reserve generated CJ program #{index}")
+  end
+
+  defp reserve_generated_program!(program, _index, %CJProgram{}), do: program
 
   defp reconcile_feeds!(source, selected_count, full_count) do
     if selected_count < full_count do
@@ -148,17 +168,28 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
               raise "Full-only CJ feed #{feed_id(index)} has an unexpected owner"
             end
 
-            Repo.delete!(feed)
+            program =
+              if feed.cj_program_id do
+                Repo.get(CJProgram, feed.cj_program_id)
+              end
 
-            case Repo.get_by(CJProgram,
-                   source_id: source.id,
-                   advertiser_id: advertiser_id(index)
-                 ) do
-              nil -> :ok
-              program -> Repo.delete!(program)
-            end
+            Repo.delete!(feed)
+            delete_owned_program_without_feeds!(program, index)
         end
       end)
+    end
+  end
+
+  defp delete_owned_program_without_feeds!(nil, _index), do: :ok
+
+  defp delete_owned_program_without_feeds!(program, index) do
+    referenced? =
+      MerchantFeedCandidate
+      |> where([feed], feed.cj_program_id == ^program.id)
+      |> Repo.exists?()
+
+    if program.entropy_id == program_entropy_id(index) and not referenced? do
+      Repo.delete!(program)
     end
   end
 
@@ -170,6 +201,9 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
 
   defp feed_entropy_id(index),
     do: Support.stable_uuid("development-generated-cj-feed", Integer.to_string(index))
+
+  defp program_entropy_id(index),
+    do: Support.stable_uuid("development-generated-cj-program", Integer.to_string(index))
 
   defp seed_imports!(source, anchor, selected_count) do
     full_count = @targets.full.imports - 4
@@ -305,7 +339,7 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
       |> Support.expect!("generated anonymous visitor")
 
     clicks = seed_clicks!(accounts, offers, links, visitor, click_count)
-    currencies_by_offer_id = Map.new(offers, fn {currency, offer} -> {offer.id, currency} end)
+    offers_by_id = Map.new(offers, fn {currency, offer} -> {offer.id, {currency, offer}} end)
 
     conversions =
       seed_conversions!(
@@ -313,7 +347,7 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
         clicks,
         anchor,
         conversion_count,
-        currencies_by_offer_id
+        offers_by_id
       )
 
     purchase_facts = seed_purchase_facts!(conversions, marketplace.all_price_points)
@@ -434,7 +468,7 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
     end)
   end
 
-  defp seed_conversions!(affiliate, clicks, anchor, selected_count, currencies_by_offer_id) do
+  defp seed_conversions!(affiliate, clicks, anchor, selected_count, offers_by_id) do
     statuses = [:pending, :approved, :reversed, :paid]
 
     Enum.map(1..selected_count, fn index ->
@@ -444,15 +478,29 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
       reported_at = DateTime.add(anchor, -index * 900, :second)
       order_amount = Decimal.new(50 + rem(index * 37, 1_500))
       commission_amount = Decimal.mult(order_amount, Decimal.new("0.10"))
+      {currency, offer} = Map.fetch!(offers_by_id, click.merchant_product_id)
 
       attribution_attrs =
         if unmatched? do
-          %{attribution_confidence: :unmatched}
+          %{
+            click_session_id: nil,
+            public_click_id: nil,
+            network_click_ref: nil,
+            merchant_id: nil,
+            affiliate_program_id: nil,
+            product_id: nil,
+            merchant_product_id: nil,
+            attribution_confidence: :unmatched
+          }
         else
           %{
             click_session_id: click.id,
             public_click_id: click.click_id,
             network_click_ref: "DEV-GEN-CLICK-#{padded(index)}",
+            merchant_id: offer.merchant_id,
+            affiliate_program_id: nil,
+            product_id: offer.product_id,
+            merchant_product_id: offer.id,
             attribution_confidence: if(rem(index, 7) == 0, do: :low, else: :high)
           }
         end
@@ -463,7 +511,7 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
           affiliate_network_id: affiliate.network.id,
           network_conversion_ref: conversion_ref(index),
           status: status,
-          currency: Map.fetch!(currencies_by_offer_id, click.merchant_product_id),
+          currency: currency,
           order_amount: order_amount,
           commission_amount: commission_amount,
           commission_rate: Decimal.new("0.10"),
@@ -484,17 +532,18 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
              network_conversion_ref: conversion_ref(index)
            ) do
         nil ->
-          :ok
+          CommerceAttribution.ingest_conversion(attrs)
+          |> Support.expect!("generated commerce conversion #{index}")
 
-        %CommerceConversion{entropy_id: ^entropy_id} ->
-          :ok
+        %CommerceConversion{entropy_id: ^entropy_id} = conversion ->
+          conversion
+          |> CommerceConversion.changeset(attrs)
+          |> Repo.update()
+          |> Support.expect!("restore generated commerce conversion #{index}")
 
         %CommerceConversion{} ->
           raise "Generated conversion #{conversion_ref(index)} has an unexpected owner"
       end
-
-      CommerceAttribution.ingest_conversion(attrs)
-      |> Support.expect!("generated commerce conversion #{index}")
       |> Ecto.Changeset.change(entropy_id: entropy_id)
       |> Repo.update()
       |> Support.expect!("reserve generated commerce conversion #{index}")

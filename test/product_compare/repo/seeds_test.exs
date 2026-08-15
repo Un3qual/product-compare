@@ -532,6 +532,294 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get!(MerchantProduct, full_only_offer.id).entropy_id == full_only_offer.entropy_id
   end
 
+  test "full to bounded fails closed before deleting a user answer on a full-only question" do
+    bounded = run_seed(["--density", "bounded"])
+    bounded_question_ids = MapSet.new(bounded.engagement.all_questions, & &1.entropy_id)
+    full = run_seed(["--density", "full"])
+
+    question =
+      Enum.find(full.engagement.all_questions, fn question ->
+        question.moderation_status == :published and
+          not MapSet.member?(bounded_question_ids, question.entropy_id)
+      end)
+
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+    answer_key = "developer-full-only-answer-v1"
+
+    assert {:ok, answer} =
+             DevSeedCommunityWrites.answer_question(
+               moderator.id,
+               question.entropy_id,
+               "This developer-authored answer must survive density changes.",
+               answer_key
+             )
+
+    receipt =
+      Repo.get_by!(CommunityWriteReceipt,
+        user_id: moderator.id,
+        content_type: :answer,
+        idempotency_key: answer_key
+      )
+
+    assert_raise RuntimeError,
+                 ~r/Refusing to delete full-only question .* user-authored posts or reports/,
+                 fn -> run_seed(["--density", "bounded"]) end
+
+    assert Repo.get!(ProductThread, question.id).entropy_id == question.entropy_id
+    assert Repo.get!(ThreadPost, answer.id).entropy_id == answer.entropy_id
+    assert Repo.get!(CommunityWriteReceipt, receipt.id).content_entropy_id == answer.entropy_id
+  end
+
+  test "full to bounded fails closed before deleting a report on a full-only question" do
+    bounded = run_seed(["--density", "bounded"])
+    bounded_question_ids = MapSet.new(bounded.engagement.all_questions, & &1.entropy_id)
+    full = run_seed(["--density", "full"])
+
+    question =
+      Enum.find(full.engagement.all_questions, fn question ->
+        question.moderation_status != :published and
+          not MapSet.member?(bounded_question_ids, question.entropy_id)
+      end)
+
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+
+    assert {:ok, report} =
+             DevSeedCommunityWrites.report(
+               moderator.id,
+               :question,
+               question.entropy_id,
+               "Keep this developer report attached to its question"
+             )
+
+    assert_raise RuntimeError,
+                 ~r/Refusing to delete full-only question .* user-authored posts or reports/,
+                 fn -> run_seed(["--density", "bounded"]) end
+
+    assert Repo.get!(ProductThread, question.id).entropy_id == question.entropy_id
+    assert Repo.get!(CommunityReport, report.id).thread_id == question.id
+  end
+
+  test "full to bounded retains a generated CJ program shared by a local feed" do
+    bounded = run_seed(["--density", "bounded"])
+    bounded_feed_ids = MapSet.new(bounded.operations.all_cj_feeds, & &1.entropy_id)
+    full = run_seed(["--density", "full"])
+
+    generated_feed =
+      Enum.find(full.operations.all_cj_feeds, fn feed ->
+        not is_nil(feed.cj_program_id) and
+          not MapSet.member?(bounded_feed_ids, feed.entropy_id)
+      end)
+
+    source = Repo.get!(Source, generated_feed.source_id)
+
+    assert {:ok, local_feed} =
+             Ingestion.upsert_merchant_feed_candidate(source, %{
+               provider: "cj",
+               provider_feed_id: "LOCAL-SHARED-GENERATED-PROGRAM",
+               advertiser_id: generated_feed.advertiser_id,
+               advertiser_name: "Local shared advertiser",
+               feed_name: "Local shared feed",
+               product_count: 1,
+               last_seen_at: DateTime.utc_now(),
+               raw_metadata: %{"local" => true}
+             })
+
+    assert local_feed.cj_program_id == generated_feed.cj_program_id
+
+    run_seed(["--density", "bounded"])
+
+    refute Repo.get(MerchantFeedCandidate, generated_feed.id)
+
+    assert Repo.get!(MerchantFeedCandidate, local_feed.id).cj_program_id ==
+             generated_feed.cj_program_id
+
+    assert Repo.get!(CJProgram, generated_feed.cj_program_id).id == generated_feed.cj_program_id
+  end
+
+  test "full to bounded retains an unowned CJ program after removing its generated feed" do
+    bounded = run_seed(["--density", "bounded"])
+    source = Repo.get_by!(Source, name: "CJ", provider: "cj")
+
+    next_generated_index =
+      bounded.operations.all_cj_feeds
+      |> Enum.map(& &1.provider_feed_id)
+      |> Enum.filter(&String.starts_with?(&1, "DEV-CJ-GEN-FEED-"))
+      |> Enum.map(fn "DEV-CJ-GEN-FEED-" <> index -> String.to_integer(index) end)
+      |> Enum.max()
+      |> Kernel.+(1)
+
+    advertiser_id =
+      "DEV-CJ-GEN-ADV-#{String.pad_leading(Integer.to_string(next_generated_index), 3, "0")}"
+
+    assert {:ok, local_feed} =
+             Ingestion.upsert_merchant_feed_candidate(source, %{
+               provider: "cj",
+               provider_feed_id: "LOCAL-UNOWNED-PROGRAM",
+               advertiser_id: advertiser_id,
+               advertiser_name: "Locally managed advertiser",
+               feed_name: "Temporary local feed",
+               product_count: 1,
+               last_seen_at: DateTime.utc_now(),
+               raw_metadata: %{"local" => true}
+             })
+
+    unowned_program = Repo.get!(CJProgram, local_feed.cj_program_id)
+    Repo.delete!(local_feed)
+
+    full = run_seed(["--density", "full"])
+
+    generated_feed =
+      Repo.get_by!(MerchantFeedCandidate,
+        source_id: source.id,
+        provider_feed_id:
+          "DEV-CJ-GEN-FEED-#{String.pad_leading(Integer.to_string(next_generated_index), 3, "0")}"
+      )
+
+    assert generated_feed.cj_program_id == unowned_program.id
+    assert Enum.any?(full.operations.all_cj_feeds, &(&1.id == generated_feed.id))
+
+    run_seed(["--density", "bounded"])
+
+    refute Repo.get(MerchantFeedCandidate, generated_feed.id)
+    assert Repo.get!(CJProgram, unowned_program.id).entropy_id == unowned_program.entropy_id
+  end
+
+  test "full to bounded fails closed before deleting a correction referenced by another claim" do
+    bounded = run_seed(["--density", "bounded"])
+    bounded_correction_ids = MapSet.new(bounded.engagement.all_corrections, & &1.entropy_id)
+    full = run_seed(["--density", "full"])
+
+    correction =
+      Enum.find(full.engagement.all_corrections, fn correction ->
+        correction.status == :accepted and
+          not MapSet.member?(bounded_correction_ids, correction.entropy_id)
+      end)
+
+    generated_claim = Repo.get!(ProductAttributeClaim, correction.claim_id)
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+
+    assert {:ok, newer_correction} =
+             Specs.propose_correction(
+               correction.product_id,
+               correction.attribute_id,
+               moderator.id,
+               %{value_text: "Developer-authored follow-up correction"},
+               %{
+                 reason: "Preserve the correction ancestry across density changes",
+                 explanation: "The newer claim must continue to supersede the generated claim."
+               }
+             )
+
+    newer_claim = Repo.get!(ProductAttributeClaim, newer_correction.claim_id)
+    assert newer_claim.supersedes_claim_id == generated_claim.id
+
+    assert_raise RuntimeError,
+                 ~r/Refusing to delete full-only correction claim referenced by another claim/,
+                 fn -> run_seed(["--density", "bounded"]) end
+
+    assert Repo.get!(SpecificationCorrection, correction.id).claim_id == generated_claim.id
+    assert Repo.get!(ProductAttributeClaim, generated_claim.id).id == generated_claim.id
+
+    assert Repo.get!(ProductAttributeClaim, newer_claim.id).supersedes_claim_id ==
+             generated_claim.id
+  end
+
+  test "reruns restore generated conversions after a newer ingestion update" do
+    seed = run_seed(["--density", "bounded"])
+
+    generated =
+      Enum.find(seed.operations.all_conversions, fn conversion ->
+        String.starts_with?(conversion.network_conversion_ref, "DEV-GEN-CONV-") and
+          not is_nil(conversion.click_session_id)
+      end)
+
+    unmatched_generated =
+      Enum.find(seed.operations.all_conversions, fn conversion ->
+        String.starts_with?(conversion.network_conversion_ref, "DEV-GEN-CONV-") and
+          is_nil(conversion.click_session_id)
+      end)
+
+    network = Repo.get!(AffiliateNetwork, generated.affiliate_network_id)
+
+    other_click =
+      Enum.find(seed.operations.all_clicks, fn click ->
+        click.id != generated.click_session_id and
+          click.merchant_product_id != generated.merchant_product_id
+      end)
+
+    later_reported_at = DateTime.add(generated.reported_at, 7, :day)
+
+    assert {:ok, exercised} =
+             CommerceAttribution.ingest_conversion(%{
+               source_network: network.code,
+               network_conversion_ref: generated.network_conversion_ref,
+               public_click_id: other_click.click_id,
+               network_click_ref: "developer-reassigned-click",
+               status: :paid,
+               currency: generated.currency,
+               order_amount: Decimal.new("999.99"),
+               commission_amount: Decimal.new("1.00"),
+               data_freshness_at: later_reported_at,
+               reported_at: later_reported_at,
+               raw_payload: %{
+                 "synthetic" => true,
+                 "exercise" => "newer-generated-development-update"
+               }
+             })
+
+    assert exercised.id == generated.id
+    assert exercised.status == :paid
+    assert exercised.merchant_product_id == other_click.merchant_product_id
+
+    assert {:ok, exercised_unmatched} =
+             CommerceAttribution.ingest_conversion(%{
+               source_network: network.code,
+               network_conversion_ref: unmatched_generated.network_conversion_ref,
+               public_click_id: other_click.click_id,
+               network_click_ref: "developer-matched-originally-unmatched-click",
+               status: :paid,
+               currency: unmatched_generated.currency,
+               order_amount: Decimal.new("888.88"),
+               commission_amount: Decimal.new("2.00"),
+               data_freshness_at: later_reported_at,
+               reported_at: later_reported_at,
+               raw_payload: %{
+                 "synthetic" => true,
+                 "exercise" => "match-newer-generated-development-update"
+               }
+             })
+
+    assert exercised_unmatched.id == unmatched_generated.id
+    assert exercised_unmatched.merchant_product_id == other_click.merchant_product_id
+
+    run_seed(["--density", "bounded"])
+
+    restored_fields = [
+      :click_session_id,
+      :public_click_id,
+      :network_click_ref,
+      :merchant_id,
+      :affiliate_program_id,
+      :product_id,
+      :merchant_product_id,
+      :status,
+      :currency,
+      :order_amount,
+      :commission_amount,
+      :commission_rate,
+      :attribution_confidence,
+      :data_freshness_at,
+      :purchased_at,
+      :reported_at,
+      :raw_payload
+    ]
+
+    for baseline <- [generated, unmatched_generated] do
+      restored = Repo.get!(CommerceConversion, baseline.id)
+      assert Map.take(restored, restored_fields) == Map.take(baseline, restored_fields)
+    end
+  end
+
   test "seed transaction retries explicit stale-snapshot conflicts on a fresh transaction" do
     assert {{:ok, :seeded}, 2} =
              Sandbox.unboxed_run(Repo, fn ->
@@ -554,7 +842,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   end
 
   test "seed transaction retries when repeatable read is the connection default" do
-    assert {{:ok, :seeded}, 2} =
+    assert {{:ok, "serializable"}, 2} =
              Sandbox.unboxed_run(Repo, fn ->
                Repo.query!(
                  "SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL REPEATABLE READ"
@@ -571,7 +859,9 @@ defmodule ProductCompare.Repo.SeedsTest do
                      if attempt == 1 do
                        Repo.rollback({:retry_seed_transaction, :concurrent_test_write})
                      else
-                       :seeded
+                       Repo.query!("SHOW transaction_isolation").rows
+                       |> List.first()
+                       |> List.first()
                      end
                    end)
 

@@ -14,7 +14,7 @@ defmodule ProductCompare.DevSeeds.Support do
         if Repo.in_transaction?() do
           Repo.transaction(fun, timeout: :infinity)
         else
-          retryable_transaction(fun, @max_transaction_attempts, false)
+          retryable_transaction(fun, @max_transaction_attempts, true)
         end
 
       [["read committed"]] ->
@@ -78,17 +78,7 @@ defmodule ProductCompare.DevSeeds.Support do
   end
 
   defp retryable_transaction(fun, attempts_left, set_serializable?) do
-    result =
-      Repo.transaction(
-        fn ->
-          if set_serializable? do
-            Repo.query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-          end
-
-          fun.()
-        end,
-        timeout: :infinity
-      )
+    result = run_transaction(fun, set_serializable?)
 
     case result do
       {:error, {:retry_seed_transaction, _reason}} when attempts_left > 1 ->
@@ -105,6 +95,41 @@ defmodule ProductCompare.DevSeeds.Support do
         reraise error, __STACKTRACE__
       end
   end
+
+  defp run_transaction(fun, false), do: Repo.transaction(fun, timeout: :infinity)
+
+  defp run_transaction(fun, true) do
+    Repo.transaction(
+      fn ->
+        set_serializable_or_rollback!()
+        fun.()
+      end,
+      timeout: :infinity
+    )
+    |> case do
+      {:error, :serializable_isolation_requires_top_level_transaction} ->
+        Repo.transaction(fun, timeout: :infinity)
+
+      result ->
+        result
+    end
+  end
+
+  defp set_serializable_or_rollback! do
+    Repo.query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+  rescue
+    error in Postgrex.Error ->
+      if active_transaction_error?(error) do
+        Repo.rollback(:serializable_isolation_requires_top_level_transaction)
+      else
+        reraise error, __STACKTRACE__
+      end
+  end
+
+  defp active_transaction_error?(%Postgrex.Error{postgres: %{code: :active_sql_transaction}}),
+    do: true
+
+  defp active_transaction_error?(%Postgrex.Error{}), do: false
 
   defp retryable_transaction_error?(%Postgrex.Error{postgres: %{code: code}}),
     do: code in [:serialization_failure, :deadlock_detected]

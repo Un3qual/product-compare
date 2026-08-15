@@ -13,6 +13,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
   alias ProductCompareSchemas.Alerts.AlertEvent
   alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
+  alias ProductCompareSchemas.Discussions.CommunityReport
   alias ProductCompareSchemas.Discussions.CommunityWriteReceipt
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
@@ -573,6 +574,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
     if selected_count < full_count do
       Enum.each((selected_count + 1)..full_count, fn index ->
         fixture = question_fixture(accounts, products, index)
+        ensure_question_reconciliation_safe!(fixture)
 
         if question_status(index) == :published do
           delete_answer_receipt!(fixture.answer_owner, fixture.answer_key)
@@ -580,6 +582,58 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
 
         delete_receipt_content!(:question, fixture.owner, fixture.product, fixture.key)
       end)
+    end
+  end
+
+  defp ensure_question_reconciliation_safe!(fixture) do
+    case Repo.get_by(CommunityWriteReceipt,
+           user_id: fixture.owner.id,
+           content_type: :question,
+           idempotency_key: fixture.key
+         ) do
+      nil ->
+        :ok
+
+      receipt ->
+        case Repo.get_by(ProductThread, entropy_id: receipt.content_entropy_id) do
+          nil -> :ok
+          question -> ensure_question_has_only_seed_content!(question, fixture)
+        end
+    end
+  end
+
+  defp ensure_question_has_only_seed_content!(question, fixture) do
+    seed_answer_entropy_ids =
+      case Repo.get_by(CommunityWriteReceipt,
+             user_id: fixture.answer_owner.id,
+             content_type: :answer,
+             idempotency_key: fixture.answer_key
+           ) do
+        nil -> []
+        receipt -> [receipt.content_entropy_id]
+      end
+
+    post_ids =
+      from post in ThreadPost,
+        where: post.thread_id == ^question.id,
+        select: post.id
+
+    user_post? =
+      ThreadPost
+      |> where([post], post.thread_id == ^question.id)
+      |> where([post], post.entropy_id not in ^seed_answer_entropy_ids)
+      |> Repo.exists?()
+
+    report? =
+      CommunityReport
+      |> where(
+        [report],
+        report.thread_id == ^question.id or report.post_id in subquery(post_ids)
+      )
+      |> Repo.exists?()
+
+    if user_post? or report? do
+      raise "Refusing to delete full-only question #{question.entropy_id} with user-authored posts or reports"
     end
   end
 
@@ -767,6 +821,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
 
         %SpecificationCorrection{} = correction ->
           verify_correction_owner!(correction, fixture)
+          ensure_correction_claim_unreferenced!(correction.claim_id)
 
           ProductAttributeCurrent
           |> where([current], current.claim_id == ^correction.claim_id)
@@ -780,6 +835,17 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
           end
       end
     end)
+  end
+
+  defp ensure_correction_claim_unreferenced!(claim_id) do
+    referenced? =
+      ProductAttributeClaim
+      |> where([claim], claim.supersedes_claim_id == ^claim_id)
+      |> Repo.exists?()
+
+    if referenced? do
+      raise "Refusing to delete full-only correction claim referenced by another claim"
+    end
   end
 
   defp verify_correction_owner!(correction, fixture) do
