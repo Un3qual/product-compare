@@ -43,41 +43,11 @@ function routeErrorViewData(
   resourceName: string,
 ) {
   if (error.kind === "response") {
-    if (error.status >= 500) {
-      return {
-        errorMessage: `A server error occurred while loading the ${resourceName}.`,
-        retryGuidance: "Please try refreshing the page or come back later.",
-      };
-    }
-
-    if (error.status === 404) {
-      return {
-        errorMessage: `The requested ${resourceName} could not be found.`,
-        retryGuidance: "Please check the URL and try again.",
-      };
-    }
-
-    if (error.status === 401 || error.status === 403) {
-      return {
-        errorMessage: `You don't have permission to view this ${resourceName}.`,
-        retryGuidance: "Please sign in or contact support if you believe this is an error.",
-      };
-    }
-
-    return {
-      errorMessage: `An error occurred while loading the ${resourceName}.`,
-      retryGuidance: "Please try refreshing the page.",
-    };
+    return responseErrorViewData(error.status, resourceName);
   }
 
   if (error.kind === "error") {
-    const normalizedMessage = error.error.message.toLowerCase();
-    const isNetworkError =
-      normalizedMessage.includes("network") ||
-      normalizedMessage.includes("fetch") ||
-      error.error.name === "NetworkError";
-
-    if (isNetworkError) {
+    if (isNetworkError(error.error)) {
       return {
         errorMessage: `A network error occurred while loading the ${resourceName}.`,
         retryGuidance: "Please check your internet connection and try again.",
@@ -94,6 +64,44 @@ function routeErrorViewData(
     errorMessage: `${capitalizeResourceName(resourceName)} unavailable.`,
     retryGuidance: "Please try again later.",
   };
+}
+
+function responseErrorViewData(status: number, resourceName: string) {
+  if (status >= 500) {
+    return {
+      errorMessage: `A server error occurred while loading the ${resourceName}.`,
+      retryGuidance: "Please try refreshing the page or come back later.",
+    };
+  }
+
+  if (status === 404) {
+    return {
+      errorMessage: `The requested ${resourceName} could not be found.`,
+      retryGuidance: "Please check the URL and try again.",
+    };
+  }
+
+  if (status === 401 || status === 403) {
+    return {
+      errorMessage: `You don't have permission to view this ${resourceName}.`,
+      retryGuidance: "Please sign in or contact support if you believe this is an error.",
+    };
+  }
+
+  return {
+    errorMessage: `An error occurred while loading the ${resourceName}.`,
+    retryGuidance: "Please try refreshing the page.",
+  };
+}
+
+function isNetworkError(error: Error) {
+  const normalizedMessage = String(error.message).toLowerCase();
+
+  return (
+    normalizedMessage.includes("network") ||
+    normalizedMessage.includes("fetch") ||
+    error.name === "NetworkError"
+  );
 }
 
 function capitalizeResourceName(resourceName: string) {

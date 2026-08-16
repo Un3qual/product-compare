@@ -484,6 +484,60 @@ test("revenue route shows the latest conversion across loaded clicks", () => {
   );
 });
 
+test("revenue route compares conversion timestamps as instants across offsets", () => {
+  const firstClick = ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node;
+  const firstConversion = firstClick.matchedConversions[0];
+
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      commerceAttributionClicks: {
+        edges: [
+          {
+            cursor: "later-instant",
+            node: {
+              ...firstClick,
+              clickId: "later-instant",
+              matchedConversions: [
+                {
+                  ...firstConversion,
+                  merchantName: "Later instant merchant",
+                  reportedAt: "2026-06-02T09:30:00Z",
+                },
+              ],
+            },
+          },
+          {
+            cursor: "earlier-offset-instant",
+            node: {
+              ...firstClick,
+              clickId: "earlier-offset-instant",
+              matchedConversions: [
+                {
+                  ...firstConversion,
+                  merchantName: "Earlier offset merchant",
+                  reportedAt: "2026-06-02T10:00:00+02:00",
+                },
+              ],
+            },
+          },
+        ],
+        pageInfo: { endCursor: null, hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  const recent = screen.getByRole("region", { name: "Recent conversion" });
+
+  expect(within(recent).getByText("Later instant merchant")).toBeVisible();
+  expect(within(recent).queryByText("Earlier offset merchant")).not.toBeInTheDocument();
+});
+
 test("revenue route keeps the first loaded conversion when reported times tie", () => {
   const firstClick = ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node;
   const firstConversion = firstClick.matchedConversions[0];

@@ -4,7 +4,7 @@
 
 **Goal:** Complete one cross-stack residual remediation batch that removes the remaining recreated Relay/library types, redundant validation, repeated bigint bounds, generic route helpers, and unjustified file indirection after the product cohorts land.
 
-**Architecture:** Type ownership follows Relay-generated data first, library types second, application domain types third, and component projections last. Validation occurs once where untyped data enters: URL/FormData/browser storage/transport/external URL/public GraphQL ID/cursor/database. A post-cohort inventory fixes the exact owned paths, then frontend type ownership, frontend route/date simplification, backend validation centralization, and final verification ship as milestone commits inside one queue row and one reviewer decision.
+**Architecture:** Type ownership follows Relay-generated data first, library types second, application domain types third, and component projections last. Validation occurs once where untyped data enters: URL/FormData/browser storage/transport/external URL/public GraphQL ID/cursor/database. A post-cohort inventory fixes the exact owned paths, then frontend type ownership, frontend route and date simplification, backend validation centralization, and final verification ship as milestone commits inside one queue row and one reviewer decision.
 
 **Tech Stack:** TypeScript 5.9, Relay 20, React 19, Elixir 1.19, Absinthe Relay, Ecto/PostgreSQL, repository static-analysis gates
 
@@ -30,10 +30,12 @@
 ### Task 1: Refresh the provenance and residual-file inventory
 
 **Files:**
+
 - Create during execution: `docs/work/type-validation-slop-remediation.md`
 - Inspect: `assets/src/**`, `assets/test/**`, `lib/product_compare/**`, `lib/product_compare_web/**`, `test/product_compare/**`, `test/product_compare_web/**`
 
 **Interfaces:**
+
 - Produces: a checked inventory with columns `symbol/file`, `current owner`, `real boundary`, `consumers`, and `action: generated | library | retain | merge | delete`.
 
 - [ ] **Step 1: Search frontend recreation and overvalidation**
@@ -79,6 +81,10 @@
 
 - [ ] **Step 5: Commit the executable inventory with queue promotion**
 
+  This coordinator-only milestone stages the three exact promotion records.
+  Workers do not run this step or gain permission to edit shared dispatcher or
+  catalog files from it.
+
   ```bash
   git add docs/work/type-validation-slop-remediation.md docs/work/index.md docs/plans/INDEX.md
   git commit -m "docs: promote residual simplification audit"
@@ -89,6 +95,7 @@
 ### Task 2: Replace remaining recreated Relay types
 
 **Files:**
+
 - Retain without editing: `assets/src/babel-plugin-relay.d.ts` and
   `assets/src/vite-env.d.ts`
 - Modify only these six Task 1 `action: generated` rows:
@@ -104,6 +111,7 @@
   `MerchantDirectoryView.tsx`, and the matching six focused data tests
 
 **Interfaces:**
+
 - Consumes: exactly the six Task 1 inventory rows classified `action: generated`,
   each with an exact source path, current owner, real boundary, and consumers.
 - Uses the generated operation/fragment exports already emitted by Relay. No
@@ -139,6 +147,7 @@
 ### Task 3: Merge four frontend helper projections
 
 **Files:**
+
 - Modify only these four Task 1 frontend `action: merge` rows:
   `assets/src/routes/catalog/results/browse-product-list-data.ts`,
   `assets/src/routes/commerce/revenue/attribution/attribution-ledger-data.ts`,
@@ -166,6 +175,7 @@
   exclusively Task 4 work.
 
 **Interfaces:**
+
 - Consumes: exactly the four frontend Task 1 `action: merge` rows, their direct
   consumers, four helper tests in deletion/migration scope, and four owning
   route behavior suites. It does not consume backend merge rows, any retained
@@ -227,10 +237,12 @@
 ### Task 4: Remove repeated bigint and backend validation
 
 **Files:**
+
 - Modify only backend inventory rows classified `action: merge | delete`
 - Modify focused tests for each retained boundary
 
 **Interfaces:**
+
 - Consumes: Task 1 backend inventory rows classified `action: merge | delete`, each with an exact source path, public-input trace, trusted boundary, consumers, and preserved contract tests.
 - `GlobalId.decode_integer/2` remains the positive PostgreSQL-bigint public ID boundary.
 - `ProductCompareWeb.GraphQL.Connection` remains the Relay cursor decode/arithmetic boundary.
@@ -268,10 +280,12 @@
 ### Task 5: Run repository-wide anti-slop verification
 
 **Files:**
+
 - Modify: `docs/work/type-validation-slop-remediation.md`
 - Modify queue/lane docs at closeout according to `docs/work/operating-model.md`
 
 **Interfaces:**
+
 - Produces: final evidence for deleted files/symbols, retained validators and owners, production file-count delta, dependency typings, bundle result, and full repository gates.
 
 - [ ] **Step 1: Re-run provenance searches**
@@ -281,7 +295,7 @@
 - [ ] **Step 2: Run complete gates**
 
   ```bash
-  cd assets && pnpm run check
+  (cd assets && pnpm run check)
   mix format --check-formatted
   mix typecheck
   mix quality

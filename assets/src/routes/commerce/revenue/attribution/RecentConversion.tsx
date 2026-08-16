@@ -108,11 +108,18 @@ export function RecentConversion({ clicks }: { clicks: readonly AttributionClick
 
 function recentLoadedConversion(clicks: readonly AttributionClick[]) {
   let recent: AttributionClick["matchedConversions"][number] | null = null;
+  let recentReportedAt = Number.NEGATIVE_INFINITY;
 
   for (const click of clicks) {
     for (const conversion of click.matchedConversions) {
-      if (recent === null || conversion.reportedAt > recent.reportedAt) {
+      const parsedReportedAt = Date.parse(conversion.reportedAt);
+      const reportedAt = Number.isNaN(parsedReportedAt)
+        ? Number.NEGATIVE_INFINITY
+        : parsedReportedAt;
+
+      if (recent === null || reportedAt > recentReportedAt) {
         recent = conversion;
+        recentReportedAt = reportedAt;
       }
     }
   }

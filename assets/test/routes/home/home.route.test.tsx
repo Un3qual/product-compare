@@ -294,6 +294,56 @@ test("home keeps missing and malformed price observations explicitly unavailable
   expect(screen.queryByText("Unavailable")).not.toBeInTheDocument();
 });
 
+test("home advances offer recency while the route remains mounted", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(HOME_REFERENCE_TIME));
+  mockedUseLoaderData.mockReturnValue({
+    referenceTime: HOME_REFERENCE_TIME,
+    workspace: WORKSPACE_DESCRIPTOR,
+    selectedSlugs: [],
+  });
+  mockedUsePreloadedQuery.mockReturnValueOnce({
+    homeWorkspace: {
+      categories: { edges: [] },
+      selectedProducts: [],
+      products: {
+        edges: [
+          {
+            cursor: "recent-observation",
+            node: { id: "recent", name: "Recent observation", slug: "recent" },
+            highlights: [],
+            offer: {
+              merchantName: "Camera Shop",
+              currency: "USD",
+              landedPrice: "499.00",
+              priceSignal: "BELOW_30_DAY_MEDIAN",
+              observedAt: "2026-08-12T11:59:00Z",
+            },
+          },
+        ],
+      },
+    },
+  } as never);
+  const view = render(
+    <MemoryRouter>
+      <HomeRoute />
+    </MemoryRouter>,
+  );
+
+  try {
+    expect(screen.getByText("Last checked 1 minute ago")).toBeVisible();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+
+    expect(screen.getByText("Last checked 2 minutes ago")).toBeVisible();
+  } finally {
+    view.unmount();
+    vi.useRealTimers();
+  }
+});
+
 test("home preserves every workspace row with category and fallback market context", () => {
   mockedUseLoaderData.mockReturnValue({
     referenceTime: HOME_REFERENCE_TIME,

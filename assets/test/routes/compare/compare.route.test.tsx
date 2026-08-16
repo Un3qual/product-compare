@@ -3247,6 +3247,18 @@ test("compare route keeps non-network TypeErrors on the generic error path", () 
   );
 });
 
+test("compare error boundary tolerates a non-string Error message", () => {
+  const error = new Error("placeholder");
+  Object.defineProperty(error, "message", { value: 503 });
+  mockedUseRouteError.mockReturnValue(error);
+
+  render(<RouteErrorBoundary />);
+
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "An unexpected error occurred while loading the comparison.",
+  );
+});
+
 test("compare error boundary supports route-specific resource copy", () => {
   mockedUseRouteError.mockReturnValue(new Error("Network request failed: boom"));
 

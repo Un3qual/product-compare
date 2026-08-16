@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { graphql, useFragment } from "react-relay";
@@ -66,7 +67,20 @@ export function HomeProductLedger({
   selectedSlugs: readonly string[];
 }) {
   const data = useFragment(homeProductLedgerFragment, products);
-  const rows = data.edges.map((edge) => homeLedgerRow(edge, selectedSlugs, referenceTime));
+  const [liveReferenceTime, setLiveReferenceTime] = useState<string>();
+
+  useEffect(() => {
+    const interval = window.setInterval(
+      () => setLiveReferenceTime(new Date().toISOString()),
+      60_000,
+    );
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const rows = data.edges.map((edge) =>
+    homeLedgerRow(edge, selectedSlugs, liveReferenceTime ?? referenceTime),
+  );
 
   return (
     <section aria-label="Product workspace" {...props(styles.workspace)}>
