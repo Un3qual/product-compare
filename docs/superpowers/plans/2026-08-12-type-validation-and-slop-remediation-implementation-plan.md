@@ -137,9 +137,26 @@
 - [ ] **Step 4: Verify and commit**
 
   ```bash
-  cd assets && pnpm run relay:check && pnpm run typecheck && pnpm run lint && pnpm run test:unit
-  git add assets/src assets/test
-  git commit -m "refactor: use generated Relay type ownership"
+  (
+    cd assets &&
+      pnpm run relay:check &&
+      pnpm run typecheck &&
+      pnpm run lint &&
+      pnpm run test:unit
+  ) &&
+    git add assets/src/routes/categories/category-view-data.ts \
+      assets/src/routes/compare/recommendation-view-data.ts \
+      assets/src/routes/compare/shared/shared-comparison-view-data.ts \
+      assets/src/routes/ingestion/cj-programs/programs/program-dashboard-data.ts \
+      assets/src/routes/merchants/detail/merchant-detail-view-data.ts \
+      assets/src/routes/merchants/merchant-directory-view-data.ts \
+      assets/test/routes/categories/category-view-data.test.ts \
+      assets/test/routes/compare/recommendation-view-data.test.ts \
+      assets/test/routes/compare/shared-comparison-view-data.test.ts \
+      assets/test/routes/ingestion/cj-programs/cj-program-data.test.ts \
+      assets/test/routes/merchants/merchant-detail-view-data.test.ts \
+      assets/test/routes/merchants/merchant-directory-view-data.test.ts &&
+    git commit -m "refactor: use generated Relay type ownership"
   ```
 
 ---
@@ -216,20 +233,26 @@
 - [ ] **Step 4: Verify and commit**
 
   ```bash
-  cd assets && pnpm run typecheck && pnpm run lint && pnpm run test:unit && pnpm run build
-  git add assets/src/routes/catalog/results/{browse-product-list-data.ts,BrowseProductList.tsx} \
-    assets/src/routes/commerce/revenue/attribution/{attribution-ledger-data.ts,AttributionLedger.tsx,RecentConversion.tsx} \
-    assets/src/routes/compare/{route-error-view-data.ts,RouteErrorBoundary.tsx} \
-    assets/src/routes/home/{home-view-data.ts,HomeRoute.tsx,HomeDeals.tsx,HomeProductLedger.tsx} \
-    assets/test/routes/catalog/results/browse-product-list-data.test.ts \
-    assets/test/routes/catalog/browse.route.test.tsx \
-    assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts \
-    assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx \
-    assets/test/routes/compare/route-error-view-data.test.ts \
-    assets/test/routes/compare/compare.route.test.tsx \
-    assets/test/routes/home/home-view-data.test.ts \
-    assets/test/routes/home/home.route.test.tsx
-  git commit -m "refactor: merge route helper projections"
+  (
+    cd assets &&
+      pnpm run typecheck &&
+      pnpm run lint &&
+      pnpm run test:unit &&
+      pnpm run build
+  ) &&
+    git add assets/src/routes/catalog/results/{browse-product-list-data.ts,BrowseProductList.tsx} \
+      assets/src/routes/commerce/revenue/attribution/{attribution-ledger-data.ts,AttributionLedger.tsx,RecentConversion.tsx} \
+      assets/src/routes/compare/{route-error-view-data.ts,RouteErrorBoundary.tsx} \
+      assets/src/routes/home/{home-view-data.ts,HomeRoute.tsx,HomeDeals.tsx,HomeProductLedger.tsx} \
+      assets/test/routes/catalog/results/browse-product-list-data.test.ts \
+      assets/test/routes/catalog/browse.route.test.tsx \
+      assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts \
+      assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx \
+      assets/test/routes/compare/route-error-view-data.test.ts \
+      assets/test/routes/compare/compare.route.test.tsx \
+      assets/test/routes/home/home-view-data.test.ts \
+      assets/test/routes/home/home.route.test.tsx &&
+    git commit -m "refactor: merge route helper projections"
   ```
 
 ---
