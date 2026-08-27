@@ -1453,6 +1453,33 @@ defmodule ProductCompare.CommerceAttributionTest do
         assert Decimal.equal?(conversion.commission_amount, Decimal.new("10.01"))
       end
     end
+
+    test "fresher CJ evidence can establish a missing action correlation reference" do
+      commission_ref = "cj-commission-#{System.unique_integer([:positive])}"
+
+      original_payload = %{
+        "commissionId" => commission_ref,
+        "originalActionId" => nil,
+        "actionStatus" => "new",
+        "saleAmountUsd" => "100.01",
+        "pubCommissionAmountUsd" => "10.01",
+        "eventDate" => "2026-05-20T12:00:00Z",
+        "postingDate" => "2026-05-20T12:05:00Z"
+      }
+
+      assert {:ok, initial} = CJAdapter.ingest_transaction(original_payload)
+      assert initial.network_action_ref == nil
+
+      fresher_payload = %{
+        original_payload
+        | "originalActionId" => "cj-action-established-later",
+          "postingDate" => "2026-05-21T12:05:00Z"
+      }
+
+      assert {:ok, updated} = CJAdapter.ingest_transaction(fresher_payload)
+      assert updated.id == initial.id
+      assert updated.network_action_ref == "cj-action-established-later"
+    end
   end
 
   describe "AwinAdapter.ingest_transaction/1" do

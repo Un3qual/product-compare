@@ -331,6 +331,32 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
     assert completed.records_fetched == 2
   end
 
+  test "failed run evidence stores only the caller's bounded category summary" do
+    now = ~U[2026-08-28 12:00:00Z]
+
+    assert {:ok, run} = ConversionSyncRuns.start(run_attrs(), now)
+
+    assert {:ok, completed} =
+             ConversionSyncRuns.complete(
+               run,
+               %{
+                 status: :failed,
+                 pages_fetched: 1,
+                 records_fetched: 2,
+                 records_persisted: 1,
+                 records_failed: 1,
+                 error_summary: "unmatched_correction"
+               },
+               DateTime.add(now, 1, :second)
+             )
+
+    assert completed.status == :failed
+    assert completed.error_summary == "unmatched_correction"
+
+    assert completed.records_fetched ==
+             completed.records_persisted + completed.records_failed
+  end
+
   defp network_fixture(code) do
     case Repo.get_by(AffiliateNetwork, code: code) do
       %AffiliateNetwork{} = network ->

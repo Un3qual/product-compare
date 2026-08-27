@@ -44,6 +44,11 @@ defmodule ProductCompare.CommerceAttribution do
           {:ok, CommerceConversion.t()} | {:error, Ecto.Changeset.t()}
   def ingest_conversion(attrs), do: Conversions.ingest_conversion(attrs)
 
+  @spec persist_cj_action_group([map()]) ::
+          {:ok, %{persisted: non_neg_integer(), reversed: non_neg_integer()}}
+          | {:error, term()}
+  def persist_cj_action_group(records), do: Conversions.persist_cj_action_group(records)
+
   @spec ensure_cj_conversion_sync_settings(map() | keyword()) ::
           {:ok, ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting.t()}
           | {:error, term()}

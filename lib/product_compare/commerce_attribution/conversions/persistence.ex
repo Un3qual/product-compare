@@ -13,6 +13,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
     :click_session_id,
     :public_click_id,
     :network_click_ref,
+    :network_action_ref,
     :merchant_id,
     :affiliate_program_id,
     :product_id,
@@ -40,6 +41,22 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
         {:error, changeset} -> Repo.rollback(changeset)
       end
     end)
+  end
+
+  @spec reverse_cj_action(String.t(), DateTime.t(), map()) ::
+          {:ok, %{matched: pos_integer(), updated: non_neg_integer()}}
+          | {:error, :unmatched_correction | Ecto.Changeset.t()}
+  def reverse_cj_action(network_action_ref, posting_date, raw_payload) do
+    with {:ok, network_action_ref} <- validate_action_ref(network_action_ref),
+         :ok <- validate_posting_date(posting_date),
+         :ok <- validate_raw_payload(raw_payload),
+         {:ok, network} <- cj_network(),
+         [_ | _] = conversions <- lock_cj_action(network.id, network_action_ref) do
+      reverse_eligible(conversions, posting_date, raw_payload)
+    else
+      [] -> {:error, :unmatched_correction}
+      {:error, changeset} -> {:error, changeset}
+    end
   end
 
   defp persist_or_rollback(attrs) do
@@ -133,4 +150,84 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
         attrs
     end
   end
+
+  defp validate_action_ref(network_action_ref) do
+    case normalize_string(network_action_ref) do
+      nil -> {:error, correction_changeset(:network_action_ref, "can't be blank")}
+      network_action_ref -> {:ok, network_action_ref}
+    end
+  end
+
+  defp validate_posting_date(%DateTime{utc_offset: 0, std_offset: 0}), do: :ok
+
+  defp validate_posting_date(_posting_date),
+    do: {:error, correction_changeset(:reported_at, "is invalid")}
+
+  defp validate_raw_payload(raw_payload) when is_map(raw_payload), do: :ok
+
+  defp validate_raw_payload(_raw_payload),
+    do: {:error, correction_changeset(:raw_payload, "must be a map")}
+
+  defp cj_network do
+    case Repo.get_by(AffiliateNetwork, code: "cj") do
+      %AffiliateNetwork{} = network ->
+        {:ok, network}
+
+      nil ->
+        {:error,
+         correction_changeset(:source_network, "is not configured as an affiliate network")}
+    end
+  end
+
+  defp lock_cj_action(affiliate_network_id, network_action_ref) do
+    Repo.all(
+      from conversion in CommerceConversion,
+        where:
+          conversion.affiliate_network_id == ^affiliate_network_id and
+            conversion.network_action_ref == ^network_action_ref,
+        order_by: [asc: conversion.id],
+        lock: "FOR UPDATE"
+    )
+  end
+
+  defp reverse_eligible(conversions, posting_date, raw_payload) do
+    Enum.reduce_while(conversions, {:ok, 0}, fn conversion, {:ok, updated} ->
+      if DateTime.compare(conversion.reported_at, posting_date) == :gt do
+        {:cont, {:ok, updated}}
+      else
+        attrs = %{
+          status: :reversed,
+          data_freshness_at: posting_date,
+          reported_at: posting_date,
+          raw_payload: raw_payload
+        }
+
+        conversion = %{conversion | source_network: "cj"}
+
+        case conversion |> CommerceConversion.changeset(attrs) |> Repo.update() do
+          {:ok, _conversion} -> {:cont, {:ok, updated + 1}}
+          {:error, changeset} -> {:halt, {:error, changeset}}
+        end
+      end
+    end)
+    |> case do
+      {:ok, updated} -> {:ok, %{matched: length(conversions), updated: updated}}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
+  defp correction_changeset(field, message) do
+    %CommerceConversion{}
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.add_error(field, message)
+  end
+
+  defp normalize_string(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      value -> value
+    end
+  end
+
+  defp normalize_string(_value), do: nil
 end
