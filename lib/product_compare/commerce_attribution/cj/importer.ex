@@ -77,33 +77,46 @@ defmodule ProductCompare.CommerceAttribution.CJ.Importer do
        do: {:error, :page_ceiling_exhausted, progress}
 
   defp fetch_pages(request, fetch_page, seen, page, max_pages, records, progress) do
-    with {:ok, result} <- call_fetch_page(fetch_page, request),
-         {:ok, result} <- validate_page(result),
-         {:ok, cursor} <- validate_continuation(result, request.since_commission_id, seen) do
-      records = Enum.reverse(result.records, records)
+    case call_fetch_page(fetch_page, request) do
+      {:ok, result} ->
+        fetched_progress = count_fetched_page(progress, page, result)
 
-      progress = %{
-        pages: page,
-        fetched: progress.fetched + length(result.records),
-        cursor: cursor || request.since_commission_id
-      }
+        with {:ok, result} <- validate_page(result),
+             {:ok, cursor} <-
+               validate_continuation(result, request.since_commission_id, seen) do
+          records = Enum.reverse(result.records, records)
+          accepted_progress = accept_cursor(fetched_progress, cursor, request)
 
-      if result.payload_complete do
-        {:ok, Enum.reverse(records), progress}
-      else
-        fetch_pages(
-          %{request | since_commission_id: cursor},
-          fetch_page,
-          MapSet.put(seen, cursor),
-          page + 1,
-          max_pages,
-          records,
-          progress
-        )
-      end
-    else
-      {:error, reason} -> {:error, reason, progress}
+          if result.payload_complete do
+            {:ok, Enum.reverse(records), accepted_progress}
+          else
+            fetch_pages(
+              %{request | since_commission_id: cursor},
+              fetch_page,
+              MapSet.put(seen, cursor),
+              page + 1,
+              max_pages,
+              records,
+              accepted_progress
+            )
+          end
+        else
+          {:error, reason} -> {:error, reason, fetched_progress}
+        end
+
+      {:error, reason} ->
+        {:error, reason, progress}
     end
+  end
+
+  defp count_fetched_page(progress, page, result) do
+    records = if is_map(result), do: Map.get(result, :records), else: nil
+    fetched = if is_list(records), do: length(records), else: 0
+    %{progress | pages: page, fetched: progress.fetched + fetched}
+  end
+
+  defp accept_cursor(progress, cursor, request) do
+    %{progress | cursor: cursor || request.since_commission_id}
   end
 
   defp call_fetch_page(fetch_page, request) when is_function(fetch_page, 2) do
@@ -139,17 +152,17 @@ defmodule ProductCompare.CommerceAttribution.CJ.Importer do
   defp validate_continuation(result, current_cursor, seen) do
     with {:ok, cursor} <- response_cursor(result) do
       cond do
+        not is_nil(cursor) and cursor == current_cursor ->
+          {:error, {:invalid_response, :non_advancing_cursor}}
+
+        not is_nil(cursor) and MapSet.member?(seen, cursor) ->
+          {:error, {:invalid_response, :repeated_cursor}}
+
         result.payload_complete ->
           {:ok, cursor}
 
         is_nil(cursor) ->
           {:error, {:invalid_response, :max_commission_id}}
-
-        cursor == current_cursor ->
-          {:error, {:invalid_response, :non_advancing_cursor}}
-
-        MapSet.member?(seen, cursor) ->
-          {:error, {:invalid_response, :repeated_cursor}}
 
         true ->
           {:ok, cursor}

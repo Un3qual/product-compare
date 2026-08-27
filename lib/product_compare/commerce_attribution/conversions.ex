@@ -19,9 +19,16 @@ defmodule ProductCompare.CommerceAttribution.Conversions do
     Repo.transaction(fn ->
       {originals, corrections} = Enum.split_with(records, &original?/1)
 
-      with {:ok, persisted} <- persist_cj_originals(sort_records(originals)),
+      with {:ok, action_ref} <- action_group_ref(records),
+           :ok <- lock_action_group(action_ref),
+           {:ok, prior_correction} <- prior_correction(action_ref),
+           {:ok, persisted} <- persist_cj_originals(sort_records(originals)),
+           {:ok, reapplied} <- reapply_prior_correction(action_ref, prior_correction),
            {:ok, reversed} <- reverse_cj_corrections(sort_records(corrections)) do
-        %{persisted: persisted + length(corrections), reversed: reversed}
+        %{
+          persisted: persisted + length(corrections),
+          reversed: reapplied + reversed
+        }
       else
         {:error, reason} -> Repo.rollback(reason)
       end
@@ -53,6 +60,39 @@ defmodule ProductCompare.CommerceAttribution.Conversions do
         {:error, reason} -> {:halt, {:error, reason}}
       end
     end)
+  end
+
+  defp action_group_ref(records) do
+    action_refs =
+      records
+      |> Enum.map(&normalize_string(Map.get(&1, "originalActionId")))
+      |> Enum.reject(&is_nil/1)
+      |> Enum.uniq()
+
+    case action_refs do
+      [] -> {:ok, nil}
+      [action_ref] -> {:ok, action_ref}
+      _multiple -> {:error, :invalid_action_group}
+    end
+  end
+
+  defp lock_action_group(nil), do: :ok
+  defp lock_action_group(action_ref), do: Persistence.lock_cj_action_key(action_ref)
+
+  defp prior_correction(nil), do: {:ok, nil}
+  defp prior_correction(action_ref), do: Persistence.latest_cj_correction(action_ref)
+
+  defp reapply_prior_correction(_action_ref, nil), do: {:ok, 0}
+
+  defp reapply_prior_correction(action_ref, prior_correction) do
+    case Persistence.reverse_cj_action(
+           action_ref,
+           prior_correction.posting_date,
+           prior_correction.raw_payload
+         ) do
+      {:ok, result} -> {:ok, result.updated}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp correction_action_ref(correction) do

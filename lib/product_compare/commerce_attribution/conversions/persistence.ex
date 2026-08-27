@@ -59,6 +59,49 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
     end
   end
 
+  @spec lock_cj_action_key(String.t()) :: :ok | {:error, Ecto.Changeset.t()}
+  def lock_cj_action_key(network_action_ref) do
+    with {:ok, network_action_ref} <- validate_action_ref(network_action_ref) do
+      Repo.query!(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+        ["product_compare:cj_action:" <> network_action_ref]
+      )
+
+      :ok
+    end
+  end
+
+  @spec latest_cj_correction(String.t()) ::
+          {:ok, %{posting_date: DateTime.t(), raw_payload: map()} | nil}
+          | {:error, Ecto.Changeset.t()}
+  def latest_cj_correction(network_action_ref) do
+    with {:ok, network_action_ref} <- validate_action_ref(network_action_ref),
+         {:ok, network} <- cj_network() do
+      correction =
+        Repo.all(
+          from conversion in CommerceConversion,
+            where:
+              conversion.affiliate_network_id == ^network.id and
+                conversion.network_action_ref == ^network_action_ref and
+                conversion.status == :reversed,
+            order_by: [desc: conversion.reported_at, desc: conversion.id]
+        )
+        |> Enum.find(&correction_evidence?/1)
+
+      case correction do
+        nil ->
+          {:ok, nil}
+
+        %CommerceConversion{} = correction ->
+          {:ok,
+           %{
+             posting_date: correction.reported_at,
+             raw_payload: correction.raw_payload
+           }}
+      end
+    end
+  end
+
   defp persist_or_rollback(attrs) do
     case persist(attrs) do
       {:ok, conversion} -> conversion
@@ -192,7 +235,8 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
 
   defp reverse_eligible(conversions, posting_date, raw_payload) do
     Enum.reduce_while(conversions, {:ok, 0}, fn conversion, {:ok, updated} ->
-      if DateTime.compare(conversion.reported_at, posting_date) == :gt do
+      if DateTime.compare(conversion.reported_at, posting_date) == :gt or
+           current_correction?(conversion, posting_date, raw_payload) do
         {:cont, {:ok, updated}}
       else
         attrs = %{
@@ -214,6 +258,21 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
       {:ok, updated} -> {:ok, %{matched: length(conversions), updated: updated}}
       {:error, changeset} -> {:error, changeset}
     end
+  end
+
+  defp correction_evidence?(%CommerceConversion{
+         raw_payload: %{"original" => false},
+         reported_at: %DateTime{}
+       }),
+       do: true
+
+  defp correction_evidence?(_conversion), do: false
+
+  defp current_correction?(conversion, posting_date, raw_payload) do
+    conversion.status == :reversed and
+      DateTime.compare(conversion.reported_at, posting_date) == :eq and
+      DateTime.compare(conversion.data_freshness_at, posting_date) == :eq and
+      conversion.raw_payload == raw_payload
   end
 
   defp correction_changeset(field, message) do

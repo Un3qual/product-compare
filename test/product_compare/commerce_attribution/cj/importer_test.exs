@@ -5,8 +5,6 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
     only: [
       assert_backend_blocked: 1,
       assert_blocked_by: 2,
-      hold_row_lock: 3,
-      release_row_lock: 1,
       start_unboxed_action: 1
     ]
 
@@ -94,7 +92,14 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
       assert {:error, {:invalid_response, :max_commission_id}} =
                Importer.run(import_request(), fetch_page: fetch_page)
 
-      assert %ConversionSyncRun{status: :failed, error_summary: "invalid_response"} =
+      assert %ConversionSyncRun{
+               status: :failed,
+               pages_fetched: 1,
+               records_fetched: 0,
+               records_persisted: 0,
+               records_failed: 0,
+               error_summary: "invalid_response"
+             } =
                latest_run()
     end
   end
@@ -103,32 +108,150 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
     fetch_page = fn request, _opts ->
       case request.since_commission_id do
         nil ->
-          {:ok, %{records: [], payload_complete: false, max_commission_id: "c-1"}}
+          {:ok,
+           %{
+             records: [original("c-1", "a-1")],
+             payload_complete: false,
+             max_commission_id: "c-1"
+           }}
 
         "c-1" ->
-          {:ok, %{records: [], payload_complete: false, max_commission_id: "c-1"}}
+          {:ok,
+           %{
+             records: [original("c-2", "a-2")],
+             payload_complete: false,
+             max_commission_id: "c-1"
+           }}
       end
     end
 
     assert {:error, {:invalid_response, :non_advancing_cursor}} =
              Importer.run(import_request(), fetch_page: fetch_page)
 
-    assert %{status: :failed, pages_fetched: 1, cursor: "c-1"} = latest_run()
+    assert %{
+             status: :failed,
+             pages_fetched: 2,
+             records_fetched: 2,
+             records_persisted: 0,
+             records_failed: 2,
+             cursor: "c-1"
+           } = latest_run()
+
+    assert Repo.aggregate(CommerceConversion, :count, :id) == 0
   end
 
   test "rejects a previously seen cursor cycle before it can repeat page traversal" do
     fetch_page = fn request, _opts ->
       case request.since_commission_id do
-        nil -> {:ok, %{records: [], payload_complete: false, max_commission_id: "c-1"}}
-        "c-1" -> {:ok, %{records: [], payload_complete: false, max_commission_id: "c-2"}}
-        "c-2" -> {:ok, %{records: [], payload_complete: false, max_commission_id: "c-1"}}
+        nil ->
+          {:ok,
+           %{
+             records: [original("c-1", "a-1")],
+             payload_complete: false,
+             max_commission_id: "c-1"
+           }}
+
+        "c-1" ->
+          {:ok,
+           %{
+             records: [original("c-2", "a-2")],
+             payload_complete: false,
+             max_commission_id: "c-2"
+           }}
+
+        "c-2" ->
+          {:ok,
+           %{
+             records: [original("c-3", "a-3")],
+             payload_complete: false,
+             max_commission_id: "c-1"
+           }}
       end
     end
 
     assert {:error, {:invalid_response, :repeated_cursor}} =
              Importer.run(import_request(), fetch_page: fetch_page)
 
-    assert %{status: :failed, pages_fetched: 2, cursor: "c-2"} = latest_run()
+    assert %{
+             status: :failed,
+             pages_fetched: 3,
+             records_fetched: 3,
+             records_persisted: 0,
+             records_failed: 3,
+             cursor: "c-2"
+           } = latest_run()
+
+    assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+  end
+
+  test "rejects a terminal page that repeats the current cursor" do
+    fetch_page = fn request, _opts ->
+      case request.since_commission_id do
+        nil ->
+          {:ok,
+           %{
+             records: [original("c-1", "a-1")],
+             payload_complete: false,
+             max_commission_id: "c-1"
+           }}
+
+        "c-1" ->
+          {:ok,
+           %{
+             records: [original("c-2", "a-2")],
+             payload_complete: true,
+             max_commission_id: "c-1"
+           }}
+      end
+    end
+
+    assert {:error, {:invalid_response, :non_advancing_cursor}} =
+             Importer.run(import_request(), fetch_page: fetch_page)
+
+    assert %{
+             status: :failed,
+             pages_fetched: 2,
+             records_fetched: 2,
+             records_persisted: 0,
+             records_failed: 2,
+             cursor: "c-1"
+           } = latest_run()
+
+    assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+  end
+
+  test "rejects a terminal page that returns a previously seen cursor" do
+    fetch_page = fn request, _opts ->
+      case request.since_commission_id do
+        nil ->
+          {:ok, %{records: [], payload_complete: false, max_commission_id: "c-1"}}
+
+        "c-1" ->
+          {:ok, %{records: [], payload_complete: false, max_commission_id: "c-2"}}
+
+        "c-2" ->
+          {:ok,
+           %{
+             records: [original("c-3", "a-3")],
+             payload_complete: true,
+             max_commission_id: "c-1"
+           }}
+      end
+    end
+
+    assert {:error, {:invalid_response, :repeated_cursor}} =
+             Importer.run(import_request(), fetch_page: fetch_page)
+
+    assert %{
+             status: :failed,
+             pages_fetched: 3,
+             records_fetched: 1,
+             records_persisted: 0,
+             records_failed: 1,
+             cursor: "c-2"
+           } = latest_run()
+
+    assert Repo.aggregate(CommerceConversion, :count, :id) == 0
   end
 
   test "fails when the bounded page ceiling is exhausted" do
@@ -164,7 +287,15 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
              Importer.run(import_request(), fetch_page: fetch_page)
 
     assert Repo.aggregate(CommerceConversion, :count, :id) == 0
-    assert %{status: :failed, pages_fetched: 0, records_fetched: 0} = latest_run()
+
+    assert %{
+             status: :failed,
+             pages_fetched: 1,
+             records_fetched: 2,
+             records_persisted: 0,
+             records_failed: 2,
+             cursor: nil
+           } = latest_run()
   end
 
   test "classifies transport failure without persisting provider exception details" do
@@ -356,6 +487,33 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
     assert Repo.aggregate(CommerceConversion, :count, :id) == 0
   end
 
+  test "durable correction evidence reverses a distinct later original that is not newer" do
+    action_ref = "durable-action-#{Ecto.UUID.generate()}"
+    existing_original = original("existing-#{Ecto.UUID.generate()}", action_ref)
+    later_identity = original("later-#{Ecto.UUID.generate()}", action_ref)
+    correction = correction("correction-#{Ecto.UUID.generate()}", action_ref)
+
+    assert {:ok, %{persisted: 1, reversed: 0}} =
+             Conversions.persist_cj_action_group([existing_original])
+
+    assert {:ok, %{persisted: 1, reversed: 1}} =
+             Conversions.persist_cj_action_group([correction])
+
+    assert {:ok, %{persisted: 1, reversed: 1}} =
+             Conversions.persist_cj_action_group([later_identity])
+
+    conversions =
+      Repo.all(
+        from conversion in CommerceConversion,
+          where: conversion.network_action_ref == ^action_ref,
+          order_by: conversion.network_conversion_ref
+      )
+
+    assert length(conversions) == 2
+    assert Enum.all?(conversions, &(&1.status == :reversed))
+    assert Enum.all?(conversions, &(&1.raw_payload == correction))
+  end
+
   test "keeps a committed action group when a later group fails" do
     records = [
       original("c-1", "a-1"),
@@ -382,37 +540,35 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
            } = latest_run()
   end
 
-  test "concurrent complete runs converge after original-first and correction-first lock queues" do
-    for first_order <- [:original_first, :correction_first] do
-      action_ref = "concurrent-action-#{first_order}-#{Ecto.UUID.generate()}"
-      commission_ref = "concurrent-commission-#{first_order}-#{Ecto.UUID.generate()}"
-      original = original(commission_ref, action_ref)
-      correction = correction("correction-#{Ecto.UUID.generate()}", action_ref)
+  test "separate original and correction runs serialize for both action-lock release orders" do
+    for first_operation <- [:original, :correction] do
+      action_ref = "concurrent-action-#{first_operation}-#{Ecto.UUID.generate()}"
 
-      fixture = committed_conversion_fixture(original)
+      existing_original =
+        original("existing-#{first_operation}-#{Ecto.UUID.generate()}", action_ref)
+
+      later_identity = original("later-#{first_operation}-#{Ecto.UUID.generate()}", action_ref)
+      correction = correction("correction-#{first_operation}-#{Ecto.UUID.generate()}", action_ref)
+
+      _fixture = committed_conversion_fixture(existing_original)
 
       on_exit(fn -> delete_committed_action_fixture(action_ref) end)
 
-      {lock_holder, lock_backend_pid} =
-        hold_row_lock(CommerceConversion, fixture.id, & &1)
+      {lock_holder, lock_backend_pid} = hold_cj_action_lock(action_ref)
 
-      first_records =
-        if first_order == :original_first,
-          do: [original, correction],
-          else: [correction, original]
+      {first_records, second_records} =
+        if first_operation == :original,
+          do: {[later_identity], [correction]},
+          else: {[correction], [later_identity]}
 
-      second_records = Enum.reverse(first_records)
-
-      {first_run, first_backend_pid} =
-        start_complete_import(first_records, "publisher-first-#{first_order}")
+      {first_run, first_backend_pid} = start_complete_import(first_records, "publisher-first")
 
       assert_blocked_by(first_backend_pid, lock_backend_pid)
 
-      {second_run, second_backend_pid} =
-        start_complete_import(second_records, "publisher-second-#{first_order}")
+      {second_run, second_backend_pid} = start_complete_import(second_records, "publisher-second")
 
       assert_backend_blocked(second_backend_pid)
-      release_row_lock(lock_holder)
+      release_cj_action_lock(lock_holder)
 
       assert {:ok, %ConversionSyncRun{status: :succeeded}} = Task.await(first_run, 5_000)
       assert {:ok, %ConversionSyncRun{status: :succeeded}} = Task.await(second_run, 5_000)
@@ -425,8 +581,45 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
           )
         end)
 
-      assert [%CommerceConversion{status: :reversed}] = conversions
+      assert length(conversions) == 2
+      assert Enum.all?(conversions, &(&1.status == :reversed))
+      assert Enum.all?(conversions, &(&1.raw_payload == correction))
     end
+  end
+
+  defp hold_cj_action_lock(action_ref) do
+    parent = self()
+
+    task =
+      Task.async(fn ->
+        Sandbox.unboxed_run(Repo, fn ->
+          Repo.transaction(fn ->
+            backend_pid = ProductCompare.DatabaseTestHelpers.database_backend_pid()
+
+            Repo.query!(
+              "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+              ["product_compare:cj_action:" <> String.trim(action_ref)]
+            )
+
+            send(parent, {:cj_action_lock_held, self(), backend_pid})
+
+            receive do
+              :release_cj_action_lock -> :ok
+            after
+              5_000 -> flunk("timed out waiting to release the CJ action lock")
+            end
+          end)
+        end)
+      end)
+
+    assert_receive {:cj_action_lock_held, task_pid, backend_pid}, 2_000
+    assert task_pid == task.pid
+    {task, backend_pid}
+  end
+
+  defp release_cj_action_lock(task) do
+    send(task.pid, :release_cj_action_lock)
+    assert {:ok, :ok} = Task.await(task)
   end
 
   defp start_complete_import(records, publisher_id) do
