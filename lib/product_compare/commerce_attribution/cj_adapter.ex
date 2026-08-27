@@ -27,11 +27,27 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
         payload
         |> value(:commission_id, "commissionId", "CommissionId")
         |> reference_token(),
+      network_action_ref:
+        payload
+        |> value(:original_action_id, "originalActionId", "OriginalActionId")
+        |> reference_token(),
       status: normalize_status(value(payload, :action_status, "actionStatus", "ActionStatus")),
-      currency: value(payload, :currency, "currency", "Currency"),
-      order_amount: decimal(value(payload, :sale_amount, "saleAmount", "SaleAmount")),
+      currency: "USD",
+      order_amount:
+        decimal(
+          value(payload, :sale_amount_usd, "saleAmountUsd", "SaleAmountUsd") ||
+            value(payload, :sale_amount, "saleAmount", "SaleAmount")
+        ),
       commission_amount:
-        decimal(value(payload, :commission_amount, "commissionAmount", "CommissionAmount")),
+        decimal(
+          value(
+            payload,
+            :pub_commission_amount_usd,
+            "pubCommissionAmountUsd",
+            "PubCommissionAmountUsd"
+          ) ||
+            value(payload, :commission_amount, "commissionAmount", "CommissionAmount")
+        ),
       purchased_at: parse_datetime(value(payload, :event_date, "eventDate", "EventDate")),
       reported_at: reported_at,
       data_freshness_at: reported_at,
@@ -58,7 +74,8 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
     end
   end
 
-  defp publisher_reference(payload), do: first_present(payload, [:sid, "SID", "sid"])
+  defp publisher_reference(payload),
+    do: first_present(payload, [:shopper_id, "shopperId", "ShopperId", :sid, "SID", "sid"])
 
   defp first_present(_payload, []), do: :missing
 

@@ -1340,7 +1340,7 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   describe "CJAdapter.ingest_transaction/1" do
-    test "normalizes string-keyed commissions and resolves SID click attribution" do
+    test "normalizes current CJ commissions and prefers shopperId click attribution" do
       merchant = merchant_fixture()
       product = SpecsFixtures.product_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
@@ -1367,11 +1367,15 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       payload = %{
         "commissionId" => "cj-commission-#{System.unique_integer([:positive])}",
-        "SID" => click_session.click_id,
+        "originalActionId" => "cj-action-#{System.unique_integer([:positive])}",
+        "shopperId" => click_session.click_id,
+        "SID" => "legacy-sid-must-not-win",
         "actionStatus" => "LOCKED",
-        "currency" => "USD",
-        "saleAmount" => "81.25",
-        "commissionAmount" => "8.12",
+        "currency" => "EUR",
+        "saleAmountUsd" => "81.25",
+        "saleAmount" => "999.99",
+        "pubCommissionAmountUsd" => "8.12",
+        "commissionAmount" => "99.99",
         "eventDate" => "2026-05-20T12:00:00Z",
         "postingDate" => "2026-05-20T12:05:00Z"
       }
@@ -1379,6 +1383,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert {:ok, conversion} = CJAdapter.ingest_transaction(payload)
       assert conversion.source_network == "cj"
       assert conversion.network_conversion_ref == payload["commissionId"]
+      assert conversion.network_action_ref == payload["originalActionId"]
       assert conversion.click_session_id == click_session.id
       assert conversion.public_click_id == click_session.click_id
       assert conversion.merchant_id == merchant.id
@@ -1395,7 +1400,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert conversion.raw_payload == payload
     end
 
-    test "normalizes atom-keyed commissions and preserves malformed publisher references" do
+    test "retains legacy SID and amount spellings for inbound compatibility" do
       payload = %{
         commission_id: "cj-commission-#{System.unique_integer([:positive])}",
         sid: "not-a-product-compare-click",
@@ -1416,6 +1421,37 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert conversion.raw_payload["sid"] == "not-a-product-compare-click"
       assert conversion.raw_payload["action_status"] == "new"
       assert conversion.raw_payload["commission_amount"] == "2.50"
+    end
+
+    test "maps all current CJ statuses and USD amount fields" do
+      affiliate_network_fixture(%{name: "CJ"})
+
+      for {action_status, expected_status} <- [
+            {"new", :pending},
+            {"extended", :pending},
+            {"locked", :approved},
+            {"closed", :approved}
+          ] do
+        action_ref = "cj-action-#{action_status}-#{System.unique_integer([:positive])}"
+
+        payload = %{
+          "commissionId" => "cj-commission-#{System.unique_integer([:positive])}",
+          "originalActionId" => action_ref,
+          "actionStatus" => action_status,
+          "shopperId" => "not-a-product-compare-click",
+          "saleAmountUsd" => "100.01",
+          "pubCommissionAmountUsd" => "10.01",
+          "eventDate" => "2026-05-20T12:00:00Z",
+          "postingDate" => "2026-05-20T12:05:00Z"
+        }
+
+        assert {:ok, conversion} = CJAdapter.ingest_transaction(payload)
+        assert conversion.status == expected_status
+        assert conversion.network_action_ref == action_ref
+        assert conversion.currency == "USD"
+        assert Decimal.equal?(conversion.order_amount, Decimal.new("100.01"))
+        assert Decimal.equal?(conversion.commission_amount, Decimal.new("10.01"))
+      end
     end
   end
 
