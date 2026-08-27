@@ -2,28 +2,34 @@
 
 **Date:** 2026-08-27
 
-**Status:** Proposed; provider and architecture direction approved
+**Status:** Approved; cross-stack product and architecture direction approved
 
 ## Objective
 
 Fetch publisher commissions from CJ's current Commission Detail GraphQL API,
 normalize them through ProductCompare's existing CJ attribution boundary, and
 persist them so the existing operator revenue dashboard reflects real
-conversion data.
+conversion data. Add an operator workspace for inspecting ingestion health,
+reviewing run evidence, triggering a bounded import, and configuring the
+non-secret schedule policy.
 
 The importer must be durable, replay-safe, bounded, observable, and disabled by
-default until its credential and live-contract gates pass. It adds no new
-frontend route or operator control surface.
+default until its credential and live-contract gates pass. UI-edited settings
+become the durable runtime authority immediately; provider credentials and
+publisher identity remain deployment-managed secrets and configuration.
 
 ## Approved Product Boundary
 
-This is one backend Commerce Attribution outcome:
+This is one cross-stack Commerce Attribution outcome:
 
 - CJ is the first live conversion provider.
 - Manual execution and scheduled polling are both supported.
 - Scheduled polling is explicitly approved but remains runtime opt-in.
-- The existing revenue summary and attribution ledger are the acceptance
-  surfaces; no new UI is added.
+- The existing revenue summary and attribution ledger remain the financial
+  acceptance surfaces.
+- A dedicated operator-only conversion-ingestion workspace exposes schedule
+  settings, credential readiness, active status, manual execution, and a
+  paginated run ledger.
 - Production reset-password and verification email delivery remains deferred.
 - Awin, Impact, Rakuten, eBay, generic multi-provider orchestration, privacy
   policy expansion, deployment proof, and unrelated operator pages remain out
@@ -46,7 +52,8 @@ ProductCompare already owns:
   health patterns for CJ product ingestion.
 
 The missing ownership is the provider fetch, page traversal, durable sync-run
-evidence, and scheduling path for commissions. The existing
+evidence, runtime settings, scheduling path, and operator control surface for
+commissions. The existing
 `ingestion_runs` table is not that owner: it is a product-ingestion ledger whose
 closed surfaces are `shoppingProducts` and `shoppingProductFeeds`.
 
@@ -81,9 +88,10 @@ References:
 
 ### Selected: CJ-specific Commerce Attribution importer
 
-Add a CJ client, importer, sync-run owner, Oban worker, scheduler, and Mix task
-under Commerce Attribution. Reuse the existing CJ adapter and conversion
-persistence.
+Add a CJ client, importer, sync-run and settings owners, Oban worker,
+database-coordinated dispatcher, Mix task, operator GraphQL contract, and Relay
+workspace under Commerce Attribution. Reuse the existing CJ adapter and
+conversion persistence.
 
 This preserves the real domain boundary, ships the approved provider without a
 speculative abstraction, and leaves a clear seam for a later provider to prove
@@ -106,12 +114,29 @@ financial attribution evidence and status changes. Adding commission surface
 codes to the product-ingestion ledger would couple unrelated lifecycle,
 reconciliation, and authorization meanings merely to reuse a table.
 
-### Rejected: new operator UI in the first batch
+### Selected: dedicated conversion-ingestion operator workspace
 
-The current revenue dashboard already exposes summary and ledger evidence.
-Building run controls or a second dashboard before observing real operational
-failures would mix presentation decisions into the ingestion correctness
-boundary. Sync health remains backend-owned in this batch.
+Add `/commerce/revenue/ingestion` as a dedicated operator-only route linked
+from Revenue reporting and the operator destinations. The page owns ingestion
+health and control while Revenue continues to own financial interpretation.
+
+The workspace follows the accepted operator design language: restrained warm
+mineral/paper surfaces, compact typography, quiet dividers, semantic status
+labels, 44-pixel interaction targets, and reduced-motion parity. It is one
+shallow operational surface, not a dashboard-card mosaic or marketing hero.
+
+### Rejected: embed ingestion control in Revenue reporting
+
+Revenue reporting already owns filters, metrics, and a dense attribution
+ledger. Adding configuration, active-job state, and run history there would
+mix operational control with financial analysis and make both harder to scan.
+A direct route link preserves the relationship without conflating ownership.
+
+### Rejected: place commission ingestion under CJ Programs
+
+The CJ Programs workspace owns advertiser-program and product-feed lifecycle.
+Commission synchronization owns financial attribution evidence. Sharing the
+provider does not make those operator tasks one lifecycle.
 
 ## Responsibility Boundaries
 
@@ -203,6 +228,8 @@ The table stores:
 
 - entropy UUID and affiliate network foreign key;
 - `running`, `succeeded`, or `failed` status;
+- `scheduled`, `operator`, or `cli` trigger source and an optional requesting
+  operator foreign key;
 - inclusive window start and exclusive window end;
 - last provider cursor;
 - non-negative page, fetched-record, persisted-record, and failed-record
@@ -222,22 +249,63 @@ The run ledger is evidence, not a cursor authority. Scheduled windows are
 derived explicitly from the clock and configured lookback, so a deleted or
 failed run cannot cause a permanent data gap.
 
-### Oban worker, scheduler, and Mix task
+### `ProductCompare.CommerceAttribution.ConversionSyncSettings`
+
+A focused context owner persists the non-secret runtime policy in
+`commerce_conversion_sync_settings` through a schema under
+`ProductCompareSchemas.CommerceAttribution`.
+
+There is one settings row per affiliate network, enforced by a unique foreign
+key. The CJ row stores:
+
+- `enabled`, default false;
+- `interval_minutes` from 15 through 10,080, default 1,440;
+- `lookback_days` from 1 through 90, default 90;
+- `max_pages` from 1 through 100, default 100;
+- nullable `next_run_at`, which must be null while disabled;
+- nullable `updated_by_user_id` plus ordinary inserted/updated timestamps.
+
+The runtime reads this row on every dispatch decision. Environment values may
+seed interval, lookback, and page-ceiling defaults only when the row is first
+created; they do not override a persisted operator choice on restart.
+Credentials and publisher IDs never enter this table.
+
+Saving settings takes effect immediately. Disabling clears `next_run_at`.
+Enabling or changing cadence sets it to the current UTC time plus the saved
+interval. Saving lookback or page ceiling without changing cadence preserves
+the existing next-run time. Manual execution is separate and never shifts the
+scheduled cadence.
+
+The write path locks the current settings row and revalidates the operator in
+the same transaction. Bounds, enabled/next-run consistency, and any other
+same-row checks receive equivalent Ecto validation, named constraint mappings,
+changeset behavior tests, and direct database tests.
+
+### Oban worker, dispatcher, and Mix task
 
 `ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker` runs the
 importer in the existing `:ingestion` Oban queue with bounded retries. Unique
 job arguments include publisher IDs, window bounds, page ceiling, and schedule
-window so duplicate scheduler ticks converge while intentionally different
-backfills remain distinct.
+window so duplicate dispatcher ticks converge while intentionally different
+CLI backfills remain distinct. Operator-triggered execution returns an existing
+queued or running CJ commission job instead of creating concurrent duplicate
+work.
 
-`ProductCompare.CommerceAttribution.CJCommissionSyncScheduler` follows the
-existing CJ scheduler support pattern. It is disabled by default. On each tick
-it enqueues exactly one UTC window ending at the tick time and beginning the
-configured number of lookback days earlier. Defaults are:
+`ProductCompare.CommerceAttribution.CJCommissionSyncDispatcher` is always
+supervised and checks for due work every 60 seconds. The provider
+schedule itself remains disabled by default in the persisted settings. A
+dispatch transaction selects and locks the due settings row with
+`FOR UPDATE SKIP LOCKED`, creates the explicit UTC window, inserts the unique
+Oban job, and advances `next_run_at` to the claim time plus the configured
+interval. Missed ticks do not fan out into catch-up jobs. The transaction is
+the multi-node claim; process-local timers and Oban uniqueness are not treated
+as the correctness mechanism.
+
+Each due run ends at its claim time and begins the configured number of
+lookback days earlier. Defaults are:
 
 - interval: 1,440 minutes;
 - lookback: 90 days;
-- initial delay: 60 seconds;
 - maximum pages: 100.
 
 The long rolling window deliberately re-reads mutable CJ lifecycle states.
@@ -250,6 +318,57 @@ bounded lookback default. It supports `--check-credentials` without contacting
 CJ and prints only counts, bounds, run identity, and redacted failure kinds.
 The task is not a second implementation path.
 
+### Operator GraphQL contract
+
+The browser contract remains GraphQL/Relay:
+
+- `cjCommissionIngestion` returns persisted settings, credential readiness,
+  active queued/running job state, latest successful run, latest failed run,
+  and the next scheduled time;
+- `cjCommissionSyncRuns` returns a Relay connection over secret-safe run
+  evidence ordered newest first;
+- `updateCjCommissionIngestionSettings` validates and persists enabled state,
+  interval, lookback, and page ceiling;
+- `runCjCommissionIngestionNow` preflights configuration and enqueues one
+  bounded window using current settings, or returns the already-active job.
+
+Queries and mutations require an operator. Both mutations lock and revalidate
+the operator inside their transaction so concurrent revocation fails closed.
+The settings mutation also locks the settings row. GraphQL never exposes token
+values, publisher IDs, raw provider payloads, request headers, Oban arguments,
+or unredacted exception data.
+
+### Operator route and interaction contract
+
+`/commerce/revenue/ingestion` is loaded through the established Relay route
+loader, Suspense, and resettable error-boundary pattern. Revenue reporting links
+to the workspace, and the workspace links back to Revenue without turning the
+pair into a new generic navigation framework.
+
+The page composition is:
+
+1. a title/control band with credential readiness and a primary `Run now`
+   action;
+2. a compact status band showing enabled state, idle/queued/running/failed
+   activity, current window, latest successful freshness, and next run;
+3. an editable settings section for enabled state, interval, lookback, and
+   maximum pages, with last-changed evidence;
+4. a dense paginated run ledger showing trigger, window, duration, pages,
+   fetched/persisted/failed counts, outcome, and a sanitized inline failure
+   summary.
+
+Account ID and token readiness are read-only configured/missing indicators.
+Secret values are never rendered. Status is communicated with text as well as
+color. Controls preserve 44-pixel targets, visible focus, keyboard operation,
+mobile stacking, and reduced-motion behavior.
+
+The overview is the primary route query; run history is a deferred Relay query
+so ledger failure does not hide settings or current status. While the returned
+activity is queued or running, the route refetches the overview every 10
+seconds and stops when the activity becomes terminal or the page is not
+visible. Otherwise data changes only after navigation, mutation completion, or
+an explicit refresh. No subscription or generic real-time framework is added.
+
 ## Configuration And Credential Contract
 
 The client reuses:
@@ -258,19 +377,19 @@ The client reuses:
 - `CJ_ACCOUNT_ID` as the publisher company ID unless an explicit
   `CJ_COMMISSION_PUBLISHER_IDS` list is configured.
 
-New runtime settings are:
+Bootstrap defaults are:
 
-- `CJ_COMMISSION_SYNC_SCHEDULE_ENABLED`, default false;
-- `CJ_COMMISSION_SYNC_INTERVAL_MINUTES`, default 1,440;
-- `CJ_COMMISSION_SYNC_LOOKBACK_DAYS`, default 90;
-- `CJ_COMMISSION_SYNC_INITIAL_DELAY_MS`, default 60,000;
-- `CJ_COMMISSION_SYNC_MAX_PAGES`, default 100;
+- `CJ_COMMISSION_SYNC_DEFAULT_INTERVAL_MINUTES`, default 1,440;
+- `CJ_COMMISSION_SYNC_DEFAULT_LOOKBACK_DAYS`, default 90;
+- `CJ_COMMISSION_SYNC_DEFAULT_MAX_PAGES`, default 100;
 - optional `CJ_COMMISSION_PUBLISHER_IDS`, a non-empty comma-separated list.
 
 The endpoint remains the verified CJ production endpoint in the client; tests
 inject transport rather than changing production configuration. Credentials
 are read at execution time and never copied into Oban arguments or the sync-run
-ledger.
+ledger. The schedule enabled state has no environment override and is false
+when the database row is first created. After creation, the database row is the
+sole authority for all UI-editable values.
 
 Scheduled activation requires all of the following evidence:
 
@@ -281,8 +400,9 @@ Scheduled activation requires all of the following evidence:
 5. a synthetic correction fixture proves the conservative action-level
    reversal path; a live correction, when available, must agree before its
    evidence is used to refine that policy;
-6. the schedule enablement variable is changed outside source control by the
-   environment owner.
+6. the settings mutation refuses enablement until credentials are present and
+   at least one bounded manual or CLI run has succeeded; the operator then
+   enables scheduling from the workspace.
 
 ## Pagination And Window Semantics
 
@@ -298,8 +418,8 @@ cursor fails the run.
 
 The manual task rejects `from >= before`, non-UTC or malformed timestamps,
 blank publisher IDs, non-positive page ceilings, and unbounded execution. The
-scheduler computes one exact UTC interval per tick. It never uses local time
-or a date-only boundary.
+dispatcher computes one exact UTC interval per due claim. It never uses local
+time or a date-only boundary.
 
 ## Idempotency, Ordering, And Concurrency
 
@@ -341,14 +461,18 @@ scheduled calls but is not treated as the correctness mechanism.
 - Raw selected CJ records continue to live only on their corresponding
   conversion rows under the existing operator/security boundary.
 
-The existing revenue dashboard does not receive synthetic sync status. A
-successful imported conversion appears through its current summary and ledger
-queries; a window with zero commissions remains a successful zero-record run.
+The revenue dashboard does not receive synthetic sync status in its financial
+queries. It links to the ingestion workspace. A successful imported conversion
+appears through the existing summary and ledger queries; a window with zero
+commissions remains a successful zero-record run and appears truthfully in the
+sync ledger.
 
 ## Data Flow
 
-1. A manual task or enabled scheduler constructs an exact UTC window.
-2. The Oban worker invokes the importer with bounds and publisher IDs.
+1. A manual mutation, CLI task, or due dispatcher claim constructs an exact UTC
+   window.
+2. Operator and scheduled paths enqueue the unique Oban worker; the CLI invokes
+   the same importer boundary directly.
 3. The importer creates a running Commerce Attribution sync record.
 4. The CJ client fetches GraphQL pages using server-side credentials; the
    importer validates each continuation and repeats until CJ reports
@@ -362,13 +486,17 @@ queries; a window with zero commissions remains a successful zero-record run.
 7. After originals exist, correction records conservatively reverse their
    action-correlated originals in locked transactions.
 8. The run is completed with truthful counts, or failed with a redacted reason.
-9. Existing revenue queries display approved CJ conversions without a new
-   frontend contract.
+9. Existing revenue queries display approved CJ conversions.
+10. The operator GraphQL overview and run connection expose secret-safe runtime
+    state to the dedicated ingestion workspace.
 
 ## Non-Goals
 
-- No new GraphQL fields, route, dashboard, run button, or browser polling.
 - No generic provider registry or shared provider payload type.
+- No UI editing or display of tokens, publisher IDs, account IDs, endpoint
+  overrides, raw payloads, or raw exception data.
+- No GraphQL subscription, websocket status channel, or generic real-time
+  framework; active-state refetching is local to the route and self-terminates.
 - No webhook receiver.
 - No Awin, Impact, Rakuten, Amazon, or eBay live fetcher.
 - No item-level purchase table or product matching from untrusted CJ SKU
@@ -398,16 +526,28 @@ Implementation uses TDD and adds focused coverage for:
 - identical replay, overlapping windows, stale evidence, and later status
   updates;
 - sync-run changeset and direct PostgreSQL constraints;
+- settings changeset, unique network ownership, enabled/next-run consistency,
+  bounded values, and direct PostgreSQL constraints;
 - worker argument uniqueness, retry results, and secret-free job arguments;
-- scheduler disabled/enabled behavior and exact clock-derived windows;
+- dispatcher atomic due-claim behavior across concurrent callers, disabled and
+  enabled behavior, setting-change rescheduling, and exact clock-derived
+  windows;
 - Mix task options, credential preflight, and redacted output;
-- existing revenue summary and ledger visibility after import.
+- operator GraphQL authorization, concurrent operator revocation, settings
+  mutation, enablement gate, manual-run deduplication, pagination, and secret
+  exclusion;
+- route loader and failure isolation, status/settings rendering, validation and
+  mutation states, bounded active refetching, keyboard/focus behavior,
+  responsive layout, and reduced-motion parity;
+- existing revenue summary and ledger visibility after import and navigation
+  between Revenue and ingestion operations.
 
 Focused verification covers the client, importer, adapter, sync-run schema,
-worker, scheduler, task, revenue aggregation, and affected GraphQL revenue
-tests. Final verification runs formatting, types, quality/static analysis, the
-complete backend suite, the complete repository gate, queue validation, and
-`git diff --check`.
+settings schema, worker, dispatcher, task, GraphQL contract, Relay route,
+revenue aggregation, and affected revenue tests. Final verification runs
+backend and frontend formatting, generated Relay artifacts, TypeScript checks,
+lint/static analysis, focused browser tests, the complete backend and frontend
+suites, the complete repository gate, queue validation, and `git diff --check`.
 
 The optional live evidence gate uses the ignored local credential source
 without echoing or persisting credential values. It runs one bounded manual
@@ -428,20 +568,27 @@ The batch is complete when:
 5. every run leaves durable, secret-safe success or failure evidence;
 6. known corrections conservatively remove the correlated action from revenue
    without creating a second positive row;
-7. scheduled activation remains off until the recorded live-contract gates
-   pass;
-8. auth email delivery remains deferred; and
-9. all focused and repository verification gates pass.
+7. an operator can inspect credential readiness, active state, schedule
+   freshness, and paginated secret-safe run evidence;
+8. an operator can update bounded schedule settings and see the new next-run
+   time take effect immediately;
+9. `Run now` enqueues one bounded job, deduplicates repeated requests, and does
+   not alter scheduled cadence;
+10. scheduled activation remains off until the recorded live-contract gates
+    pass;
+11. auth email delivery remains deferred; and
+12. all focused and repository verification gates pass.
 
 ## Dispatch Shape
 
 This design becomes one queue row, not separate client, schema, worker,
-scheduler, task, and test batches. Those are internal slices of one reviewer
-decision: whether ProductCompare can ingest CJ commissions durably and
-truthfully into its existing revenue product.
+dispatcher, GraphQL, route, task, and test batches. Those are internal slices
+of one reviewer decision: whether ProductCompare can ingest CJ commissions
+durably and truthfully and give operators a safe control and evidence surface.
 
 The implementation row will own only Commerce Attribution source/schema/tests,
 the focused migration, runtime configuration and environment example, the Mix
-task, the new plan and lane doc, and the coordinator queue/catalog updates
-explicitly named by that row. Production auth-email files remain outside its
-owned implementation paths.
+task, operator GraphQL/Relay route files, shared navigation touchpoints, the new
+plan and lane doc, and the coordinator queue/catalog updates explicitly named
+by that row. Production auth-email files remain outside its owned
+implementation paths.
