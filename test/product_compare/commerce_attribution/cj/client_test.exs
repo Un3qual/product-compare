@@ -154,6 +154,49 @@ defmodule ProductCompare.CommerceAttribution.CJ.ClientTest do
                Client.fetch_page(page_request(), api_token: "test-token", transport: transport)
     end
 
+    test "rejects records that omit any selected Commission Detail field" do
+      for field <- commission_detail_fields() do
+        transport = fn _request ->
+          {:ok,
+           %{
+             status: 200,
+             body: commission_detail_page(Map.delete(commission_detail_record(), field))
+           }}
+        end
+
+        assert {:error, {:invalid_response, :record}} =
+                 Client.fetch_page(page_request(), api_token: "test-token", transport: transport)
+      end
+    end
+
+    test "rejects records with non-CJ scalar values without retaining the record" do
+      for {field, value} <- [
+            {"commissionId", 2001},
+            {"original", "true"},
+            {"originalActionId", 1001},
+            {"correctionReason", false},
+            {"actionStatus", true},
+            {"shopperId", 123},
+            {"eventDate", 123},
+            {"postingDate", %{}},
+            {"saleAmountUsd", 81.25},
+            {"pubCommissionAmountUsd", 8.12}
+          ] do
+        transport = fn _request ->
+          {:ok,
+           %{
+             status: 200,
+             body: commission_detail_page(Map.put(commission_detail_record(), field, value))
+           }}
+        end
+
+        result = Client.fetch_page(page_request(), api_token: "test-token", transport: transport)
+
+        assert {:error, {:invalid_response, :record}} = result
+        refute inspect(result) =~ "record-secret"
+      end
+    end
+
     test "rejects a response without a boolean completion flag" do
       transport = fn _request ->
         {:ok,
@@ -295,6 +338,48 @@ defmodule ProductCompare.CommerceAttribution.CJ.ClientTest do
       before: ~U[2026-08-02 00:00:00Z],
       since_commission_id: nil
     }
+  end
+
+  defp commission_detail_fields do
+    [
+      "commissionId",
+      "original",
+      "originalActionId",
+      "correctionReason",
+      "actionStatus",
+      "shopperId",
+      "eventDate",
+      "postingDate",
+      "saleAmountUsd",
+      "pubCommissionAmountUsd"
+    ]
+  end
+
+  defp commission_detail_record do
+    %{
+      "commissionId" => "record-secret",
+      "original" => true,
+      "originalActionId" => "action-1001",
+      "correctionReason" => nil,
+      "actionStatus" => "locked",
+      "shopperId" => "00000000-0000-4000-8000-000000000001",
+      "eventDate" => "2026-08-01T08:30:00Z",
+      "postingDate" => "2026-08-01T09:00:00Z",
+      "saleAmountUsd" => "81.25",
+      "pubCommissionAmountUsd" => "8.12"
+    }
+  end
+
+  defp commission_detail_page(record) do
+    Jason.encode!(%{
+      "data" => %{
+        "publisherCommissions" => %{
+          "records" => [record],
+          "payloadComplete" => true,
+          "maxCommissionId" => nil
+        }
+      }
+    })
   end
 
   defp fixture(name) do

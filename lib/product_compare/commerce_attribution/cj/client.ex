@@ -11,6 +11,19 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
     redirect: true
   ]
 
+  @commission_detail_fields ~w(
+    commissionId
+    original
+    originalActionId
+    correctionReason
+    actionStatus
+    shopperId
+    eventDate
+    postingDate
+    saleAmountUsd
+    pubCommissionAmountUsd
+  )
+
   @commission_detail_query """
   query CommissionDetail(
     $forPublishers: [String!]!,
@@ -254,14 +267,30 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
   defp publisher_commissions(_decoded), do: {:error, {:invalid_response, :publisher_commissions}}
 
   defp records(%{"records" => records}) when is_list(records) do
-    if Enum.all?(records, &is_map/1) do
+    if Enum.all?(records, &valid_commission_detail_record?/1) do
       {:ok, records}
     else
-      {:error, {:invalid_response, :records}}
+      {:error, {:invalid_response, :record}}
     end
   end
 
   defp records(_publisher_commissions), do: {:error, {:invalid_response, :records}}
+
+  defp valid_commission_detail_record?(record) when is_map(record) do
+    Enum.all?(@commission_detail_fields, &Map.has_key?(record, &1)) and
+      nonblank_string?(record["commissionId"]) and
+      is_boolean(record["original"]) and
+      nullable_string?(record["originalActionId"]) and
+      nullable_string?(record["correctionReason"]) and
+      nonblank_string?(record["actionStatus"]) and
+      nullable_string?(record["shopperId"]) and
+      nonblank_string?(record["eventDate"]) and
+      nonblank_string?(record["postingDate"]) and
+      nonblank_string?(record["saleAmountUsd"]) and
+      nonblank_string?(record["pubCommissionAmountUsd"])
+  end
+
+  defp valid_commission_detail_record?(_record), do: false
 
   defp payload_complete(%{"payloadComplete" => payload_complete})
        when is_boolean(payload_complete),
@@ -326,6 +355,10 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
   end
 
   defp normalize_string(_value), do: nil
+
+  defp nonblank_string?(value), do: not is_nil(normalize_string(value))
+  defp nullable_string?(nil), do: true
+  defp nullable_string?(value), do: is_binary(value)
 
   defp utc?(%DateTime{utc_offset: 0, std_offset: 0}), do: true
   defp utc?(_datetime), do: false
