@@ -1,0 +1,303 @@
+defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
+  use ProductCompare.DataCase, async: true
+
+  alias ProductCompare.Affiliate
+  alias ProductCompare.CommerceAttribution.ConversionSyncRuns
+  alias ProductCompare.CommerceAttribution.ConversionSyncSettings
+  alias ProductCompare.Fixtures.AccountsFixtures
+  alias ProductCompare.Repo
+  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
+  alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
+  alias ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting
+
+  test "settings enforce the approved bounds and disabled next-run contract" do
+    valid = %{
+      affiliate_network_id: network_fixture("cj").id,
+      enabled: false,
+      interval_minutes: 1_440,
+      lookback_days: 90,
+      max_pages: 100,
+      next_run_at: nil
+    }
+
+    assert ConversionSyncSetting.changeset(%ConversionSyncSetting{}, valid).valid?
+
+    for {field, value} <- [
+          interval_minutes: 14,
+          interval_minutes: 10_081,
+          lookback_days: 0,
+          lookback_days: 91,
+          max_pages: 0,
+          max_pages: 101
+        ] do
+      refute ConversionSyncSetting.changeset(
+               %ConversionSyncSetting{},
+               Map.put(valid, field, value)
+             ).valid?
+    end
+
+    refute ConversionSyncSetting.changeset(
+             %ConversionSyncSetting{},
+             %{valid | next_run_at: ~U[2026-08-28 12:00:00Z]}
+           ).valid?
+  end
+
+  test "terminal run evidence requires an increasing window, nonnegative counts, and finish time" do
+    attrs = run_attrs(%{status: :succeeded, finished_at: nil})
+
+    assert %{finished_at: ["is invalid"]} =
+             errors_on(ConversionSyncRun.changeset(%ConversionSyncRun{}, attrs))
+
+    attrs = run_attrs(%{window_end: attrs.window_start})
+
+    assert %{window_end: ["must be after window start"]} =
+             errors_on(ConversionSyncRun.changeset(%ConversionSyncRun{}, attrs))
+
+    for field <- [:pages_fetched, :records_fetched, :records_persisted, :records_failed] do
+      changeset =
+        ConversionSyncRun.changeset(%ConversionSyncRun{}, Map.put(run_attrs(), field, -1))
+
+      refute changeset.valid?
+      assert "must be greater than or equal to 0" in Map.fetch!(errors_on(changeset), field)
+    end
+  end
+
+  test "run status, trigger, and error summary are constrained by the application" do
+    for {field, value} <- [status: :unknown, trigger: :manual] do
+      changeset =
+        ConversionSyncRun.changeset(%ConversionSyncRun{}, Map.put(run_attrs(), field, value))
+
+      refute changeset.valid?
+      assert Map.has_key?(errors_on(changeset), field)
+    end
+
+    changeset =
+      ConversionSyncRun.changeset(
+        %ConversionSyncRun{},
+        Map.put(run_attrs(), :error_summary, String.duplicate("x", 501))
+      )
+
+    refute changeset.valid?
+    assert "must be 500 characters or fewer" in errors_on(changeset).error_summary
+  end
+
+  test "commerce conversions accept a nullable network action reference" do
+    network = network_fixture("cj")
+
+    changeset =
+      CommerceConversion.changeset(%CommerceConversion{}, %{
+        source_network: "cj",
+        affiliate_network_id: network.id,
+        network_conversion_ref: "conversion-#{System.unique_integer([:positive])}",
+        network_action_ref: nil,
+        status: :pending,
+        currency: "USD",
+        attribution_confidence: :unmatched,
+        reported_at: ~U[2026-08-28 12:00:00Z]
+      })
+
+    assert changeset.valid?
+  end
+
+  test "ensure_cj converges to one row and preserves persisted operator settings" do
+    assert {:ok, first} =
+             ConversionSyncSettings.ensure_cj(%{
+               interval_minutes: 60,
+               lookback_days: 7,
+               max_pages: 5
+             })
+
+    assert first.enabled == false
+    assert first.interval_minutes == 60
+    assert first.lookback_days == 7
+    assert first.max_pages == 5
+    assert first.next_run_at == nil
+
+    assert {:ok, second} = ConversionSyncSettings.ensure_cj(%{})
+    assert second.id == first.id
+    assert second.interval_minutes == 60
+    assert second.lookback_days == 7
+    assert second.max_pages == 5
+    assert Repo.aggregate(ConversionSyncSetting, :count, :id) == 1
+  end
+
+  test "lock_cj requires a transaction and returns the CJ settings row when locked" do
+    assert {:ok, settings} = ConversionSyncSettings.ensure_cj(%{})
+
+    assert_raise ArgumentError, ~r/lock_cj\/0 requires a database transaction/, fn ->
+      ConversionSyncSettings.lock_cj()
+    end
+
+    settings_id = settings.id
+
+    assert {:ok, locked} =
+             Repo.transaction(fn ->
+               assert %ConversionSyncSetting{id: ^settings_id} = ConversionSyncSettings.lock_cj()
+             end)
+
+    assert locked.id == settings.id
+  end
+
+  test "locked settings updates assign operators and maintain next-run cadence" do
+    now = ~U[2026-08-28 12:00:00Z]
+    operator = AccountsFixtures.user_fixture()
+    assert {:ok, _settings} = ConversionSyncSettings.ensure_cj(%{})
+
+    assert {:ok, enabled} =
+             Repo.transaction(fn ->
+               settings = ConversionSyncSettings.lock_cj()
+
+               assert {:ok, updated} =
+                        ConversionSyncSettings.update_locked(
+                          settings,
+                          operator.id,
+                          %{enabled: true},
+                          now
+                        )
+
+               updated
+             end)
+
+    assert enabled.enabled
+    assert enabled.updated_by_user_id == operator.id
+    assert DateTime.compare(enabled.next_run_at, DateTime.add(now, 1_440 * 60, :second)) == :eq
+
+    preserved_next_run_at = enabled.next_run_at
+
+    assert {:ok, changed_lookback} =
+             Repo.transaction(fn ->
+               settings = ConversionSyncSettings.lock_cj()
+
+               assert {:ok, updated} =
+                        ConversionSyncSettings.update_locked(
+                          settings,
+                          operator.id,
+                          %{lookback_days: 30},
+                          DateTime.add(now, 1, :second)
+                        )
+
+               updated
+             end)
+
+    assert changed_lookback.lookback_days == 30
+    assert DateTime.compare(changed_lookback.next_run_at, preserved_next_run_at) == :eq
+
+    assert {:ok, changed_interval} =
+             Repo.transaction(fn ->
+               settings = ConversionSyncSettings.lock_cj()
+
+               assert {:ok, updated} =
+                        ConversionSyncSettings.update_locked(
+                          settings,
+                          operator.id,
+                          %{interval_minutes: 30},
+                          now
+                        )
+
+               updated
+             end)
+
+    assert DateTime.compare(changed_interval.next_run_at, DateTime.add(now, 30 * 60, :second)) ==
+             :eq
+
+    assert {:ok, disabled} =
+             Repo.transaction(fn ->
+               settings = ConversionSyncSettings.lock_cj()
+
+               assert {:ok, updated} =
+                        ConversionSyncSettings.update_locked(
+                          settings,
+                          operator.id,
+                          %{enabled: false},
+                          now
+                        )
+
+               updated
+             end)
+
+    refute disabled.enabled
+    assert disabled.next_run_at == nil
+  end
+
+  test "run lifecycle starts running, completes once, and lists newest first" do
+    now = ~U[2026-08-28 12:00:00Z]
+    network = network_fixture("cj")
+
+    assert {:ok, first} =
+             ConversionSyncRuns.start(
+               run_attrs(%{affiliate_network_id: network.id, status: :failed}),
+               now
+             )
+
+    assert first.status == :running
+    assert DateTime.compare(first.started_at, now) == :eq
+
+    assert {:ok, completed} =
+             ConversionSyncRuns.complete(
+               first,
+               %{status: :succeeded, pages_fetched: 2, records_fetched: 3, records_persisted: 3},
+               DateTime.add(now, 60, :second)
+             )
+
+    assert completed.status == :succeeded
+    assert DateTime.compare(completed.finished_at, DateTime.add(now, 60, :second)) == :eq
+    assert completed.pages_fetched == 2
+    assert completed.records_fetched == 3
+
+    assert {:ok, unchanged} =
+             ConversionSyncRuns.complete(
+               completed,
+               %{status: :failed, error_summary: "late update"},
+               DateTime.add(now, 120, :second)
+             )
+
+    assert unchanged.id == completed.id
+    assert unchanged.status == :succeeded
+    assert unchanged.error_summary == nil
+
+    assert {:ok, second} =
+             ConversionSyncRuns.start(
+               run_attrs(%{
+                 affiliate_network_id: network.id,
+                 started_at: DateTime.add(now, 1, :second)
+               }),
+               DateTime.add(now, 1, :second)
+             )
+
+    assert [^second, ^completed] = Repo.all(ConversionSyncRuns.query())
+  end
+
+  defp network_fixture(code) do
+    case Repo.get_by(AffiliateNetwork, code: code) do
+      %AffiliateNetwork{} = network ->
+        network
+
+      nil ->
+        {:ok, network} = Affiliate.upsert_network(%{code: code, name: String.upcase(code)})
+        network
+    end
+  end
+
+  defp run_attrs(overrides \\ %{}) do
+    Map.merge(
+      %{
+        affiliate_network_id: network_fixture("cj").id,
+        status: :running,
+        trigger: :operator,
+        requested_by_user_id: nil,
+        window_start: ~U[2026-08-28 00:00:00Z],
+        window_end: ~U[2026-08-29 00:00:00Z],
+        cursor: "cursor-1",
+        pages_fetched: 0,
+        records_fetched: 0,
+        records_persisted: 0,
+        records_failed: 0,
+        started_at: ~U[2026-08-28 12:00:00Z],
+        finished_at: ~U[2026-08-28 12:01:00Z],
+        error_summary: nil
+      },
+      overrides
+    )
+  end
+end
