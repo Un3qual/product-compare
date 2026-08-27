@@ -65,3 +65,122 @@ The full suite emitted only existing reset-password delivery warnings while exer
 ## Concerns
 
 The brief describes string-backed Ecto enums and asks direct invalid status/trigger inserts to return PostgreSQL `:check_violation`. The repository’s mandatory `CategoricalStoragePolicy` requires every persisted `Ecto.Enum` to use a native PostgreSQL enum, so the implementation follows that policy. Invalid status/trigger labels therefore return PostgreSQL `:invalid_text_representation` before the redundant named checks can execute; the named checks remain present, and all other named checks return the requested `:check_violation`. If the brief’s enum error-code requirement is authoritative over repository policy, this needs an explicit design decision before a later task relies on those error codes.
+
+## Fix round 1
+
+The controller rulings were applied in a separate commit without amending the original storage commit.
+
+### Fix 1: native enum checks
+
+Added a focused regression asserting that native enum columns do not have redundant status/trigger checks.
+
+RED:
+
+```text
+mix test test/product_compare/repo/commerce_conversion_sync_constraints_test.exs:163
+...
+Assertion with == failed
+left:  [["commerce_conversion_sync_runs_status_valid"], ["commerce_conversion_sync_runs_trigger_valid"]]
+right: []
+1 test, 1 failure (3 excluded)
+```
+
+The migration and run changeset were then changed to remove those two redundant checks/mappings. After rebuilding the test database with the corrected migration, GREEN:
+
+```text
+mix test test/product_compare/repo/commerce_conversion_sync_constraints_test.exs:163
+.
+Finished in 0.07 seconds (0.07s async, 0.00s sync)
+1 test, 0 failures (3 excluded)
+```
+
+Native enum rejection tests remain direct and assert PostgreSQL `:invalid_text_representation` for invalid status/trigger labels.
+
+### Fix 2: transactional CJ bootstrap
+
+Added a focused query-capture regression requiring the CJ network lookup to use `FOR UPDATE`.
+
+RED:
+
+```text
+mix test test/product_compare/commerce_attribution/conversion_sync_storage_test.exs:127
+...
+Expected truthy, got false
+Captured queries included an unlocked affiliate_networks SELECT followed by the settings INSERT.
+1 test, 1 failure (8 excluded)
+```
+
+`ensure_cj/1` now performs the network lookup/row lock, insert-on-conflict, and persisted-winner fetch inside one `Repo.transaction/1`. GREEN:
+
+```text
+mix test test/product_compare/commerce_attribution/conversion_sync_storage_test.exs:127
+.
+Finished in 0.1 seconds (0.2s async, 0.00s sync)
+1 test, 0 failures (8 excluded)
+```
+
+### Fix 3: restricted completion casting
+
+Added a regression that submits a replacement window during completion and requires the locked run’s identity/window metadata to remain unchanged.
+
+RED:
+
+```text
+mix test test/product_compare/commerce_attribution/conversion_sync_storage_test.exs:283
+...
+Assertion with == failed
+left: ~U[2026-08-27 00:00:00.000000Z]
+right: ~U[2026-08-28 00:00:00.000000Z]
+1 test, 1 failure (9 excluded)
+```
+
+`completion_changeset/2` now casts only status, cursor, terminal counts, finish time, and error summary, while running the shared invariant validation over unchanged stored fields. GREEN:
+
+```text
+mix test test/product_compare/commerce_attribution/conversion_sync_storage_test.exs:283
+.
+Finished in 0.1 seconds (0.1s async, 0.00s sync)
+1 test, 0 failures (9 excluded)
+```
+
+### Fix 4: string-key normalization
+
+Added string-keyed input coverage for both context owners, including forced status/finish/start fields.
+
+RED:
+
+```text
+mix test test/product_compare/commerce_attribution/conversion_sync_storage_test.exs:137
+...
+** (Ecto.CastError) expected params to be a map with atoms or string keys, got a map with mixed keys
+1 test, 1 failure (10 excluded)
+```
+
+Both contexts now normalize a strict whitelist of supported string/atom keys before applying defaults or forced fields. GREEN:
+
+```text
+mix test test/product_compare/commerce_attribution/conversion_sync_storage_test.exs:137
+.
+Finished in 0.2 seconds (0.2s async, 0.00s sync)
+1 test, 0 failures (10 excluded)
+```
+
+## Fix-round verification
+
+```text
+mix test test/product_compare/commerce_attribution/conversion_sync_storage_test.exs test/product_compare/repo/commerce_conversion_sync_constraints_test.exs
+...............
+Finished in 0.3 seconds (0.3s async, 0.00s sync)
+15 tests, 0 failures
+```
+
+The affected native-enum policy suite also passes:
+
+```text
+mix test test/product_compare/repo/domain_enum_storage_test.exs
+....
+Finished in 0.5 seconds (0.5s async, 0.5s sync)
+4 tests, 0 failures
+```
+
+Fix-round self-review found no additional concerns. The remaining enum error-code concern above is resolved by the controller ruling: native PostgreSQL enums are authoritative and the redundant status/trigger checks are removed.

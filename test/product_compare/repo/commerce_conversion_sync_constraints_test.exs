@@ -160,6 +160,22 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
              result
   end
 
+  test "native enum fields do not use redundant status or trigger checks" do
+    result =
+      Repo.query!("""
+      SELECT conname
+      FROM pg_constraint
+      WHERE conrelid = 'commerce_conversion_sync_runs'::regclass
+        AND conname IN (
+          'commerce_conversion_sync_runs_status_valid',
+          'commerce_conversion_sync_runs_trigger_valid'
+        )
+      ORDER BY conname
+      """)
+
+    assert result.rows == []
+  end
+
   defp assert_native_enum_rejection(result) do
     assert {:error, %Postgrex.Error{postgres: %{code: :invalid_text_representation}}} = result
   end

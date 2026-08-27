@@ -96,18 +96,6 @@ defmodule ProductCompare.Repo.Migrations.AddCJConversionSyncStorage do
 
     create constraint(
              :commerce_conversion_sync_runs,
-             :commerce_conversion_sync_runs_status_valid,
-             check: "status IN ('running', 'succeeded', 'failed')"
-           )
-
-    create constraint(
-             :commerce_conversion_sync_runs,
-             :commerce_conversion_sync_runs_trigger_valid,
-             check: "trigger IN ('scheduled', 'operator', 'cli')"
-           )
-
-    create constraint(
-             :commerce_conversion_sync_runs,
              :commerce_conversion_sync_runs_window_increasing,
              check: "window_end > window_start"
            )

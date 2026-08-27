@@ -16,13 +16,26 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
     next_run_at: nil,
     updated_by_user_id: nil
   }
+  @setting_fields Map.keys(@defaults)
+  @setting_field_map Map.new(@setting_fields, &{Atom.to_string(&1), &1})
 
   @spec ensure_cj(map() | keyword()) ::
           {:ok, ConversionSyncSetting.t()} | {:error, term()}
   def ensure_cj(defaults \\ %{}) do
-    defaults = Map.new(defaults)
+    defaults = normalize_attrs(defaults)
 
-    case Repo.get_by(AffiliateNetwork, code: @cj_code) do
+    case Repo.transaction(fn -> ensure_cj_transaction(defaults) end) do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp ensure_cj_transaction(defaults) do
+    case Repo.one(
+           from network in AffiliateNetwork,
+             where: network.code == ^@cj_code,
+             lock: "FOR UPDATE"
+         ) do
       %AffiliateNetwork{id: affiliate_network_id} ->
         insert_or_fetch(
           Map.merge(@defaults, defaults)
@@ -54,7 +67,7 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
 
     attrs =
       attrs
-      |> Map.new()
+      |> normalize_attrs()
       |> Map.drop([:next_run_at, "next_run_at"])
       |> Map.put(:updated_by_user_id, operator_id)
 
@@ -117,6 +130,24 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
   defp normalize_enabled("true"), do: true
   defp normalize_enabled("false"), do: false
   defp normalize_enabled(value), do: value
+
+  defp normalize_attrs(attrs) do
+    attrs
+    |> Map.new()
+    |> Enum.reduce(%{}, fn {key, value}, normalized ->
+      case normalize_key(key) do
+        nil -> normalized
+        normalized_key -> Map.put(normalized, normalized_key, value)
+      end
+    end)
+  end
+
+  defp normalize_key(key) when is_atom(key) do
+    if key in @setting_fields, do: key
+  end
+
+  defp normalize_key(key) when is_binary(key), do: Map.get(@setting_field_map, key)
+  defp normalize_key(_key), do: nil
 
   defp require_transaction! do
     unless Repo.in_transaction?() do

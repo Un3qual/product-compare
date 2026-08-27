@@ -7,6 +7,41 @@ defmodule ProductCompareSchemas.CommerceAttribution.ConversionSyncRun do
   @statuses [:running, :succeeded, :failed]
   @triggers [:scheduled, :operator, :cli]
   @count_fields [:pages_fetched, :records_fetched, :records_persisted, :records_failed]
+  @fields [
+    :entropy_id,
+    :affiliate_network_id,
+    :status,
+    :trigger,
+    :requested_by_user_id,
+    :window_start,
+    :window_end,
+    :cursor,
+    :pages_fetched,
+    :records_fetched,
+    :records_persisted,
+    :records_failed,
+    :started_at,
+    :finished_at,
+    :error_summary
+  ]
+  @completion_fields [
+    :status,
+    :cursor,
+    :pages_fetched,
+    :records_fetched,
+    :records_persisted,
+    :records_failed,
+    :finished_at,
+    :error_summary
+  ]
+  @required_fields [
+    :affiliate_network_id,
+    :status,
+    :trigger,
+    :window_start,
+    :window_end,
+    :started_at
+  ]
 
   @type t :: %__MODULE__{}
 
@@ -33,31 +68,21 @@ defmodule ProductCompareSchemas.CommerceAttribution.ConversionSyncRun do
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(run, attrs) do
     run
-    |> cast(attrs, [
-      :entropy_id,
-      :affiliate_network_id,
-      :status,
-      :trigger,
-      :requested_by_user_id,
-      :window_start,
-      :window_end,
-      :cursor,
-      :pages_fetched,
-      :records_fetched,
-      :records_persisted,
-      :records_failed,
-      :started_at,
-      :finished_at,
-      :error_summary
-    ])
-    |> validate_required([
-      :affiliate_network_id,
-      :status,
-      :trigger,
-      :window_start,
-      :window_end,
-      :started_at
-    ])
+    |> cast(attrs, @fields)
+    |> validate_invariants()
+  end
+
+  @spec completion_changeset(t(), map()) :: Ecto.Changeset.t()
+  def completion_changeset(run, attrs) do
+    run
+    |> cast(attrs, @completion_fields)
+    |> validate_invariants()
+    |> validate_inclusion(:status, [:succeeded, :failed])
+  end
+
+  defp validate_invariants(changeset) do
+    changeset
+    |> validate_required(@required_fields)
     |> validate_inclusion(:status, @statuses)
     |> validate_inclusion(:trigger, @triggers)
     |> validate_window()
@@ -67,8 +92,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.ConversionSyncRun do
     |> unique_constraint(:entropy_id, name: :commerce_conversion_sync_runs_entropy_uq)
     |> foreign_key_constraint(:affiliate_network_id)
     |> foreign_key_constraint(:requested_by_user_id)
-    |> check_constraint(:status, name: :commerce_conversion_sync_runs_status_valid)
-    |> check_constraint(:trigger, name: :commerce_conversion_sync_runs_trigger_valid)
     |> check_constraint(:window_end, name: :commerce_conversion_sync_runs_window_increasing)
     |> check_constraint(:pages_fetched,
       name: :commerce_conversion_sync_runs_counts_non_negative
@@ -79,13 +102,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.ConversionSyncRun do
     |> check_constraint(:error_summary,
       name: :commerce_conversion_sync_runs_error_summary_length
     )
-  end
-
-  @spec completion_changeset(t(), map()) :: Ecto.Changeset.t()
-  def completion_changeset(run, attrs) do
-    run
-    |> changeset(attrs)
-    |> validate_inclusion(:status, [:succeeded, :failed])
   end
 
   defp validate_window(changeset) do

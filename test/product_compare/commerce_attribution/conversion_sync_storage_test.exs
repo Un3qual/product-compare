@@ -1,6 +1,8 @@
 defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
   use ProductCompare.DataCase, async: true
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_queries: 1]
+
   alias ProductCompare.Affiliate
   alias ProductCompare.CommerceAttribution.ConversionSyncRuns
   alias ProductCompare.CommerceAttribution.ConversionSyncSettings
@@ -120,6 +122,37 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
     assert second.lookback_days == 7
     assert second.max_pages == 5
     assert Repo.aggregate(ConversionSyncSetting, :count, :id) == 1
+  end
+
+  test "ensure_cj locks the CJ network while bootstrapping its settings" do
+    {_result, queries} =
+      capture_queries(fn -> ConversionSyncSettings.ensure_cj(%{}) end)
+
+    assert Enum.any?(queries, fn query ->
+             String.contains?(query, ~s(FOR UPDATE)) and
+               String.contains?(query, ~s(FROM "affiliate_networks"))
+           end)
+  end
+
+  test "context owners accept string-keyed input maps" do
+    assert {:ok, setting} =
+             ConversionSyncSettings.ensure_cj(%{
+               "interval_minutes" => 60,
+               "lookback_days" => 7,
+               "max_pages" => 5
+             })
+
+    assert setting.interval_minutes == 60
+    assert setting.lookback_days == 7
+    assert setting.max_pages == 5
+
+    assert {:ok, run} =
+             ConversionSyncRuns.start(
+               string_keyed(run_attrs(%{status: "failed"})),
+               ~U[2026-08-28 12:00:00Z]
+             )
+
+    assert run.status == :running
   end
 
   test "lock_cj requires a transaction and returns the CJ settings row when locked" do
@@ -268,6 +301,36 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
     assert [^second, ^completed] = Repo.all(ConversionSyncRuns.query())
   end
 
+  test "run completion updates terminal evidence without recasting run identity" do
+    now = ~U[2026-08-28 12:00:00Z]
+    network = network_fixture("cj")
+
+    assert {:ok, run} =
+             ConversionSyncRuns.start(
+               run_attrs(%{affiliate_network_id: network.id}),
+               now
+             )
+
+    assert {:ok, completed} =
+             ConversionSyncRuns.complete(
+               run,
+               %{
+                 status: :succeeded,
+                 window_start: ~U[2026-08-27 00:00:00Z],
+                 cursor: "cursor-2",
+                 records_fetched: 2
+               },
+               DateTime.add(now, 60, :second)
+             )
+
+    assert completed.window_start == run.window_start
+    assert completed.affiliate_network_id == run.affiliate_network_id
+    assert completed.trigger == run.trigger
+    assert completed.started_at == run.started_at
+    assert completed.cursor == "cursor-2"
+    assert completed.records_fetched == 2
+  end
+
   defp network_fixture(code) do
     case Repo.get_by(AffiliateNetwork, code: code) do
       %AffiliateNetwork{} = network ->
@@ -277,6 +340,10 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
         {:ok, network} = Affiliate.upsert_network(%{code: code, name: String.upcase(code)})
         network
     end
+  end
+
+  defp string_keyed(attrs) do
+    Map.new(attrs, fn {key, value} -> {Atom.to_string(key), value} end)
   end
 
   defp run_attrs(overrides \\ %{}) do
