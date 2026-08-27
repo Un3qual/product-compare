@@ -432,6 +432,159 @@ test("revenue route renders customer-facing visit and purchase details without i
   );
 });
 
+test("revenue route shows the latest conversion across loaded clicks", () => {
+  const firstClick = ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node;
+  const firstConversion = firstClick.matchedConversions[0];
+  const latestConversion = {
+    ...firstConversion,
+    merchantName: "Latest conversion merchant",
+    reportedAt: "2026-06-02T09:00:00Z",
+  };
+
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      commerceAttributionClicks: {
+        edges: [
+          {
+            cursor: "earlier-click",
+            node: {
+              ...firstClick,
+              clickId: "earlier-click",
+              matchedConversions: [
+                { ...firstConversion, merchantName: "Earlier conversion merchant" },
+              ],
+            },
+          },
+          {
+            cursor: "latest-click",
+            node: {
+              ...firstClick,
+              clickId: "latest-click",
+              matchedConversions: [latestConversion],
+            },
+          },
+        ],
+        pageInfo: { endCursor: null, hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  const recent = screen.getByRole("region", { name: "Recent conversion" });
+
+  expect(within(recent).getByText("Latest conversion merchant")).toBeVisible();
+  expect(within(recent).getByText("Jun 2, 2026, 9:00 AM")).toHaveAttribute(
+    "datetime",
+    "2026-06-02T09:00:00Z",
+  );
+});
+
+test("revenue route compares conversion timestamps as instants across offsets", () => {
+  const firstClick = ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node;
+  const firstConversion = firstClick.matchedConversions[0];
+
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      commerceAttributionClicks: {
+        edges: [
+          {
+            cursor: "later-instant",
+            node: {
+              ...firstClick,
+              clickId: "later-instant",
+              matchedConversions: [
+                {
+                  ...firstConversion,
+                  merchantName: "Later instant merchant",
+                  reportedAt: "2026-06-02T09:30:00Z",
+                },
+              ],
+            },
+          },
+          {
+            cursor: "earlier-offset-instant",
+            node: {
+              ...firstClick,
+              clickId: "earlier-offset-instant",
+              matchedConversions: [
+                {
+                  ...firstConversion,
+                  merchantName: "Earlier offset merchant",
+                  reportedAt: "2026-06-02T10:00:00+02:00",
+                },
+              ],
+            },
+          },
+        ],
+        pageInfo: { endCursor: null, hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  const recent = screen.getByRole("region", { name: "Recent conversion" });
+
+  expect(within(recent).getByText("Later instant merchant")).toBeVisible();
+  expect(within(recent).queryByText("Earlier offset merchant")).not.toBeInTheDocument();
+});
+
+test("revenue route keeps the first loaded conversion when reported times tie", () => {
+  const firstClick = ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node;
+  const firstConversion = firstClick.matchedConversions[0];
+  const reportedAt = "2026-06-02T09:00:00Z";
+
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      commerceAttributionClicks: {
+        edges: [
+          {
+            cursor: "first-tied-click",
+            node: {
+              ...firstClick,
+              clickId: "first-tied-click",
+              matchedConversions: [
+                { ...firstConversion, merchantName: "First tied conversion", reportedAt },
+              ],
+            },
+          },
+          {
+            cursor: "second-tied-click",
+            node: {
+              ...firstClick,
+              clickId: "second-tied-click",
+              matchedConversions: [
+                { ...firstConversion, merchantName: "Second tied conversion", reportedAt },
+              ],
+            },
+          },
+        ],
+        pageInfo: { endCursor: null, hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  const recent = screen.getByRole("region", { name: "Recent conversion" });
+
+  expect(within(recent).getByText("First tied conversion")).toBeVisible();
+  expect(within(recent).queryByText("Second tied conversion")).not.toBeInTheDocument();
+});
+
 test("revenue route surfaces attribution pagination failures and retries", () => {
   let attempt = 0;
   const loadNext = vi.fn(

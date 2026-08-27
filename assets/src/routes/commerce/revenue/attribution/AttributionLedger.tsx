@@ -26,7 +26,6 @@ import {
   formatCurrencyAmount,
 } from "../summary/revenue-summary-data";
 import { AttributionClickDetails } from "./AttributionClickDetails";
-import { buildAttributionOutcome } from "./attribution-ledger-data";
 import {
   attributionConfidenceCopy,
   attributionConfidenceTone,
@@ -399,7 +398,7 @@ function AttributionAmount({
   click: AttributionClick;
   kind: "commission" | "order";
 }) {
-  const outcome = buildAttributionOutcome(click.matchedConversions);
+  const outcome = attributionOutcome(click.matchedConversions);
 
   if (outcome.kind === "none") return <>—</>;
   if (outcome.kind === "multiple") return <>Multiple</>;
@@ -415,7 +414,7 @@ function AttributionAmount({
 }
 
 function AttributionState({ click }: { click: AttributionClick }) {
-  const outcome = buildAttributionOutcome(click.matchedConversions);
+  const outcome = attributionOutcome(click.matchedConversions);
 
   if (outcome.kind === "none") return <StatusBadge>No conversion</StatusBadge>;
   if (outcome.kind === "multiple") return <StatusBadge>{outcome.count} conversions</StatusBadge>;
@@ -430,6 +429,18 @@ function AttributionState({ click }: { click: AttributionClick }) {
       </StatusBadge>
     </span>
   );
+}
+
+function attributionOutcome<T>(conversions: readonly T[]) {
+  if (conversions.length === 0) {
+    return { kind: "none" } as const;
+  }
+
+  if (conversions.length === 1) {
+    return { kind: "single", conversion: conversions[0] } as const;
+  }
+
+  return { kind: "multiple", count: conversions.length } as const;
 }
 
 function AttributionPaginationControl({

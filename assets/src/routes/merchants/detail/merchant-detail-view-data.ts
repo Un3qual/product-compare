@@ -1,31 +1,8 @@
 import type { MerchantDetailRouteQuery } from "$generated/MerchantDetailRouteQuery.graphql";
 import { nextPageCursor } from "$relay/pagination";
 
-type Merchant = NonNullable<MerchantDetailRouteQuery["response"]["merchant"]>;
-type MerchantProduct = Merchant["merchantProducts"]["edges"][number]["node"];
-
-export type MerchantDetailViewDataInput = Pick<Merchant, "slug"> & {
-  readonly detailSummary: Pick<
-    Merchant["detailSummary"],
-    | "activeOfferCount"
-    | "agingOfferCount"
-    | "distinctProductCount"
-    | "eligibleOfferCount"
-    | "freshOfferCount"
-    | "lastObservedAt"
-    | "staleOfferCount"
-    | "unobservedOfferCount"
-  >;
-  readonly merchantProducts: {
-    readonly edges: ReadonlyArray<{
-      readonly node: Pick<MerchantProduct, "currency" | "id" | "latestPrice" | "product">;
-    }>;
-    readonly pageInfo: Pick<Merchant["merchantProducts"]["pageInfo"], "endCursor" | "hasNextPage">;
-  };
-};
-
 export function getMerchantDetailViewData(
-  merchant: MerchantDetailViewDataInput,
+  merchant: NonNullable<MerchantDetailRouteQuery["response"]["merchant"]>,
   currentAfter: string | null = null,
 ) {
   const { detailSummary } = merchant;
@@ -57,7 +34,9 @@ export function getMerchantDetailViewData(
 
 function offerPriceCopy(
   currency: string,
-  latestPrice: MerchantDetailViewDataInput["merchantProducts"]["edges"][number]["node"]["latestPrice"],
+  latestPrice: NonNullable<
+    MerchantDetailRouteQuery["response"]["merchant"]
+  >["merchantProducts"]["edges"][number]["node"]["latestPrice"],
 ) {
   if (!latestPrice) return "No current price available.";
 
@@ -77,7 +56,10 @@ function merchantProductPath(slug: string) {
   return `/products/${encodeURIComponent(slug)}`;
 }
 
-function merchantNextPagePath(merchant: MerchantDetailViewDataInput, currentAfter: string | null) {
+function merchantNextPagePath(
+  merchant: NonNullable<MerchantDetailRouteQuery["response"]["merchant"]>,
+  currentAfter: string | null,
+) {
   const nextCursor = nextPageCursor(merchant.merchantProducts.pageInfo, currentAfter);
 
   return nextCursor

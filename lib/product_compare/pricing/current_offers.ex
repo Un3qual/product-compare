@@ -195,7 +195,7 @@ defmodule ProductCompare.Pricing.CurrentOffers do
 
   defp normalize_product_ids(product_ids) do
     product_ids
-    |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
+    |> Enum.filter(&(is_integer(&1) and &1 > 0))
     |> Enum.uniq()
   end
 end

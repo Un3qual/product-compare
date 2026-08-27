@@ -109,7 +109,7 @@ defmodule ProductCompare.Pricing do
     PriceHistory.get_price_point(price_point_id)
   end
 
-  def get_price_point(price_point_id), do: PriceHistory.get_price_point(price_point_id)
+  def get_price_point(_price_point_id), do: nil
 
   @spec add_price_point(map()) :: {:ok, PricePoint.t()} | {:error, Ecto.Changeset.t()}
   def add_price_point(attrs), do: PriceHistory.add_price_point(attrs)

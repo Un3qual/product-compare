@@ -8,15 +8,8 @@ defmodule ProductCompare.Pricing.PriceHistory do
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
 
-  @max_bigint_id 9_223_372_036_854_775_807
-
   @spec get_price_point(pos_integer()) :: PricePoint.t() | nil
-  def get_price_point(price_point_id)
-      when is_integer(price_point_id) and price_point_id > 0 and price_point_id <= @max_bigint_id do
-    Repo.get(PricePoint, price_point_id)
-  end
-
-  def get_price_point(_price_point_id), do: nil
+  def get_price_point(price_point_id), do: Repo.get(PricePoint, price_point_id)
 
   @spec add_price_point(map()) :: {:ok, PricePoint.t()} | {:error, Ecto.Changeset.t()}
   def add_price_point(attrs) do
@@ -264,7 +257,7 @@ defmodule ProductCompare.Pricing.PriceHistory do
 
   defp normalize_merchant_product_ids(merchant_product_ids) do
     merchant_product_ids
-    |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
+    |> Enum.filter(&(is_integer(&1) and &1 > 0))
     |> Enum.uniq()
   end
 

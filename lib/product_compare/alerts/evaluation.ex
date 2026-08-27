@@ -11,9 +11,6 @@ defmodule ProductCompare.Alerts.Evaluation do
   alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.Pricing.PricePoint
 
-  @max_bigint_id 9_223_372_036_854_775_807
-  defguardp valid_id(id) when is_integer(id) and id > 0 and id <= @max_bigint_id
-
   @spec evaluate_price_point(pos_integer(), keyword()) ::
           {:ok, %{evaluated: non_neg_integer(), events_created: non_neg_integer()}}
           | {:error,
@@ -25,7 +22,7 @@ defmodule ProductCompare.Alerts.Evaluation do
                 }}}
   def evaluate_price_point(price_point_id, opts \\ [])
 
-  def evaluate_price_point(price_point_id, opts) when valid_id(price_point_id) do
+  def evaluate_price_point(price_point_id, opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
 
     watch_evaluator =
@@ -88,8 +85,6 @@ defmodule ProductCompare.Alerts.Evaluation do
         end
     end
   end
-
-  def evaluate_price_point(_price_point_id, _opts), do: {:error, :price_point_not_found}
 
   defp run_watch_evaluator(:default, watch_id, price_point, now, evaluation_facts) do
     evaluate_watch(watch_id, price_point, now, evaluation_facts)

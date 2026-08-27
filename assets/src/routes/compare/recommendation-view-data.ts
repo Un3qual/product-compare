@@ -1,34 +1,11 @@
-export type RecommendationViewDataInput = {
-  missingInputs: readonly string[];
-  rankings: readonly RecommendationRanking[];
-  winnerProductId: string | null;
-};
-
-type RecommendationRanking = {
-  claimIds: readonly string[];
-  productId: string;
-  productName: string;
-  reasons: readonly string[];
-};
-
-export type RecommendationViewData =
-  | {
-      kind: "supported";
-      details: string;
-      productName: string;
-      reasons: readonly string[];
-    }
-  | {
-      kind: "no-winner";
-      reasons: readonly string[];
-    };
+import type { RecommendationPanelQuery } from "$generated/RecommendationPanelQuery.graphql";
 
 const RECOMMENDATION_BLOCKER_FALLBACK =
   "More product or price details are needed before a winner can be recommended.";
 
 export function getRecommendationViewData(
-  recommendation: RecommendationViewDataInput,
-): RecommendationViewData {
+  recommendation: RecommendationPanelQuery["response"]["comparisonRecommendation"],
+) {
   const winner = recommendation.rankings.find(
     (ranking) => ranking.productId === recommendation.winnerProductId,
   );

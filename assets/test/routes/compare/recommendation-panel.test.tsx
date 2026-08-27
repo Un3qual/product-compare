@@ -98,6 +98,95 @@ describe("RecommendationPanel", () => {
     ).toBeVisible();
     expect(screen.queryByText(/eligible offer currency/i)).not.toBeInTheDocument();
   });
+
+  it.each([
+    [
+      [
+        "Products do not share one eligible offer currency.",
+        "price_point_id=price-point-42 failed internal policy v3",
+      ],
+      [
+        "These products do not have current prices in the same currency.",
+        "More product or price details are needed before a winner can be recommended.",
+      ],
+    ],
+    [[], ["More product or price details are needed before a winner can be recommended."]],
+    [
+      ["Top products have the same eligible landed price."],
+      ["The leading products have the same current total price."],
+    ],
+    [
+      ["Recommendations require two or three existing products."],
+      ["Choose two or three available products to get a recommendation."],
+    ],
+    [["Unsupported recommendation profile."], ["This recommendation option is unavailable."]],
+  ])("renders safe no-winner reasons for backend blockers", (missingInputs, expectedReasons) => {
+    mockedUseLazyLoadQuery.mockReturnValue({
+      comparisonRecommendation: {
+        ...WINNER,
+        winnerProductId: null,
+        rankings: [],
+        missingInputs,
+      },
+    } as never);
+
+    render(
+      <MemoryRouter>
+        <RecommendationPanel slugs={["one", "two"]} specMode="shared" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("No supported winner")).toBeVisible();
+    for (const reason of expectedReasons) expect(screen.getByText(reason)).toBeVisible();
+    expect(screen.queryByText(/price_point_id|internal policy/i)).not.toBeInTheDocument();
+  });
+
+  it("uses the first matching ranking and exact product-detail count copy", () => {
+    mockedUseLazyLoadQuery.mockReturnValue({
+      comparisonRecommendation: {
+        ...WINNER,
+        rankings: [
+          { ...WINNER.rankings[0], productName: "First winner", claimIds: [] },
+          { ...WINNER.rankings[0], productName: "Second winner", claimIds: ["claim-1"] },
+        ],
+      },
+    } as never);
+
+    render(
+      <MemoryRouter>
+        <RecommendationPanel slugs={["one", "two"]} specMode="shared" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("First winner", { selector: "strong" })).toBeVisible();
+    expect(screen.queryByText("Second winner", { selector: "strong" })).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Based on the current price and 0 verified product details."),
+    ).toBeVisible();
+  });
+
+  it.each([
+    [["claim-1"], "Based on the current price and 1 verified product detail."],
+    [
+      ["claim-1", "claim-2", "claim-3"],
+      "Based on the current price and 3 verified product details.",
+    ],
+  ])("uses exact singular and plural product-detail copy", (claimIds, details) => {
+    mockedUseLazyLoadQuery.mockReturnValue({
+      comparisonRecommendation: {
+        ...WINNER,
+        rankings: [{ ...WINNER.rankings[0], claimIds }],
+      },
+    } as never);
+
+    render(
+      <MemoryRouter>
+        <RecommendationPanel slugs={["one", "two"]} specMode="shared" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(details)).toBeVisible();
+  });
 });
 
 describe("recommendation profile navigation", () => {

@@ -6,9 +6,6 @@ defmodule ProductCompare.Alerts.Inbox do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Alerts.AlertEvent
 
-  @max_bigint_id 9_223_372_036_854_775_807
-  defguardp valid_id(id) when is_integer(id) and id > 0 and id <= @max_bigint_id
-
   @spec list_alert_events_query(pos_integer(), keyword()) :: Ecto.Query.t()
   def list_alert_events_query(user_id, opts \\ []) do
     AlertEvent
@@ -20,7 +17,7 @@ defmodule ProductCompare.Alerts.Inbox do
 
   @spec mark_alert_read(pos_integer(), Ecto.UUID.t()) ::
           {:ok, AlertEvent.t()} | {:error, :not_found | Ecto.Changeset.t()}
-  def mark_alert_read(user_id, entropy_id) when valid_id(user_id) and is_binary(entropy_id) do
+  def mark_alert_read(user_id, entropy_id) when is_binary(entropy_id) do
     case Repo.transaction(fn ->
            event =
              Repo.one(

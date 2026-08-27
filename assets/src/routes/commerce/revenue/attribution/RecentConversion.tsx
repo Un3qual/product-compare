@@ -5,7 +5,6 @@ import { formatProductDateTimeLabel } from "$frontend/formatting";
 import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { formatCurrencyAmount } from "../summary/revenue-summary-data";
-import { selectRecentLoadedConversion } from "./attribution-ledger-data";
 import {
   attributionConfidenceCopy,
   attributionConfidenceTone,
@@ -59,7 +58,7 @@ type AttributionClick = AttributionLedger_row$data[number];
 
 export function RecentConversion({ clicks }: { clicks: readonly AttributionClick[] }) {
   const headingId = useId();
-  const conversion = selectRecentLoadedConversion(clicks);
+  const conversion = recentLoadedConversion(clicks);
 
   return (
     <section aria-labelledby={headingId} {...props(styles.root)}>
@@ -105,6 +104,27 @@ export function RecentConversion({ clicks }: { clicks: readonly AttributionClick
       )}
     </section>
   );
+}
+
+function recentLoadedConversion(clicks: readonly AttributionClick[]) {
+  let recent: AttributionClick["matchedConversions"][number] | null = null;
+  let recentReportedAt = Number.NEGATIVE_INFINITY;
+
+  for (const click of clicks) {
+    for (const conversion of click.matchedConversions) {
+      const parsedReportedAt = Date.parse(conversion.reportedAt);
+      const reportedAt = Number.isNaN(parsedReportedAt)
+        ? Number.NEGATIVE_INFINITY
+        : parsedReportedAt;
+
+      if (recent === null || reportedAt > recentReportedAt) {
+        recent = conversion;
+        recentReportedAt = reportedAt;
+      }
+    }
+  }
+
+  return recent;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

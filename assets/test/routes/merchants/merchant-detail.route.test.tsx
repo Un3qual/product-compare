@@ -205,3 +205,77 @@ test("MerchantDetailRoute suppresses a repeated next-page cursor", () => {
   );
   expect(screen.queryByRole("link", { name: "Next offers" })).not.toBeInTheDocument();
 });
+
+test("MerchantDetailRoute renders missing observations and incomplete offers safely", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    query: {
+      __relayQuery: {
+        operationName: "MerchantDetailRouteQuery",
+        text: 'query MerchantDetailRouteQuery { merchant(slug: "shop") { id } }',
+        variables: { slug: "shop", first: 20, after: null },
+      },
+    },
+  } as never);
+  mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
+  mockedUsePreloadedQuery.mockReturnValue({
+    merchant: {
+      id: "merchant-1",
+      name: "Trusted Shop",
+      slug: "trusted shop/?",
+      domain: "trusted.example",
+      detailSummary: {
+        activeOfferCount: 2,
+        distinctProductCount: 1,
+        observedOfferCount: 0,
+        eligibleOfferCount: 0,
+        freshOfferCount: 0,
+        agingOfferCount: 0,
+        staleOfferCount: 4,
+        unobservedOfferCount: 2,
+        lastObservedAt: null,
+      },
+      merchantProducts: {
+        edges: [
+          {
+            node: { id: "offer-1", currency: "USD", product: null, latestPrice: null },
+          },
+          {
+            node: {
+              id: "offer-2",
+              currency: "USD",
+              product: { id: "product-1", name: "Cameras & lenses", slug: "cameras & lenses/?" },
+              latestPrice: {
+                id: "price-1",
+                price: "12",
+                shipping: null,
+                inStock: null,
+                observedAt: "2026-07-14T01:00:00Z",
+              },
+            },
+          },
+        ],
+        pageInfo: { hasNextPage: true, endCursor: "next + /?" },
+      },
+    },
+  } as never);
+
+  render(
+    <MemoryRouter>
+      <MerchantDetailRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByText(/No offer prices have been checked yet/)).toBeVisible();
+  expect(screen.getByText(/0 need a refresh, 4 are out of date, and 2 have not been checked/)).toBeVisible();
+  expect(screen.getByText("No current price available.")).toBeVisible();
+  expect(screen.getByText("12 USD plus unknown shipping · Stock unknown")).toBeVisible();
+  expect(screen.getByRole("link", { name: "Cameras & lenses" })).toHaveAttribute(
+    "href",
+    "/products/cameras%20%26%20lenses%2F%3F",
+  );
+  expect(screen.getByRole("link", { name: "Next offers" })).toHaveAttribute(
+    "href",
+    "/merchants/trusted%20shop%2F%3F?after=next%20%2B%20%2F%3F",
+  );
+});

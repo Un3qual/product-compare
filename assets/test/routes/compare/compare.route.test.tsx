@@ -6,6 +6,8 @@ import {
   MemoryRouter,
   Outlet,
   Route,
+  createMemoryRouter,
+  RouterProvider,
   Routes,
   useLoaderData,
   useLocation,
@@ -51,6 +53,7 @@ const {
   useMutationMock,
   usePreloadedQueryMock,
   useRouteErrorMock,
+  useRouteErrorOriginal,
   useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
@@ -61,6 +64,7 @@ const {
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRouteErrorMock: vi.fn(),
+  useRouteErrorOriginal: { current: null as null | (() => unknown) },
   useRoutePreloadedQueryMock: vi.fn(),
 }));
 
@@ -90,6 +94,7 @@ vi.mock("react-relay", async () => {
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+  useRouteErrorOriginal.current = actual.useRouteError;
 
   return {
     ...actual,
@@ -3242,6 +3247,18 @@ test("compare route keeps non-network TypeErrors on the generic error path", () 
   );
 });
 
+test("compare error boundary tolerates a non-string Error message", () => {
+  const error = new Error("placeholder");
+  Object.defineProperty(error, "message", { value: 503 });
+  mockedUseRouteError.mockReturnValue(error);
+
+  render(<RouteErrorBoundary />);
+
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "An unexpected error occurred while loading the comparison.",
+  );
+});
+
 test("compare error boundary supports route-specific resource copy", () => {
   mockedUseRouteError.mockReturnValue(new Error("Network request failed: boom"));
 
@@ -3256,6 +3273,68 @@ test("compare error boundary supports route-specific resource copy", () => {
   expect(
     screen.queryByText(/compare the product details and offer signals/i),
   ).not.toBeInTheDocument();
+});
+
+function renderCompareResponseError(status: number) {
+  mockedUseRouteError.mockImplementation(() => {
+    const originalUseRouteError = useRouteErrorOriginal.current;
+
+    if (!originalUseRouteError) {
+      throw new Error("React Router useRouteError was not initialized for this route fixture.");
+    }
+
+    return originalUseRouteError();
+  });
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/",
+        loader: () => {
+          throw new Response("Request failed", { status, statusText: "Request failed" });
+        },
+        errorElement: <RouteErrorBoundary />,
+      },
+    ],
+    { initialEntries: ["/"] },
+  );
+
+  render(<RouterProvider router={router} />);
+}
+
+test.each([
+  [
+    503,
+    "A server error occurred while loading the comparison.",
+    "Please try refreshing the page or come back later.",
+  ],
+  [404, "The requested comparison could not be found.", "Please check the URL and try again."],
+  [
+    401,
+    "You don't have permission to view this comparison.",
+    "Please sign in or contact support if you believe this is an error.",
+  ],
+  [
+    403,
+    "You don't have permission to view this comparison.",
+    "Please sign in or contact support if you believe this is an error.",
+  ],
+  [422, "An error occurred while loading the comparison.", "Please try refreshing the page."],
+] as const)("compare route renders response status %s with its customer guidance", async (status, title, guidance) => {
+  renderCompareResponseError(status);
+
+  expect(await screen.findByRole("heading", { name: "Compare products" })).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent(title);
+  expect(screen.getByRole("alert")).toHaveTextContent(guidance);
+});
+
+test("compare route renders unknown route failures without treating them as exceptions", () => {
+  mockedUseRouteError.mockReturnValue({});
+
+  render(<RouteErrorBoundary />);
+
+  expect(screen.getByRole("alert")).toHaveTextContent("Comparison unavailable.");
+  expect(screen.getByRole("alert")).toHaveTextContent("Please try again later.");
+  expect(screen.getByRole("alert")).not.toHaveTextContent("unexpected error");
 });
 
 test("compare route saves the current ready-state selection", async () => {

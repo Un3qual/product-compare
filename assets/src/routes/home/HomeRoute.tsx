@@ -27,8 +27,12 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { HomeDeals } from "./HomeDeals";
 import { HomeProductLedger } from "./HomeProductLedger";
 import { HomeSearch } from "./HomeSearch";
-import { homeCatalogSearchPath, selectedHomeCompareSlugs } from "./home-paths";
-import { HOME_PAGE_SIZE, homeWorkspaceViewData } from "./home-view-data";
+import {
+  homeCatalogSearchPath,
+  homeCategoryCatalogPath,
+  selectedHomeCompareSlugs,
+} from "./home-paths";
+const HOME_PAGE_SIZE = 6;
 
 const homeWorkspaceRouteQuery = graphql`
   query HomeRouteQuery($selectedSlugs: [String!]!, $first: Int!) {
@@ -59,6 +63,7 @@ const homeWorkspaceRouteQuery = graphql`
 `;
 
 export type HomeLoaderData = {
+  referenceTime: string;
   selectedSlugs: string[];
   workspace: RelayRouteQueryDescriptor<HomeRouteQuery["variables"]> | null;
 };
@@ -68,6 +73,7 @@ export async function homeLoader({
   request,
 }: LoaderFunctionArgs): Promise<HomeLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
+  const referenceTime = new Date().toISOString();
   const selectedSlugs = selectedHomeCompareSlugs(new URL(request.url).search);
   const variables = { first: HOME_PAGE_SIZE, selectedSlugs };
   const workspace = preloadRouteQuery<HomeRouteQuery>(
@@ -78,12 +84,12 @@ export async function homeLoader({
   );
 
   try {
-    return { selectedSlugs, workspace: await workspace };
+    return { referenceTime, selectedSlugs, workspace: await workspace };
   } catch (error) {
     if (request.signal.aborted || isAbortError(error)) throw error;
 
     console.error("Failed to preload home workspace route query.", { error });
-    return { selectedSlugs, workspace: null };
+    return { referenceTime, selectedSlugs, workspace: null };
   }
 }
 
@@ -146,7 +152,11 @@ export function HomeRoute() {
           resetToken={loaderData.workspace}
         >
           <Suspense fallback={<FeedbackState kind="loading" title="Loading products..." />}>
-            <HomeWorkspace hasViewer={viewer !== null} query={loaderData.workspace} />
+            <HomeWorkspace
+              hasViewer={viewer !== null}
+              query={loaderData.workspace}
+              referenceTime={loaderData.referenceTime}
+            />
           </Suspense>
         </ResettableErrorBoundary>
       ) : (
@@ -162,32 +172,41 @@ export function HomeRoute() {
 function HomeWorkspace({
   hasViewer,
   query,
+  referenceTime,
 }: {
   hasViewer: boolean;
   query: NonNullable<HomeLoaderData["workspace"]>;
+  referenceTime: string;
 }) {
   const queryRef = useRoutePreloadedQuery<HomeRouteQuery>(homeWorkspaceRouteQuery, query);
   const data = usePreloadedQuery<HomeRouteQuery>(homeWorkspaceRouteQuery, queryRef);
-  const viewData = homeWorkspaceViewData(data.homeWorkspace);
+  const selectedSlugs = data.homeWorkspace.selectedProducts.map((product) => product.slug);
+  const comparisonProducts = data.homeWorkspace.selectedProducts.map((product) => ({
+    label: product.name,
+    slug: product.slug,
+  }));
+  const categories = data.homeWorkspace.categories.edges.map(({ node: category }) => ({
+    description: category.description,
+    href: homeCategoryCatalogPath(category.id, selectedSlugs),
+    label: category.name,
+  }));
 
   return (
     <>
-      <HomeSearch selectedSlugs={viewData.selectedSlugs} />
-      {viewData.comparisonProducts.length > 0 ? (
+      <HomeSearch selectedSlugs={selectedSlugs} />
+      {comparisonProducts.length > 0 ? (
         <ComparisonContinuity
-          destination={buildComparePathFromSlugs(
-            viewData.comparisonProducts.map((product) => product.slug),
-          )}
-          products={viewData.comparisonProducts}
+          destination={buildComparePathFromSlugs(comparisonProducts.map((product) => product.slug))}
+          products={comparisonProducts}
         />
       ) : null}
       <section aria-labelledby="home-categories-title" {...props(styles.section)}>
         <h2 id="home-categories-title" {...props(styles.sectionTitle)}>
           Browse by category
         </h2>
-        {viewData.categories.length > 0 ? (
+        {categories.length > 0 ? (
           <ul aria-label="Product categories" {...props(styles.categories)}>
-            {viewData.categories.map((category) => (
+            {categories.map((category) => (
               <li key={category.href} {...props(styles.category)}>
                 <Link to={category.href} {...props(styles.categoryLink)}>
                   {category.label}
@@ -207,12 +226,13 @@ function HomeWorkspace({
         {data.homeWorkspace.products.edges.length > 0 ? (
           <HomeProductLedger
             products={data.homeWorkspace.products}
-            selectedSlugs={viewData.selectedSlugs}
+            referenceTime={referenceTime}
+            selectedSlugs={selectedSlugs}
           />
         ) : (
           <FeedbackState
             action={
-              <Button render={<Link to={homeCatalogSearchPath("", viewData.selectedSlugs)} />}>
+              <Button render={<Link to={homeCatalogSearchPath("", selectedSlugs)} />}>
                 Browse all products
               </Button>
             }
@@ -221,7 +241,7 @@ function HomeWorkspace({
           />
         )}
       </section>
-      <HomeDealsSection hasViewer={hasViewer} selectedSlugs={viewData.selectedSlugs} />
+      <HomeDealsSection hasViewer={hasViewer} selectedSlugs={selectedSlugs} />
     </>
   );
 }

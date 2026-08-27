@@ -1382,6 +1382,69 @@ test("renders bounded specification highlights on browse product cards", () => {
   ).not.toBeInTheDocument();
 });
 
+test("browse cards keep equal and null specification order stable without mutating Relay data", () => {
+  const attributes = Object.freeze([
+    Object.freeze({
+      code: "first-null",
+      displayName: "First null",
+      sortOrder: null,
+      valueText: "first",
+    }),
+    Object.freeze({
+      code: "first-equal",
+      displayName: "First equal",
+      sortOrder: 10,
+      valueText: "one",
+    }),
+    Object.freeze({
+      code: "second-equal",
+      displayName: "Second equal",
+      sortOrder: 10,
+      valueText: "two",
+    }),
+    Object.freeze({
+      code: "second-null",
+      displayName: "Second null",
+      sortOrder: null,
+      valueText: "second",
+    }),
+  ]);
+  const product = {
+    id: "stable-spec-order",
+    name: "Stable specification order",
+    slug: "stable-spec-order",
+    brand: { id: "brand-1", name: "Acme" },
+    currentAttributes: attributes,
+  };
+
+  render(
+    <MemoryRouter>
+      <BrowseProductList
+        compareActionFor={() => ({ href: "/products?slug=stable-spec-order", kind: "add" })}
+        detailHrefFor={() => "/products/stable-spec-order"}
+        offerHrefFor={() => "/offers?productId=stable-spec-order"}
+        products={{ edges: [{ node: product }] } as never}
+      />
+    </MemoryRouter>,
+  );
+
+  const highlights = within(
+    screen.getByRole("article", { name: "Stable specification order" }),
+  ).getByRole("list", { name: "Specification highlights" });
+
+  expect(within(highlights).getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+    "First equal: one",
+    "Second equal: two",
+    "First null: first",
+  ]);
+  expect(attributes.map((attribute) => attribute.code)).toEqual([
+    "first-null",
+    "first-equal",
+    "second-equal",
+    "second-null",
+  ]);
+});
+
 test("renders metadata-backed catalog filter controls", () => {
   renderBrowseRouteWithRelayData();
 
