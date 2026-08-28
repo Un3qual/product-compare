@@ -26,6 +26,27 @@ defmodule ProductCompareWeb.Schema.CommerceAttribution.Types do
     value(:unmatched)
   end
 
+  enum :cj_commission_ingestion_activity_state,
+    name: "CJCommissionIngestionActivityState" do
+    value(:suspended)
+    value(:available)
+    value(:scheduled)
+    value(:executing)
+    value(:retryable)
+  end
+
+  enum :cj_commission_sync_run_status, name: "CJCommissionSyncRunStatus" do
+    value(:running)
+    value(:succeeded)
+    value(:failed)
+  end
+
+  enum :cj_commission_sync_run_trigger, name: "CJCommissionSyncRunTrigger" do
+    value(:scheduled)
+    value(:operator)
+    value(:cli)
+  end
+
   input_object :track_commerce_click_input do
     field :merchant_product_id, non_null(:id)
   end
@@ -37,6 +58,14 @@ defmodule ProductCompareWeb.Schema.CommerceAttribution.Types do
     field :currency, :string
     field :from, :string
     field :to, :string
+  end
+
+  input_object :update_cj_commission_ingestion_settings_input,
+    name: "UpdateCJCommissionIngestionSettingsInput" do
+    field :enabled, :boolean
+    field :interval_minutes, :integer
+    field :lookback_days, :integer
+    field :max_pages, :integer
   end
 
   object :revenue_summary do
@@ -107,6 +136,55 @@ defmodule ProductCompareWeb.Schema.CommerceAttribution.Types do
     field :reported_at, non_null(:datetime)
   end
 
+  object :cj_commission_ingestion, name: "CJCommissionIngestion" do
+    field :settings, non_null(:cj_commission_ingestion_settings)
+    field :credentials, non_null(:cj_commission_credential_status)
+    field :activity, :cj_commission_ingestion_activity
+    field :latest_success, :cj_commission_sync_run
+    field :latest_failure, :cj_commission_sync_run
+  end
+
+  object :cj_commission_ingestion_settings, name: "CJCommissionIngestionSettings" do
+    field :enabled, non_null(:boolean)
+    field :interval_minutes, non_null(:integer)
+    field :lookback_days, non_null(:integer)
+    field :max_pages, non_null(:integer)
+    field :next_run_at, :datetime
+    field :updated_at, non_null(:datetime)
+    field :updated_by_email, :string
+  end
+
+  object :cj_commission_credential_status, name: "CJCommissionCredentialStatus" do
+    field :api_token_configured, non_null(:boolean)
+    field :account_id_configured, non_null(:boolean)
+    field :ready, non_null(:boolean)
+  end
+
+  object :cj_commission_ingestion_activity, name: "CJCommissionIngestionActivity" do
+    field :state, non_null(:cj_commission_ingestion_activity_state)
+    field :window_start, :datetime
+    field :window_end, :datetime
+    field :scheduled_at, :datetime
+    field :attempted_at, :datetime
+  end
+
+  object :cj_commission_sync_run, name: "CJCommissionSyncRun" do
+    field :id, non_null(:id)
+    field :status, non_null(:cj_commission_sync_run_status)
+    field :trigger, non_null(:cj_commission_sync_run_trigger)
+    field :requester_email, :string
+    field :window_start, non_null(:datetime)
+    field :window_end, non_null(:datetime)
+    field :cursor, :string
+    field :pages_fetched, non_null(:integer)
+    field :records_fetched, non_null(:integer)
+    field :records_persisted, non_null(:integer)
+    field :records_failed, non_null(:integer)
+    field :started_at, non_null(:datetime)
+    field :finished_at, :datetime
+    field :error_summary, :string
+  end
+
   connection node_type: :commerce_attribution_click,
              non_null_edges: true,
              non_null_edge: true do
@@ -116,8 +194,24 @@ defmodule ProductCompareWeb.Schema.CommerceAttribution.Types do
     end
   end
 
+  connection node_type: :cj_commission_sync_run,
+             name: "CJCommissionSyncRunConnection",
+             non_null_edges: true,
+             non_null_edge: true do
+    @desc "A CJ commission sync run connection edge."
+    edge name: "CJCommissionSyncRunEdge" do
+      field :node, non_null(:cj_commission_sync_run)
+      field :cursor, non_null(:string)
+    end
+  end
+
   object :track_commerce_click_payload do
     field :redirect_path, :string
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :cj_commission_ingestion_payload, name: "CJCommissionIngestionPayload" do
+    field :ingestion, :cj_commission_ingestion
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 end

@@ -5,6 +5,19 @@ defmodule ProductCompareWeb.Schema.CommerceAttribution.Queries do
   alias ProductCompareWeb.Resolvers.CommerceAttribution.Reads
 
   object :commerce_attribution_queries do
+    @desc "Returns the secret-safe CJ commission ingestion state for operators."
+    field :cj_commission_ingestion, non_null(:cj_commission_ingestion) do
+      resolve(&Reads.cj_commission_ingestion/3)
+    end
+
+    @desc "Returns CJ commission sync run history for operators."
+    connection field :cj_commission_sync_runs,
+                 node_type: :cj_commission_sync_run,
+                 non_null_connection: true,
+                 paginate: :forward do
+      resolve(&Reads.cj_commission_sync_runs/3)
+    end
+
     @desc "Returns individual commerce attribution clicks for operators."
     connection field :commerce_attribution_clicks,
                  node_type: :commerce_attribution_click,

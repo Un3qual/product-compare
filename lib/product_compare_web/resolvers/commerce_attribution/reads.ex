@@ -1,7 +1,13 @@
 defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   @moduledoc false
 
+  import Ecto.Query
+
   alias ProductCompare.CommerceAttribution
+  alias ProductCompare.CommerceAttribution.CJ.Client
+  alias ProductCompare.CommerceAttribution.CJCommissionSyncJobs
+  alias ProductCompare.CommerceAttribution.ConversionSyncRuns
+  alias ProductCompare.CommerceAttribution.ConversionSyncSettings
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Connection
@@ -9,9 +15,42 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareSchemas.Reference.CurrencyCode
+  alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
 
   @invalid_filters_error "invalid revenue summary filters"
   @invalid_click_filters_error "invalid commerce attribution click filters"
+
+  @spec cj_commission_ingestion(any(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | {:error, GraphQLErrors.top_level_error()}
+  def cj_commission_ingestion(_parent, _args, resolution) do
+    with {:ok, _operator} <- Authorization.require_operator(resolution),
+         {:ok, settings} <- ConversionSyncSettings.ensure_cj(%{}) do
+      {:ok, project_cj_commission_ingestion(settings)}
+    else
+      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
+        {:error, GraphQLErrors.authorization_error(reason)}
+
+      {:error, _reason} ->
+        {:error, "CJ commission ingestion is unavailable"}
+    end
+  end
+
+  @spec cj_commission_sync_runs(any(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
+  def cj_commission_sync_runs(_parent, args, resolution) do
+    with {:ok, _operator} <- Authorization.require_operator(resolution),
+         connection_args = Input.connection_args(args || %{}),
+         query = preload(ConversionSyncRuns.query(), [:requested_by_user]),
+         {:ok, connection} <- Connection.from_query_result(query, connection_args, Repo) do
+      {:ok, project_sync_run_connection(connection)}
+    else
+      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
+        {:error, GraphQLErrors.authorization_error(reason)}
+
+      {:error, reason} when is_binary(reason) ->
+        {:error, reason}
+    end
+  end
 
   @spec commerce_attribution_clicks(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
@@ -217,4 +256,82 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   defp global_id(type, %{id: id}), do: GlobalId.encode_optional_value(type, id)
 
   defp drop_nil_values(map), do: Map.reject(map, fn {_key, value} -> is_nil(value) end)
+
+  defp project_cj_commission_ingestion(settings) do
+    settings = Repo.preload(settings, :updated_by_user)
+
+    %{
+      settings: project_sync_settings(settings),
+      credentials: Client.credential_status(),
+      activity: project_sync_activity(CJCommissionSyncJobs.active()),
+      latest_success: latest_sync_run(:succeeded),
+      latest_failure: latest_sync_run(:failed)
+    }
+  end
+
+  defp project_sync_settings(settings) do
+    %{
+      enabled: settings.enabled,
+      interval_minutes: settings.interval_minutes,
+      lookback_days: settings.lookback_days,
+      max_pages: settings.max_pages,
+      next_run_at: settings.next_run_at,
+      updated_at: settings.updated_at,
+      updated_by_email: settings.updated_by_user && settings.updated_by_user.email
+    }
+  end
+
+  defp project_sync_activity(nil), do: nil
+
+  defp project_sync_activity(activity) do
+    %{
+      state: activity_state(activity.state),
+      window_start: activity.from,
+      window_end: activity.before,
+      scheduled_at: activity.scheduled_at,
+      attempted_at: activity.attempted_at
+    }
+  end
+
+  defp activity_state("suspended"), do: :suspended
+  defp activity_state("available"), do: :available
+  defp activity_state("scheduled"), do: :scheduled
+  defp activity_state("executing"), do: :executing
+  defp activity_state("retryable"), do: :retryable
+
+  defp latest_sync_run(status) do
+    ConversionSyncRuns.query()
+    |> where([run], run.status == ^status)
+    |> preload([:requested_by_user])
+    |> limit(1)
+    |> Repo.one()
+    |> project_sync_run()
+  end
+
+  defp project_sync_run_connection(connection) do
+    Map.update!(connection, :edges, fn edges ->
+      Enum.map(edges, fn edge -> Map.update!(edge, :node, &project_sync_run/1) end)
+    end)
+  end
+
+  defp project_sync_run(nil), do: nil
+
+  defp project_sync_run(%ConversionSyncRun{} = run) do
+    %{
+      id: GlobalId.encode(:cj_commission_sync_run, run.entropy_id),
+      status: run.status,
+      trigger: run.trigger,
+      requester_email: run.requested_by_user && run.requested_by_user.email,
+      window_start: run.window_start,
+      window_end: run.window_end,
+      cursor: run.cursor,
+      pages_fetched: run.pages_fetched,
+      records_fetched: run.records_fetched,
+      records_persisted: run.records_persisted,
+      records_failed: run.records_failed,
+      started_at: run.started_at,
+      finished_at: run.finished_at,
+      error_summary: run.error_summary
+    }
+  end
 end
