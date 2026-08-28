@@ -3,6 +3,8 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissionsTest do
 
   import ExUnit.CaptureIO
 
+  @sentinel "CJ_CLI_SENTINEL_SECRET_DO_NOT_LEAK"
+
   alias Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions
   alias Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions.Options
   alias ProductCompare.Affiliate
@@ -214,7 +216,7 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissionsTest do
 
     output =
       capture_io(fn ->
-        assert {:error, {:transport_error, "secret provider body"}} =
+        assert {:error, :transient_provider_failure} =
                  CjCommissions.run_import(
                    now: ~U[2026-08-28 12:00:00Z],
                    importer: fn _request, _opts ->
@@ -228,6 +230,73 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissionsTest do
     assert output =~ "status=failed"
     assert output =~ "failure=transient_provider_failure"
     refute output =~ "secret provider body"
+  end
+
+  test "raised and thrown importer failures are normalized without exposing secrets" do
+    assert {:ok, _settings} = ConversionSyncSettings.ensure_cj(%{})
+
+    importers = [
+      fn _request, _opts -> raise "provider raised #{@sentinel}" end,
+      fn _request, _opts -> throw({:provider_threw, @sentinel}) end
+    ]
+
+    for importer <- importers do
+      output =
+        capture_io(fn ->
+          assert {:error, :provider_failure} =
+                   CjCommissions.run_import(
+                     now: ~U[2026-08-28 12:00:00Z],
+                     importer: importer
+                   )
+        end)
+
+      assert output =~ "status=failed failure=provider_failure"
+      refute output =~ @sentinel
+    end
+  end
+
+  test "malformed and unexpected importer outcomes fail closed without exposing secrets" do
+    assert {:ok, _settings} = ConversionSyncSettings.ensure_cj(%{})
+
+    outcomes = [
+      {{:ok, %{status: :succeeded, provider_value: @sentinel}}, :unexpected_importer_result},
+      {{:unexpected_provider_result, @sentinel}, :unexpected_importer_result},
+      {{:error, {:unknown_provider_failure, @sentinel}}, :provider_failure}
+    ]
+
+    for {outcome, category} <- outcomes do
+      output =
+        capture_io(fn ->
+          assert {:error, ^category} =
+                   CjCommissions.run_import(
+                     now: ~U[2026-08-28 12:00:00Z],
+                     importer: fn _request, _opts -> outcome end
+                   )
+        end)
+
+      assert output =~ "status=failed failure=#{category}"
+      refute output =~ @sentinel
+    end
+  end
+
+  test "the public task raises only the classified category when the importer raises a secret" do
+    assert {:ok, _settings} = ConversionSyncSettings.ensure_cj(%{})
+
+    with_importer(fn _request, _opts -> raise "provider raised #{@sentinel}" end, fn ->
+      output =
+        capture_io(fn ->
+          error =
+            assert_raise Mix.Error, fn ->
+              CjCommissions.run(["--lookback-days", "1"])
+            end
+
+          assert Exception.message(error) == "CJ commission import failed: provider_failure"
+          refute Exception.message(error) =~ @sentinel
+        end)
+
+      assert output =~ "status=failed failure=provider_failure"
+      refute output =~ @sentinel
+    end)
   end
 
   defp successful_run(request) do
@@ -264,5 +333,20 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissionsTest do
         value -> System.put_env(name, value)
       end
     end)
+  end
+
+  defp with_importer(importer, fun) do
+    key = :cj_commission_sync_importer
+    previous = Application.get_env(:product_compare, key, :not_set)
+    Application.put_env(:product_compare, key, importer)
+
+    try do
+      fun.()
+    after
+      case previous do
+        :not_set -> Application.delete_env(:product_compare, key)
+        value -> Application.put_env(:product_compare, key, value)
+      end
+    end
   end
 end

@@ -9,6 +9,7 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
   alias ProductCompare.CommerceAttribution.CJ.Client
   alias ProductCompare.CommerceAttribution.CJ.Importer
   alias ProductCompare.CommerceAttribution.ConversionSyncSettings
+  alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
 
   @shortdoc "Imports bounded CJ publisher commissions"
   @provider "cj"
@@ -31,7 +32,7 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
     end
   end
 
-  @spec run_import(keyword()) :: {:ok, map()} | {:error, term()}
+  @spec run_import(keyword()) :: {:ok, map()} | {:error, atom()}
   def run_import(opts) do
     if Keyword.get(opts, :check_credentials, false) do
       credential_check(opts)
@@ -64,14 +65,19 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
 
     with {:ok, settings} <- ConversionSyncSettings.ensure_cj(defaults),
          {:ok, publisher_ids} <- Client.publisher_ids(),
-         {:ok, request} <- Options.import_request(opts, settings, publisher_ids, now),
-         result <- importer(opts).(request, []) do
+         {:ok, request} <- Options.import_request(opts, settings, publisher_ids, now) do
+      result = invoke_importer(importer(opts), request)
       print_import_result(result, request, opts)
       result
     else
-      {:error, reason} = error ->
-        print_failure(reason, opts)
-        error
+      {:error, reason} ->
+        category = failure_category(reason)
+        print_failure(category, opts)
+        {:error, category}
+
+      _unexpected ->
+        print_failure(:unexpected_importer_result, opts)
+        {:error, :unexpected_importer_result}
     end
   end
 
@@ -82,6 +88,22 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
         :importer,
         Application.get_env(:product_compare, :cj_commission_sync_importer, &Importer.run/2)
       )
+
+  defp invoke_importer(importer, request) do
+    importer.(request, [])
+    |> normalize_importer_result()
+  rescue
+    _exception -> {:error, :provider_failure}
+  catch
+    _kind, _reason -> {:error, :provider_failure}
+  end
+
+  defp normalize_importer_result({:ok, %ConversionSyncRun{} = run}), do: {:ok, run}
+
+  defp normalize_importer_result({:error, reason}),
+    do: {:error, failure_category(reason)}
+
+  defp normalize_importer_result(_unexpected), do: {:error, :unexpected_importer_result}
 
   defp print_import_result({:ok, run}, request, opts) do
     if Keyword.get(opts, :print_report, true) do
@@ -108,13 +130,25 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
     end
   end
 
-  defp failure_category({:missing_env, _name}), do: "configuration_error"
-  defp failure_category(:credentials_missing), do: "configuration_error"
-  defp failure_category({:authentication_failed, _reason}), do: "authentication_error"
-  defp failure_category({:authorization_failed, _reason}), do: "authorization_error"
-  defp failure_category({:invalid_request, _field}), do: "invalid_request"
-  defp failure_category({:transport_error, _reason}), do: "transient_provider_failure"
-  defp failure_category(%Ecto.Changeset{}), do: "persistence_validation_failed"
-  defp failure_category(:unexpected_importer_result), do: "unexpected_importer_result"
-  defp failure_category(_reason), do: "provider_failure"
+  defp failure_category(category)
+       when category in [
+              :configuration_error,
+              :authentication_error,
+              :authorization_error,
+              :invalid_request,
+              :transient_provider_failure,
+              :persistence_validation_failed,
+              :unexpected_importer_result,
+              :provider_failure
+            ],
+       do: category
+
+  defp failure_category({:missing_env, _name}), do: :configuration_error
+  defp failure_category(:credentials_missing), do: :configuration_error
+  defp failure_category({:authentication_failed, _reason}), do: :authentication_error
+  defp failure_category({:authorization_failed, _reason}), do: :authorization_error
+  defp failure_category({:invalid_request, _field}), do: :invalid_request
+  defp failure_category({:transport_error, _reason}), do: :transient_provider_failure
+  defp failure_category(%Ecto.Changeset{}), do: :persistence_validation_failed
+  defp failure_category(_reason), do: :provider_failure
 end
