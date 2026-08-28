@@ -24,23 +24,40 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   @spec cj_commission_ingestion(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, GraphQLErrors.top_level_error()}
   def cj_commission_ingestion(_parent, _args, resolution) do
-    with {:ok, _operator} <- Authorization.require_operator(resolution),
-         {:ok, settings} <- cj_settings() do
-      {:ok, project_cj_commission_ingestion(settings)}
-    else
+    case Authorization.require_operator(resolution) do
+      {:ok, _operator} ->
+        cj_commission_ingestion_read()
+
       {:error, reason} when reason in [:unauthenticated, :forbidden] ->
         {:error, GraphQLErrors.authorization_error(reason)}
-
-      {:error, _reason} ->
-        {:error, "CJ commission ingestion is unavailable"}
     end
   end
 
   @spec cj_commission_sync_runs(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
   def cj_commission_sync_runs(_parent, args, resolution) do
-    with {:ok, _operator} <- Authorization.require_operator(resolution),
-         {:ok, settings} <- cj_settings(),
+    case Authorization.require_operator(resolution) do
+      {:ok, _operator} ->
+        cj_commission_sync_runs_read(args)
+
+      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
+        {:error, GraphQLErrors.authorization_error(reason)}
+    end
+  end
+
+  defp cj_commission_ingestion_read do
+    with {:ok, settings} <- cj_settings() do
+      {:ok, project_cj_commission_ingestion(settings)}
+    else
+      {:error, _reason} ->
+        {:error, "CJ commission ingestion is unavailable"}
+    end
+  rescue
+    _exception -> {:error, "CJ commission ingestion is unavailable"}
+  end
+
+  defp cj_commission_sync_runs_read(args) do
+    with {:ok, settings} <- cj_settings(),
          connection_args = Input.connection_args(args || %{}),
          query =
            ConversionSyncRuns.query()
@@ -58,6 +75,8 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
       {:error, _reason} ->
         {:error, "CJ commission ingestion is unavailable"}
     end
+  rescue
+    _exception -> {:error, "CJ commission ingestion is unavailable"}
   end
 
   @spec commerce_attribution_clicks(any(), map(), Absinthe.Resolution.t()) ::
@@ -145,8 +164,6 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
       %ConversionSyncSetting{} = settings -> {:ok, settings}
       _ -> {:error, :cj_settings_unavailable}
     end
-  rescue
-    _exception -> {:error, :cj_settings_unavailable}
   end
 
   defp normalize_revenue_currency(nil), do: {:ok, nil}

@@ -42,11 +42,6 @@ defmodule ProductCompare.CommerceAttribution do
           {:ok, CommerceConversion.t()} | {:error, Ecto.Changeset.t()}
   def ingest_conversion(attrs), do: Conversions.ingest_conversion(attrs)
 
-  @spec persist_cj_action_group([map()]) ::
-          {:ok, %{persisted: non_neg_integer(), reversed: non_neg_integer()}}
-          | {:error, term()}
-  def persist_cj_action_group(records), do: Conversions.persist_cj_action_group(records)
-
   @spec create_purchase_price_fact(map()) ::
           {:ok, PurchasePriceFact.t()} | {:error, Ecto.Changeset.t()}
   def create_purchase_price_fact(attrs), do: Conversions.create_purchase_price_fact(attrs)

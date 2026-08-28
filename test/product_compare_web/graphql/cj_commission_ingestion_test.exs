@@ -122,6 +122,30 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
       end
     end
 
+    test "operator overview maps downstream database read failures to unavailable", %{
+      operator_conn: conn
+    } do
+      ensure_settings!()
+      Repo.query!("ALTER TABLE oban_jobs RENAME TO oban_jobs_unavailable")
+
+      assert_cj_read_unavailable(graphql(conn, overview_query(), %{}), "cjCommissionIngestion")
+    end
+
+    test "operator sync-run history maps downstream database read failures to unavailable", %{
+      operator_conn: conn
+    } do
+      ensure_settings!()
+
+      Repo.query!(
+        "ALTER TABLE commerce_conversion_sync_runs RENAME TO commerce_conversion_sync_runs_unavailable"
+      )
+
+      assert_cj_read_unavailable(
+        graphql(conn, runs_query(), %{"first" => 1}),
+        "cjCommissionSyncRuns"
+      )
+    end
+
     test "operator overview reads persisted settings without locking or writes", %{
       operator_conn: conn
     } do
@@ -1108,6 +1132,19 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
     refute Enum.any?(queries, fn query ->
              Regex.match?(~r/^\s*(INSERT|UPDATE|DELETE)/i, query)
            end)
+  end
+
+  defp assert_cj_read_unavailable(response, field) do
+    assert %{
+             "data" => nil,
+             "errors" => [
+               %{
+                 "message" => "CJ commission ingestion is unavailable",
+                 "path" => [^field]
+               }
+               | _
+             ]
+           } = response
   end
 
   defp empty_sync_query_counts, do: Map.new(@sync_tables, &{&1, 0})
