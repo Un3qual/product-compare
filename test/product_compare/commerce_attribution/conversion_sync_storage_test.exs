@@ -9,6 +9,7 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.CommerceAttribution.CJActionCorrection
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting
@@ -105,6 +106,37 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
       })
 
     assert changeset.valid?
+  end
+
+  test "CJ action correction evidence validates its durable action identity and payload" do
+    attrs = %{
+      affiliate_network_id: network_fixture("cj").id,
+      network_action_ref: "action-1",
+      network_correction_ref: "correction-1",
+      posting_date: ~U[2026-08-28 12:00:00Z],
+      raw_payload: %{"original" => false}
+    }
+
+    assert CJActionCorrection.changeset(%CJActionCorrection{}, attrs).valid?
+
+    for {field, value} <- [network_action_ref: " ", network_correction_ref: " "] do
+      changeset =
+        CJActionCorrection.changeset(%CJActionCorrection{}, Map.put(attrs, field, value))
+
+      refute changeset.valid?
+      assert "can't be blank" in Map.fetch!(errors_on(changeset), field)
+    end
+
+    for raw_payload <- [%{}, %{"original" => true}, %{"original" => "false"}] do
+      changeset =
+        CJActionCorrection.changeset(
+          %CJActionCorrection{},
+          %{attrs | raw_payload: raw_payload}
+        )
+
+      refute changeset.valid?
+      assert "must identify a correction" in errors_on(changeset).raw_payload
+    end
   end
 
   test "ensure_cj converges to one row and preserves persisted operator settings" do

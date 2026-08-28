@@ -3,6 +3,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions do
 
   alias ProductCompare.CommerceAttribution.Conversions.Persistence
   alias ProductCompare.CommerceAttribution.Conversions.PurchaseFacts
+  alias ProductCompare.CommerceAttribution.CJ.CommissionDetail
   alias ProductCompare.CommerceAttribution.CJAdapter
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
@@ -16,26 +17,36 @@ defmodule ProductCompare.CommerceAttribution.Conversions do
           {:ok, %{persisted: non_neg_integer(), reversed: non_neg_integer()}}
           | {:error, term()}
   def persist_cj_action_group(records) when is_list(records) do
-    Repo.transaction(fn ->
-      {originals, corrections} = Enum.split_with(records, &original?/1)
+    with :ok <- validate_cj_records(records) do
+      Repo.transaction(fn ->
+        {originals, corrections} = Enum.split_with(records, &original?/1)
 
-      with {:ok, action_ref} <- action_group_ref(records),
-           :ok <- lock_action_group(action_ref),
-           {:ok, prior_correction} <- prior_correction(action_ref),
-           {:ok, persisted} <- persist_cj_originals(sort_records(originals)),
-           {:ok, reapplied} <- reapply_prior_correction(action_ref, prior_correction),
-           {:ok, reversed} <- reverse_cj_corrections(sort_records(corrections)) do
-        %{
-          persisted: persisted + length(corrections),
-          reversed: reapplied + reversed
-        }
-      else
-        {:error, reason} -> Repo.rollback(reason)
-      end
-    end)
+        with {:ok, action_ref} <- action_group_ref(records),
+             :ok <- lock_action_group(action_ref),
+             {:ok, prior_correction} <- prior_correction(action_ref),
+             {:ok, persisted} <- persist_cj_originals(sort_records(originals)),
+             {:ok, reapplied} <- reapply_prior_correction(action_ref, prior_correction),
+             {:ok, reversed} <- reverse_cj_corrections(sort_records(corrections)) do
+          %{
+            persisted: persisted + length(corrections),
+            reversed: reapplied + reversed
+          }
+        else
+          {:error, reason} -> Repo.rollback(reason)
+        end
+      end)
+    end
   end
 
   def persist_cj_action_group(_records), do: {:error, :invalid_action_group}
+
+  defp validate_cj_records(records) do
+    if Enum.all?(records, &CommissionDetail.valid_record?/1) do
+      :ok
+    else
+      {:error, {:invalid_response, :record}}
+    end
+  end
 
   @spec create_purchase_price_fact(map()) ::
           {:ok, PurchasePriceFact.t()} | {:error, Ecto.Changeset.t()}

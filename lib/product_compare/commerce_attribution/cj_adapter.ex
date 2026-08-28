@@ -8,13 +8,21 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
 
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.CommerceAttribution.ClickReference
+  alias ProductCompare.CommerceAttribution.CJ.CommissionDetail
 
-  @spec ingest_transaction(map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
+  @spec ingest_transaction(map()) ::
+          {:ok, struct()} | {:error, Ecto.Changeset.t() | {:invalid_response, :record}}
   def ingest_transaction(payload) when is_map(payload) do
-    payload
-    |> normalize_transaction()
-    |> CommerceAttribution.ingest_conversion()
+    if current_commission_detail?(payload) and not CommissionDetail.valid_record?(payload) do
+      {:error, {:invalid_response, :record}}
+    else
+      payload
+      |> normalize_transaction()
+      |> CommerceAttribution.ingest_conversion()
+    end
   end
+
+  defp current_commission_detail?(payload), do: Map.has_key?(payload, "original")
 
   defp normalize_transaction(payload) do
     reported_at = parse_datetime(value(payload, :posting_date, "postingDate", "PostingDate"))

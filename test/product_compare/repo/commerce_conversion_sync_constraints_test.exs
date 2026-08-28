@@ -69,6 +69,31 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
     assert {:ok, _run} = insert_run(network_id)
   end
 
+  test "CJ action correction evidence rejects malformed action identity and payload" do
+    network_id = network_fixture("cj").id
+
+    assert_check_violation(
+      insert_action_correction(network_id, network_action_ref: " "),
+      "commerce_cj_action_corrections_action_ref_nonblank"
+    )
+
+    assert_check_violation(
+      insert_action_correction(network_id, network_correction_ref: " "),
+      "commerce_cj_action_corrections_correction_ref_nonblank"
+    )
+
+    for raw_payload <- [%{}, %{"original" => true}, %{"original" => "false"}] do
+      assert_check_violation(
+        insert_action_correction(network_id, raw_payload: raw_payload),
+        "commerce_cj_action_corrections_payload_is_correction"
+      )
+    end
+  end
+
+  test "direct SQL accepts valid CJ action correction evidence" do
+    assert {:ok, _result} = insert_action_correction(network_fixture("cj").id)
+  end
+
   defp network_fixture(code) do
     case Repo.get_by(AffiliateNetwork, code: code) do
       %AffiliateNetwork{} = network ->
@@ -157,6 +182,36 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
         values.started_at,
         values.finished_at,
         values.error_summary
+      ]
+    )
+  end
+
+  defp insert_action_correction(network_id, overrides \\ []) do
+    values =
+      Map.merge(
+        %{
+          network_action_ref: "action-#{Ecto.UUID.generate()}",
+          network_correction_ref: "correction-#{Ecto.UUID.generate()}",
+          posting_date: ~U[2026-08-28 12:00:00Z],
+          raw_payload: %{"original" => false}
+        },
+        Map.new(overrides)
+      )
+
+    Repo.query(
+      """
+      INSERT INTO commerce_cj_action_corrections (
+        affiliate_network_id, network_action_ref, network_correction_ref,
+        posting_date, raw_payload, inserted_at, updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, now(), now())
+      """,
+      [
+        network_id,
+        values.network_action_ref,
+        values.network_correction_ref,
+        values.posting_date,
+        values.raw_payload
       ]
     )
   end

@@ -15,6 +15,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
   alias ProductCompare.CommerceAttribution.Conversions.Persistence
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.CommerceAttribution.CJActionCorrection
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
 
@@ -299,6 +300,33 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
            } = latest_run()
   end
 
+  test "rejects semantically malformed originals and corrections before financial persistence" do
+    invalid_records = [
+      original("invalid-original", "invalid-action", %{"saleAmountUsd" => "not-money"}),
+      correction("invalid-correction", "invalid-action", %{"actionStatus" => "reversed"})
+    ]
+
+    for record <- invalid_records do
+      fetch_page = fn _request, _opts ->
+        {:ok, %{records: [record], payload_complete: true, max_commission_id: nil}}
+      end
+
+      assert {:error, {:invalid_response, :record}} =
+               Importer.run(import_request(), fetch_page: fetch_page)
+
+      assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+
+      assert %ConversionSyncRun{
+               status: :failed,
+               pages_fetched: 1,
+               records_fetched: 1,
+               records_persisted: 0,
+               records_failed: 1,
+               error_summary: "invalid_response"
+             } = latest_run()
+    end
+  end
+
   test "classifies transport failure without persisting provider exception details" do
     fetch_page = fn _request, _opts -> {:error, {:transport_error, "secret endpoint"}} end
 
@@ -419,9 +447,9 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
     assert conversion.raw_payload == partial_correction
   end
 
-  test "orders correction freshness chronologically rather than by timestamp spelling" do
+  test "selects the correction deterministically by commission identity at equal UTC freshness" do
     earlier_correction =
-      correction("c-2", "a-1", %{"postingDate" => "2026-08-01T11:00:00+02:00"})
+      correction("c-2", "a-1", %{"postingDate" => "2026-08-01T10:00:00Z"})
 
     later_correction =
       correction("c-3", "a-1", %{"postingDate" => "2026-08-01T10:00:00Z"})
@@ -438,6 +466,28 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
              reported_at: ~U[2026-08-01 10:00:00.000000Z],
              raw_payload: ^later_correction
            } = Repo.one!(CommerceConversion)
+
+    assert {:ok, %{raw_payload: ^later_correction}} = Persistence.latest_cj_correction("a-1")
+
+    assert {:ok, %{persisted: 1, reversed: 0}} =
+             Conversions.persist_cj_action_group([earlier_correction])
+
+    assert %CommerceConversion{raw_payload: ^later_correction} = Repo.one!(CommerceConversion)
+    assert {:ok, %{raw_payload: ^later_correction}} = Persistence.latest_cj_correction("a-1")
+  end
+
+  test "action persistence rejects a malformed correction before it can bypass the adapter" do
+    original = original("valid-original", "direct-validation-action")
+
+    malformed_correction =
+      correction("malformed-correction", "direct-validation-action", %{
+        "actionStatus" => "reversed"
+      })
+
+    assert {:error, {:invalid_response, :record}} =
+             Conversions.persist_cj_action_group([original, malformed_correction])
+
+    assert Repo.aggregate(CommerceConversion, :count, :id) == 0
   end
 
   test "stale correction replay cannot replace fresher original evidence" do
@@ -514,6 +564,60 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
     assert [_, _] = conversions
     assert Enum.all?(conversions, &(&1.status == :reversed))
     assert Enum.all?(conversions, &(&1.raw_payload == correction))
+  end
+
+  test "action-level correction evidence survives a newer overwrite and reverses a later stale identity" do
+    action_ref = "durable-overwrite-#{Ecto.UUID.generate()}"
+    original_ref = "original-#{Ecto.UUID.generate()}"
+
+    initial_original =
+      original(original_ref, action_ref, %{"postingDate" => "2026-08-01T09:00:00Z"})
+
+    correction =
+      correction("correction-#{Ecto.UUID.generate()}", action_ref, %{
+        "postingDate" => "2026-08-01T10:00:00Z"
+      })
+
+    newer_original =
+      original(original_ref, action_ref, %{"postingDate" => "2026-08-01T11:00:00Z"})
+
+    stale_distinct_original =
+      original("stale-#{Ecto.UUID.generate()}", action_ref, %{
+        "postingDate" => "2026-08-01T09:30:00Z"
+      })
+
+    assert {:ok, %{persisted: 1, reversed: 0}} =
+             Conversions.persist_cj_action_group([initial_original])
+
+    assert {:ok, %{persisted: 1, reversed: 1}} =
+             Conversions.persist_cj_action_group([correction])
+
+    assert {:ok, %{persisted: 1, reversed: 0}} =
+             Conversions.persist_cj_action_group([newer_original])
+
+    assert {:ok, %{posting_date: ~U[2026-08-01 10:00:00.000000Z], raw_payload: ^correction}} =
+             Persistence.latest_cj_correction(action_ref)
+
+    assert {:ok, %{persisted: 1, reversed: 1}} =
+             Conversions.persist_cj_action_group([stale_distinct_original])
+
+    assert {:ok, %{persisted: 1, reversed: 0}} =
+             Conversions.persist_cj_action_group([stale_distinct_original])
+
+    conversions =
+      Repo.all(
+        from conversion in CommerceConversion,
+          where: conversion.network_action_ref == ^action_ref,
+          order_by: conversion.network_conversion_ref
+      )
+
+    assert [newer, stale] = conversions
+    assert newer.network_conversion_ref == original_ref
+    assert newer.status == :approved
+    assert newer.raw_payload == newer_original
+    assert stale.network_conversion_ref == stale_distinct_original["commissionId"]
+    assert stale.status == :reversed
+    assert stale.raw_payload == correction
   end
 
   test "durable correction evidence requires a JSON boolean false original marker" do
@@ -701,6 +805,13 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
             where:
               conversion.affiliate_network_id == ^network.id and
                 conversion.network_action_ref == ^action_ref
+        )
+
+        Repo.delete_all(
+          from correction in CJActionCorrection,
+            where:
+              correction.affiliate_network_id == ^network.id and
+                correction.network_action_ref == ^action_ref
         )
       end
     end)

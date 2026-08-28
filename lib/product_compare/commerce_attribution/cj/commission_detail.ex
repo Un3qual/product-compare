@@ -14,6 +14,8 @@ defmodule ProductCompare.CommerceAttribution.CJ.CommissionDetail do
     pubCommissionAmountUsd
   )
 
+  @action_statuses ~w(new extended locked closed)
+
   @spec validate_publisher_ids(term()) ::
           {:ok, [String.t()]} | {:error, {:invalid_request, :publisher_ids}}
   def validate_publisher_ids(publisher_ids) when is_list(publisher_ids) do
@@ -48,12 +50,12 @@ defmodule ProductCompare.CommerceAttribution.CJ.CommissionDetail do
       is_boolean(record["original"]) and
       nullable_string?(record["originalActionId"]) and
       nullable_string?(record["correctionReason"]) and
-      nonblank_string?(record["actionStatus"]) and
+      action_status?(record["actionStatus"]) and
       nullable_string?(record["shopperId"]) and
-      nonblank_string?(record["eventDate"]) and
-      nonblank_string?(record["postingDate"]) and
-      nonblank_string?(record["saleAmountUsd"]) and
-      nonblank_string?(record["pubCommissionAmountUsd"])
+      utc_datetime_string?(record["eventDate"]) and
+      utc_datetime_string?(record["postingDate"]) and
+      decimal_string?(record["saleAmountUsd"]) and
+      decimal_string?(record["pubCommissionAmountUsd"])
   end
 
   def valid_record?(_record), do: false
@@ -71,6 +73,29 @@ defmodule ProductCompare.CommerceAttribution.CJ.CommissionDetail do
   defp nonblank_string?(value), do: not is_nil(normalize_string(value))
   defp nullable_string?(nil), do: true
   defp nullable_string?(value), do: is_binary(value)
+
+  defp action_status?(value) do
+    case normalize_string(value) do
+      nil -> false
+      value -> String.downcase(value) in @action_statuses
+    end
+  end
+
+  defp decimal_string?(value) when is_binary(value) do
+    match?({%Decimal{}, ""}, value |> String.trim() |> Decimal.parse())
+  end
+
+  defp decimal_string?(_value), do: false
+
+  defp utc_datetime_string?(value) when is_binary(value) do
+    match?(
+      {:ok, %DateTime{utc_offset: 0, std_offset: 0}, 0},
+      DateTime.from_iso8601(String.trim(value))
+    )
+  end
+
+  defp utc_datetime_string?(_value), do: false
+
   defp utc?(%DateTime{utc_offset: 0, std_offset: 0}), do: true
   defp utc?(_datetime), do: false
 end

@@ -1340,6 +1340,39 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   describe "CJAdapter.ingest_transaction/1" do
+    test "rejects malformed current original and correction records before normalization" do
+      affiliate_network_fixture(%{name: "CJ"})
+
+      valid_record = %{
+        "commissionId" => "cj-commission-#{System.unique_integer([:positive])}",
+        "original" => true,
+        "originalActionId" => "cj-action-#{System.unique_integer([:positive])}",
+        "correctionReason" => nil,
+        "actionStatus" => "locked",
+        "shopperId" => nil,
+        "eventDate" => "2026-05-20T12:00:00Z",
+        "postingDate" => "2026-05-20T12:05:00Z",
+        "saleAmountUsd" => "81.25",
+        "pubCommissionAmountUsd" => "8.12"
+      }
+
+      invalid_records = [
+        Map.put(valid_record, "actionStatus", "approved"),
+        valid_record
+        |> Map.merge(%{
+          "original" => false,
+          "correctionReason" => "RETURNED_MERCHANDISE",
+          "pubCommissionAmountUsd" => "invalid-money"
+        })
+      ]
+
+      for record <- invalid_records do
+        assert {:error, {:invalid_response, :record}} = CJAdapter.ingest_transaction(record)
+      end
+
+      assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+    end
+
     test "normalizes current CJ commissions and prefers shopperId click attribution" do
       merchant = merchant_fixture()
       product = SpecsFixtures.product_fixture()

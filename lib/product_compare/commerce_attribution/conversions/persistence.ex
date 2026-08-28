@@ -7,6 +7,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
   alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.CommerceAttribution.CJActionCorrection
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
 
   @commerce_conversion_upsert_fields [
@@ -51,8 +52,18 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
          :ok <- validate_posting_date(posting_date),
          :ok <- validate_raw_payload(raw_payload),
          {:ok, network} <- cj_network(),
-         [_ | _] = conversions <- lock_cj_action(network.id, network_action_ref) do
-      reverse_eligible(conversions, posting_date, raw_payload)
+         {:ok, network_correction_ref} <- correction_ref(raw_payload),
+         [_ | _] = conversions <- lock_cj_action(network.id, network_action_ref),
+         {:ok, result} <- reverse_eligible(conversions, posting_date, raw_payload),
+         {:ok, _evidence} <-
+           persist_cj_action_correction(
+             network.id,
+             network_action_ref,
+             network_correction_ref,
+             posting_date,
+             raw_payload
+           ) do
+      {:ok, result}
     else
       [] -> {:error, :unmatched_correction}
       {:error, changeset} -> {:error, changeset}
@@ -79,14 +90,10 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
          {:ok, network} <- cj_network() do
       correction =
         Repo.one(
-          from conversion in CommerceConversion,
+          from correction in CJActionCorrection,
             where:
-              conversion.affiliate_network_id == ^network.id and
-                conversion.network_action_ref == ^network_action_ref and
-                conversion.status == :reversed and
-                not is_nil(conversion.reported_at) and
-                fragment("?->'original' = 'false'::jsonb", conversion.raw_payload),
-            order_by: [desc: conversion.reported_at, desc: conversion.id],
+              correction.affiliate_network_id == ^network.id and
+                correction.network_action_ref == ^network_action_ref,
             limit: 1
         )
 
@@ -94,14 +101,58 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
         nil ->
           {:ok, nil}
 
-        %CommerceConversion{} = correction ->
+        %CJActionCorrection{} = correction ->
           {:ok,
            %{
-             posting_date: correction.reported_at,
+             posting_date: correction.posting_date,
              raw_payload: correction.raw_payload
            }}
       end
     end
+  end
+
+  defp persist_cj_action_correction(
+         affiliate_network_id,
+         network_action_ref,
+         network_correction_ref,
+         posting_date,
+         raw_payload
+       ) do
+    now = DateTime.utc_now()
+
+    changeset =
+      CJActionCorrection.changeset(%CJActionCorrection{}, %{
+        affiliate_network_id: affiliate_network_id,
+        network_action_ref: network_action_ref,
+        network_correction_ref: network_correction_ref,
+        posting_date: posting_date,
+        raw_payload: raw_payload
+      })
+
+    conflict_query =
+      from correction in CJActionCorrection,
+        where:
+          fragment(
+            "(EXCLUDED.posting_date, EXCLUDED.network_correction_ref) >= (?, ?)",
+            correction.posting_date,
+            correction.network_correction_ref
+          ),
+        update: [
+          set: [
+            network_correction_ref: fragment("EXCLUDED.network_correction_ref"),
+            posting_date: fragment("EXCLUDED.posting_date"),
+            raw_payload: fragment("EXCLUDED.raw_payload"),
+            updated_at: ^now
+          ]
+        ]
+
+    Repo.insert(
+      changeset,
+      on_conflict: conflict_query,
+      conflict_target: [:affiliate_network_id, :network_action_ref],
+      allow_stale: true,
+      returning: true
+    )
   end
 
   defp persist_or_rollback(attrs) do
@@ -213,6 +264,13 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
   defp validate_raw_payload(_raw_payload),
     do: {:error, correction_changeset(:raw_payload, "must be a map")}
 
+  defp correction_ref(raw_payload) do
+    case normalize_string(Map.get(raw_payload, "commissionId")) do
+      nil -> {:error, correction_changeset(:network_conversion_ref, "can't be blank")}
+      correction_ref -> {:ok, correction_ref}
+    end
+  end
+
   defp cj_network do
     case Repo.get_by(AffiliateNetwork, code: "cj") do
       %AffiliateNetwork{} = network ->
@@ -238,7 +296,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
   defp reverse_eligible(conversions, posting_date, raw_payload) do
     Enum.reduce_while(conversions, {:ok, 0}, fn conversion, {:ok, updated} ->
       if DateTime.compare(conversion.reported_at, posting_date) == :gt or
-           current_correction?(conversion, posting_date, raw_payload) do
+           correction_at_least_as_new?(conversion, posting_date, raw_payload) do
         {:cont, {:ok, updated}}
       else
         attrs = %{
@@ -262,11 +320,19 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
     end
   end
 
-  defp current_correction?(conversion, posting_date, raw_payload) do
+  defp correction_at_least_as_new?(conversion, posting_date, raw_payload) do
     conversion.status == :reversed and
       DateTime.compare(conversion.reported_at, posting_date) == :eq and
       DateTime.compare(conversion.data_freshness_at, posting_date) == :eq and
-      conversion.raw_payload == raw_payload
+      match?(%{"original" => false}, conversion.raw_payload) and
+      correction_ref_at_least?(conversion.raw_payload, raw_payload)
+  end
+
+  defp correction_ref_at_least?(current_payload, incoming_payload) do
+    current_ref = normalize_string(Map.get(current_payload, "commissionId"))
+    incoming_ref = normalize_string(Map.get(incoming_payload, "commissionId"))
+
+    is_binary(current_ref) and is_binary(incoming_ref) and current_ref >= incoming_ref
   end
 
   defp correction_changeset(field, message) do

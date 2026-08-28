@@ -197,6 +197,36 @@ defmodule ProductCompare.CommerceAttribution.CJ.ClientTest do
       end
     end
 
+    test "rejects undocumented statuses, invalid money, and non-UTC timestamps for originals and corrections" do
+      invalid_values = [
+        {"actionStatus", "approved"},
+        {"saleAmountUsd", "not-money"},
+        {"pubCommissionAmountUsd", "12.00 USD"},
+        {"eventDate", "2026-08-01T08:30:00+01:00"},
+        {"postingDate", "not-a-timestamp"}
+      ]
+
+      for original? <- [true, false], {field, value} <- invalid_values do
+        record =
+          commission_detail_record()
+          |> Map.merge(%{
+            "original" => original?,
+            "correctionReason" => if(original?, do: nil, else: "RETURNED_MERCHANDISE")
+          })
+          |> Map.put(field, value)
+
+        transport = fn _request ->
+          {:ok, %{status: 200, body: commission_detail_page(record)}}
+        end
+
+        result = Client.fetch_page(page_request(), api_token: "test-token", transport: transport)
+
+        assert {:error, {:invalid_response, :record}} = result
+        refute inspect(result) =~ "record-secret"
+        refute inspect(result) =~ value
+      end
+    end
+
     test "rejects a response without a boolean completion flag" do
       transport = fn _request ->
         {:ok,
