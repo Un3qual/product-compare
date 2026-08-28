@@ -243,20 +243,22 @@ function StatusItem({
 }
 
 function activityLabel(state: ActivityState) {
+  if (state === null) return "Available";
   if (state === "EXECUTING") return "Running";
   if (state === "AVAILABLE" || state === "SCHEDULED") return "Queued";
   if (state === "RETRYABLE") return "Retrying";
   if (state === "SUSPENDED") return "Suspended";
-  return "Available";
+  return "In progress";
 }
 
 function activityTone(state: ActivityState): StatusTone {
+  if (state === null) return "positive";
   if (state === "EXECUTING") return "accent";
   if (state === "AVAILABLE" || state === "SCHEDULED" || state === "RETRYABLE") {
     return "warning";
   }
   if (state === "SUSPENDED") return "neutral";
-  return "positive";
+  return "neutral";
 }
 
 function credentialDetail(credentials: IngestionStatus["credentials"]) {

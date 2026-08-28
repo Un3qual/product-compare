@@ -41,7 +41,7 @@ config :product_compare, Oban,
   repo: ProductCompare.Repo,
   queues: [ingestion: 2, alerts: 2],
   plugins: [
-    {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(60)},
+    {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(480)},
     {Oban.Plugins.Pruner, max_age: 86_400}
   ]
 

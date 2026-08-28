@@ -493,13 +493,13 @@ test("the run ledger supports empty history and paginating more rows", async () 
 });
 
 test.each([
-  ["AVAILABLE", "Queued"],
-  ["RETRYABLE", "Retrying"],
-  ["SUSPENDED", "Suspended"],
-  ["%future added value", "Available"],
+  ["AVAILABLE", "Queued", "warning"],
+  ["RETRYABLE", "Retrying", "warning"],
+  ["SUSPENDED", "Suspended", "neutral"],
+  ["%future added value", "In progress", "neutral"],
 ] as const)(
   "%s activity polls through execution and refreshes history once on completion",
-  (state, label) => {
+  (state, label, tone) => {
     vi.useFakeTimers();
     mockedUseRefetchableFragment.mockReturnValue([
       { ...OVERVIEW, cjCommissionIngestion: withActivity(state) },
@@ -507,7 +507,7 @@ test.each([
     ] as never);
     const view = renderConversionIngestionRoute();
 
-    expect(screen.getByRole("region", { name: "Ingestion status" })).toHaveTextContent(label);
+    expect(screen.getByText(label)).toHaveAttribute("data-tone", tone);
     act(() => vi.advanceTimersByTime(10_000));
     expect(refetchMock).toHaveBeenCalledTimes(1);
     expect(revalidateMock).not.toHaveBeenCalled();
@@ -548,6 +548,20 @@ test.each([
     view.unmount();
   },
 );
+
+test("absent activity remains available without starting status polling", () => {
+  vi.useFakeTimers();
+  mockedUseRefetchableFragment.mockReturnValue([
+    { ...OVERVIEW, cjCommissionIngestion: withActivity(null) },
+    refetchMock,
+  ] as never);
+
+  renderConversionIngestionRoute();
+
+  expect(screen.getByText("Available")).toHaveAttribute("data-tone", "positive");
+  act(() => vi.advanceTimersByTime(10_000));
+  expect(refetchMock).not.toHaveBeenCalled();
+});
 
 test("status polling is visibility-gated and cleans up after unmount", () => {
   vi.useFakeTimers();

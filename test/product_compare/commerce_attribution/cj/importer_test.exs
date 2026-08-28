@@ -1,6 +1,8 @@
 defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
   use ProductCompare.DataCase, async: false
 
+  @moduletag capture_log: true
+
   import ExUnit.CaptureLog, only: [with_log: 1]
 
   import ProductCompare.DatabaseTestHelpers,
