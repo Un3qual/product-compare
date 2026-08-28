@@ -85,9 +85,9 @@ const mockedUseRefetchableFragment = vi.mocked(useRefetchableFragment);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 type IngestionFixture = Omit<
-  ConversionIngestionStatus_query$data,
-  " $fragmentType"
->["cjCommissionIngestion"] &
+  Omit<ConversionIngestionStatus_query$data, " $fragmentType">["cjCommissionIngestion"],
+  " $fragmentSpreads"
+> &
   Omit<ConversionIngestionSettings_ingestion$data, " $fragmentType">;
 
 const INGESTION = {
@@ -280,6 +280,33 @@ test("settings submit preserves exact bounded values, disables while pending, an
   expect(revalidateMock).not.toHaveBeenCalled();
 });
 
+test("settings controls render the persisted overview values returned by the network-only refresh", () => {
+  mockedUseRefetchableFragment.mockReturnValue([
+    {
+      ...OVERVIEW,
+      cjCommissionIngestion: {
+        ...INGESTION,
+        settings: {
+          ...INGESTION.settings,
+          enabled: false,
+          intervalMinutes: 720,
+          lookbackDays: 14,
+          maxPages: 12,
+          updatedAt: "2026-08-27T12:00:00Z",
+        },
+      },
+    },
+    refetchMock,
+  ] as never);
+  renderConversionIngestionRoute();
+
+  const settings = screen.getByRole("form", { name: "Ingestion settings" });
+  expect(within(settings).getByRole("checkbox", { name: "Enable scheduled ingestion" })).not.toBeChecked();
+  expect(within(settings).getByLabelText("Interval minutes")).toHaveValue(720);
+  expect(within(settings).getByLabelText("Lookback days")).toHaveValue(14);
+  expect(within(settings).getByLabelText("Maximum pages")).toHaveValue(12);
+});
+
 test("settings surface payload failures inline and focus the rejected field", async () => {
   renderConversionIngestionRoute();
 
@@ -463,17 +490,60 @@ test("the run ledger supports empty history and paginating more rows", async () 
   );
 });
 
-test("status polling stays idle or hidden, cleans up, and refreshes history once on terminal state", () => {
+test.each([
+  ["AVAILABLE", "Queued"],
+  ["RETRYABLE", "Retrying"],
+] as const)("%s activity polls through execution and refreshes history once on completion", (state, label) => {
   vi.useFakeTimers();
   mockedUseRefetchableFragment.mockReturnValue([
-    { ...OVERVIEW, cjCommissionIngestion: withActivity("AVAILABLE") },
+    { ...OVERVIEW, cjCommissionIngestion: withActivity(state) },
     refetchMock,
   ] as never);
-  const idleView = renderConversionIngestionRoute();
-  act(() => vi.advanceTimersByTime(10_000));
-  expect(refetchMock).not.toHaveBeenCalled();
-  idleView.unmount();
+  const view = renderConversionIngestionRoute();
 
+  expect(screen.getByRole("region", { name: "Ingestion status" })).toHaveTextContent(label);
+  act(() => vi.advanceTimersByTime(10_000));
+  expect(refetchMock).toHaveBeenCalledTimes(1);
+  expect(revalidateMock).not.toHaveBeenCalled();
+
+  mockedUseRefetchableFragment.mockReturnValue([
+    { ...OVERVIEW, cjCommissionIngestion: withActivity("EXECUTING") },
+    refetchMock,
+  ] as never);
+  view.rerender(
+    <MemoryRouter>
+      <ConversionIngestionRoute />
+    </MemoryRouter>,
+  );
+  expect(screen.getByRole("region", { name: "Ingestion status" })).toHaveTextContent("Running");
+  act(() => vi.advanceTimersByTime(10_000));
+  expect(refetchMock).toHaveBeenCalledTimes(2);
+  expect(revalidateMock).not.toHaveBeenCalled();
+
+  mockedUseRefetchableFragment.mockReturnValue([
+    { ...OVERVIEW, cjCommissionIngestion: withActivity(null) },
+    refetchMock,
+  ] as never);
+  view.rerender(
+    <MemoryRouter>
+      <ConversionIngestionRoute />
+    </MemoryRouter>,
+  );
+  expect(revalidateMock).toHaveBeenCalledTimes(1);
+  act(() => vi.advanceTimersByTime(10_000));
+  expect(refetchMock).toHaveBeenCalledTimes(2);
+
+  view.rerender(
+    <MemoryRouter>
+      <ConversionIngestionRoute />
+    </MemoryRouter>,
+  );
+  expect(revalidateMock).toHaveBeenCalledTimes(1);
+  view.unmount();
+});
+
+test("status polling is visibility-gated and cleans up after unmount", () => {
+  vi.useFakeTimers();
   Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" });
   mockedUseRefetchableFragment.mockReturnValue([OVERVIEW, refetchMock] as never);
   const hiddenView = renderConversionIngestionRoute();
@@ -483,22 +553,6 @@ test("status polling stays idle or hidden, cleans up, and refreshes history once
   Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
 
   const activeView = renderConversionIngestionRoute();
-  activeView.rerender(
-    <MemoryRouter>
-      <ConversionIngestionRoute />
-    </MemoryRouter>,
-  );
-  mockedUseRefetchableFragment.mockReturnValue([
-    { ...OVERVIEW, cjCommissionIngestion: withActivity("AVAILABLE") },
-    refetchMock,
-  ] as never);
-  activeView.rerender(
-    <MemoryRouter>
-      <ConversionIngestionRoute />
-    </MemoryRouter>,
-  );
-
-  expect(revalidateMock).toHaveBeenCalledTimes(1);
   activeView.unmount();
   act(() => vi.advanceTimersByTime(10_000));
   expect(refetchMock).not.toHaveBeenCalled();
@@ -548,10 +602,10 @@ function deferredPromise<T>() {
   return { promise, reject };
 }
 
-function withActivity(state: "AVAILABLE" | "EXECUTING") {
+function withActivity(state: "AVAILABLE" | "EXECUTING" | "RETRYABLE" | null) {
   return {
     ...INGESTION,
-    activity: { ...INGESTION.activity, state },
+    activity: state ? { ...INGESTION.activity, state } : null,
   };
 }
 

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<f478805cb9b7898e93cbdf36509413e2>>
+ * @generated SignedSource<<795cc0a03686759b9696a7ba10be0ad4>>
  * @lightSyntaxTransform
  */
 
@@ -34,6 +34,7 @@ export type ConversionIngestionStatus_query$data = {
     readonly settings: {
       readonly nextRunAt: string | null;
     };
+    readonly " $fragmentSpreads": FragmentRefs<"ConversionIngestionSettings_ingestion">;
   };
   readonly " $fragmentType": "ConversionIngestionStatus_query";
 };
@@ -72,6 +73,11 @@ return {
       "name": "cjCommissionIngestion",
       "plural": false,
       "selections": [
+        {
+          "args": null,
+          "kind": "FragmentSpread",
+          "name": "ConversionIngestionSettings_ingestion"
+        },
         {
           "alias": null,
           "args": null,
@@ -208,6 +214,6 @@ return {
 };
 })();
 
-(node as any).hash = "e32228e1d72e777a7fa4b39267c74083";
+(node as any).hash = "1c697ecd6d3289e86856770e84e5db6b";
 
 export default node;

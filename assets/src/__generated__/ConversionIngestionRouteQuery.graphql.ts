@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2de4c12db62c40942bace403afbc74b2>>
+ * @generated SignedSource<<70f2ed91037070fda5d89756dd13265c>>
  * @lightSyntaxTransform
  */
 
@@ -11,9 +11,6 @@ import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type ConversionIngestionRouteQuery$variables = Record<PropertyKey, never>;
 export type ConversionIngestionRouteQuery$data = {
-  readonly cjCommissionIngestion: {
-    readonly " $fragmentSpreads": FragmentRefs<"ConversionIngestionSettings_ingestion">;
-  };
   readonly " $fragmentSpreads": FragmentRefs<"ConversionIngestionStatus_query">;
 };
 export type ConversionIngestionRouteQuery = {
@@ -26,14 +23,14 @@ var v0 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "finishedAt",
+  "name": "id",
   "storageKey": null
 },
 v1 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "finishedAt",
   "storageKey": null
 };
 return {
@@ -47,22 +44,6 @@ return {
         "args": null,
         "kind": "FragmentSpread",
         "name": "ConversionIngestionStatus_query"
-      },
-      {
-        "alias": null,
-        "args": null,
-        "concreteType": "CJCommissionIngestion",
-        "kind": "LinkedField",
-        "name": "cjCommissionIngestion",
-        "plural": false,
-        "selections": [
-          {
-            "args": null,
-            "kind": "FragmentSpread",
-            "name": "ConversionIngestionSettings_ingestion"
-          }
-        ],
-        "storageKey": null
       }
     ],
     "type": "RootQueryType",
@@ -90,13 +71,6 @@ return {
             "name": "settings",
             "plural": false,
             "selections": [
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
-                "name": "nextRunAt",
-                "storageKey": null
-              },
               {
                 "alias": null,
                 "args": null,
@@ -131,6 +105,13 @@ return {
                 "kind": "ScalarField",
                 "name": "updatedAt",
                 "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "nextRunAt",
+                "storageKey": null
               }
             ],
             "storageKey": null
@@ -147,6 +128,13 @@ return {
                 "alias": null,
                 "args": null,
                 "kind": "ScalarField",
+                "name": "ready",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
                 "name": "apiTokenConfigured",
                 "storageKey": null
               },
@@ -156,14 +144,20 @@ return {
                 "kind": "ScalarField",
                 "name": "accountIdConfigured",
                 "storageKey": null
-              },
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
-                "name": "ready",
-                "storageKey": null
               }
+            ],
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "CJCommissionSyncRun",
+            "kind": "LinkedField",
+            "name": "latestSuccess",
+            "plural": false,
+            "selections": [
+              (v0/*:: as any*/),
+              (v1/*:: as any*/)
             ],
             "storageKey": null
           },
@@ -218,23 +212,10 @@ return {
             "args": null,
             "concreteType": "CJCommissionSyncRun",
             "kind": "LinkedField",
-            "name": "latestSuccess",
-            "plural": false,
-            "selections": [
-              (v0/*:: as any*/),
-              (v1/*:: as any*/)
-            ],
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "concreteType": "CJCommissionSyncRun",
-            "kind": "LinkedField",
             "name": "latestFailure",
             "plural": false,
             "selections": [
-              (v0/*:: as any*/),
+              (v1/*:: as any*/),
               {
                 "alias": null,
                 "args": null,
@@ -242,7 +223,7 @@ return {
                 "name": "errorSummary",
                 "storageKey": null
               },
-              (v1/*:: as any*/)
+              (v0/*:: as any*/)
             ],
             "storageKey": null
           }
@@ -252,16 +233,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "d081495847f921bd26ab0883b5883913",
+    "cacheID": "b3c73929f2d8ce1a5b49497b195525f6",
     "id": null,
     "metadata": {},
     "name": "ConversionIngestionRouteQuery",
     "operationKind": "query",
-    "text": "query ConversionIngestionRouteQuery {\n  ...ConversionIngestionStatus_query\n  cjCommissionIngestion {\n    ...ConversionIngestionSettings_ingestion\n  }\n}\n\nfragment ConversionIngestionSettings_ingestion on CJCommissionIngestion {\n  settings {\n    enabled\n    intervalMinutes\n    lookbackDays\n    maxPages\n    updatedAt\n  }\n  credentials {\n    ready\n  }\n  latestSuccess {\n    id\n  }\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      accountIdConfigured\n      ready\n    }\n    activity {\n      state\n      windowStart\n      windowEnd\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      errorSummary\n      id\n    }\n  }\n}\n"
+    "text": "query ConversionIngestionRouteQuery {\n  ...ConversionIngestionStatus_query\n}\n\nfragment ConversionIngestionSettings_ingestion on CJCommissionIngestion {\n  settings {\n    enabled\n    intervalMinutes\n    lookbackDays\n    maxPages\n    updatedAt\n  }\n  credentials {\n    ready\n  }\n  latestSuccess {\n    id\n  }\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    ...ConversionIngestionSettings_ingestion\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      accountIdConfigured\n      ready\n    }\n    activity {\n      state\n      windowStart\n      windowEnd\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      errorSummary\n      id\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "a603eaf5cc585177778d87f9a53ade8b";
+(node as any).hash = "535fc9ec80d0f89d265b953949b1b8fb";
 
 export default node;

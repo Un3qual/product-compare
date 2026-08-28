@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<552e50864537f844e35224ea51d9b772>>
+ * @generated SignedSource<<58cdfb895792de8b8b5d880815cfd5e0>>
  * @lightSyntaxTransform
  */
 
@@ -23,14 +23,14 @@ var v0 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "finishedAt",
+  "name": "id",
   "storageKey": null
 },
 v1 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "finishedAt",
   "storageKey": null
 };
 return {
@@ -75,6 +75,41 @@ return {
                 "alias": null,
                 "args": null,
                 "kind": "ScalarField",
+                "name": "enabled",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "intervalMinutes",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "lookbackDays",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "maxPages",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "updatedAt",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
                 "name": "nextRunAt",
                 "storageKey": null
               }
@@ -93,6 +128,13 @@ return {
                 "alias": null,
                 "args": null,
                 "kind": "ScalarField",
+                "name": "ready",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
                 "name": "apiTokenConfigured",
                 "storageKey": null
               },
@@ -102,14 +144,20 @@ return {
                 "kind": "ScalarField",
                 "name": "accountIdConfigured",
                 "storageKey": null
-              },
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
-                "name": "ready",
-                "storageKey": null
               }
+            ],
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "CJCommissionSyncRun",
+            "kind": "LinkedField",
+            "name": "latestSuccess",
+            "plural": false,
+            "selections": [
+              (v0/*:: as any*/),
+              (v1/*:: as any*/)
             ],
             "storageKey": null
           },
@@ -164,23 +212,10 @@ return {
             "args": null,
             "concreteType": "CJCommissionSyncRun",
             "kind": "LinkedField",
-            "name": "latestSuccess",
-            "plural": false,
-            "selections": [
-              (v0/*:: as any*/),
-              (v1/*:: as any*/)
-            ],
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "concreteType": "CJCommissionSyncRun",
-            "kind": "LinkedField",
             "name": "latestFailure",
             "plural": false,
             "selections": [
-              (v0/*:: as any*/),
+              (v1/*:: as any*/),
               {
                 "alias": null,
                 "args": null,
@@ -188,7 +223,7 @@ return {
                 "name": "errorSummary",
                 "storageKey": null
               },
-              (v1/*:: as any*/)
+              (v0/*:: as any*/)
             ],
             "storageKey": null
           }
@@ -198,16 +233,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "d7407ac576b22b1584255eef58000964",
+    "cacheID": "f19c8de705a24cc3f21a4933c92c5ffb",
     "id": null,
     "metadata": {},
     "name": "ConversionIngestionStatusRefetchQuery",
     "operationKind": "query",
-    "text": "query ConversionIngestionStatusRefetchQuery {\n  ...ConversionIngestionStatus_query\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      accountIdConfigured\n      ready\n    }\n    activity {\n      state\n      windowStart\n      windowEnd\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      errorSummary\n      id\n    }\n  }\n}\n"
+    "text": "query ConversionIngestionStatusRefetchQuery {\n  ...ConversionIngestionStatus_query\n}\n\nfragment ConversionIngestionSettings_ingestion on CJCommissionIngestion {\n  settings {\n    enabled\n    intervalMinutes\n    lookbackDays\n    maxPages\n    updatedAt\n  }\n  credentials {\n    ready\n  }\n  latestSuccess {\n    id\n  }\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    ...ConversionIngestionSettings_ingestion\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      accountIdConfigured\n      ready\n    }\n    activity {\n      state\n      windowStart\n      windowEnd\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      errorSummary\n      id\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "e32228e1d72e777a7fa4b39267c74083";
+(node as any).hash = "1c697ecd6d3289e86856770e84e5db6b";
 
 export default node;

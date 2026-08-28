@@ -34,9 +34,6 @@ export { SYNC_RUN_PAGE_SIZE };
 export const conversionIngestionRouteQuery = graphql`
   query ConversionIngestionRouteQuery {
     ...ConversionIngestionStatus_query
-    cjCommissionIngestion {
-      ...ConversionIngestionSettings_ingestion
-    }
   }
 `;
 
@@ -136,7 +133,10 @@ function ConversionIngestionPanel({
   return (
     <PageShell
       actions={
-        <RunNowControl ingestion={data.cjCommissionIngestion} onOverviewRefresh={refreshOverview} />
+        <RunNowControl
+          ingestion={statusData.cjCommissionIngestion}
+          onOverviewRefresh={refreshOverview}
+        />
       }
       description={<ConversionIngestionDescription />}
       eyebrow="Commerce operations"
@@ -148,7 +148,7 @@ function ConversionIngestionPanel({
         onTerminal={revalidate}
       />
       <ConversionIngestionSettings
-        ingestion={data.cjCommissionIngestion}
+        ingestion={statusData.cjCommissionIngestion}
         onOverviewRefresh={refreshOverview}
       />
       <DeferredRunLedger query={loaderData.runsQuery} variables={loaderData.runsVariables} />

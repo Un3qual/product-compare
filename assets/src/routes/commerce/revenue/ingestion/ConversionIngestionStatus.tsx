@@ -13,6 +13,7 @@ export const conversionIngestionStatusQuery = graphql`
   fragment ConversionIngestionStatus_query on RootQueryType
   @refetchable(queryName: "ConversionIngestionStatusRefetchQuery") {
     cjCommissionIngestion {
+      ...ConversionIngestionSettings_ingestion
       settings {
         nextRunAt
       }
@@ -87,7 +88,11 @@ export function ConversionIngestionStatus({
   onTerminal: () => void;
 }) {
   const activityState = ingestion.activity?.state ?? null;
-  const activityIsActive = activityState === "SCHEDULED" || activityState === "EXECUTING";
+  const activityIsActive =
+    activityState === "AVAILABLE" ||
+    activityState === "SCHEDULED" ||
+    activityState === "EXECUTING" ||
+    activityState === "RETRYABLE";
   const [isVisible, setIsVisible] = useState(
     () => typeof document === "undefined" || document.visibilityState === "visible",
   );
@@ -243,15 +248,17 @@ function StatusItem({
 
 function activityLabel(state: ActivityState) {
   if (state === "EXECUTING") return "Running";
-  if (state === "SCHEDULED") return "Queued";
-  if (state === "RETRYABLE") return "Retryable";
+  if (state === "AVAILABLE" || state === "SCHEDULED") return "Queued";
+  if (state === "RETRYABLE") return "Retrying";
   if (state === "SUSPENDED") return "Suspended";
   return "Available";
 }
 
 function activityTone(state: ActivityState): StatusTone {
   if (state === "EXECUTING") return "accent";
-  if (state === "SCHEDULED" || state === "RETRYABLE") return "warning";
+  if (state === "AVAILABLE" || state === "SCHEDULED" || state === "RETRYABLE") {
+    return "warning";
+  }
   if (state === "SUSPENDED") return "neutral";
   return "positive";
 }
