@@ -90,6 +90,38 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
     assert "must be 500 characters or fewer" in errors_on(changeset).error_summary
   end
 
+  test "run Oban identity requires paired fields and a positive attempt" do
+    for attrs <- [
+          run_attrs(%{oban_job_id: 42, oban_attempt: nil}),
+          run_attrs(%{oban_job_id: nil, oban_attempt: 1})
+        ] do
+      changeset = ConversionSyncRun.changeset(%ConversionSyncRun{}, attrs)
+
+      refute changeset.valid?
+      assert Map.has_key?(errors_on(changeset), :oban_job_id)
+      assert Map.has_key?(errors_on(changeset), :oban_attempt)
+    end
+
+    changeset =
+      ConversionSyncRun.changeset(
+        %ConversionSyncRun{},
+        run_attrs(%{oban_job_id: 42, oban_attempt: 0})
+      )
+
+    refute changeset.valid?
+    assert "must be greater than 0" in errors_on(changeset).oban_attempt
+
+    assert ConversionSyncRun.changeset(
+             %ConversionSyncRun{},
+             run_attrs(%{oban_job_id: nil, oban_attempt: nil})
+           ).valid?
+
+    assert ConversionSyncRun.changeset(
+             %ConversionSyncRun{},
+             run_attrs(%{oban_job_id: 42, oban_attempt: 1})
+           ).valid?
+  end
+
   test "commerce conversions accept a nullable network action reference" do
     network = network_fixture("cj")
 
@@ -336,6 +368,35 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
              )
 
     assert [^second, ^completed] = Repo.all(ConversionSyncRuns.query())
+  end
+
+  test "starting a retried Oban attempt atomically interrupts an older running attempt" do
+    first_started_at = ~U[2026-08-28 12:00:00Z]
+    retry_started_at = DateTime.add(first_started_at, 60, :second)
+
+    assert {:ok, first} =
+             ConversionSyncRuns.start(
+               run_attrs(%{oban_job_id: 42, oban_attempt: 1}),
+               first_started_at
+             )
+
+    assert {:ok, retry} =
+             ConversionSyncRuns.start(
+               run_attrs(%{oban_job_id: 42, oban_attempt: 2}),
+               retry_started_at
+             )
+
+    interrupted = Repo.get!(ConversionSyncRun, first.id)
+
+    assert interrupted.status == :failed
+    assert interrupted.error_summary == "worker_interrupted"
+    assert DateTime.compare(interrupted.finished_at, retry_started_at) == :eq
+    assert Map.get(interrupted, :oban_job_id) == 42
+    assert Map.get(interrupted, :oban_attempt) == 1
+
+    assert retry.status == :running
+    assert Map.get(retry, :oban_job_id) == 42
+    assert Map.get(retry, :oban_attempt) == 2
   end
 
   test "run completion updates terminal evidence without recasting run identity" do

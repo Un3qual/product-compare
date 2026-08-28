@@ -12,6 +12,8 @@ defmodule ProductCompareSchemas.CommerceAttribution.ConversionSyncRun do
     :status,
     :trigger,
     :requested_by_user_id,
+    :oban_job_id,
+    :oban_attempt,
     :window_start,
     :window_end,
     :cursor,
@@ -50,6 +52,8 @@ defmodule ProductCompareSchemas.CommerceAttribution.ConversionSyncRun do
     field :status, Ecto.Enum, values: @statuses
     field :trigger, Ecto.Enum, values: @triggers
     belongs_to :requested_by_user, User
+    field :oban_job_id, :integer
+    field :oban_attempt, :integer
     field :window_start, :utc_datetime_usec
     field :window_end, :utc_datetime_usec
     field :cursor, :string
@@ -84,6 +88,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.ConversionSyncRun do
     |> validate_required(@required_fields)
     |> validate_inclusion(:status, @statuses)
     |> validate_inclusion(:trigger, @triggers)
+    |> validate_oban_identity()
     |> validate_window()
     |> validate_counts()
     |> validate_terminal_finished_at()
@@ -101,6 +106,29 @@ defmodule ProductCompareSchemas.CommerceAttribution.ConversionSyncRun do
     |> check_constraint(:error_summary,
       name: :commerce_conversion_sync_runs_error_summary_length
     )
+    |> check_constraint(:oban_job_id,
+      name: :commerce_conversion_sync_runs_oban_identity_paired
+    )
+    |> check_constraint(:oban_attempt,
+      name: :commerce_conversion_sync_runs_oban_attempt_positive
+    )
+  end
+
+  defp validate_oban_identity(changeset) do
+    changeset = validate_number(changeset, :oban_attempt, greater_than: 0)
+
+    case {get_field(changeset, :oban_job_id), get_field(changeset, :oban_attempt)} do
+      {nil, nil} ->
+        changeset
+
+      {job_id, attempt} when not is_nil(job_id) and not is_nil(attempt) ->
+        changeset
+
+      _partial_identity ->
+        changeset
+        |> add_error(:oban_job_id, "must be present with Oban attempt")
+        |> add_error(:oban_attempt, "must be present with Oban job")
+    end
   end
 
   defp validate_window(changeset) do

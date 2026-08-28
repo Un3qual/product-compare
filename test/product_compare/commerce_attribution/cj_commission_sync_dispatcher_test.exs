@@ -3,13 +3,18 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcherTest do
 
   import Ecto.Query
 
+  import ProductCompare.DatabaseTestHelpers,
+    only: [assert_blocked_by: 2, hold_row_lock: 3, release_row_lock: 1, start_unboxed_action: 1]
+
   alias Ecto.Adapters.SQL.Sandbox
   alias ProductCompare.Affiliate
   alias ProductCompare.CommerceAttribution.CJCommissionSyncDispatcher
+  alias ProductCompare.CommerceAttribution.ConversionSyncRuns
   alias ProductCompare.CommerceAttribution.ConversionSyncSettings
   alias ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting
 
   setup do
@@ -226,6 +231,96 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcherTest do
     refute_receive :unexpected_dispatch_due
   end
 
+  test "Oban production configuration enables the default 60-minute Lifeline" do
+    plugins =
+      :product_compare
+      |> Application.fetch_env!(Oban)
+      |> Keyword.fetch!(:plugins)
+
+    assert Oban.Plugins.Lifeline in plugins
+  end
+
+  test "a dispatcher tick interrupts non-executing or missing jobs but leaves live and CLI runs" do
+    now = ~U[2026-08-28 12:00:00Z]
+    assert {:ok, _settings} = ConversionSyncSettings.ensure_cj(%{})
+
+    assert {:ok, executing_job} =
+             CJCommissionSyncWorker.enqueue(
+               worker_opts(schedule_window: ~U[2026-08-02 00:00:00Z])
+             )
+
+    assert {:ok, available_job} =
+             CJCommissionSyncWorker.enqueue(
+               worker_opts(schedule_window: ~U[2026-08-03 00:00:00Z])
+             )
+
+    Repo.update_all(
+      from(job in Oban.Job, where: job.id == ^executing_job.id),
+      set: [state: "executing", attempted_at: DateTime.add(now, -60, :second)]
+    )
+
+    live_run = start_run!(oban_job_id: executing_job.id, oban_attempt: 1)
+    available_run = start_run!(oban_job_id: available_job.id, oban_attempt: 1)
+    missing_run = start_run!(oban_job_id: 9_000_000_000, oban_attempt: 1)
+    cli_run = start_run!(trigger: :cli)
+
+    assert {:ok, :idle} =
+             CJCommissionSyncDispatcher.dispatch_due(now, fn _opts ->
+               flunk("disabled settings must not enqueue")
+             end)
+
+    assert Repo.get!(ConversionSyncRun, live_run.id).status == :running
+
+    for run <- [available_run, missing_run] do
+      interrupted = Repo.get!(ConversionSyncRun, run.id)
+      assert interrupted.status == :failed
+      assert interrupted.error_summary == "worker_interrupted"
+      assert DateTime.compare(interrupted.finished_at, now) == :eq
+    end
+
+    assert Repo.get!(ConversionSyncRun, cli_run.id).status == :running
+  end
+
+  test "reconciliation locks the Oban row before preserving a live executing attempt" do
+    now = ~U[2026-08-28 12:00:00Z]
+
+    {job, run} =
+      Sandbox.unboxed_run(Repo, fn ->
+        assert {:ok, job} =
+                 CJCommissionSyncWorker.enqueue(
+                   worker_opts(schedule_window: ~U[2026-08-04 00:00:00Z])
+                 )
+
+        Repo.update_all(
+          from(current_job in Oban.Job, where: current_job.id == ^job.id),
+          set: [state: "executing", attempted_at: DateTime.add(now, -60, :second)]
+        )
+
+        {job, start_run!(oban_job_id: job.id, oban_attempt: 1)}
+      end)
+
+    on_exit(fn -> delete_committed_reconciliation_fixture(job.id, run.id) end)
+
+    {lock_holder, lock_backend_pid} =
+      hold_row_lock(Oban.Job, job.id, fn locked_job ->
+        locked_job
+        |> Ecto.Changeset.change(state: "executing")
+        |> Repo.update!()
+      end)
+
+    {reconciler, reconciler_backend_pid} =
+      start_unboxed_action(fn ->
+        CJCommissionSyncDispatcher.dispatch_due(now, fn _opts ->
+          flunk("missing settings must not enqueue")
+        end)
+      end)
+
+    assert_blocked_by(reconciler_backend_pid, lock_backend_pid)
+    release_row_lock(lock_holder)
+    assert {:ok, :idle} = Task.await(reconciler)
+    assert Repo.get!(ConversionSyncRun, run.id).status == :running
+  end
+
   defp enable_settings!(next_run_at, overrides \\ []) do
     assert {:ok, settings} = ConversionSyncSettings.ensure_cj(%{})
 
@@ -237,6 +332,24 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcherTest do
     settings
     |> ConversionSyncSetting.changeset(attrs)
     |> Repo.update!()
+  end
+
+  defp start_run!(overrides) do
+    attrs =
+      Map.merge(
+        %{
+          affiliate_network_id: network_fixture("cj").id,
+          trigger: :operator,
+          window_start: ~U[2026-08-01 00:00:00Z],
+          window_end: ~U[2026-08-02 00:00:00Z],
+          oban_job_id: nil,
+          oban_attempt: nil
+        },
+        Map.new(overrides)
+      )
+
+    assert {:ok, run} = ConversionSyncRuns.start(attrs, ~U[2026-08-28 11:00:00Z])
+    run
   end
 
   defp committed_due_settings!(now) do
@@ -281,6 +394,27 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcherTest do
           where: setting.id == ^settings_id
       )
     end)
+  end
+
+  defp delete_committed_reconciliation_fixture(job_id, run_id) do
+    Sandbox.unboxed_run(Repo, fn ->
+      Repo.delete_all(from run in ConversionSyncRun, where: run.id == ^run_id)
+      Repo.delete_all(from job in Oban.Job, where: job.id == ^job_id)
+    end)
+  end
+
+  defp worker_opts(overrides) do
+    Keyword.merge(
+      [
+        publisher_ids: ["publisher-1"],
+        from: ~U[2026-08-01 00:00:00Z],
+        before: ~U[2026-08-02 00:00:00Z],
+        max_pages: 100,
+        trigger: :scheduled,
+        requested_by_user_id: nil
+      ],
+      overrides
+    )
   end
 
   defp network_fixture(code) do

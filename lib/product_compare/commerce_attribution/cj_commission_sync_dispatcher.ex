@@ -5,6 +5,7 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcher do
 
   require Logger
 
+  alias ProductCompare.CommerceAttribution.ConversionSyncRuns
   alias ProductCompare.CommerceAttribution.ConversionSyncSettings
   alias ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker
 
@@ -21,7 +22,9 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcher do
   @spec dispatch_due(DateTime.t(), (keyword() -> {:ok, Oban.Job.t()} | {:error, term()})) ::
           {:ok, term()} | {:error, term()}
   def dispatch_due(%DateTime{} = now, enqueuer \\ &CJCommissionSyncWorker.enqueue/1) do
-    ConversionSyncSettings.claim_due_cj(now, enqueuer)
+    with {:ok, _reconciled_count} <- ConversionSyncRuns.reconcile_interrupted_cj(now) do
+      ConversionSyncSettings.claim_due_cj(now, enqueuer)
+    end
   end
 
   @impl GenServer

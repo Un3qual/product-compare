@@ -94,9 +94,11 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
     end)
 
     args = CJCommissionSyncWorker.args(worker_opts())
-    assert :ok = CJCommissionSyncWorker.perform(struct!(Oban.Job, args: args))
 
-    assert_receive {:import, request, []}
+    assert :ok =
+             CJCommissionSyncWorker.perform(struct!(Oban.Job, id: 42, attempt: 2, args: args))
+
+    assert_receive {:import, request, [oban_job_id: 42, oban_attempt: 2]}
     assert request.from == ~U[2026-08-01 00:00:00Z]
     assert request.before == ~U[2026-08-02 00:00:00Z]
     assert request.publisher_ids == ["publisher-1"]

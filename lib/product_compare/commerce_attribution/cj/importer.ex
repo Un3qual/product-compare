@@ -17,7 +17,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Importer do
   def run(request, opts \\ []) do
     with {:ok, request} <- validate_request(request),
          {:ok, network} <- cj_network(),
-         {:ok, run} <- start_run(request, network) do
+         {:ok, run} <- start_run(request, network, opts) do
       execute_run(run, request, Keyword.get(opts, :fetch_page, &Client.fetch_page/2))
     end
   end
@@ -287,12 +287,14 @@ defmodule ProductCompare.CommerceAttribution.CJ.Importer do
       "failed=#{run.records_failed}"
   end
 
-  defp start_run(request, network) do
+  defp start_run(request, network, opts) do
     ConversionSyncRuns.start(
       %{
         affiliate_network_id: network.id,
         trigger: request.trigger,
         requested_by_user_id: request.requested_by_user_id,
+        oban_job_id: Keyword.get(opts, :oban_job_id),
+        oban_attempt: Keyword.get(opts, :oban_attempt),
         window_start: request.from,
         window_end: request.before,
         cursor: nil,

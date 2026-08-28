@@ -85,6 +85,22 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
     assert run.records_failed == 0
   end
 
+  test "persists the Oban job identity supplied outside durable job arguments" do
+    fetch_page = fn _request, _opts ->
+      {:ok, %{records: [], payload_complete: true, max_commission_id: "complete-cursor"}}
+    end
+
+    assert {:ok, run} =
+             Importer.run(import_request(),
+               fetch_page: fetch_page,
+               oban_job_id: 42,
+               oban_attempt: 2
+             )
+
+    assert Map.get(run, :oban_job_id) == 42
+    assert Map.get(run, :oban_attempt) == 2
+  end
+
   test "fails closed when an incomplete page omits or blanks its continuation cursor" do
     for cursor <- [:missing, nil, "   "] do
       fetch_page = fn _request, _opts ->

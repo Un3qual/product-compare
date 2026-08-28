@@ -60,6 +60,18 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
       insert_run(network_id, error_summary: String.duplicate("x", 501)),
       "commerce_conversion_sync_runs_error_summary_length"
     )
+
+    for overrides <- [[oban_job_id: 42], [oban_attempt: 1]] do
+      assert_check_violation(
+        insert_run(network_id, overrides),
+        "commerce_conversion_sync_runs_oban_identity_paired"
+      )
+    end
+
+    assert_check_violation(
+      insert_run(network_id, oban_job_id: 42, oban_attempt: 0),
+      "commerce_conversion_sync_runs_oban_attempt_positive"
+    )
   end
 
   test "direct SQL accepts valid settings and run evidence" do
@@ -153,7 +165,9 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
           records_failed: 0,
           started_at: ~U[2026-08-28 12:00:00Z],
           finished_at: nil,
-          error_summary: nil
+          error_summary: nil,
+          oban_job_id: nil,
+          oban_attempt: nil
         },
         Map.new(overrides)
       )
@@ -163,9 +177,9 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
       INSERT INTO commerce_conversion_sync_runs (
         entropy_id, affiliate_network_id, status, "trigger", window_start, window_end,
         cursor, pages_fetched, records_fetched, records_persisted, records_failed,
-        started_at, finished_at, error_summary, inserted_at, updated_at
+        started_at, finished_at, error_summary, oban_job_id, oban_attempt, inserted_at, updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, now(), now())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, now(), now())
       """,
       [
         values.entropy_id,
@@ -181,7 +195,9 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
         values.records_failed,
         values.started_at,
         values.finished_at,
-        values.error_summary
+        values.error_summary,
+        values.oban_job_id,
+        values.oban_attempt
       ]
     )
   end

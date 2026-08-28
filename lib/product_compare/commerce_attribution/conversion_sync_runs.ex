@@ -12,6 +12,8 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncRuns do
     :status,
     :trigger,
     :requested_by_user_id,
+    :oban_job_id,
+    :oban_attempt,
     :window_start,
     :window_end,
     :cursor,
@@ -46,9 +48,20 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncRuns do
       |> Map.put(:finished_at, nil)
       |> Map.put(:started_at, now)
 
-    %ConversionSyncRun{}
-    |> ConversionSyncRun.changeset(attrs)
-    |> Repo.insert(returning: true)
+    changeset = ConversionSyncRun.changeset(%ConversionSyncRun{}, attrs)
+
+    if changeset.valid? do
+      Repo.transaction(fn ->
+        with :ok <- interrupt_older_attempts(attrs, now),
+             {:ok, run} <- Repo.insert(changeset, returning: true) do
+          run
+        else
+          {:error, reason} -> Repo.rollback(reason)
+        end
+      end)
+    else
+      {:error, changeset}
+    end
   end
 
   @spec complete(ConversionSyncRun.t(), map(), DateTime.t()) ::
@@ -89,6 +102,89 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncRuns do
   def query do
     from run in ConversionSyncRun,
       order_by: [desc: run.started_at, desc: run.id]
+  end
+
+  @spec reconcile_interrupted_cj(DateTime.t()) :: {:ok, non_neg_integer()} | {:error, term()}
+  def reconcile_interrupted_cj(%DateTime{} = now) do
+    Repo.transaction(fn ->
+      interrupted_cj_runs()
+      |> Enum.reduce_while(0, fn run, count ->
+        case lock_oban_job(run.oban_job_id) do
+          %Oban.Job{state: "executing"} ->
+            {:cont, count}
+
+          _missing_or_not_executing ->
+            case finalize_interrupted(run, now) do
+              {:ok, _run} -> {:cont, count + 1}
+              {:error, changeset} -> {:halt, Repo.rollback(changeset)}
+            end
+        end
+      end)
+    end)
+  end
+
+  defp interrupt_older_attempts(
+         %{oban_job_id: oban_job_id, oban_attempt: oban_attempt},
+         now
+       )
+       when is_integer(oban_job_id) and is_integer(oban_attempt) do
+    ConversionSyncRun
+    |> where(
+      [run],
+      run.oban_job_id == ^oban_job_id and run.status == :running and
+        run.oban_attempt < ^oban_attempt
+    )
+    |> order_by([run], asc: run.id)
+    |> lock("FOR UPDATE")
+    |> Repo.all()
+    |> Enum.reduce_while(:ok, fn run, :ok ->
+      case finalize_interrupted(run, now) do
+        {:ok, _run} -> {:cont, :ok}
+        {:error, changeset} -> {:halt, {:error, changeset}}
+      end
+    end)
+  end
+
+  defp interrupt_older_attempts(_attrs, _now), do: :ok
+
+  defp interrupted_cj_runs do
+    case Repo.one(
+           from network in ProductCompareSchemas.Affiliate.AffiliateNetwork,
+             where: network.code == "cj",
+             select: network.id
+         ) do
+      nil ->
+        []
+
+      affiliate_network_id ->
+        Repo.all(
+          from run in ConversionSyncRun,
+            where:
+              run.affiliate_network_id == ^affiliate_network_id and run.status == :running and
+                not is_nil(run.oban_job_id),
+            order_by: [asc: run.id],
+            lock: "FOR UPDATE SKIP LOCKED",
+            select: run
+        )
+    end
+  end
+
+  defp lock_oban_job(oban_job_id) do
+    Repo.one(
+      from job in Oban.Job,
+        where: job.id == ^oban_job_id,
+        lock: "FOR UPDATE"
+    )
+  end
+
+  defp finalize_interrupted(run, now) do
+    run
+    |> ConversionSyncRun.completion_changeset(%{
+      status: :failed,
+      finished_at: now,
+      error_summary: "worker_interrupted"
+    })
+    |> Repo.update()
   end
 
   defp normalize_attrs(attrs, field_map) do

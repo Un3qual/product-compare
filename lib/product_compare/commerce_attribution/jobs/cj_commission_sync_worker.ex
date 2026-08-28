@@ -40,16 +40,16 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker do
   end
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: args}) do
+  def perform(%Oban.Job{id: job_id, attempt: attempt, args: args}) do
     with {:ok, request} <- request_from_args(args) do
-      invoke_importer(request)
+      invoke_importer(request, oban_job_id: job_id, oban_attempt: attempt)
     else
       {:error, _reason} -> {:cancel, "invalid_job_arguments"}
     end
   end
 
-  defp invoke_importer(request) do
-    importer().(request, [])
+  defp invoke_importer(request, opts) do
+    importer().(request, opts)
     |> classify_result()
   rescue
     _exception -> {:error, "runner_exception"}
