@@ -1,6 +1,8 @@
 defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
   use ProductCompare.DataCase, async: false
 
+  import ExUnit.CaptureLog, only: [with_log: 1]
+
   import ProductCompare.DatabaseTestHelpers,
     only: [
       assert_backend_blocked: 1,
@@ -186,7 +188,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
     assert Repo.aggregate(CommerceConversion, :count, :id) == 0
   end
 
-  test "rejects a terminal page that repeats the current cursor" do
+  test "accepts a terminal page that repeats the current cursor" do
     fetch_page = fn request, _opts ->
       case request.since_commission_id do
         nil ->
@@ -207,22 +209,22 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
       end
     end
 
-    assert {:error, {:invalid_response, :non_advancing_cursor}} =
-             Importer.run(import_request(), fetch_page: fetch_page)
+    assert {:ok, run} = Importer.run(import_request(), fetch_page: fetch_page)
 
     assert %{
-             status: :failed,
+             status: :succeeded,
              pages_fetched: 2,
              records_fetched: 2,
-             records_persisted: 0,
-             records_failed: 2,
+             records_persisted: 2,
+             records_failed: 0,
              cursor: "c-1"
            } = latest_run()
 
-    assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+    assert run.status == :succeeded
+    assert Repo.aggregate(CommerceConversion, :count, :id) == 2
   end
 
-  test "rejects a terminal page that returns a previously seen cursor" do
+  test "accepts a terminal page that returns a previously seen cursor" do
     fetch_page = fn request, _opts ->
       case request.since_commission_id do
         nil ->
@@ -241,19 +243,72 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
       end
     end
 
-    assert {:error, {:invalid_response, :repeated_cursor}} =
-             Importer.run(import_request(), fetch_page: fetch_page)
+    assert {:ok, run} = Importer.run(import_request(), fetch_page: fetch_page)
 
     assert %{
-             status: :failed,
+             status: :succeeded,
              pages_fetched: 3,
              records_fetched: 1,
-             records_persisted: 0,
-             records_failed: 1,
-             cursor: "c-2"
+             records_persisted: 1,
+             records_failed: 0,
+             cursor: "c-1"
            } = latest_run()
 
-    assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+    assert run.status == :succeeded
+    assert Repo.aggregate(CommerceConversion, :count, :id) == 1
+  end
+
+  test "logs successful completion after durable run evidence is written" do
+    fetch_page = fn _request, _opts ->
+      {:ok,
+       %{
+         records: [original("logged-c-1", "logged-a-1")],
+         payload_complete: true,
+         max_commission_id: "logged-c-1"
+       }}
+    end
+
+    previous_level = Logger.level()
+    Logger.configure(level: :info)
+
+    try do
+      {run, log} =
+        with_log(fn ->
+          assert {:ok, run} = Importer.run(import_request(), fetch_page: fetch_page)
+          run
+        end)
+
+      assert log =~ "CJ commission import succeeded"
+      assert log =~ "run_id=#{run.entropy_id}"
+      assert log =~ "from=#{DateTime.to_iso8601(run.window_start)}"
+      assert log =~ "before=#{DateTime.to_iso8601(run.window_end)}"
+      assert log =~ "category=success"
+      assert log =~ "pages=1 fetched=1 persisted=1 failed=0"
+    after
+      Logger.configure(level: previous_level)
+    end
+  end
+
+  test "logs failed completion with a redacted category and truthful counts" do
+    fetch_page = fn _request, _opts ->
+      {:error, {:transport_error, "provider secret"}}
+    end
+
+    {result, log} =
+      with_log(fn ->
+        assert {:error, {:transport_error, "provider secret"}} =
+                 Importer.run(import_request(), fetch_page: fetch_page)
+      end)
+
+    run = latest_run()
+    assert result == {:error, {:transport_error, "provider secret"}}
+    assert log =~ "CJ commission import failed"
+    assert log =~ "run_id=#{run.entropy_id}"
+    assert log =~ "from=#{DateTime.to_iso8601(run.window_start)}"
+    assert log =~ "before=#{DateTime.to_iso8601(run.window_end)}"
+    assert log =~ "category=transport_error"
+    assert log =~ "pages=0 fetched=0 persisted=0 failed=0"
+    refute log =~ "provider secret"
   end
 
   test "fails when the bounded page ceiling is exhausted" do

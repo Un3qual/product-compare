@@ -1,6 +1,8 @@
 defmodule ProductCompare.CommerceAttribution.CJ.Importer do
   @moduledoc false
 
+  require Logger
+
   alias ProductCompare.CommerceAttribution.CJ.Client
   alias ProductCompare.CommerceAttribution.CJ.CommissionDetail
   alias ProductCompare.CommerceAttribution.CJ.ImportRequest
@@ -132,14 +134,14 @@ defmodule ProductCompare.CommerceAttribution.CJ.Importer do
   defp validate_continuation(result, current_cursor, seen) do
     with {:ok, cursor} <- response_cursor(result) do
       cond do
+        result.payload_complete ->
+          {:ok, cursor}
+
         not is_nil(cursor) and cursor == current_cursor ->
           {:error, {:invalid_response, :non_advancing_cursor}}
 
         not is_nil(cursor) and cursor in seen ->
           {:error, {:invalid_response, :repeated_cursor}}
-
-        result.payload_complete ->
-          {:ok, cursor}
 
         is_nil(cursor) ->
           {:error, {:invalid_response, :max_commission_id}}
@@ -221,23 +223,33 @@ defmodule ProductCompare.CommerceAttribution.CJ.Importer do
   end
 
   defp complete_success(run, progress, persisted) do
-    ConversionSyncRuns.complete(
-      run,
-      %{
-        status: :succeeded,
-        cursor: progress.cursor,
-        pages_fetched: progress.pages,
-        records_fetched: progress.fetched,
-        records_persisted: persisted,
-        records_failed: 0,
-        error_summary: nil
-      },
-      DateTime.utc_now()
-    )
+    result =
+      ConversionSyncRuns.complete(
+        run,
+        %{
+          status: :succeeded,
+          cursor: progress.cursor,
+          pages_fetched: progress.pages,
+          records_fetched: progress.fetched,
+          records_persisted: persisted,
+          records_failed: 0,
+          error_summary: nil
+        },
+        DateTime.utc_now()
+      )
+
+    case result do
+      {:ok, %ConversionSyncRun{} = completed_run} = result ->
+        Logger.info(import_log("succeeded", "success", completed_run))
+        result
+
+      _other ->
+        result
+    end
   end
 
   defp complete_failure(run, progress, persisted, reason) do
-    _completion =
+    completion =
       ConversionSyncRuns.complete(
         run,
         %{
@@ -252,7 +264,27 @@ defmodule ProductCompare.CommerceAttribution.CJ.Importer do
         DateTime.utc_now()
       )
 
+    case completion do
+      {:ok, %ConversionSyncRun{} = completed_run} ->
+        Logger.warning(import_log("failed", completed_run.error_summary, completed_run))
+
+      _other ->
+        :ok
+    end
+
     {:error, reason}
+  end
+
+  defp import_log(result, category, run) do
+    "CJ commission import #{result} " <>
+      "run_id=#{run.entropy_id} " <>
+      "from=#{DateTime.to_iso8601(run.window_start)} " <>
+      "before=#{DateTime.to_iso8601(run.window_end)} " <>
+      "category=#{category} " <>
+      "pages=#{run.pages_fetched} " <>
+      "fetched=#{run.records_fetched} " <>
+      "persisted=#{run.records_persisted} " <>
+      "failed=#{run.records_failed}"
   end
 
   defp start_run(request, network) do

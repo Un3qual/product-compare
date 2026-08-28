@@ -119,6 +119,77 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
              CJCommissionSyncWorker.perform(struct!(Oban.Job, args: args))
   end
 
+  test "worker retries only transient transport and provider availability failures" do
+    for reason <- [
+          {:transport_error, "secret transport details"},
+          {:http_error, 408},
+          {:http_error, 429},
+          {:http_error, 500},
+          {:http_error, 503},
+          :runner_exception
+        ] do
+      Application.put_env(:product_compare, :cj_commission_sync_importer, fn _request, _opts ->
+        {:error, reason}
+      end)
+
+      expected =
+        if reason == :runner_exception, do: "runner_exception", else: "transient_provider_failure"
+
+      assert {:error, ^expected} =
+               CJCommissionSyncWorker.perform(
+                 struct!(Oban.Job, args: CJCommissionSyncWorker.args(worker_opts()))
+               )
+    end
+  end
+
+  test "worker cancels deterministic CJ failures and preserves safe categories" do
+    for {reason, category} <- [
+          {{:invalid_response, :record}, "invalid_response"},
+          {{:decode_error, :invalid_json}, "decode_error"},
+          {{:graphql_error, "FORBIDDEN"}, "graphql_error"},
+          {{:http_error, 400}, "http_error"},
+          {{:http_error, 401}, "http_error"},
+          {{:http_error, 403}, "http_error"},
+          {{:http_error, 404}, "http_error"},
+          {:page_ceiling_exhausted, "page_ceiling_exhausted"},
+          {:unmatched_correction, "unmatched_correction"},
+          {%Ecto.Changeset{}, "persistence_validation_failed"},
+          {{:invalid_request, :max_pages}, "invalid_request"},
+          {{:missing_env, "CJ_API_TOKEN"}, "configuration_error"},
+          {{:authentication_failed, "provider secret"}, "authentication_error"},
+          {{:authorization_failed, "provider secret"}, "authorization_error"}
+        ] do
+      Application.put_env(:product_compare, :cj_commission_sync_importer, fn _request, _opts ->
+        {:error, reason}
+      end)
+
+      assert {:cancel, ^category} =
+               CJCommissionSyncWorker.perform(
+                 struct!(Oban.Job, args: CJCommissionSyncWorker.args(worker_opts()))
+               )
+    end
+  end
+
+  test "worker fails closed for malformed importer outcomes without exposing details" do
+    Application.put_env(:product_compare, :cj_commission_sync_importer, fn _request, _opts ->
+      {:error, {:provider_error, "provider secret"}}
+    end)
+
+    assert {:cancel, "provider_error"} =
+             CJCommissionSyncWorker.perform(
+               struct!(Oban.Job, args: CJCommissionSyncWorker.args(worker_opts()))
+             )
+
+    Application.put_env(:product_compare, :cj_commission_sync_importer, fn _request, _opts ->
+      {:unexpected_provider_result, "provider secret"}
+    end)
+
+    assert {:cancel, "unexpected_runner_result"} =
+             CJCommissionSyncWorker.perform(
+               struct!(Oban.Job, args: CJCommissionSyncWorker.args(worker_opts()))
+             )
+  end
+
   test "active projects only safe fields and prioritizes executing work" do
     assert {:ok, executing_job} = CJCommissionSyncWorker.enqueue(worker_opts())
 
