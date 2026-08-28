@@ -227,6 +227,30 @@ defmodule ProductCompare.CommerceAttribution.CJ.ClientTest do
       end
     end
 
+    test "rejects every supported non-finite Decimal spelling in both required money fields" do
+      for original? <- [true, false],
+          field <- ["saleAmountUsd", "pubCommissionAmountUsd"],
+          value <- ["NaN", "Inf", "-Inf", "Infinity"] do
+        record =
+          commission_detail_record()
+          |> Map.merge(%{
+            "original" => original?,
+            "correctionReason" => if(original?, do: nil, else: "RETURNED_MERCHANDISE")
+          })
+          |> Map.put(field, value)
+
+        transport = fn _request ->
+          {:ok, %{status: 200, body: commission_detail_page(record)}}
+        end
+
+        result = Client.fetch_page(page_request(), api_token: "test-token", transport: transport)
+
+        assert {:error, {:invalid_response, :record}} = result
+        refute inspect(result) =~ "record-secret"
+        refute inspect(result) =~ value
+      end
+    end
+
     test "rejects a response without a boolean completion flag" do
       transport = fn _request ->
         {:ok,

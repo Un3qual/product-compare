@@ -303,7 +303,11 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
   test "rejects semantically malformed originals and corrections before financial persistence" do
     invalid_records = [
       original("invalid-original", "invalid-action", %{"saleAmountUsd" => "not-money"}),
-      correction("invalid-correction", "invalid-action", %{"actionStatus" => "reversed"})
+      correction("invalid-correction", "invalid-action", %{"actionStatus" => "reversed"}),
+      original("non-finite-original", "invalid-action", %{"saleAmountUsd" => "NaN"}),
+      correction("non-finite-correction", "invalid-action", %{
+        "pubCommissionAmountUsd" => "Infinity"
+      })
     ]
 
     for record <- invalid_records do

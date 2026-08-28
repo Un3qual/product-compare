@@ -1358,11 +1358,12 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       invalid_records = [
         Map.put(valid_record, "actionStatus", "approved"),
+        Map.put(valid_record, "saleAmountUsd", "-Inf"),
         valid_record
         |> Map.merge(%{
           "original" => false,
           "correctionReason" => "RETURNED_MERCHANDISE",
-          "pubCommissionAmountUsd" => "invalid-money"
+          "pubCommissionAmountUsd" => "Infinity"
         })
       ]
 

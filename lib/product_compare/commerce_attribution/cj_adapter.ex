@@ -128,18 +128,13 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
   defp normalize_status(status), do: status
 
   defp decimal(nil), do: nil
-  defp decimal(%Decimal{} = value), do: value
 
-  defp decimal(value) when is_binary(value) or is_integer(value) or is_float(value) do
-    value = value |> to_string() |> String.trim()
-
-    case Decimal.parse(value) do
-      {%Decimal{} = decimal, ""} -> decimal
-      _invalid -> nil
+  defp decimal(value) do
+    case CommissionDetail.parse_finite_decimal(value) do
+      {:ok, decimal} -> decimal
+      :error -> nil
     end
   end
-
-  defp decimal(_value), do: nil
 
   defp parse_datetime(nil), do: nil
   defp parse_datetime(%DateTime{} = value), do: value
