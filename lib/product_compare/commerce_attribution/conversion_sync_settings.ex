@@ -4,6 +4,8 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
   import Ecto.Query
 
   alias ProductCompare.Repo
+  alias ProductCompare.CommerceAttribution.CJ.Client
+  alias ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting
 
@@ -103,6 +105,22 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
     end
   end
 
+  @spec claim_due_cj(DateTime.t(), (keyword() -> {:ok, Oban.Job.t()} | {:error, term()})) ::
+          {:ok, :idle | %{job: Oban.Job.t(), settings: ConversionSyncSetting.t()}}
+          | {:error, term()}
+  def claim_due_cj(%DateTime{} = now, enqueuer \\ &CJCommissionSyncWorker.enqueue/1)
+      when is_function(enqueuer, 1) do
+    Repo.transaction(fn ->
+      case due_cj_setting(now) do
+        nil ->
+          :idle
+
+        %ConversionSyncSetting{} = settings ->
+          enqueue_and_advance(settings, now, enqueuer)
+      end
+    end)
+  end
+
   defp insert_or_fetch(attrs) do
     changeset = ConversionSyncSetting.changeset(%ConversionSyncSetting{}, attrs)
 
@@ -118,6 +136,43 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
 
       result ->
         result
+    end
+  end
+
+  defp due_cj_setting(now) do
+    Repo.one(
+      from setting in ConversionSyncSetting,
+        join: network in AffiliateNetwork,
+        on: network.id == setting.affiliate_network_id,
+        where:
+          network.code == ^@cj_code and setting.enabled == true and
+            not is_nil(setting.next_run_at) and setting.next_run_at <= ^now,
+        lock: "FOR UPDATE SKIP LOCKED"
+    )
+  end
+
+  defp enqueue_and_advance(settings, now, enqueuer) do
+    with {:ok, publisher_ids} <- Client.publisher_ids(),
+         {:ok, %Oban.Job{} = job} <-
+           enqueuer.(
+             publisher_ids: publisher_ids,
+             from: DateTime.add(now, -settings.lookback_days * 86_400, :second),
+             before: now,
+             max_pages: settings.max_pages,
+             trigger: :scheduled,
+             requested_by_user_id: nil,
+             schedule_window: now
+           ),
+         {:ok, settings} <-
+           settings
+           |> ConversionSyncSetting.changeset(%{
+             next_run_at: DateTime.add(now, settings.interval_minutes * 60, :second)
+           })
+           |> Repo.update() do
+      %{job: job, settings: settings}
+    else
+      {:error, reason} -> Repo.rollback(reason)
+      _unexpected -> Repo.rollback(:invalid_enqueuer_result)
     end
   end
 

@@ -4,6 +4,12 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
   alias ProductCompare.Affiliate
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting
+
+  setup do
+    Repo.delete_all(ConversionSyncSetting)
+    :ok
+  end
 
   test "settings reject each named database check violation" do
     network_id = network_fixture("cj").id

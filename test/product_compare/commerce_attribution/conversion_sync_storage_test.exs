@@ -13,6 +13,11 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting
 
+  setup do
+    Repo.delete_all(ConversionSyncSetting)
+    :ok
+  end
+
   test "settings enforce the approved bounds and disabled next-run contract" do
     valid = %{
       affiliate_network_id: network_fixture("cj").id,
