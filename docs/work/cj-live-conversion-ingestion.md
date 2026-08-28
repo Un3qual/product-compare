@@ -93,24 +93,33 @@ authored operations change.
   operator GraphQL completed through `b4e657a7` and `f617bf38`; the workspace
   completed through `d97ed8f7` and `d4434f8d`.
 - Task 7 browser proof and feature-local quality repairs completed in
-  `08f64956`. The exact targeted Playwright command first produced a valid RED
+  `08f64956`, with review hardening in `9c3366da`. The exact targeted Playwright
+  command first produced a valid RED
   with 5 passing and 4 failing tests: the new history-retry control was absent,
   and three existing viewport cases exposed a stale user-agent fixture literal.
   The same command then passed 9 tests after adding route-owned recovery and
   correcting the fixture. Desktop, tablet, and mobile reduced-motion captures
   were inspected; the ledger remains contained, and idle/editing axe scans
   reported zero violations.
+- Final whole-branch review hardening completed through `6e93b430`, `191808f9`,
+  `a9bd0f34`, and `eab31ae8`. It added durable action-level CJ correction
+  evidence with full changeset/database constraint parity; rejected
+  undocumented statuses, invalid UTC timestamps, and non-finite commission
+  amounts at the shared provider boundary; kept every nonterminal Oban state
+  polling; reconciled persisted settings through Relay's refreshed overview
+  ownership; and explicitly classified the correction payload as raw provider
+  evidence in the repository JSON storage policy.
 - The focused Commerce Attribution, direct-constraint, GraphQL, ledger, and CLI
   backend command passed 215 tests. Relay validation generated no drift and
   reported 88 reader, 62 normalization, and 88 operation-text artifacts;
   focused frontend typecheck, lint, format, and unit gates passed 113 files and
   1,522 tests.
-- Complete verification passed: `mix format --check-formatted`, `mix typecheck`,
+- Final complete verification passed: `mix format --check-formatted`, `mix typecheck`,
   `mix quality` (Credo zero issues, ExDNA 3/3 clone budget, Reach zero new
   smells, Dialyzer successful with the existing single ignored warning), and
-  `mix test --cover` with 1,634 tests, zero failures, and 86.66% total coverage.
-  `mix frontend_check` passed Relay, typecheck, lint, format, 113 unit-test files
-  with 1,522 tests, client and SSR builds, StyleX mangling, and the 227,422-byte
+  `mix test --cover` with 1,644 tests, zero failures, and 86.70% total coverage.
+  `mix frontend_check` passed Relay, typecheck, lint, format, 114 unit-test files
+  with 1,526 tests, client and SSR builds, StyleX mangling, and the 227,414-byte
   gzip initial bundle within its 300,000-byte budget. The unchanged Node engine
   warning remained non-blocking because every frontend command exited
   successfully.

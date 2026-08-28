@@ -37,7 +37,10 @@ and schedule ownership, database-claimed execution, operator GraphQL, and the
 dedicated ingestion workspace. These are internal slices of one live-conversion
 lifecycle, not independent queue rows. Live credentials are optional for
 automated verification; the 2026-08-27 preflight found credentials unavailable,
-so live evidence was not run and scheduling remains disabled.
+so live evidence was not run and scheduling remains disabled. Final
+whole-branch review hardened durable action-level correction evidence, semantic
+CJ validation, nonterminal operator polling, and Relay settings reconciliation;
+the final gates passed 1,644 backend tests and 1,526 frontend tests.
 
 The approved Product Experience And Code Simplification program is planned as
 five immediately executable, path-disjoint outcomes plus one prerequisite-gated

@@ -54,7 +54,7 @@ No implementation rows are currently ready.
 ## Ready Floor Exception
 
 Reason: The CJ live-conversion lifecycle is complete. Closeout curation checked
-current product behavior, the green 1,634-test backend and 1,522-test frontend
+current product behavior, the green 1,644-test backend and 1,526-test frontend
 gates, source TODO/FIXME markers, architecture gaps, the candidate catalog, and
 lane evidence. It found no other source-backed, independently reviewable
 outcome that is both coherent and executable; the remaining named product and
