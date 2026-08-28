@@ -2,17 +2,18 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P1
-- Owner: unclaimed
+- Owner: Codex Task 7 closeout
 - Design: `docs/superpowers/specs/2026-08-27-cj-live-conversion-ingestion-design.md`
 - Plan: `docs/superpowers/plans/2026-08-27-cj-live-conversion-ingestion-implementation-plan.md`
-- Validated: 2026-08-27 against the approved design, current Commerce
-  Attribution code, current operator routes, and the live queue.
+- Validated: 2026-08-27 against the approved design, the completed Commerce
+  Attribution and operator implementations, browser evidence, all repository
+  gates, the credential preflight, and the refreshed live queue.
 
-## Target Outcome
+## Batch Outcome
 
-ProductCompare fetches current CJ Commission Detail records into the existing
+ProductCompare now fetches current CJ Commission Detail records into the existing
 Commerce Attribution conversion model through a bounded, replay-safe importer.
 Operators can inspect credential readiness and current activity, review
 secret-safe run evidence, trigger a bounded sync, and configure the durable
@@ -82,6 +83,48 @@ authored operations change.
 5. Expose the operator-only GraphQL contract and regenerate Relay ownership.
 6. Build the dedicated ingestion workspace and navigation links.
 7. Prove browser behavior, optional live readiness, and full repository gates.
+
+## Completion Evidence
+
+- Storage completed through `9de81845` and `7625ac2e`; current CJ transport
+  completed through `dfddaed0` and `af310509`; bounded correction-safe import
+  completed through `ddaad397` and `bc9ff122`.
+- Durable execution completed through `61d5bd29`, `35eb6e9f`, and `f4fa2063`;
+  operator GraphQL completed through `b4e657a7` and `f617bf38`; the workspace
+  completed through `d97ed8f7` and `d4434f8d`.
+- Task 7 browser proof and feature-local quality repairs completed in
+  `08f64956`. The exact targeted Playwright command first produced a valid RED
+  with 5 passing and 4 failing tests: the new history-retry control was absent,
+  and three existing viewport cases exposed a stale user-agent fixture literal.
+  The same command then passed 9 tests after adding route-owned recovery and
+  correcting the fixture. Desktop, tablet, and mobile reduced-motion captures
+  were inspected; the ledger remains contained, and idle/editing axe scans
+  reported zero violations.
+- The focused Commerce Attribution, direct-constraint, GraphQL, ledger, and CLI
+  backend command passed 215 tests. Relay validation generated no drift and
+  reported 88 reader, 62 normalization, and 88 operation-text artifacts;
+  focused frontend typecheck, lint, format, and unit gates passed 113 files and
+  1,522 tests.
+- Complete verification passed: `mix format --check-formatted`, `mix typecheck`,
+  `mix quality` (Credo zero issues, ExDNA 3/3 clone budget, Reach zero new
+  smells, Dialyzer successful with the existing single ignored warning), and
+  `mix test --cover` with 1,634 tests, zero failures, and 86.66% total coverage.
+  `mix frontend_check` passed Relay, typecheck, lint, format, 113 unit-test files
+  with 1,522 tests, client and SSR builds, StyleX mangling, and the 227,422-byte
+  gzip initial bundle within its 300,000-byte budget. The unchanged Node engine
+  warning remained non-blocking because every frontend command exited
+  successfully.
+- Credential preflight completed locally without disclosing environment values:
+  readiness was false, with both required credential indicators false. **live
+  evidence not run: credentials unavailable**. No live window or replay ran,
+  no schedule mutation was issued, and persisted scheduling remains disabled.
+- Closeout curation rechecked the current implementation, the complete backend
+  and frontend gates, source TODO/FIXME markers, `ARCHITECTURE.md`, the candidate
+  pool, and lane evidence. It found no new failing contract or independently
+  shippable validated successor: remaining provider/product possibilities are
+  explicitly deferred, and completed internal slices cannot be redispatched.
+  The live queue therefore retains a complete Ready Floor Exception rather than
+  manufacturing rows.
 
 ## Boundaries
 

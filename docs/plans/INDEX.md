@@ -27,17 +27,17 @@ of active and candidate plans, not the dispatch queue.
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
 
-The approved CJ Live Conversion Ingestion outcome is the current ready plan:
+The approved CJ Live Conversion Ingestion outcome is complete:
 
 - `docs/superpowers/plans/2026-08-27-cj-live-conversion-ingestion-implementation-plan.md`
 
-It is one cross-stack Commerce Attribution outcome spanning current CJ
+It completed one cross-stack Commerce Attribution outcome spanning current CJ
 Commission Detail transport, replay-safe correction persistence, durable run
 and schedule ownership, database-claimed execution, operator GraphQL, and the
 dedicated ingestion workspace. These are internal slices of one live-conversion
 lifecycle, not independent queue rows. Live credentials are optional for
-implementation and automated verification; the schedule remains disabled
-until readiness and a successful manual run are proven.
+automated verification; the 2026-08-27 preflight found credentials unavailable,
+so live evidence was not run and scheduling remains disabled.
 
 The approved Product Experience And Code Simplification program is planned as
 five immediately executable, path-disjoint outcomes plus one prerequisite-gated
@@ -57,11 +57,12 @@ helpers; and replaced recreated Relay shapes with generated ownership. Its
 checked provenance, production-file delta, and full-gate evidence are in
 `docs/work/type-validation-slop-remediation.md`. Fresh curation found no
 source-backed successor at that closeout. The later user-approved CJ
-live-conversion outcome above is now the sole validated successor, so the live
-queue pairs it with a truthful Ready Floor Exception rather than splitting one
-lifecycle or manufacturing cleanup rows. The previous four production-UI rows
-remain below as completion/supersession history rather than live dispatch
-sources.
+live-conversion outcome above is also complete. Its closeout rechecked current
+behavior, green full backend/frontend gates, source markers, architecture, the
+candidate pool, and lane evidence without finding a coherent executable
+successor, so the empty live queue retains a truthful Ready Floor Exception.
+The previous four production-UI rows remain below as completion/supersession
+history rather than live dispatch sources.
 
 The approved homepage query-scaling outcome is complete through:
 

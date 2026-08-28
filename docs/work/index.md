@@ -49,99 +49,27 @@ No work is currently claimed.
 
 ## Ready Work
 
-### 1. CJ Live Conversion Ingestion
-
-Status: ready
-Lane: CJ live conversion ingestion
-Plan: `docs/superpowers/plans/2026-08-27-cj-live-conversion-ingestion-implementation-plan.md`
-Batch outcome: current CJ Commission Detail records flow through a bounded,
-replay-safe Commerce Attribution importer while operators gain a secret-safe
-workspace for run status, run history, manual execution, and durable non-secret
-schedule settings.
-Next action: claim this row, record the worker and branch in
-`docs/work/cj-live-conversion-ingestion.md`, and begin Task 1's failing storage
-and direct-database contract tests.
-Owned paths:
-
-- `priv/repo/migrations/20260827120000_add_cj_conversion_sync_storage.exs`
-- `lib/product_compare_schemas/commerce_attribution/`
-- `lib/product_compare/commerce_attribution/`
-- `lib/product_compare/application.ex`
-- `lib/product_compare_web/schema/commerce_attribution/`
-- `lib/product_compare_web/resolvers/commerce_attribution/`
-- `lib/mix/tasks/product_compare.commerce_attribution.cj_commissions.ex`
-- `lib/mix/tasks/product_compare/commerce_attribution/cj_commissions/`
-- `config/runtime.exs`
-- `.env.example`
-- `assets/schema.graphql`
-- `assets/src/__generated__/`
-- `assets/src/routes/commerce/revenue/ingestion/`
-- `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
-- `assets/src/routes/config/operator-routes.tsx`
-- `assets/src/routes/RootDestinations.tsx`
-- `assets/test/routes/commerce/revenue/`
-- `assets/test/routes/config/`
-- `assets/test/routes/root/`
-- `assets/tests/e2e/production-ui-operations.spec.ts`
-- `test/product_compare/commerce_attribution/`
-- `test/product_compare/repo/commerce_conversion_sync_constraints_test.exs`
-- `test/product_compare_web/graphql/commerce_attribution_queries_test.exs`
-- `test/product_compare_web/graphql/commerce_attribution_mutations_test.exs`
-- `test/mix/tasks/product_compare.commerce_attribution.cj_commissions_test.exs`
-- `test/support/fixtures/cj/commission_detail_sample.redacted.json`
-- `docs/work/cj-live-conversion-ingestion.md`
-
-Internal slices:
-
-- Storage and focused context owners with complete same-row constraint parity.
-- Current CJ transport, normalization, bounded traversal, and correction-safe
-  persistence.
-- Oban execution, database-claimed dispatch, run-now deduplication, and CLI.
-- Operator-only GraphQL/Relay contract and the dedicated ingestion workspace.
-- Focused, browser, optional live-readiness, and full repository verification.
-
-Prerequisites:
-
-- Approved design at
-  `docs/superpowers/specs/2026-08-27-cj-live-conversion-ingestion-design.md`.
-- Existing CJ token configuration, Commerce Attribution conversion owner,
-  Oban runtime, operator authorization, and Revenue surface.
-- Live CJ credentials are optional for implementation; scheduling stays
-  disabled until readiness and a successful manual run are proven.
-
-Verification:
-
-- Execute every focused RED/GREEN command in the linked plan.
-- `mix ecto.reset`
-- `mix check.typespecs`
-- `mix typecheck`
-- `mix test`
-- `mix assets.verify`
-- `mix work_queue.validate`
-- `mix format --check-formatted`
-- `git diff --check`
-
-Exit condition: bounded CJ imports converge across retries and corrections;
-run/settings persistence, scheduling, authorization, and secret-safety
-contracts pass; the operator workspace passes responsive and accessibility
-coverage; all repository gates pass; lane evidence is preserved; and the live
-queue is replenished or retains a truthful complete floor exception.
+No implementation rows are currently ready.
 
 ## Ready Floor Exception
 
-Reason: The approved CJ live-conversion lifecycle is the only new
-source-backed, independently reviewable outcome validated in this curation.
-The previously cataloged product-experience program is complete, and no other
-current behavior, test, architecture, or lane gap has yet been validated into
-a coherent executable outcome.
-Rejected split: Treating CJ storage, provider transport, scheduling, GraphQL,
-or the operator workspace as separate rows would divide one enablement and
-acceptance boundary into path-sized filler; reopening completed historical
-cleanup would also be false queue depth.
-Replenishment action: Before this row is claimed and again at its closeout,
-re-check current product behavior, failing or coverage gaps, architecture, and
-lane evidence; promote every coherent successor found, otherwise preserve a
-complete exception for the smaller truthful set.
+Reason: The CJ live-conversion lifecycle is complete. Closeout curation checked
+current product behavior, the green 1,634-test backend and 1,522-test frontend
+gates, source TODO/FIXME markers, architecture gaps, the candidate catalog, and
+lane evidence. It found no other source-backed, independently reviewable
+outcome that is both coherent and executable; the remaining named product and
+provider possibilities require an explicit decision or external evidence and
+remain deferred.
+Rejected split: Re-dispatching CJ storage, provider transport, scheduling,
+GraphQL, or the operator workspace would relabel completed internal slices as
+path-sized filler. Reopening completed historical cleanup, deferred providers,
+or unrelated operator pages would also create false queue depth.
+Replenishment action: At the 2026-08-27 CJ closeout, the coordinator refreshed
+current behavior, full test/coverage results, source markers, architecture,
+candidate-catalog classifications, and lane evidence. No coherent successor
+was found. Repeat that evidence-backed curation after a new product decision,
+external provider evidence, failing contract, or architecture gap appears, and
+promote every independently shippable validated outcome then.
 
 ## Needs Decision Work
 
