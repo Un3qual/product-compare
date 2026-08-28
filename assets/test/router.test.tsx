@@ -10,6 +10,10 @@ import { RouteErrorBoundary } from "../src/routes/compare/RouteErrorBoundary";
 import { RevenueSummaryRoute } from "../src/routes/commerce/revenue/RevenueSummaryRoute";
 import { revenueSummaryLoader } from "../src/routes/commerce/revenue/RevenueSummaryRoute";
 import {
+  ConversionIngestionRoute,
+  conversionIngestionLoader,
+} from "../src/routes/commerce/revenue/ingestion/ConversionIngestionRoute";
+import {
   CJProgramsRoute,
   cjProgramsLoader,
 } from "../src/routes/ingestion/cj-programs/CJProgramsRoute";
@@ -92,6 +96,21 @@ test("revenue summary navigation lazily resolves its screen and loader", async (
   );
   expect(revenueSummaryRoute.errorElement).toEqual(
     <RouteErrorBoundary resourceName="revenue report" title="Revenue" />,
+  );
+});
+
+test("conversion ingestion navigation lazily resolves its operator screen and loader", async () => {
+  const conversionIngestionRoute = findRoute("commerce/revenue/ingestion");
+  const resolvedRoute = await resolveLazyRoute(conversionIngestionRoute);
+
+  expect(resolvedRoute).toEqual(
+    expect.objectContaining({
+      loader: conversionIngestionLoader,
+      Component: ConversionIngestionRoute,
+    }),
+  );
+  expect(conversionIngestionRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="conversion ingestion" title="Conversion ingestion" />,
   );
 });
 

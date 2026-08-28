@@ -35,6 +35,7 @@ const MEMBER_DESTINATIONS = [
 const OPERATOR_DESTINATIONS = [
   { label: "Affiliate setup", to: "/affiliate/setup" },
   { label: "Revenue preview", to: "/commerce/revenue" },
+  { label: "Conversion ingestion", to: "/commerce/revenue/ingestion" },
   { label: "CJ programs", to: "/ingestion/cj-programs" },
 ] as const satisfies readonly RootDestination[];
 

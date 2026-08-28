@@ -279,7 +279,10 @@ test("revenue route identifies recorded attribution data as a preview", () => {
   expect(screen.getByRole("region", { name: "Revenue controls" })).toBeInTheDocument();
   expect(screen.queryByRole("complementary", { name: "Revenue controls" })).not.toBeInTheDocument();
   expect(screen.getByText(/preview summarizes recorded attribution data/i)).toBeInTheDocument();
-  expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Ingestion status" })).toHaveAttribute(
+    "href",
+    "/commerce/revenue/ingestion",
+  );
 });
 
 test("revenue route keeps one control band ahead of metrics and the attribution ledger", () => {
