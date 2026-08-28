@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<73915a3928d152082e386f6385c9002d>>
+ * @generated SignedSource<<552e50864537f844e35224ea51d9b772>>
  * @lightSyntaxTransform
  */
 
@@ -19,22 +19,20 @@ export type ConversionIngestionStatusRefetchQuery = {
 };
 
 const node: ConcreteRequest = (function(){
-var v0 = [
-  {
-    "alias": null,
-    "args": null,
-    "kind": "ScalarField",
-    "name": "finishedAt",
-    "storageKey": null
-  },
-  {
-    "alias": null,
-    "args": null,
-    "kind": "ScalarField",
-    "name": "id",
-    "storageKey": null
-  }
-];
+var v0 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "finishedAt",
+  "storageKey": null
+},
+v1 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "id",
+  "storageKey": null
+};
 return {
   "fragment": {
     "argumentDefinitions": [],
@@ -134,6 +132,20 @@ return {
                 "alias": null,
                 "args": null,
                 "kind": "ScalarField",
+                "name": "windowStart",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "windowEnd",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
                 "name": "scheduledAt",
                 "storageKey": null
               },
@@ -154,7 +166,10 @@ return {
             "kind": "LinkedField",
             "name": "latestSuccess",
             "plural": false,
-            "selections": (v0/*:: as any*/),
+            "selections": [
+              (v0/*:: as any*/),
+              (v1/*:: as any*/)
+            ],
             "storageKey": null
           },
           {
@@ -164,7 +179,17 @@ return {
             "kind": "LinkedField",
             "name": "latestFailure",
             "plural": false,
-            "selections": (v0/*:: as any*/),
+            "selections": [
+              (v0/*:: as any*/),
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "errorSummary",
+                "storageKey": null
+              },
+              (v1/*:: as any*/)
+            ],
             "storageKey": null
           }
         ],
@@ -173,16 +198,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "8733cbd8674bcc35e51ee12ad6e75caf",
+    "cacheID": "d7407ac576b22b1584255eef58000964",
     "id": null,
     "metadata": {},
     "name": "ConversionIngestionStatusRefetchQuery",
     "operationKind": "query",
-    "text": "query ConversionIngestionStatusRefetchQuery {\n  ...ConversionIngestionStatus_query\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      accountIdConfigured\n      ready\n    }\n    activity {\n      state\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      id\n    }\n  }\n}\n"
+    "text": "query ConversionIngestionStatusRefetchQuery {\n  ...ConversionIngestionStatus_query\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      accountIdConfigured\n      ready\n    }\n    activity {\n      state\n      windowStart\n      windowEnd\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      errorSummary\n      id\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "085fc8c28ba2ff9b58405de344c520c4";
+(node as any).hash = "e32228e1d72e777a7fa4b39267c74083";
 
 export default node;

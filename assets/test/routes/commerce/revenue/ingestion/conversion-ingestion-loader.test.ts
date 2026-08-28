@@ -57,6 +57,42 @@ test("conversionIngestionLoader starts both preloads and returns after the overv
   await preservedRejection;
 });
 
+test("conversionIngestionLoader observes a history rejection while the overview remains pending", async () => {
+  const environment = createRelayEnvironment();
+  const overview = deferredPromise<{ __relayQuery: { operationName: string } }>();
+  const runs = deferredPromise<{ __relayQuery: { operationName: string } }>();
+  const unhandledRejections: unknown[] = [];
+  const captureUnhandledRejection = (reason: unknown) => unhandledRejections.push(reason);
+
+  preloadRouteQueryMock
+    .mockReturnValueOnce(overview.promise as never)
+    .mockReturnValueOnce(runs.promise as never);
+  const observeHistoryRejection = vi.spyOn(runs.promise, "catch");
+  process.on("unhandledRejection", captureUnhandledRejection);
+
+  try {
+    const loaderResult = conversionIngestionLoader(
+      buildLoaderArgs(
+        environment,
+        new Request("https://app.example.test/commerce/revenue/ingestion"),
+      ),
+    );
+
+    expect(observeHistoryRejection).toHaveBeenCalledTimes(1);
+    runs.reject(new Error("run history unavailable before overview"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(unhandledRejections).toEqual([]);
+
+    overview.resolve({ __relayQuery: { operationName: "ConversionIngestionRouteQuery" } });
+    const loaderData = await loaderResult;
+    if (loaderData.status !== "ready") throw new Error("Expected ready loader data");
+    await expect(loaderData.runsQuery).rejects.toThrow("run history unavailable before overview");
+  } finally {
+    process.off("unhandledRejection", captureUnhandledRejection);
+  }
+});
+
 function buildLoaderArgs(
   environment: ReturnType<typeof createRelayEnvironment>,
   request: Request,

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<43fe66d5d1dd678f79bada6627e1a872>>
+ * @generated SignedSource<<2de4c12db62c40942bace403afbc74b2>>
  * @lightSyntaxTransform
  */
 
@@ -22,22 +22,20 @@ export type ConversionIngestionRouteQuery = {
 };
 
 const node: ConcreteRequest = (function(){
-var v0 = [
-  {
-    "alias": null,
-    "args": null,
-    "kind": "ScalarField",
-    "name": "finishedAt",
-    "storageKey": null
-  },
-  {
-    "alias": null,
-    "args": null,
-    "kind": "ScalarField",
-    "name": "id",
-    "storageKey": null
-  }
-];
+var v0 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "finishedAt",
+  "storageKey": null
+},
+v1 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "id",
+  "storageKey": null
+};
 return {
   "fragment": {
     "argumentDefinitions": [],
@@ -188,6 +186,20 @@ return {
                 "alias": null,
                 "args": null,
                 "kind": "ScalarField",
+                "name": "windowStart",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "windowEnd",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
                 "name": "scheduledAt",
                 "storageKey": null
               },
@@ -208,7 +220,10 @@ return {
             "kind": "LinkedField",
             "name": "latestSuccess",
             "plural": false,
-            "selections": (v0/*:: as any*/),
+            "selections": [
+              (v0/*:: as any*/),
+              (v1/*:: as any*/)
+            ],
             "storageKey": null
           },
           {
@@ -218,7 +233,17 @@ return {
             "kind": "LinkedField",
             "name": "latestFailure",
             "plural": false,
-            "selections": (v0/*:: as any*/),
+            "selections": [
+              (v0/*:: as any*/),
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "errorSummary",
+                "storageKey": null
+              },
+              (v1/*:: as any*/)
+            ],
             "storageKey": null
           }
         ],
@@ -227,12 +252,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "f762bc2d73d82c1759c5e2595f3e51c5",
+    "cacheID": "d081495847f921bd26ab0883b5883913",
     "id": null,
     "metadata": {},
     "name": "ConversionIngestionRouteQuery",
     "operationKind": "query",
-    "text": "query ConversionIngestionRouteQuery {\n  ...ConversionIngestionStatus_query\n  cjCommissionIngestion {\n    ...ConversionIngestionSettings_ingestion\n  }\n}\n\nfragment ConversionIngestionSettings_ingestion on CJCommissionIngestion {\n  settings {\n    enabled\n    intervalMinutes\n    lookbackDays\n    maxPages\n    updatedAt\n  }\n  credentials {\n    ready\n  }\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      accountIdConfigured\n      ready\n    }\n    activity {\n      state\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      id\n    }\n  }\n}\n"
+    "text": "query ConversionIngestionRouteQuery {\n  ...ConversionIngestionStatus_query\n  cjCommissionIngestion {\n    ...ConversionIngestionSettings_ingestion\n  }\n}\n\nfragment ConversionIngestionSettings_ingestion on CJCommissionIngestion {\n  settings {\n    enabled\n    intervalMinutes\n    lookbackDays\n    maxPages\n    updatedAt\n  }\n  credentials {\n    ready\n  }\n  latestSuccess {\n    id\n  }\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      accountIdConfigured\n      ready\n    }\n    activity {\n      state\n      windowStart\n      windowEnd\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      errorSummary\n      id\n    }\n  }\n}\n"
   }
 };
 })();

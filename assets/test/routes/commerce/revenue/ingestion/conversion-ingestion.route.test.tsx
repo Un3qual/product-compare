@@ -7,6 +7,8 @@ import {
   useRefetchableFragment,
 } from "react-relay";
 import { afterEach, expect, test, vi } from "vitest";
+import type { ConversionIngestionSettings_ingestion$data } from "../../../../../src/__generated__/ConversionIngestionSettings_ingestion.graphql";
+import type { ConversionIngestionStatus_query$data } from "../../../../../src/__generated__/ConversionIngestionStatus_query.graphql";
 import { useRoutePreloadedQuery } from "../../../../../src/relay/route-preload";
 import {
   ConversionIngestionRoute,
@@ -73,58 +75,70 @@ const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRefetchableFragment = vi.mocked(useRefetchableFragment);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
-const OVERVIEW = {
-  cjCommissionIngestion: {
-    activity: {
-      attemptedAt: "2026-08-27T11:58:00Z",
-      scheduledAt: "2026-08-27T12:05:00Z",
-      state: "EXECUTING",
-      windowEnd: "2026-08-27T12:00:00Z",
-      windowStart: "2026-08-20T12:00:00Z",
-    },
-    credentials: { accountIdConfigured: true, apiTokenConfigured: true, ready: true },
-    latestFailure: {
-      cursor: "cursor-1",
-      errorSummary: "Provider timed out after the bounded request window.",
-      finishedAt: "2026-08-26T12:05:00Z",
-      id: "run-failure",
-      pagesFetched: 3,
-      recordsFailed: 1,
-      recordsFetched: 20,
-      recordsPersisted: 19,
-      requesterEmail: "operator@example.test",
-      startedAt: "2026-08-26T12:00:00Z",
-      status: "FAILED",
-      trigger: "SCHEDULED",
-      windowEnd: "2026-08-26T12:00:00Z",
-      windowStart: "2026-08-19T12:00:00Z",
-    },
-    latestSuccess: {
-      cursor: "cursor-0",
-      errorSummary: null,
-      finishedAt: "2026-08-26T10:15:00Z",
-      id: "run-success",
-      pagesFetched: 4,
-      recordsFailed: 0,
-      recordsFetched: 20,
-      recordsPersisted: 20,
-      requesterEmail: "operator@example.test",
-      startedAt: "2026-08-26T10:00:00Z",
-      status: "SUCCEEDED",
-      trigger: "OPERATOR",
-      windowEnd: "2026-08-26T10:00:00Z",
-      windowStart: "2026-08-19T10:00:00Z",
-    },
-    settings: {
-      enabled: true,
-      intervalMinutes: 1440,
-      lookbackDays: 90,
-      maxPages: 100,
-      nextRunAt: "2026-08-28T10:15:00Z",
-      updatedAt: "2026-08-26T10:20:00Z",
-      updatedByEmail: "operator@example.test",
-    },
+type IngestionFixture = Omit<
+  ConversionIngestionStatus_query$data,
+  " $fragmentType"
+>["cjCommissionIngestion"] &
+  Omit<ConversionIngestionSettings_ingestion$data, " $fragmentType">;
+
+const INGESTION = {
+  activity: {
+    attemptedAt: "2026-08-27T11:58:00Z",
+    scheduledAt: "2026-08-27T12:05:00Z",
+    state: "EXECUTING",
+    windowEnd: "2026-08-27T12:00:00Z",
+    windowStart: "2026-08-20T12:00:00Z",
   },
+  credentials: { accountIdConfigured: true, apiTokenConfigured: true, ready: true },
+  latestFailure: {
+    errorSummary: "Provider timed out after the bounded request window.",
+    finishedAt: "2026-08-26T12:05:00Z",
+  },
+  latestSuccess: { finishedAt: "2026-08-26T10:15:00Z", id: "run-success" },
+  settings: {
+    enabled: true,
+    intervalMinutes: 1440,
+    lookbackDays: 90,
+    maxPages: 100,
+    nextRunAt: "2026-08-28T10:15:00Z",
+    updatedAt: "2026-08-26T10:20:00Z",
+  },
+} satisfies IngestionFixture;
+
+const OVERVIEW = { cjCommissionIngestion: INGESTION };
+
+const LATEST_FAILURE_RUN = {
+  cursor: "cursor-1",
+  errorSummary: "Provider timed out after the bounded request window.",
+  finishedAt: "2026-08-26T12:05:00Z",
+  id: "run-failure",
+  pagesFetched: 3,
+  recordsFailed: 1,
+  recordsFetched: 20,
+  recordsPersisted: 19,
+  requesterEmail: "operator@example.test",
+  startedAt: "2026-08-26T12:00:00Z",
+  status: "FAILED",
+  trigger: "SCHEDULED",
+  windowEnd: "2026-08-26T12:00:00Z",
+  windowStart: "2026-08-19T12:00:00Z",
+};
+
+const LATEST_SUCCESS_RUN = {
+  cursor: "cursor-0",
+  errorSummary: null,
+  finishedAt: "2026-08-26T10:15:00Z",
+  id: "run-success",
+  pagesFetched: 4,
+  recordsFailed: 0,
+  recordsFetched: 20,
+  recordsPersisted: 20,
+  requesterEmail: "operator@example.test",
+  startedAt: "2026-08-26T10:00:00Z",
+  status: "SUCCEEDED",
+  trigger: "OPERATOR",
+  windowEnd: "2026-08-26T10:00:00Z",
+  windowStart: "2026-08-19T10:00:00Z",
 };
 
 beforeEach(() => {
@@ -146,8 +160,8 @@ beforeEach(() => {
     data: {
       cjCommissionSyncRuns: {
         edges: [
-          { cursor: "cursor-1", node: OVERVIEW.cjCommissionIngestion.latestFailure },
-          { cursor: "cursor-0", node: OVERVIEW.cjCommissionIngestion.latestSuccess },
+          { cursor: "cursor-1", node: LATEST_FAILURE_RUN },
+          { cursor: "cursor-0", node: LATEST_SUCCESS_RUN },
         ],
         pageInfo: { endCursor: "cursor-0", hasNextPage: false },
       },
@@ -163,15 +177,31 @@ afterEach(() => {
   Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
 });
 
-test("conversion ingestion presents an operator status band, bounded settings, and run ledger", async () => {
+test("conversion ingestion presents current activity timing, safe failure evidence, bounded settings, and a run ledger", async () => {
   renderConversionIngestionRoute();
 
+  const status = screen.getByRole("region", { name: "Ingestion status" });
   expect(screen.getByRole("heading", { name: "Conversion ingestion" })).toBeVisible();
   expect(screen.getByRole("link", { name: "Revenue reporting" })).toHaveAttribute(
     "href",
     "/commerce/revenue",
   );
-  expect(screen.getByRole("region", { name: "Ingestion status" })).toHaveTextContent("Next run");
+  expect(status).toHaveTextContent("Next run");
+  expect(status).toHaveTextContent("Window");
+  expect(status).toHaveTextContent("Latest failure");
+  expect(status).toHaveTextContent("Provider timed out after the bounded request window.");
+  expect(within(status).getByText("Aug 27, 2026, 11:58 AM")).toHaveAttribute(
+    "dateTime",
+    "2026-08-27T11:58:00Z",
+  );
+  expect(within(status).getByText("Aug 20, 2026, 12:00 PM")).toHaveAttribute(
+    "dateTime",
+    "2026-08-20T12:00:00Z",
+  );
+  expect(within(status).getByText("Aug 26, 2026, 12:05 PM")).toHaveAttribute(
+    "dateTime",
+    "2026-08-26T12:05:00Z",
+  );
   expect(screen.getByRole("form", { name: "Ingestion settings" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Run now" })).toBeEnabled();
   expect(await screen.findByRole("table", { name: "Conversion sync runs" })).toBeVisible();
@@ -189,7 +219,9 @@ test("conversion ingestion focuses an invalid setting and retains bounded run-fa
   expect(interval).toHaveFocus();
   expect(screen.getByRole("alert")).toHaveTextContent("Interval must be between 15 and 10080");
   fireEvent.click(await screen.findByRole("button", { name: "Show failure details" }));
-  expect(screen.getByText("Provider timed out after the bounded request window.")).toBeVisible();
+  expect(screen.getAllByText("Provider timed out after the bounded request window.")).toHaveLength(
+    2,
+  );
 });
 
 test("active ingestion refetches its overview once per visible ten-second interval", () => {
@@ -201,7 +233,7 @@ test("active ingestion refetches its overview once per visible ten-second interv
   expect(refetchMock).toHaveBeenCalledWith({}, { fetchPolicy: "network-only" });
 });
 
-test("settings submit preserves exact bounded values, disables while pending, and refreshes on success", async () => {
+test("settings submit preserves exact bounded values, disables while pending, and refreshes only the overview on success", async () => {
   renderConversionIngestionRoute();
 
   const settings = screen.getByRole("form", { name: "Ingestion settings" });
@@ -227,7 +259,8 @@ test("settings submit preserves exact bounded values, disables while pending, an
   });
 
   expect(await screen.findByRole("status")).toHaveTextContent("Settings saved.");
-  expect(revalidateMock).toHaveBeenCalledTimes(1);
+  expect(refetchMock).toHaveBeenCalledWith({}, { fetchPolicy: "network-only" });
+  expect(revalidateMock).not.toHaveBeenCalled();
 });
 
 test("settings surface payload failures inline and focus the rejected field", async () => {
@@ -250,19 +283,18 @@ test("settings surface payload failures inline and focus the rejected field", as
 });
 
 test("run now is credentials-gated and deduplicates while its mutation is pending", async () => {
-  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => {
-    const ingestion = fragmentRef as unknown as typeof OVERVIEW.cjCommissionIngestion;
-    return { ...ingestion, credentials: { ...ingestion.credentials, ready: false } } as never;
-  });
-  renderConversionIngestionRoute();
+  mockSettingsIngestion({ ...INGESTION, credentials: { ...INGESTION.credentials, ready: false } });
+  const gatedView = renderConversionIngestionRoute();
 
   const runNow = screen.getByRole("button", { name: "Run now" });
   expect(runNow).toBeDisabled();
   expect(screen.getByText("Credentials are required to run an import.")).toBeVisible();
+  await screen.findByRole("table", { name: "Conversion sync runs" });
+  gatedView.unmount();
 
   mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   renderConversionIngestionRoute();
-  const enabledRunNow = screen.getAllByRole("button", { name: "Run now" })[1];
+  const enabledRunNow = screen.getByRole("button", { name: "Run now" });
   fireEvent.click(enabledRunNow);
   fireEvent.click(enabledRunNow);
 
@@ -270,7 +302,7 @@ test("run now is credentials-gated and deduplicates while its mutation is pendin
   expect(enabledRunNow).toBeDisabled();
 });
 
-test("run now refreshes after success and reports a sanitized payload error", async () => {
+test("run now refreshes only the overview after success and reports a sanitized payload error", async () => {
   renderConversionIngestionRoute();
 
   fireEvent.click(screen.getByRole("button", { name: "Run now" }));
@@ -281,7 +313,10 @@ test("run now refreshes after success and reports a sanitized payload error", as
       ingestion: { activity: { state: "SCHEDULED" } },
     },
   });
-  await waitFor(() => expect(revalidateMock).toHaveBeenCalledTimes(1));
+  await waitFor(() =>
+    expect(refetchMock).toHaveBeenCalledWith({}, { fetchPolicy: "network-only" }),
+  );
+  expect(revalidateMock).not.toHaveBeenCalled();
 
   fireEvent.click(screen.getByRole("button", { name: "Run now" }));
   await waitFor(() => expect(commitMutationMock).toHaveBeenCalledTimes(2));
@@ -293,7 +328,75 @@ test("run now refreshes after success and reports a sanitized payload error", as
   });
 
   expect(await screen.findByRole("alert")).toHaveTextContent("A run is already queued.");
-  expect(revalidateMock).toHaveBeenCalledTimes(1);
+  expect(revalidateMock).not.toHaveBeenCalled();
+});
+
+test("disabled schedules cannot be activated when credentials are missing", () => {
+  mockSettingsIngestion({
+    ...INGESTION,
+    credentials: { ...INGESTION.credentials, ready: false },
+    settings: { ...INGESTION.settings, enabled: false },
+  });
+  renderConversionIngestionRoute();
+
+  expect(screen.getByRole("checkbox", { name: "Enable scheduled ingestion" })).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
+  expect(
+    screen.getByText("Credentials must be configured before this schedule can run."),
+  ).toBeVisible();
+});
+
+test("disabled schedules cannot be activated before a successful CJ run", () => {
+  mockSettingsIngestion({
+    ...INGESTION,
+    latestSuccess: null,
+    settings: { ...INGESTION.settings, enabled: false },
+  });
+  renderConversionIngestionRoute();
+
+  expect(screen.getByRole("checkbox", { name: "Enable scheduled ingestion" })).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
+  expect(
+    screen.getByText("A successful CJ run is required before scheduled ingestion can be enabled."),
+  ).toBeVisible();
+});
+
+test("ready schedules can be activated after credentials and a successful CJ run", () => {
+  mockSettingsIngestion({
+    ...INGESTION,
+    settings: { ...INGESTION.settings, enabled: false },
+  });
+  renderConversionIngestionRoute();
+
+  expect(screen.getByRole("checkbox", { name: "Enable scheduled ingestion" })).toBeEnabled();
+});
+
+test("enabled schedules can always be disabled even when their credentials or success history are unavailable", async () => {
+  mockSettingsIngestion({
+    ...INGESTION,
+    credentials: { ...INGESTION.credentials, ready: false },
+    latestSuccess: null,
+  });
+  renderConversionIngestionRoute();
+
+  const checkbox = screen.getByRole("checkbox", { name: "Enable scheduled ingestion" });
+  expect(checkbox).toBeEnabled();
+  fireEvent.click(checkbox);
+  fireEvent.click(screen.getByRole("button", { name: "Save settings" }));
+
+  await waitFor(() =>
+    expect(commitMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: {
+          input: { enabled: false, intervalMinutes: 1440, lookbackDays: 90, maxPages: 100 },
+        },
+      }),
+    ),
+  );
 });
 
 test("the deferred ledger keeps status and settings usable after history loading fails", async () => {
@@ -417,7 +520,11 @@ function deferredPromise<T>() {
 
 function withActivity(state: "AVAILABLE" | "EXECUTING") {
   return {
-    ...OVERVIEW.cjCommissionIngestion,
-    activity: { ...OVERVIEW.cjCommissionIngestion.activity, state },
+    ...INGESTION,
+    activity: { ...INGESTION.activity, state },
   };
+}
+
+function mockSettingsIngestion(ingestion: IngestionFixture) {
+  mockedUseFragment.mockReturnValue(ingestion as never);
 }

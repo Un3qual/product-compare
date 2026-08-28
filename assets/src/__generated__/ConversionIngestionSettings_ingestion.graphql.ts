@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a932103e25f64ad2c41239ed6e54165d>>
+ * @generated SignedSource<<128aa9e4bf5972957078cf27f94741cb>>
  * @lightSyntaxTransform
  */
 
@@ -13,6 +13,9 @@ export type ConversionIngestionSettings_ingestion$data = {
   readonly credentials: {
     readonly ready: boolean;
   };
+  readonly latestSuccess: {
+    readonly id: string;
+  } | null;
   readonly settings: {
     readonly enabled: boolean;
     readonly intervalMinutes: number;
@@ -96,12 +99,30 @@ const node: ReaderFragment = {
         }
       ],
       "storageKey": null
+    },
+    {
+      "alias": null,
+      "args": null,
+      "concreteType": "CJCommissionSyncRun",
+      "kind": "LinkedField",
+      "name": "latestSuccess",
+      "plural": false,
+      "selections": [
+        {
+          "alias": null,
+          "args": null,
+          "kind": "ScalarField",
+          "name": "id",
+          "storageKey": null
+        }
+      ],
+      "storageKey": null
     }
   ],
   "type": "CJCommissionIngestion",
   "abstractKey": null
 };
 
-(node as any).hash = "7e900214a9e9e6b9f13076d254e7695f";
+(node as any).hash = "2b554b33dd9391b0cee23baf46623a78";
 
 export default node;

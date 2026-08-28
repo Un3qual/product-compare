@@ -32,6 +32,9 @@ const settingsFragment = graphql`
     credentials {
       ready
     }
+    latestSuccess {
+      id
+    }
   }
 `;
 
@@ -67,10 +70,10 @@ const styles = create({
 
 export function ConversionIngestionSettings({
   ingestion,
-  onRefresh,
+  onOverviewRefresh,
 }: {
   ingestion: ConversionIngestionSettings_ingestion$key;
-  onRefresh: () => void;
+  onOverviewRefresh: () => void;
 }) {
   const data = useFragment(settingsFragment, ingestion);
   const [commitUpdate] = useMutation<UpdateCJCommissionIngestionSettingsMutation>(
@@ -82,6 +85,8 @@ export function ConversionIngestionSettings({
   >(null);
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+  const canActivateSchedule = data.credentials.ready && data.latestSuccess !== null;
+  const activationBlocked = !data.settings.enabled && !canActivateSchedule;
 
   useEffect(() => {
     if (!focusField || pending) return;
@@ -104,6 +109,11 @@ export function ConversionIngestionSettings({
       } else {
         setError(DEFAULT_MUTATION_ERROR_MESSAGE);
       }
+      return;
+    }
+
+    if (!data.settings.enabled && variables.input.enabled && !canActivateSchedule) {
+      setError(scheduleActivationMessage(data.credentials.ready));
       return;
     }
 
@@ -130,7 +140,7 @@ export function ConversionIngestionSettings({
       }
 
       setSuccess("Settings saved.");
-      onRefresh();
+      onOverviewRefresh();
     } catch {
       setError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
@@ -152,12 +162,21 @@ export function ConversionIngestionSettings({
         </p>
       </header>
       <label {...props(styles.toggle)}>
-        <Checkbox defaultChecked={data.settings.enabled} disabled={pending} name="enabled" />
+        <Checkbox
+          defaultChecked={data.settings.enabled}
+          disabled={pending || activationBlocked}
+          name="enabled"
+        />
         <span>Enable scheduled ingestion</span>
       </label>
-      {!data.credentials.ready ? (
+      {!data.credentials.ready && !data.settings.enabled ? (
         <p role="status" {...props(styles.hint)}>
           Credentials must be configured before this schedule can run.
+        </p>
+      ) : null}
+      {data.credentials.ready && !data.latestSuccess && !data.settings.enabled ? (
+        <p role="status" {...props(styles.hint)}>
+          A successful CJ run is required before scheduled ingestion can be enabled.
         </p>
       ) : null}
       <div {...props(styles.fields)}>
@@ -207,10 +226,10 @@ export function ConversionIngestionSettings({
 
 export function RunNowControl({
   ingestion,
-  onRefresh,
+  onOverviewRefresh,
 }: {
   ingestion: ConversionIngestionSettings_ingestion$key;
-  onRefresh: () => void;
+  onOverviewRefresh: () => void;
 }) {
   const data = useFragment(settingsFragment, ingestion);
   const [commitRunNow] = useMutation<RunCJCommissionIngestionNowMutation>(
@@ -235,7 +254,7 @@ export function RunNowControl({
         setError(outcome.message);
         return;
       }
-      onRefresh();
+      onOverviewRefresh();
     } catch {
       setError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
@@ -307,4 +326,10 @@ function NumberField({
 
 function focusSetting(field: "intervalMinutes" | "lookbackDays" | "maxPages") {
   document.getElementById(`${field}-input`)?.focus();
+}
+
+function scheduleActivationMessage(credentialsReady: boolean) {
+  return credentialsReady
+    ? "A successful CJ run is required before scheduled ingestion can be enabled."
+    : "Credentials must be configured before this schedule can run.";
 }

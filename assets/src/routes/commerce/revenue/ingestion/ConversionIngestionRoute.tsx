@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import {
   Await,
   Link,
@@ -21,7 +21,10 @@ import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { ConversionIngestionSettings, RunNowControl } from "./ConversionIngestionSettings";
-import { ConversionIngestionStatus } from "./ConversionIngestionStatus";
+import {
+  ConversionIngestionStatus,
+  useConversionIngestionStatus,
+} from "./ConversionIngestionStatus";
 import { ConversionSyncRunLedger } from "./ConversionSyncRunLedger";
 import { SYNC_RUN_PAGE_SIZE } from "./conversion-ingestion-data";
 
@@ -68,11 +71,11 @@ export async function conversionIngestionLoader({
     { after, first: SYNC_RUN_PAGE_SIZE },
     { signal: request.signal },
   );
+  void runsQuery.catch(() => undefined);
 
   try {
     return { status: "ready", overviewQuery: await overviewPromise, runsQuery };
   } catch (reason) {
-    void runsQuery.catch(() => undefined);
     return recoverRouteLoaderError<ConversionIngestionLoaderData>(
       reason,
       "Failed to preload conversion ingestion overview.",
@@ -122,16 +125,29 @@ function ConversionIngestionPanel({
     queryRef,
   );
   const { revalidate } = useRevalidator();
+  const [statusData, refetchOverview] = useConversionIngestionStatus(data);
+  const refreshOverview = useCallback(() => {
+    refetchOverview({}, { fetchPolicy: "network-only" });
+  }, [refetchOverview]);
 
   return (
     <PageShell
-      actions={<RunNowControl ingestion={data.cjCommissionIngestion} onRefresh={revalidate} />}
+      actions={
+        <RunNowControl ingestion={data.cjCommissionIngestion} onOverviewRefresh={refreshOverview} />
+      }
       description={<ConversionIngestionDescription />}
       eyebrow="Commerce operations"
       title="Conversion ingestion"
     >
-      <ConversionIngestionStatus query={data} />
-      <ConversionIngestionSettings ingestion={data.cjCommissionIngestion} onRefresh={revalidate} />
+      <ConversionIngestionStatus
+        ingestion={statusData.cjCommissionIngestion}
+        onOverviewRefresh={refreshOverview}
+        onTerminal={revalidate}
+      />
+      <ConversionIngestionSettings
+        ingestion={data.cjCommissionIngestion}
+        onOverviewRefresh={refreshOverview}
+      />
       <DeferredRunLedger query={loaderData.runsQuery} />
     </PageShell>
   );

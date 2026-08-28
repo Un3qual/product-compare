@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { graphql, useRefetchableFragment } from "react-relay";
-import { useRevalidator } from "react-router-dom";
 import type { ConversionIngestionStatus_query$key } from "$generated/ConversionIngestionStatus_query.graphql";
 import type { ConversionIngestionStatus_query$data } from "$generated/ConversionIngestionStatus_query.graphql";
 import type { ConversionIngestionStatusRefetchQuery } from "$generated/ConversionIngestionStatusRefetchQuery.graphql";
@@ -10,7 +9,7 @@ import { StatusBadge, type StatusTone } from "$ui/components/status/StatusBadge"
 import { tokens } from "$ui/theme/tokens.stylex";
 import { formatIngestionFreshness } from "./conversion-ingestion-data";
 
-const conversionIngestionStatusQuery = graphql`
+export const conversionIngestionStatusQuery = graphql`
   fragment ConversionIngestionStatus_query on RootQueryType
   @refetchable(queryName: "ConversionIngestionStatusRefetchQuery") {
     cjCommissionIngestion {
@@ -24,6 +23,8 @@ const conversionIngestionStatusQuery = graphql`
       }
       activity {
         state
+        windowStart
+        windowEnd
         scheduledAt
         attemptedAt
       }
@@ -32,6 +33,7 @@ const conversionIngestionStatusQuery = graphql`
       }
       latestFailure {
         finishedAt
+        errorSummary
       }
     }
   }
@@ -51,6 +53,7 @@ const styles = create({
     paddingBlock: "1rem",
   },
   item: { display: "grid", gap: "0.3rem", minWidth: 0 },
+  wideItem: { gridColumn: "1 / -1" },
   label: {
     color: tokens.textSecondary,
     fontFamily: tokens.fontMono,
@@ -64,27 +67,36 @@ const styles = create({
   detail: { color: tokens.textSecondary, fontSize: "0.8rem", margin: 0 },
 });
 
-export function ConversionIngestionStatus({
-  query,
-}: {
-  query: ConversionIngestionStatus_query$key;
-}) {
-  const [{ cjCommissionIngestion }, refetch] = useRefetchableFragment<
+export function useConversionIngestionStatus(query: ConversionIngestionStatus_query$key) {
+  return useRefetchableFragment<
     ConversionIngestionStatusRefetchQuery,
     ConversionIngestionStatus_query$key
   >(conversionIngestionStatusQuery, query);
-  const { revalidate } = useRevalidator();
+}
+
+type IngestionStatus = ConversionIngestionStatus_query$data["cjCommissionIngestion"];
+type ActivityState = NonNullable<IngestionStatus["activity"]>["state"] | null;
+
+export function ConversionIngestionStatus({
+  ingestion,
+  onOverviewRefresh,
+  onTerminal,
+}: {
+  ingestion: IngestionStatus;
+  onOverviewRefresh: () => void;
+  onTerminal: () => void;
+}) {
+  const activityState = ingestion.activity?.state ?? null;
+  const activityIsActive = activityState === "SCHEDULED" || activityState === "EXECUTING";
   const [isVisible, setIsVisible] = useState(
     () => typeof document === "undefined" || document.visibilityState === "visible",
   );
-  const refetchRef = useRef(refetch);
-  const revalidateRef = useRef(revalidate);
+  const onOverviewRefreshRef = useRef(onOverviewRefresh);
+  const onTerminalRef = useRef(onTerminal);
   const wasActiveRef = useRef(false);
-  const activityState = cjCommissionIngestion.activity?.state ?? null;
-  const activityIsActive = activityState === "SCHEDULED" || activityState === "EXECUTING";
 
-  refetchRef.current = refetch;
-  revalidateRef.current = revalidate;
+  onOverviewRefreshRef.current = onOverviewRefresh;
+  onTerminalRef.current = onTerminal;
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -98,7 +110,7 @@ export function ConversionIngestionStatus({
     if (!activityIsActive || !isVisible) return;
 
     const timer = window.setInterval(() => {
-      refetchRef.current({}, { fetchPolicy: "network-only" });
+      onOverviewRefreshRef.current();
     }, 10_000);
 
     return () => window.clearInterval(timer);
@@ -106,20 +118,22 @@ export function ConversionIngestionStatus({
 
   useEffect(() => {
     if (wasActiveRef.current && !activityIsActive) {
-      revalidateRef.current();
+      onTerminalRef.current();
     }
     wasActiveRef.current = activityIsActive;
   }, [activityIsActive, activityState]);
 
-  const credentialsLabel = cjCommissionIngestion.credentials.ready
+  const credentialsLabel = ingestion.credentials.ready
     ? "Credentials configured"
     : "Credentials missing";
-  const nextRunAt = cjCommissionIngestion.settings.nextRunAt;
-  const latestSuccess = cjCommissionIngestion.latestSuccess?.finishedAt;
+  const nextRunAt = ingestion.settings.nextRunAt;
+  const latestSuccess = ingestion.latestSuccess?.finishedAt;
+  const latestFailure = ingestion.latestFailure;
 
   return (
     <section aria-label="Ingestion status" {...props(styles.band)}>
       <StatusItem
+        detail={<ActivityTiming activity={ingestion.activity} />}
         label="Activity"
         value={
           <StatusBadge tone={activityTone(activityState)}>
@@ -128,7 +142,7 @@ export function ConversionIngestionStatus({
         }
       />
       <StatusItem
-        detail={credentialDetail(cjCommissionIngestion.credentials)}
+        detail={credentialDetail(ingestion.credentials)}
         label="Credentials"
         value={credentialsLabel}
       />
@@ -154,7 +168,56 @@ export function ConversionIngestionStatus({
           )
         }
       />
+      {latestFailure ? (
+        <StatusItem
+          detail={latestFailure.errorSummary ?? "Failure recorded without a safe provider summary."}
+          label="Latest failure"
+          value={
+            latestFailure.finishedAt ? (
+              <time dateTime={latestFailure.finishedAt}>
+                {formatProductDateTimeLabel(latestFailure.finishedAt)}
+              </time>
+            ) : (
+              "Failure in progress"
+            )
+          }
+          wide
+        />
+      ) : null}
     </section>
+  );
+}
+
+function ActivityTiming({ activity }: { activity: IngestionStatus["activity"] }) {
+  if (!activity) return "No run is currently scheduled or running.";
+
+  const timing = activity.attemptedAt ?? activity.scheduledAt;
+  if (!activity.windowStart || !activity.windowEnd) {
+    return timing ? (
+      <>
+        {activity.attemptedAt ? "Started " : "Scheduled "}
+        <time dateTime={timing}>{formatProductDateTimeLabel(timing)}</time>
+      </>
+    ) : (
+      "Timing is not available."
+    );
+  }
+
+  return (
+    <>
+      {timing ? (
+        <>
+          {activity.attemptedAt ? "Started " : "Scheduled "}
+          <time dateTime={timing}>{formatProductDateTimeLabel(timing)}</time> ·{" "}
+        </>
+      ) : null}
+      Window{" "}
+      <time dateTime={activity.windowStart}>
+        {formatProductDateTimeLabel(activity.windowStart)}
+      </time>
+      {" – "}
+      <time dateTime={activity.windowEnd}>{formatProductDateTimeLabel(activity.windowEnd)}</time>
+    </>
   );
 }
 
@@ -162,13 +225,15 @@ function StatusItem({
   detail,
   label,
   value,
+  wide = false,
 }: {
-  detail?: string;
+  detail?: ReactNode;
   label: string;
   value: ReactNode;
+  wide?: boolean;
 }) {
   return (
-    <div {...props(styles.item)}>
+    <div {...props(styles.item, wide ? styles.wideItem : null)}>
       <p {...props(styles.label)}>{label}</p>
       <div {...props(styles.value)}>{value}</div>
       {detail ? <p {...props(styles.detail)}>{detail}</p> : null}
@@ -176,13 +241,7 @@ function StatusItem({
   );
 }
 
-function activityLabel(
-  state: ConversionIngestionStatus_query$data["cjCommissionIngestion"]["activity"] extends infer Activity
-    ? Activity extends { readonly state: infer State }
-      ? State
-      : null
-    : null,
-) {
+function activityLabel(state: ActivityState) {
   if (state === "EXECUTING") return "Running";
   if (state === "SCHEDULED") return "Queued";
   if (state === "RETRYABLE") return "Retryable";
@@ -190,22 +249,14 @@ function activityLabel(
   return "Available";
 }
 
-function activityTone(
-  state: ConversionIngestionStatus_query$data["cjCommissionIngestion"]["activity"] extends infer Activity
-    ? Activity extends { readonly state: infer State }
-      ? State
-      : null
-    : null,
-): StatusTone {
+function activityTone(state: ActivityState): StatusTone {
   if (state === "EXECUTING") return "accent";
   if (state === "SCHEDULED" || state === "RETRYABLE") return "warning";
   if (state === "SUSPENDED") return "neutral";
   return "positive";
 }
 
-function credentialDetail(
-  credentials: ConversionIngestionStatus_query$data["cjCommissionIngestion"]["credentials"],
-) {
+function credentialDetail(credentials: IngestionStatus["credentials"]) {
   if (credentials.accountIdConfigured && credentials.apiTokenConfigured) {
     return "Account ID and API token are configured.";
   }

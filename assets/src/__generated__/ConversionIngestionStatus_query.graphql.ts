@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<46ad3f2ddf0f31be100d425791055066>>
+ * @generated SignedSource<<f478805cb9b7898e93cbdf36509413e2>>
  * @lightSyntaxTransform
  */
 
@@ -16,6 +16,8 @@ export type ConversionIngestionStatus_query$data = {
       readonly attemptedAt: string | null;
       readonly scheduledAt: string | null;
       readonly state: CJCommissionIngestionActivityState;
+      readonly windowEnd: string | null;
+      readonly windowStart: string | null;
     } | null;
     readonly credentials: {
       readonly accountIdConfigured: boolean;
@@ -23,6 +25,7 @@ export type ConversionIngestionStatus_query$data = {
       readonly ready: boolean;
     };
     readonly latestFailure: {
+      readonly errorSummary: string | null;
       readonly finishedAt: string | null;
     } | null;
     readonly latestSuccess: {
@@ -42,15 +45,13 @@ export type ConversionIngestionStatus_query$key = {
 import ConversionIngestionStatusRefetchQuery_graphql from './ConversionIngestionStatusRefetchQuery.graphql';
 
 const node: ReaderFragment = (function(){
-var v0 = [
-  {
-    "alias": null,
-    "args": null,
-    "kind": "ScalarField",
-    "name": "finishedAt",
-    "storageKey": null
-  }
-];
+var v0 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "finishedAt",
+  "storageKey": null
+};
 return {
   "argumentDefinitions": [],
   "kind": "Fragment",
@@ -140,6 +141,20 @@ return {
               "alias": null,
               "args": null,
               "kind": "ScalarField",
+              "name": "windowStart",
+              "storageKey": null
+            },
+            {
+              "alias": null,
+              "args": null,
+              "kind": "ScalarField",
+              "name": "windowEnd",
+              "storageKey": null
+            },
+            {
+              "alias": null,
+              "args": null,
+              "kind": "ScalarField",
               "name": "scheduledAt",
               "storageKey": null
             },
@@ -160,7 +175,9 @@ return {
           "kind": "LinkedField",
           "name": "latestSuccess",
           "plural": false,
-          "selections": (v0/*:: as any*/),
+          "selections": [
+            (v0/*:: as any*/)
+          ],
           "storageKey": null
         },
         {
@@ -170,7 +187,16 @@ return {
           "kind": "LinkedField",
           "name": "latestFailure",
           "plural": false,
-          "selections": (v0/*:: as any*/),
+          "selections": [
+            (v0/*:: as any*/),
+            {
+              "alias": null,
+              "args": null,
+              "kind": "ScalarField",
+              "name": "errorSummary",
+              "storageKey": null
+            }
+          ],
           "storageKey": null
         }
       ],
@@ -182,6 +208,6 @@ return {
 };
 })();
 
-(node as any).hash = "085fc8c28ba2ff9b58405de344c520c4";
+(node as any).hash = "e32228e1d72e777a7fa4b39267c74083";
 
 export default node;
