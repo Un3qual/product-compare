@@ -502,7 +502,14 @@ test("conversion ingestion history failure recovers without hiding status or set
   page,
 }) => {
   let historyAttempts = 0;
+  let overviewAttempts = 0;
   const responders = operatorResponders();
+  responders.set("ConversionIngestionRouteQuery", () => {
+    overviewAttempts += 1;
+    return overviewAttempts === 1
+      ? { data: conversionIngestionOverviewData() }
+      : { errors: [{ message: "Overview must not reload for history retry" }] };
+  });
   responders.set("ConversionSyncRunsQuery", () => {
     historyAttempts += 1;
     return historyAttempts === 1
@@ -524,6 +531,7 @@ test("conversion ingestion history failure recovers without hiding status or set
   await expect(status).toBeVisible();
   await expect(settings).toBeVisible();
   expect(historyAttempts).toBe(2);
+  expect(overviewAttempts).toBe(1);
 });
 
 async function expectOperatorSurface(page: Page, viewportWidth: number) {

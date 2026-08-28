@@ -15,7 +15,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImportRequest do
           publisher_ids: [String.t()],
           from: DateTime.t(),
           before: DateTime.t(),
-          max_pages: pos_integer(),
+          max_pages: 1..100,
           trigger: :scheduled | :operator | :cli,
           requested_by_user_id: pos_integer() | nil
         }

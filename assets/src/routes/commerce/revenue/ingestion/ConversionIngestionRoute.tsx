@@ -6,7 +6,7 @@ import {
   useRevalidator,
   type LoaderFunctionArgs,
 } from "react-router-dom";
-import { graphql, usePreloadedQuery } from "react-relay";
+import { graphql, usePreloadedQuery, useRelayEnvironment } from "react-relay";
 import type { ConversionIngestionRouteQuery } from "$generated/ConversionIngestionRouteQuery.graphql";
 import type { ConversionSyncRunsQuery } from "$generated/ConversionSyncRunsQuery.graphql";
 import {
@@ -51,6 +51,7 @@ export type ConversionIngestionLoaderData =
       status: "ready";
       overviewQuery: RelayRouteQueryDescriptor<ConversionIngestionRouteQuery["variables"]>;
       runsQuery: Promise<RelayRouteQueryDescriptor<ConversionSyncRunsQuery["variables"]>>;
+      runsVariables: ConversionSyncRunsQuery["variables"];
     }
   | { status: "error" };
 
@@ -60,6 +61,7 @@ export async function conversionIngestionLoader({
 }: LoaderFunctionArgs): Promise<ConversionIngestionLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const after = new URL(request.url).searchParams.get("after");
+  const runsVariables = { after, first: SYNC_RUN_PAGE_SIZE };
   const overviewPromise = preloadRouteQuery<ConversionIngestionRouteQuery>(
     environment,
     conversionIngestionRouteQuery,
@@ -69,13 +71,13 @@ export async function conversionIngestionLoader({
   const runsQuery = preloadRouteQuery<ConversionSyncRunsQuery>(
     environment,
     conversionSyncRunsQuery,
-    { after, first: SYNC_RUN_PAGE_SIZE },
+    runsVariables,
     { signal: request.signal },
   );
   void runsQuery.catch(() => undefined);
 
   try {
-    return { status: "ready", overviewQuery: await overviewPromise, runsQuery };
+    return { status: "ready", overviewQuery: await overviewPromise, runsQuery, runsVariables };
   } catch (reason) {
     return recoverRouteLoaderError<ConversionIngestionLoaderData>(
       reason,
@@ -149,21 +151,34 @@ function ConversionIngestionPanel({
         ingestion={data.cjCommissionIngestion}
         onOverviewRefresh={refreshOverview}
       />
-      <DeferredRunLedger onRetry={revalidate} query={loaderData.runsQuery} />
+      <DeferredRunLedger query={loaderData.runsQuery} variables={loaderData.runsVariables} />
     </PageShell>
   );
 }
 
 function DeferredRunLedger({
-  onRetry,
   query,
+  variables,
 }: {
-  onRetry: () => void;
   query: Extract<ConversionIngestionLoaderData, { status: "ready" }>["runsQuery"];
+  variables: Extract<ConversionIngestionLoaderData, { status: "ready" }>["runsVariables"];
 }) {
+  const environment = useRelayEnvironment();
   const [isHydrated, setIsHydrated] = useState(false);
+  const [runsQuery, setRunsQuery] = useState(query);
 
   useEffect(() => setIsHydrated(true), []);
+  useEffect(() => setRunsQuery(query), [query]);
+
+  const retryHistory = useCallback(() => {
+    const nextQuery = preloadRouteQuery<ConversionSyncRunsQuery>(
+      environment,
+      conversionSyncRunsQuery,
+      variables,
+    );
+    void nextQuery.catch(() => undefined);
+    setRunsQuery(nextQuery);
+  }, [environment, variables.after, variables.first]);
 
   if (!isHydrated) {
     return <FeedbackState kind="loading" title="Loading conversion sync runs..." />;
@@ -172,10 +187,10 @@ function DeferredRunLedger({
   return (
     <Suspense fallback={<FeedbackState kind="loading" title="Loading conversion sync runs..." />}>
       <Await
-        resolve={query}
+        resolve={runsQuery}
         errorElement={
           <FeedbackState
-            action={<Button onClick={onRetry}>Retry conversion sync runs</Button>}
+            action={<Button onClick={retryHistory}>Retry conversion sync runs</Button>}
             kind="error"
             title="Conversion sync runs unavailable."
           />

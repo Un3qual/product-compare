@@ -85,7 +85,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
                 conversion.network_action_ref == ^network_action_ref and
                 conversion.status == :reversed and
                 not is_nil(conversion.reported_at) and
-                fragment("?->>'original' = 'false'", conversion.raw_payload),
+                fragment("?->'original' = 'false'::jsonb", conversion.raw_payload),
             order_by: [desc: conversion.reported_at, desc: conversion.id],
             limit: 1
         )

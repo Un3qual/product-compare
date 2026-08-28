@@ -12,6 +12,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
   alias ProductCompare.Affiliate
   alias ProductCompare.CommerceAttribution.CJ.Importer
   alias ProductCompare.CommerceAttribution.Conversions
+  alias ProductCompare.CommerceAttribution.Conversions.Persistence
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
@@ -338,7 +339,8 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
       },
       %{import_request() | publisher_ids: []},
       %{import_request() | publisher_ids: ["publisher-1", " "]},
-      %{import_request() | max_pages: 0}
+      %{import_request() | max_pages: 0},
+      %{import_request() | max_pages: 101}
     ]
 
     for request <- invalid_requests do
@@ -512,6 +514,44 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
     assert [_, _] = conversions
     assert Enum.all?(conversions, &(&1.status == :reversed))
     assert Enum.all?(conversions, &(&1.raw_payload == correction))
+  end
+
+  test "durable correction evidence requires a JSON boolean false original marker" do
+    boolean_action_ref = "boolean-correction-#{Ecto.UUID.generate()}"
+    boolean_original = original("boolean-original-#{Ecto.UUID.generate()}", boolean_action_ref)
+
+    boolean_correction =
+      correction("boolean-correction-#{Ecto.UUID.generate()}", boolean_action_ref)
+
+    assert {:ok, %{persisted: 1, reversed: 0}} =
+             Conversions.persist_cj_action_group([boolean_original])
+
+    assert {:ok, %{persisted: 1, reversed: 1}} =
+             Conversions.persist_cj_action_group([boolean_correction])
+
+    assert {:ok, %{raw_payload: %{"original" => false}}} =
+             Persistence.latest_cj_correction(boolean_action_ref)
+
+    string_action_ref = "string-correction-#{Ecto.UUID.generate()}"
+    string_original = original("string-original-#{Ecto.UUID.generate()}", string_action_ref)
+    string_correction = correction("string-correction-#{Ecto.UUID.generate()}", string_action_ref)
+    string_correction = %{string_correction | "original" => "false"}
+
+    assert {:ok, %{persisted: 1, reversed: 0}} =
+             Conversions.persist_cj_action_group([string_original])
+
+    conversion = Repo.get_by!(CommerceConversion, network_action_ref: string_action_ref)
+
+    assert {:ok, _conversion} =
+             conversion
+             |> Ecto.Changeset.change(%{
+               raw_payload: string_correction,
+               reported_at: ~U[2026-08-01 10:00:00.000000Z],
+               status: :reversed
+             })
+             |> Repo.update()
+
+    assert {:ok, nil} = Persistence.latest_cj_correction(string_action_ref)
   end
 
   test "keeps a committed action group when a later group fails" do

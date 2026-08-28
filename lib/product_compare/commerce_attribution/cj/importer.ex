@@ -296,7 +296,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Importer do
 
   defp validate_request(_request), do: {:error, {:invalid_request, :request}}
 
-  defp validate_max_pages(max_pages) when is_integer(max_pages) and max_pages > 0,
+  defp validate_max_pages(max_pages) when is_integer(max_pages) and max_pages in 1..100,
     do: {:ok, max_pages}
 
   defp validate_max_pages(_max_pages), do: {:error, {:invalid_request, :max_pages}}

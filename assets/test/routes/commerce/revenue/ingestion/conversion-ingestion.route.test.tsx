@@ -17,7 +17,9 @@ import {
 
 const {
   commitMutationMock,
+  preloadRouteQueryMock,
   refetchMock,
+  relayEnvironment,
   revalidateMock,
   useFragmentMock,
   useLoaderDataMock,
@@ -27,7 +29,9 @@ const {
   useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
+  preloadRouteQueryMock: vi.fn(),
   refetchMock: vi.fn(),
+  relayEnvironment: {},
   revalidateMock: vi.fn(),
   useFragmentMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
@@ -57,6 +61,7 @@ vi.mock("react-relay", async () => {
     usePaginationFragment: usePaginationFragmentMock,
     usePreloadedQuery: usePreloadedQueryMock,
     useRefetchableFragment: useRefetchableFragmentMock,
+    useRelayEnvironment: () => relayEnvironment,
   };
 });
 
@@ -65,7 +70,11 @@ vi.mock("../../../../../src/relay/route-preload", async () => {
     "../../../../../src/relay/route-preload",
   );
 
-  return { ...actual, useRoutePreloadedQuery: useRoutePreloadedQueryMock };
+  return {
+    ...actual,
+    preloadRouteQuery: preloadRouteQueryMock,
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
+  };
 });
 
 const mockedUseFragment = vi.mocked(useFragment);
@@ -143,6 +152,7 @@ const LATEST_SUCCESS_RUN = {
 
 beforeEach(() => {
   commitMutationMock.mockReset();
+  preloadRouteQueryMock.mockReset();
   refetchMock.mockReset();
   revalidateMock.mockReset();
   useFragmentMock.mockReset();
@@ -170,6 +180,13 @@ beforeEach(() => {
     isLoadingNext: false,
     loadNext: vi.fn(),
   } as never);
+  preloadRouteQueryMock.mockResolvedValue({
+    __relayQuery: {
+      operationName: "ConversionSyncRunsQuery",
+      text: "query ConversionSyncRunsQuery($first: Int!, $after: String) { cjCommissionSyncRuns(first: $first, after: $after) { edges { cursor } } }",
+      variables: { after: null, first: 25 },
+    },
+  });
 });
 
 afterEach(() => {
@@ -399,7 +416,7 @@ test("enabled schedules can always be disabled even when their credentials or su
   );
 });
 
-test("the deferred ledger keeps status and settings usable after history loading fails", async () => {
+test("the deferred ledger retries history only while status and settings stay usable", async () => {
   const runsQuery = deferredPromise<ConversionIngestionLoaderData extends never ? never : object>();
   mockedUseLoaderData.mockReturnValue({
     ...buildReadyLoaderData(),
@@ -410,6 +427,18 @@ test("the deferred ledger keeps status and settings usable after history loading
   await act(async () => runsQuery.reject(new Error("history unavailable")));
 
   expect(await screen.findByText("Conversion sync runs unavailable.")).toBeVisible();
+  expect(screen.getByRole("region", { name: "Ingestion status" })).toBeVisible();
+  expect(screen.getByRole("form", { name: "Ingestion settings" })).toBeVisible();
+
+  fireEvent.click(screen.getByRole("button", { name: "Retry conversion sync runs" }));
+
+  expect(await screen.findByRole("table", { name: "Conversion sync runs" })).toBeVisible();
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(relayEnvironment, expect.anything(), {
+    after: null,
+    first: 25,
+  });
+  expect(revalidateMock).not.toHaveBeenCalled();
+  expect(refetchMock).not.toHaveBeenCalled();
   expect(screen.getByRole("region", { name: "Ingestion status" })).toBeVisible();
   expect(screen.getByRole("form", { name: "Ingestion settings" })).toBeVisible();
 });
@@ -491,6 +520,7 @@ function buildReadyLoaderData(): ConversionIngestionLoaderData {
         variables: { after: null, first: 25 },
       },
     }),
+    runsVariables: { after: null, first: 25 },
     status: "ready",
   } as never;
 }
