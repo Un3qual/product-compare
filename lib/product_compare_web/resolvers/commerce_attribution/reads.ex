@@ -39,8 +39,12 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
   def cj_commission_sync_runs(_parent, args, resolution) do
     with {:ok, _operator} <- Authorization.require_operator(resolution),
+         {:ok, settings} <- ConversionSyncSettings.ensure_cj(%{}),
          connection_args = Input.connection_args(args || %{}),
-         query = preload(ConversionSyncRuns.query(), [:requested_by_user]),
+         query =
+           ConversionSyncRuns.query()
+           |> where([run], run.affiliate_network_id == ^settings.affiliate_network_id)
+           |> preload([:requested_by_user]),
          {:ok, connection} <- Connection.from_query_result(query, connection_args, Repo) do
       {:ok, project_sync_run_connection(connection)}
     else
@@ -264,8 +268,8 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
       settings: project_sync_settings(settings),
       credentials: Client.credential_status(),
       activity: project_sync_activity(CJCommissionSyncJobs.active()),
-      latest_success: latest_sync_run(:succeeded),
-      latest_failure: latest_sync_run(:failed)
+      latest_success: latest_sync_run(:succeeded, settings.affiliate_network_id),
+      latest_failure: latest_sync_run(:failed, settings.affiliate_network_id)
     }
   end
 
@@ -299,9 +303,12 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   defp activity_state("executing"), do: :executing
   defp activity_state("retryable"), do: :retryable
 
-  defp latest_sync_run(status) do
+  defp latest_sync_run(status, affiliate_network_id) do
     ConversionSyncRuns.query()
-    |> where([run], run.status == ^status)
+    |> where(
+      [run],
+      run.affiliate_network_id == ^affiliate_network_id and run.status == ^status
+    )
     |> preload([:requested_by_user])
     |> limit(1)
     |> Repo.one()

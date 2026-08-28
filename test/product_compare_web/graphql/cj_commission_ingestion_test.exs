@@ -142,6 +142,24 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
           error_summary: "transient_provider_failure"
         })
 
+      other_network = network_fixture("impact")
+
+      run_fixture(%{
+        affiliate_network_id: other_network.id,
+        status: :succeeded,
+        started_at: ~U[2026-08-27 11:00:00Z],
+        finished_at: ~U[2026-08-27 11:01:00Z],
+        error_summary: nil
+      })
+
+      run_fixture(%{
+        affiliate_network_id: other_network.id,
+        status: :failed,
+        started_at: ~U[2026-08-27 12:00:00Z],
+        finished_at: ~U[2026-08-27 12:01:00Z],
+        error_summary: "non_cj_failure"
+      })
+
       assert {:ok, job} =
                CJCommissionSyncWorker.enqueue(
                  publisher_ids: ["secret-publisher-id"],
@@ -226,6 +244,23 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
           finished_at: ~U[2026-08-27 09:02:00Z],
           error_summary: "newer_failure"
         })
+
+      other_network = network_fixture("impact")
+
+      run_fixture(%{
+        affiliate_network_id: other_network.id,
+        status: :succeeded,
+        started_at: ~U[2026-08-27 10:00:00Z],
+        finished_at: ~U[2026-08-27 10:01:00Z]
+      })
+
+      run_fixture(%{
+        affiliate_network_id: other_network.id,
+        status: :failed,
+        started_at: ~U[2026-08-27 11:00:00Z],
+        finished_at: ~U[2026-08-27 11:01:00Z],
+        error_summary: "non_cj_failure"
+      })
 
       assert %{
                "data" => %{
