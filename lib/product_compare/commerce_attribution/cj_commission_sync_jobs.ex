@@ -3,9 +3,7 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncJobs do
 
   import Ecto.Query
 
-  alias ProductCompare.Accounts
   alias ProductCompare.CommerceAttribution.CJ.Client
-  alias ProductCompare.CommerceAttribution.ConversionSyncSettings
   alias ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting
@@ -27,21 +25,6 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncJobs do
       nil ->
         nil
     end
-  end
-
-  @spec run_now(pos_integer(), DateTime.t()) ::
-          {:ok, %{job: Oban.Job.t(), existing: boolean()}} | {:error, term()}
-  def run_now(operator_id, %DateTime{} = now) do
-    Repo.transaction(fn ->
-      with {:ok, _operator} <- Accounts.lock_operator(operator_id),
-           %ConversionSyncSetting{} = settings <- ConversionSyncSettings.lock_cj(),
-           {:ok, result} <- run_now_locked(settings, operator_id, now) do
-        result
-      else
-        {:error, reason} -> Repo.rollback(reason)
-        nil -> Repo.rollback(:not_found)
-      end
-    end)
   end
 
   @spec run_now_locked(ConversionSyncSetting.t(), pos_integer(), DateTime.t()) ::

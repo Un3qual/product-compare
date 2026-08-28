@@ -6,6 +6,7 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
   import ProductCompare.DatabaseTestHelpers,
     only: [
       assert_blocked_by: 2,
+      capture_queries: 1,
       capture_select_queries: 1,
       count_select_queries_targeting_table: 2,
       hold_operator_revocation: 1,
@@ -73,13 +74,60 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
       end
     end
 
-    test "operator overview returns defaults, credential readiness, and no secret values", %{
+    test "operator reads report unavailable when CJ settings are absent", %{
       operator_conn: conn
     } do
       network_fixture()
       Repo.delete_all(ConversionSyncSetting)
 
-      response = graphql(conn, overview_query(), %{})
+      for {query, variables, field} <- [
+            {overview_query(), %{}, "cjCommissionIngestion"},
+            {runs_query(), %{"first" => 1}, "cjCommissionSyncRuns"}
+          ] do
+        assert %{
+                 "data" => nil,
+                 "errors" => [
+                   %{
+                     "message" => "CJ commission ingestion is unavailable",
+                     "path" => [^field]
+                   }
+                   | _
+                 ]
+               } = graphql(conn, query, variables)
+      end
+    end
+
+    test "operator reads report unavailable when the CJ network is absent", %{
+      operator_conn: conn
+    } do
+      Repo.update_all(
+        from(network in AffiliateNetwork, where: network.code == "cj"),
+        set: [code: "cjmissing"]
+      )
+
+      for {query, variables, field} <- [
+            {overview_query(), %{}, "cjCommissionIngestion"},
+            {runs_query(), %{"first" => 1}, "cjCommissionSyncRuns"}
+          ] do
+        assert %{
+                 "data" => nil,
+                 "errors" => [
+                   %{
+                     "message" => "CJ commission ingestion is unavailable",
+                     "path" => [^field]
+                   }
+                   | _
+                 ]
+               } = graphql(conn, query, variables)
+      end
+    end
+
+    test "operator overview reads persisted settings without locking or writes", %{
+      operator_conn: conn
+    } do
+      ensure_settings!()
+
+      {response, queries} = capture_queries(fn -> graphql(conn, overview_query(), %{}) end)
 
       assert %{
                "data" => %{
@@ -108,6 +156,19 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
       assert {:ok, _datetime, 0} = DateTime.from_iso8601(updated_at)
       refute inspect(response) =~ "secret-test-token"
       refute inspect(response) =~ "secret-publisher-id"
+      assert_read_only_queries(queries)
+    end
+
+    test "operator sync-run history reads persisted settings without locking or writes", %{
+      operator_conn: conn
+    } do
+      ensure_settings!()
+
+      {response, queries} =
+        capture_queries(fn -> graphql(conn, runs_query(), %{"first" => 1}) end)
+
+      assert %{"data" => %{"cjCommissionSyncRuns" => %{"edges" => []}}} = response
+      assert_read_only_queries(queries)
     end
 
     test "operator overview projects only safe active-job and latest-run state", %{
@@ -1038,6 +1099,15 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
 
   defp sync_query_counts(queries) do
     Map.new(@sync_tables, &{&1, count_select_queries_targeting_table(queries, &1)})
+  end
+
+  defp assert_read_only_queries(queries) do
+    refute Enum.any?(queries, &(&1 in ["begin", "commit", "rollback"]))
+    refute Enum.any?(queries, &String.contains?(&1, "FOR UPDATE"))
+
+    refute Enum.any?(queries, fn query ->
+             Regex.match?(~r/^\s*(INSERT|UPDATE|DELETE)/i, query)
+           end)
   end
 
   defp empty_sync_query_counts, do: Map.new(@sync_tables, &{&1, 0})

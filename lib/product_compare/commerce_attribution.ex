@@ -6,8 +6,6 @@ defmodule ProductCompare.CommerceAttribution do
   alias ProductCompare.CommerceAttribution.Clicks
   alias ProductCompare.CommerceAttribution.ClickLedger
   alias ProductCompare.CommerceAttribution.Conversions
-  alias ProductCompare.CommerceAttribution.ConversionSyncRuns
-  alias ProductCompare.CommerceAttribution.ConversionSyncSettings
   alias ProductCompare.CommerceAttribution.Revenue
   alias ProductCompare.CommerceAttribution.TrendingActivity
   alias ProductCompare.CommerceAttribution.Visitors
@@ -48,45 +46,6 @@ defmodule ProductCompare.CommerceAttribution do
           {:ok, %{persisted: non_neg_integer(), reversed: non_neg_integer()}}
           | {:error, term()}
   def persist_cj_action_group(records), do: Conversions.persist_cj_action_group(records)
-
-  @spec ensure_cj_conversion_sync_settings(map() | keyword()) ::
-          {:ok, ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting.t()}
-          | {:error, term()}
-  def ensure_cj_conversion_sync_settings(defaults \\ %{}),
-    do: ConversionSyncSettings.ensure_cj(defaults)
-
-  @spec lock_cj_conversion_sync_settings() ::
-          ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting.t() | nil
-  def lock_cj_conversion_sync_settings, do: ConversionSyncSettings.lock_cj()
-
-  @spec update_locked_conversion_sync_settings(
-          ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting.t(),
-          pos_integer(),
-          map(),
-          DateTime.t()
-        ) ::
-          {:ok, ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting.t()}
-          | {:error, Ecto.Changeset.t()}
-  def update_locked_conversion_sync_settings(settings, operator_id, attrs, now),
-    do: ConversionSyncSettings.update_locked(settings, operator_id, attrs, now)
-
-  @spec start_conversion_sync_run(map(), DateTime.t()) ::
-          {:ok, ProductCompareSchemas.CommerceAttribution.ConversionSyncRun.t()}
-          | {:error, Ecto.Changeset.t()}
-  def start_conversion_sync_run(attrs, now), do: ConversionSyncRuns.start(attrs, now)
-
-  @spec complete_conversion_sync_run(
-          ProductCompareSchemas.CommerceAttribution.ConversionSyncRun.t(),
-          map(),
-          DateTime.t()
-        ) ::
-          {:ok, ProductCompareSchemas.CommerceAttribution.ConversionSyncRun.t()}
-          | {:error, :not_found | Ecto.Changeset.t()}
-  def complete_conversion_sync_run(run, attrs, now),
-    do: ConversionSyncRuns.complete(run, attrs, now)
-
-  @spec conversion_sync_runs_query() :: Ecto.Query.t()
-  def conversion_sync_runs_query, do: ConversionSyncRuns.query()
 
   @spec create_purchase_price_fact(map()) ::
           {:ok, PurchasePriceFact.t()} | {:error, Ecto.Changeset.t()}

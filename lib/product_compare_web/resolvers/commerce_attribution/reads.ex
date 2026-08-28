@@ -16,6 +16,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareSchemas.Reference.CurrencyCode
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
+  alias ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting
 
   @invalid_filters_error "invalid revenue summary filters"
   @invalid_click_filters_error "invalid commerce attribution click filters"
@@ -24,7 +25,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
           {:ok, map()} | {:error, GraphQLErrors.top_level_error()}
   def cj_commission_ingestion(_parent, _args, resolution) do
     with {:ok, _operator} <- Authorization.require_operator(resolution),
-         {:ok, settings} <- ConversionSyncSettings.ensure_cj(%{}) do
+         {:ok, settings} <- cj_settings() do
       {:ok, project_cj_commission_ingestion(settings)}
     else
       {:error, reason} when reason in [:unauthenticated, :forbidden] ->
@@ -39,7 +40,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
   def cj_commission_sync_runs(_parent, args, resolution) do
     with {:ok, _operator} <- Authorization.require_operator(resolution),
-         {:ok, settings} <- ConversionSyncSettings.ensure_cj(%{}),
+         {:ok, settings} <- cj_settings(),
          connection_args = Input.connection_args(args || %{}),
          query =
            ConversionSyncRuns.query()
@@ -53,6 +54,9 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
 
       {:error, reason} when is_binary(reason) ->
         {:error, reason}
+
+      {:error, _reason} ->
+        {:error, "CJ commission ingestion is unavailable"}
     end
   end
 
@@ -135,6 +139,15 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   end
 
   defp normalize_revenue_summary_input(_input), do: {:error, :invalid_input}
+
+  defp cj_settings do
+    case ConversionSyncSettings.get_cj() do
+      %ConversionSyncSetting{} = settings -> {:ok, settings}
+      _ -> {:error, :cj_settings_unavailable}
+    end
+  rescue
+    _exception -> {:error, :cj_settings_unavailable}
+  end
 
   defp normalize_revenue_currency(nil), do: {:ok, nil}
 

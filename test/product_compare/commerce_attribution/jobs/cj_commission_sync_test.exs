@@ -4,6 +4,7 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
   import Ecto.Query
 
   alias ProductCompare.Affiliate
+  alias ProductCompare.Accounts
   alias ProductCompare.CommerceAttribution.CJCommissionSyncJobs
   alias ProductCompare.CommerceAttribution.ConversionSyncSettings
   alias ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker
@@ -223,7 +224,7 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
     assert queued_job.id > executing_job.id
   end
 
-  test "run now deduplicates active work and permits a later run without shifting cadence" do
+  test "locked run-now work deduplicates active work and preserves cadence" do
     now = ~U[2026-08-28 12:00:00Z]
     operator = AccountsFixtures.operator_fixture()
 
@@ -247,10 +248,10 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
     next_run_at = enabled.next_run_at
 
     assert {:ok, %{job: first_job, existing: false}} =
-             CJCommissionSyncJobs.run_now(operator.id, now)
+             run_now_locked(operator.id, now)
 
     assert {:ok, %{job: same_job, existing: true}} =
-             CJCommissionSyncJobs.run_now(operator.id, DateTime.add(now, 60, :second))
+             run_now_locked(operator.id, DateTime.add(now, 60, :second))
 
     assert same_job.id == first_job.id
     assert Repo.get!(ConversionSyncSetting, settings.id).next_run_at == next_run_at
@@ -261,13 +262,13 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
     )
 
     assert {:ok, %{job: later_job, existing: false}} =
-             CJCommissionSyncJobs.run_now(operator.id, DateTime.add(now, 180, :second))
+             run_now_locked(operator.id, DateTime.add(now, 180, :second))
 
     refute later_job.id == first_job.id
     assert Repo.get!(ConversionSyncSetting, settings.id).next_run_at == next_run_at
   end
 
-  test "run now fails closed for a non-operator" do
+  test "locked run-now work fails closed for a non-operator" do
     user = AccountsFixtures.user_fixture()
     assert {:ok, _settings} = ConversionSyncSettings.ensure_cj(%{})
     worker = inspect(CJCommissionSyncWorker)
@@ -276,7 +277,7 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
       Repo.aggregate(from(job in Oban.Job, where: job.worker == ^worker), :count, :id)
 
     assert {:error, :forbidden} =
-             CJCommissionSyncJobs.run_now(user.id, ~U[2026-08-28 12:00:00Z])
+             run_now_locked(user.id, ~U[2026-08-28 12:00:00Z])
 
     assert Repo.aggregate(from(job in Oban.Job, where: job.worker == ^worker), :count, :id) ==
              count_before
@@ -294,6 +295,19 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
       ],
       overrides
     )
+  end
+
+  defp run_now_locked(operator_id, now) do
+    Repo.transaction(fn ->
+      with {:ok, _operator} <- Accounts.lock_operator(operator_id),
+           %ConversionSyncSetting{} = settings <- ConversionSyncSettings.lock_cj(),
+           {:ok, result} <- CJCommissionSyncJobs.run_now_locked(settings, operator_id, now) do
+        result
+      else
+        {:error, reason} -> Repo.rollback(reason)
+        nil -> Repo.rollback(:not_found)
+      end
+    end)
   end
 
   defp network_fixture(code) do

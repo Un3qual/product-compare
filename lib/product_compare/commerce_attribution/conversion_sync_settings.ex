@@ -32,6 +32,16 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
     end
   end
 
+  @spec get_cj() :: ConversionSyncSetting.t() | nil
+  def get_cj do
+    Repo.one(
+      from setting in ConversionSyncSetting,
+        join: network in AffiliateNetwork,
+        on: network.id == setting.affiliate_network_id,
+        where: network.code == ^@cj_code
+    )
+  end
+
   defp ensure_cj_transaction(defaults) do
     case Repo.one(
            from network in AffiliateNetwork,

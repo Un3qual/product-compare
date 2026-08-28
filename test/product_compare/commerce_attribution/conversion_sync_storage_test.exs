@@ -203,6 +203,29 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
            end)
   end
 
+  test "get_cj reads persisted settings with one unlocked query" do
+    assert {:ok, settings} = ConversionSyncSettings.ensure_cj(%{})
+
+    {result, queries} = capture_queries(fn -> ConversionSyncSettings.get_cj() end)
+
+    assert %ConversionSyncSetting{id: setting_id} = result
+    assert setting_id == settings.id
+    assert [query] = queries
+    assert String.starts_with?(String.trim_leading(query), "SELECT")
+    assert String.contains?(query, ~s(FROM "commerce_conversion_sync_settings"))
+    assert String.contains?(query, ~s(JOIN "affiliate_networks"))
+    refute String.contains?(query, "FOR UPDATE")
+    refute Regex.match?(~r/^\s*(INSERT|UPDATE|DELETE)/i, query)
+  end
+
+  test "get_cj returns nil when CJ settings or network is absent" do
+    assert ConversionSyncSettings.get_cj() == nil
+
+    network_fixture("cj")
+
+    assert ConversionSyncSettings.get_cj() == nil
+  end
+
   test "context owners accept string-keyed input maps" do
     assert {:ok, setting} =
              ConversionSyncSettings.ensure_cj(%{
