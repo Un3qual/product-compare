@@ -1,23 +1,21 @@
 defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions.Options do
   @moduledoc false
 
+  alias ProductCompare.MixTasks.CliOptions
+  alias ProductCompare.CommerceAttribution.CJ.ImportRequest
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting
 
   @spec parse_argv([String.t()]) :: keyword()
   def parse_argv(argv) do
-    {opts, args, invalid} =
-      OptionParser.parse(argv,
-        strict: [
-          from: :string,
-          before: :string,
-          lookback_days: :integer,
-          max_pages: :integer,
-          check_credentials: :boolean,
-          require_ready: :boolean
-        ]
+    opts =
+      CliOptions.parse!(argv,
+        from: :string,
+        before: :string,
+        lookback_days: :integer,
+        max_pages: :integer,
+        check_credentials: :boolean,
+        require_ready: :boolean
       )
-
-    validate_argv!(args, invalid)
 
     from = parse_optional_datetime!(opts, :from)
     before = parse_optional_datetime!(opts, :before)
@@ -35,13 +33,13 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions.Options do
   end
 
   @spec import_request(keyword(), ConversionSyncSetting.t(), [String.t()], DateTime.t()) ::
-          {:ok, map()} | {:error, term()}
+          {:ok, ImportRequest.t()} | {:error, term()}
   def import_request(opts, %ConversionSyncSetting{} = settings, publisher_ids, %DateTime{} = now) do
     with true <- utc?(now),
          {:ok, from, before} <- resolve_window(opts, settings.lookback_days, now),
          max_pages when max_pages in 1..100 <- Keyword.get(opts, :max_pages, settings.max_pages) do
       {:ok,
-       %{
+       %ImportRequest{
          publisher_ids: publisher_ids,
          from: from,
          before: before,
@@ -76,14 +74,6 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions.Options do
         {:error, :incomplete_window}
     end
   end
-
-  defp validate_argv!([argument | _rest], _invalid),
-    do: Mix.raise("unexpected argument: #{argument}")
-
-  defp validate_argv!([], [{option, _value} | _rest]),
-    do: Mix.raise("unsupported option: #{option}")
-
-  defp validate_argv!([], []), do: :ok
 
   defp parse_optional_datetime!(opts, key) do
     case Keyword.fetch(opts, key) do

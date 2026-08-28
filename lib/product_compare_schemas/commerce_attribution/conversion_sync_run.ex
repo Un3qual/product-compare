@@ -6,7 +6,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.ConversionSyncRun do
 
   @statuses [:running, :succeeded, :failed]
   @triggers [:scheduled, :operator, :cli]
-  @count_fields [:pages_fetched, :records_fetched, :records_persisted, :records_failed]
   @fields [
     :entropy_id,
     :affiliate_network_id,
@@ -117,17 +116,20 @@ defmodule ProductCompareSchemas.CommerceAttribution.ConversionSyncRun do
   end
 
   defp validate_counts(changeset) do
-    Enum.reduce(@count_fields, changeset, fn field, changeset ->
-      validate_number(changeset, field, greater_than_or_equal_to: 0)
-    end)
+    changeset
+    |> validate_number(:pages_fetched, greater_than_or_equal_to: 0)
+    |> validate_number(:records_fetched, greater_than_or_equal_to: 0)
+    |> validate_number(:records_persisted, greater_than_or_equal_to: 0)
+    |> validate_number(:records_failed, greater_than_or_equal_to: 0)
   end
 
   defp validate_terminal_finished_at(changeset) do
-    if get_field(changeset, :status) in [:succeeded, :failed] and
-         is_nil(get_field(changeset, :finished_at)) do
-      add_error(changeset, :finished_at, "is invalid")
-    else
-      changeset
+    case {get_field(changeset, :status), get_field(changeset, :finished_at)} do
+      {status, nil} when status in [:succeeded, :failed] ->
+        add_error(changeset, :finished_at, "is invalid")
+
+      _running_or_finished ->
+        changeset
     end
   end
 

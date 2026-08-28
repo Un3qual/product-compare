@@ -468,7 +468,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
              ])
 
     conversions = Repo.all(from conversion in CommerceConversion, order_by: conversion.id)
-    assert length(conversions) == 2
+    assert [_, _] = conversions
     assert Enum.all?(conversions, &(&1.status == :reversed))
     assert Enum.all?(conversions, &(&1.raw_payload == correction))
   end
@@ -509,7 +509,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
           order_by: conversion.network_conversion_ref
       )
 
-    assert length(conversions) == 2
+    assert [_, _] = conversions
     assert Enum.all?(conversions, &(&1.status == :reversed))
     assert Enum.all?(conversions, &(&1.raw_payload == correction))
   end
@@ -581,7 +581,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
           )
         end)
 
-      assert length(conversions) == 2
+      assert [_, _] = conversions
       assert Enum.all?(conversions, &(&1.status == :reversed))
       assert Enum.all?(conversions, &(&1.raw_payload == correction))
     end

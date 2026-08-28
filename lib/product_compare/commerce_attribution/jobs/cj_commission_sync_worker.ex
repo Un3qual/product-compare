@@ -13,6 +13,7 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker do
     ]
 
   alias ProductCompare.CommerceAttribution.CJ.Importer
+  alias ProductCompare.CommerceAttribution.CJ.ImportRequest
   alias ProductCompare.Ingestion.Jobs.Result
 
   @spec enqueue(keyword() | map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
@@ -58,7 +59,7 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker do
          max_pages when max_pages in 1..100 <- Map.get(args, "max_pages"),
          requested_by_user_id <- normalize_requester(Map.get(args, "requested_by_user_id")) do
       {:ok,
-       %{
+       %ImportRequest{
          publisher_ids: publisher_ids,
          from: from,
          before: before,

@@ -78,15 +78,17 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
     with {:ok, network_action_ref} <- validate_action_ref(network_action_ref),
          {:ok, network} <- cj_network() do
       correction =
-        Repo.all(
+        Repo.one(
           from conversion in CommerceConversion,
             where:
               conversion.affiliate_network_id == ^network.id and
                 conversion.network_action_ref == ^network_action_ref and
-                conversion.status == :reversed,
-            order_by: [desc: conversion.reported_at, desc: conversion.id]
+                conversion.status == :reversed and
+                not is_nil(conversion.reported_at) and
+                fragment("?->>'original' = 'false'", conversion.raw_payload),
+            order_by: [desc: conversion.reported_at, desc: conversion.id],
+            limit: 1
         )
-        |> Enum.find(&correction_evidence?/1)
 
       case correction do
         nil ->
@@ -259,14 +261,6 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
       {:error, changeset} -> {:error, changeset}
     end
   end
-
-  defp correction_evidence?(%CommerceConversion{
-         raw_payload: %{"original" => false},
-         reported_at: %DateTime{}
-       }),
-       do: true
-
-  defp correction_evidence?(_conversion), do: false
 
   defp current_correction?(conversion, posting_date, raw_payload) do
     conversion.status == :reversed and

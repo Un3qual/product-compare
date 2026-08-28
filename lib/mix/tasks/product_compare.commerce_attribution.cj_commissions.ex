@@ -74,10 +74,6 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
         category = failure_category(reason)
         print_failure(category, opts)
         {:error, category}
-
-      _unexpected ->
-        print_failure(:unexpected_importer_result, opts)
-        {:error, :unexpected_importer_result}
     end
   end
 
@@ -118,9 +114,6 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
   end
 
   defp print_import_result({:error, reason}, _request, opts), do: print_failure(reason, opts)
-
-  defp print_import_result(_unexpected, _request, opts),
-    do: print_failure(:unexpected_importer_result, opts)
 
   defp print_failure(reason, opts) do
     if Keyword.get(opts, :print_report, true) do

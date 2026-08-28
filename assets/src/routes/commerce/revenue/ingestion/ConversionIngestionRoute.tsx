@@ -20,6 +20,7 @@ import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
+import { Button } from "$ui/primitives/Button";
 import { ConversionIngestionSettings, RunNowControl } from "./ConversionIngestionSettings";
 import {
   ConversionIngestionStatus,
@@ -148,14 +149,16 @@ function ConversionIngestionPanel({
         ingestion={data.cjCommissionIngestion}
         onOverviewRefresh={refreshOverview}
       />
-      <DeferredRunLedger query={loaderData.runsQuery} />
+      <DeferredRunLedger onRetry={revalidate} query={loaderData.runsQuery} />
     </PageShell>
   );
 }
 
 function DeferredRunLedger({
+  onRetry,
   query,
 }: {
+  onRetry: () => void;
   query: Extract<ConversionIngestionLoaderData, { status: "ready" }>["runsQuery"];
 }) {
   const [isHydrated, setIsHydrated] = useState(false);
@@ -170,7 +173,13 @@ function DeferredRunLedger({
     <Suspense fallback={<FeedbackState kind="loading" title="Loading conversion sync runs..." />}>
       <Await
         resolve={query}
-        errorElement={<FeedbackState kind="error" title="Conversion sync runs unavailable." />}
+        errorElement={
+          <FeedbackState
+            action={<Button onClick={onRetry}>Retry conversion sync runs</Button>}
+            kind="error"
+            title="Conversion sync runs unavailable."
+          />
+        }
       >
         {(resolvedQuery) => <RunLedgerBoundary query={resolvedQuery} />}
       </Await>

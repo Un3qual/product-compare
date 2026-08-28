@@ -11,18 +11,8 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
     redirect: true
   ]
 
-  @commission_detail_fields ~w(
-    commissionId
-    original
-    originalActionId
-    correctionReason
-    actionStatus
-    shopperId
-    eventDate
-    postingDate
-    saleAmountUsd
-    pubCommissionAmountUsd
-  )
+  alias ProductCompare.CommerceAttribution.CJ.CommissionDetail
+  alias ProductCompare.CommerceAttribution.CJ.HttpRequest
 
   @commission_detail_query """
   query CommissionDetail(
@@ -94,7 +84,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
            option_or_env(opts, :publisher_ids, "CJ_COMMISSION_PUBLISHER_IDS")
          ) do
       [] ->
-        case normalize_string(option_or_env(opts, :account_id, "CJ_ACCOUNT_ID")) do
+        case CommissionDetail.normalize_string(option_or_env(opts, :account_id, "CJ_ACCOUNT_ID")) do
           nil -> {:error, {:missing_env, "CJ_ACCOUNT_ID"}}
           account_id -> {:ok, [account_id]}
         end
@@ -110,9 +100,10 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
   def fetch_page(request, opts) when is_map(request) do
     opts = Map.new(opts)
 
-    with {:ok, publisher_ids} <- validate_publisher_ids(Map.get(request, :publisher_ids)),
+    with {:ok, publisher_ids} <-
+           CommissionDetail.validate_publisher_ids(Map.get(request, :publisher_ids)),
          {:ok, from, before} <-
-           validate_window(Map.get(request, :from), Map.get(request, :before)),
+           CommissionDetail.validate_window(Map.get(request, :from), Map.get(request, :before)),
          {:ok, since_commission_id} <-
            validate_cursor(Map.fetch(request, :since_commission_id)),
          {:ok, api_token} <- api_token(opts),
@@ -128,39 +119,17 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
   def fetch_page(_request, _opts), do: {:error, {:invalid_request, :page}}
 
   defp api_token(opts) do
-    case normalize_string(option_or_env(opts, :api_token, "CJ_API_TOKEN")) do
+    case CommissionDetail.normalize_string(option_or_env(opts, :api_token, "CJ_API_TOKEN")) do
       nil -> {:error, {:missing_env, "CJ_API_TOKEN"}}
       token -> {:ok, token}
     end
   end
 
-  defp validate_publisher_ids(publisher_ids) when is_list(publisher_ids) do
-    publisher_ids = Enum.map(publisher_ids, &normalize_string/1)
-
-    if publisher_ids != [] and Enum.all?(publisher_ids, &is_binary/1) do
-      {:ok, publisher_ids}
-    else
-      {:error, {:invalid_request, :publisher_ids}}
-    end
-  end
-
-  defp validate_publisher_ids(_publisher_ids), do: {:error, {:invalid_request, :publisher_ids}}
-
-  defp validate_window(%DateTime{} = from, %DateTime{} = before) do
-    if utc?(from) and utc?(before) and DateTime.compare(from, before) == :lt do
-      {:ok, from, before}
-    else
-      {:error, {:invalid_request, :window}}
-    end
-  end
-
-  defp validate_window(_from, _before), do: {:error, {:invalid_request, :window}}
-
   defp validate_cursor(:error), do: {:error, {:invalid_request, :since_commission_id}}
   defp validate_cursor({:ok, nil}), do: {:ok, nil}
 
   defp validate_cursor({:ok, value}) do
-    case normalize_string(value) do
+    case CommissionDetail.normalize_string(value) do
       nil -> {:error, {:invalid_request, :since_commission_id}}
       cursor -> {:ok, cursor}
     end
@@ -178,7 +147,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
         }
       })
 
-    %{
+    %HttpRequest{
       method: :post,
       url: @endpoint,
       headers: [
@@ -210,7 +179,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
     _kind, _reason -> {:error, {:transport_error, :request_failed}}
   end
 
-  defp default_transport(%{
+  defp default_transport(%HttpRequest{
          method: :post,
          url: url,
          headers: headers,
@@ -267,7 +236,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
   defp publisher_commissions(_decoded), do: {:error, {:invalid_response, :publisher_commissions}}
 
   defp records(%{"records" => records}) when is_list(records) do
-    if Enum.all?(records, &valid_commission_detail_record?/1) do
+    if Enum.all?(records, &CommissionDetail.valid_record?/1) do
       {:ok, records}
     else
       {:error, {:invalid_response, :record}}
@@ -275,22 +244,6 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
   end
 
   defp records(_publisher_commissions), do: {:error, {:invalid_response, :records}}
-
-  defp valid_commission_detail_record?(record) when is_map(record) do
-    Enum.all?(@commission_detail_fields, &Map.has_key?(record, &1)) and
-      nonblank_string?(record["commissionId"]) and
-      is_boolean(record["original"]) and
-      nullable_string?(record["originalActionId"]) and
-      nullable_string?(record["correctionReason"]) and
-      nonblank_string?(record["actionStatus"]) and
-      nullable_string?(record["shopperId"]) and
-      nonblank_string?(record["eventDate"]) and
-      nonblank_string?(record["postingDate"]) and
-      nonblank_string?(record["saleAmountUsd"]) and
-      nonblank_string?(record["pubCommissionAmountUsd"])
-  end
-
-  defp valid_commission_detail_record?(_record), do: false
 
   defp payload_complete(%{"payloadComplete" => payload_complete})
        when is_boolean(payload_complete),
@@ -305,7 +258,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
         {:ok, nil}
 
       {:ok, value} ->
-        case normalize_string(value) do
+        case CommissionDetail.normalize_string(value) do
           nil -> {:error, {:invalid_response, :max_commission_id}}
           cursor -> {:ok, cursor}
         end
@@ -334,7 +287,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
 
   defp normalize_ids(values) do
     values
-    |> Enum.map(&normalize_string/1)
+    |> Enum.map(&CommissionDetail.normalize_string/1)
     |> Enum.reject(&is_nil/1)
   end
 
@@ -345,21 +298,5 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
     end
   end
 
-  defp present?(value), do: not is_nil(normalize_string(value))
-
-  defp normalize_string(value) when is_binary(value) do
-    case String.trim(value) do
-      "" -> nil
-      normalized -> normalized
-    end
-  end
-
-  defp normalize_string(_value), do: nil
-
-  defp nonblank_string?(value), do: not is_nil(normalize_string(value))
-  defp nullable_string?(nil), do: true
-  defp nullable_string?(value), do: is_binary(value)
-
-  defp utc?(%DateTime{utc_offset: 0, std_offset: 0}), do: true
-  defp utc?(_datetime), do: false
+  defp present?(value), do: not is_nil(CommissionDetail.normalize_string(value))
 end
