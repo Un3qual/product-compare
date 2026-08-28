@@ -231,13 +231,23 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcherTest do
     refute_receive :unexpected_dispatch_due
   end
 
-  test "Oban production configuration enables the default 60-minute Lifeline" do
+  test "the whole-job timeout stays safely below Lifeline's rescue threshold" do
     plugins =
       :product_compare
       |> Application.fetch_env!(Oban)
       |> Keyword.fetch!(:plugins)
 
-    assert Oban.Plugins.Lifeline in plugins
+    assert {Oban.Plugins.Lifeline, lifeline_opts} =
+             Enum.find(plugins, fn
+               {Oban.Plugins.Lifeline, _opts} -> true
+               _other -> false
+             end)
+
+    worker_timeout = CJCommissionSyncWorker.timeout(%Oban.Job{})
+    rescue_after = Keyword.fetch!(lifeline_opts, :rescue_after)
+
+    assert is_integer(worker_timeout)
+    assert worker_timeout + :timer.minutes(10) <= rescue_after
   end
 
   test "a dispatcher tick interrupts non-executing or missing jobs but leaves live and CLI runs" do

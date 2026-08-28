@@ -15,6 +15,8 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker do
   alias ProductCompare.CommerceAttribution.CJ.Importer
   alias ProductCompare.CommerceAttribution.CJ.ImportRequest
 
+  @max_run_duration :timer.minutes(45)
+
   @spec enqueue(keyword() | map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def enqueue(opts \\ []) do
     opts
@@ -38,6 +40,9 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker do
       "schedule_window" => canonical_schedule_window(Map.get(opts, :schedule_window), before)
     }
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: @max_run_duration
 
   @impl Oban.Worker
   def perform(%Oban.Job{id: job_id, attempt: attempt, args: args}) do
