@@ -2,7 +2,6 @@ import { expect, test } from "vitest";
 import {
   SettingsValidationError,
   buildSettingsVariables,
-  buildSyncRunPaginationPath,
   formatIngestionFreshness,
   formatSyncRunDuration,
   resolveIngestionMutationOutcome,
@@ -42,7 +41,9 @@ test("buildSettingsVariables treats an unchecked schedule as disabled and reject
 test("resolveIngestionMutationOutcome keeps payload validation separate from transport errors", () => {
   const payloadError = resolveIngestionMutationOutcome(
     {
-      errors: [{ field: "lookbackDays", message: "Lookback must be 90 days or fewer" }],
+      errors: [
+        { code: "INVALID", field: "lookbackDays", message: "Lookback must be 90 days or fewer" },
+      ],
       ingestion: null,
     },
     null,
@@ -59,7 +60,7 @@ test("resolveIngestionMutationOutcome keeps payload validation separate from tra
   expect(transportError).toEqual({ kind: "error", message: "Request failed. Please try again." });
 });
 
-test("run helpers provide bounded freshness, terminal duration, and cursor-safe navigation", () => {
+test("run helpers provide bounded freshness and terminal duration", () => {
   expect(formatIngestionFreshness("2026-08-27T11:45:00Z", new Date("2026-08-27T12:00:00Z"))).toBe(
     "Fresh 15 minutes ago",
   );
@@ -70,7 +71,4 @@ test("run helpers provide bounded freshness, terminal duration, and cursor-safe 
       new Date("2026-08-27T12:00:00Z"),
     ),
   ).toBe("10 minutes");
-  expect(buildSyncRunPaginationPath("cursor+/=")).toBe(
-    "/commerce/revenue/ingestion?after=cursor%2B%2F%3D",
-  );
 });

@@ -88,17 +88,13 @@ export function ConversionIngestionStatus({
   onTerminal: () => void;
 }) {
   const activityState = ingestion.activity?.state ?? null;
-  const activityIsActive =
-    activityState === "AVAILABLE" ||
-    activityState === "SCHEDULED" ||
-    activityState === "EXECUTING" ||
-    activityState === "RETRYABLE";
+  const activityIsPresent = Boolean(ingestion.activity);
   const [isVisible, setIsVisible] = useState(
     () => typeof document === "undefined" || document.visibilityState === "visible",
   );
   const onOverviewRefreshRef = useRef(onOverviewRefresh);
   const onTerminalRef = useRef(onTerminal);
-  const wasActiveRef = useRef(false);
+  const hadActivityRef = useRef(false);
 
   onOverviewRefreshRef.current = onOverviewRefresh;
   onTerminalRef.current = onTerminal;
@@ -112,21 +108,21 @@ export function ConversionIngestionStatus({
   }, []);
 
   useEffect(() => {
-    if (!activityIsActive || !isVisible) return;
+    if (!activityIsPresent || !isVisible) return;
 
     const timer = window.setInterval(() => {
       onOverviewRefreshRef.current();
     }, 10_000);
 
     return () => window.clearInterval(timer);
-  }, [activityIsActive, activityState, isVisible]);
+  }, [activityIsPresent, isVisible]);
 
   useEffect(() => {
-    if (wasActiveRef.current && !activityIsActive) {
+    if (hadActivityRef.current && !activityIsPresent) {
       onTerminalRef.current();
     }
-    wasActiveRef.current = activityIsActive;
-  }, [activityIsActive, activityState]);
+    hadActivityRef.current = activityIsPresent;
+  }, [activityIsPresent]);
 
   const credentialsLabel = ingestion.credentials.ready
     ? "Credentials configured"

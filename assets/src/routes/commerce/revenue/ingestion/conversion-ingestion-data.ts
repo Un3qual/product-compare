@@ -1,5 +1,7 @@
 import { DEFAULT_MUTATION_ERROR_MESSAGE, hasGraphQLErrors } from "$relay/mutation-errors";
 import type { MutationGraphQLErrors } from "$relay/mutation-errors";
+import type { RunCJCommissionIngestionNowMutation } from "$generated/RunCJCommissionIngestionNowMutation.graphql";
+import type { UpdateCJCommissionIngestionSettingsMutation } from "$generated/UpdateCJCommissionIngestionSettingsMutation.graphql";
 import type { UpdateCJCommissionIngestionSettingsMutation$variables } from "$generated/UpdateCJCommissionIngestionSettingsMutation.graphql";
 
 export const SYNC_RUN_PAGE_SIZE = 25;
@@ -33,12 +35,10 @@ export function buildSettingsVariables(
   };
 }
 
-export function resolveIngestionMutationOutcome<TIngestion>(
+export function resolveIngestionMutationOutcome(
   payload:
-    | {
-        readonly errors: ReadonlyArray<{ readonly field: string | null; readonly message: string }>;
-        readonly ingestion: TIngestion | null;
-      }
+    | UpdateCJCommissionIngestionSettingsMutation["response"]["updateCjCommissionIngestionSettings"]
+    | RunCJCommissionIngestionNowMutation["response"]["runCjCommissionIngestionNow"]
     | null
     | undefined,
   graphQLErrors: MutationGraphQLErrors,
@@ -61,13 +61,6 @@ export function resolveIngestionMutationOutcome<TIngestion>(
   }
 
   return { ingestion: payload.ingestion, kind: "success" as const };
-}
-
-export function buildSyncRunPaginationPath(after: string | null = null) {
-  if (!after) return "/commerce/revenue/ingestion";
-
-  const search = new URLSearchParams({ after });
-  return `/commerce/revenue/ingestion?${search.toString()}`;
 }
 
 export function formatIngestionFreshness(value: string | null | undefined, now = new Date()) {
