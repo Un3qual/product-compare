@@ -25,6 +25,9 @@ config :logger, level: :warning
 
 config :product_compare, Oban, testing: :manual
 
+config :product_compare, :cj_commission_sync_dispatcher,
+  scheduler: fn _recipient, _message, _delay_ms -> make_ref() end
+
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
 

@@ -212,6 +212,20 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcherTest do
     assert_receive {:scheduled, ^pid, :dispatch_due, 60_000}
   end
 
+  test "the application-supervised dispatcher uses the test scheduler without arming a tick" do
+    scheduler =
+      :product_compare
+      |> Application.fetch_env!(:cj_commission_sync_dispatcher)
+      |> Keyword.fetch!(:scheduler)
+
+    pid = Process.whereis(CJCommissionSyncDispatcher)
+
+    assert is_pid(pid)
+    assert %{scheduler: ^scheduler} = :sys.get_state(pid)
+    assert is_reference(scheduler.(self(), :unexpected_dispatch_due, 0))
+    refute_receive :unexpected_dispatch_due
+  end
+
   defp enable_settings!(next_run_at, overrides \\ []) do
     assert {:ok, settings} = ConversionSyncSettings.ensure_cj(%{})
 
