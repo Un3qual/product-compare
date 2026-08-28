@@ -66,9 +66,6 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
          {:ok, connection} <- Connection.from_query_result(query, connection_args, Repo) do
       {:ok, project_sync_run_connection(connection)}
     else
-      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
-        {:error, GraphQLErrors.authorization_error(reason)}
-
       {:error, reason} when is_binary(reason) ->
         {:error, reason}
 
