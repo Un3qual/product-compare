@@ -1,3 +1,5 @@
+# These domain workers share Oban's callback surface, but they aren't interchangeable implementations.
+# reach:disable-next-line behaviour_candidate
 defmodule ProductCompare.Alerts.Jobs.AlertEvaluationWorker do
   @moduledoc """
   Durably evaluates price watches after one persisted price observation.
