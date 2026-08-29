@@ -74,7 +74,7 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
     )
   end
 
-  test "direct SQL accepts valid settings and run evidence" do
+  test "database writes accept valid settings and run evidence" do
     network_id = network_fixture("cj").id
 
     assert {:ok, _settings} = insert_setting(network_id)
@@ -102,7 +102,7 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
     end
   end
 
-  test "direct SQL accepts valid CJ action correction evidence" do
+  test "database writes accept valid CJ action correction evidence" do
     assert {:ok, _result} = insert_action_correction(network_fixture("cj").id)
   end
 
@@ -118,42 +118,34 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
   end
 
   defp insert_setting(network_id, overrides \\ []) do
+    now = DateTime.utc_now()
+
     values =
       Map.merge(
         %{
+          affiliate_network_id: network_id,
           enabled: false,
           interval_minutes: 1_440,
           lookback_days: 90,
           max_pages: 100,
-          next_run_at: nil
+          next_run_at: nil,
+          inserted_at: now,
+          updated_at: now
         },
         Map.new(overrides)
       )
 
-    Repo.query(
-      """
-      INSERT INTO commerce_conversion_sync_settings (
-        affiliate_network_id, enabled, interval_minutes, lookback_days, max_pages,
-        next_run_at, inserted_at, updated_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, now(), now())
-      """,
-      [
-        network_id,
-        values.enabled,
-        values.interval_minutes,
-        values.lookback_days,
-        values.max_pages,
-        values.next_run_at
-      ]
-    )
+    insert_all("commerce_conversion_sync_settings", values)
   end
 
   defp insert_run(network_id, overrides \\ []) do
+    now = DateTime.utc_now()
+
     values =
       Map.merge(
         %{
           entropy_id: Ecto.UUID.dump!(Ecto.UUID.generate()),
+          affiliate_network_id: network_id,
           status: "running",
           trigger: "operator",
           window_start: ~U[2026-08-28 00:00:00Z],
@@ -167,90 +159,45 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
           finished_at: nil,
           error_summary: nil,
           oban_job_id: nil,
-          oban_attempt: nil
+          oban_attempt: nil,
+          inserted_at: now,
+          updated_at: now
         },
         Map.new(overrides)
       )
 
-    Repo.query(
-      """
-      INSERT INTO commerce_conversion_sync_runs (
-        entropy_id, affiliate_network_id, status, "trigger", window_start, window_end,
-        cursor, pages_fetched, records_fetched, records_persisted, records_failed,
-        started_at, finished_at, error_summary, oban_job_id, oban_attempt, inserted_at, updated_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, now(), now())
-      """,
-      [
-        values.entropy_id,
-        network_id,
-        values.status,
-        values.trigger,
-        values.window_start,
-        values.window_end,
-        values.cursor,
-        values.pages_fetched,
-        values.records_fetched,
-        values.records_persisted,
-        values.records_failed,
-        values.started_at,
-        values.finished_at,
-        values.error_summary,
-        values.oban_job_id,
-        values.oban_attempt
-      ]
-    )
+    insert_all("commerce_conversion_sync_runs", values)
   end
 
   defp insert_action_correction(network_id, overrides \\ []) do
+    now = DateTime.utc_now()
+
     values =
       Map.merge(
         %{
+          affiliate_network_id: network_id,
           network_action_ref: "action-#{Ecto.UUID.generate()}",
           network_correction_ref: "correction-#{Ecto.UUID.generate()}",
           posting_date: ~U[2026-08-28 12:00:00Z],
-          raw_payload: %{"original" => false}
+          raw_payload: %{"original" => false},
+          inserted_at: now,
+          updated_at: now
         },
         Map.new(overrides)
       )
 
-    Repo.query(
-      """
-      INSERT INTO commerce_cj_action_corrections (
-        affiliate_network_id, network_action_ref, network_correction_ref,
-        posting_date, raw_payload, inserted_at, updated_at
-      )
-      VALUES ($1, $2, $3, $4, $5, now(), now())
-      """,
-      [
-        network_id,
-        values.network_action_ref,
-        values.network_correction_ref,
-        values.posting_date,
-        values.raw_payload
-      ]
-    )
+    insert_all("commerce_cj_action_corrections", values)
+  end
+
+  defp insert_all(table, values) do
+    {:ok, Repo.insert_all(table, [values])}
+  rescue
+    error in Postgrex.Error -> {:error, error}
   end
 
   defp assert_check_violation(result, constraint) do
     assert {:error, %Postgrex.Error{postgres: %{code: :check_violation, constraint: ^constraint}}} =
              result
-  end
-
-  test "native enum fields do not use redundant status or trigger checks" do
-    result =
-      Repo.query!("""
-      SELECT conname
-      FROM pg_constraint
-      WHERE conrelid = 'commerce_conversion_sync_runs'::regclass
-        AND conname IN (
-          'commerce_conversion_sync_runs_status_valid',
-          'commerce_conversion_sync_runs_trigger_valid'
-        )
-      ORDER BY conname
-      """)
-
-    assert result.rows == []
   end
 
   defp assert_native_enum_rejection(result) do

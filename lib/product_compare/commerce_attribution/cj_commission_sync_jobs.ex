@@ -60,7 +60,7 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncJobs do
           job.worker == ^inspect(CJCommissionSyncWorker) and
             job.state in ^@active_states,
         order_by: [
-          asc: fragment("CASE WHEN ? = 'executing' THEN 0 ELSE 1 END", job.state),
+          desc: job.state == "executing",
           desc: job.id
         ],
         limit: 1

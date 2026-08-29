@@ -122,59 +122,44 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
          posting_date,
          raw_payload
        ) do
-    now = DateTime.utc_now()
+    attrs = %{
+      affiliate_network_id: affiliate_network_id,
+      network_action_ref: network_action_ref,
+      network_correction_ref: network_correction_ref,
+      posting_date: posting_date,
+      raw_payload: raw_payload
+    }
 
-    changeset =
-      CJActionCorrection.changeset(%CJActionCorrection{}, %{
-        affiliate_network_id: affiliate_network_id,
-        network_action_ref: network_action_ref,
-        network_correction_ref: network_correction_ref,
-        posting_date: posting_date,
-        raw_payload: raw_payload
-      })
+    case Repo.get_by(CJActionCorrection,
+           affiliate_network_id: affiliate_network_id,
+           network_action_ref: network_action_ref
+         ) do
+      nil ->
+        %CJActionCorrection{}
+        |> CJActionCorrection.changeset(attrs)
+        |> Repo.insert()
 
-    conflict_query =
-      from correction in CJActionCorrection,
-        where:
-          fragment(
-            """
-            EXCLUDED.posting_date > ? OR
-              (EXCLUDED.posting_date = ? AND
-                CASE
-                  WHEN EXCLUDED.network_correction_ref ~ '^[0-9]+$' AND ? ~ '^[0-9]+$'
-                    THEN (
-                      length(trim(leading '0' from EXCLUDED.network_correction_ref)),
-                      trim(leading '0' from EXCLUDED.network_correction_ref)
-                    ) >= (
-                      length(trim(leading '0' from ?)),
-                      trim(leading '0' from ?)
-                    )
-                  ELSE EXCLUDED.network_correction_ref >= ?
-                END)
-            """,
-            correction.posting_date,
-            correction.posting_date,
-            correction.network_correction_ref,
-            correction.network_correction_ref,
-            correction.network_correction_ref,
-            correction.network_correction_ref
-          ),
-        update: [
-          set: [
-            network_correction_ref: fragment("EXCLUDED.network_correction_ref"),
-            posting_date: fragment("EXCLUDED.posting_date"),
-            raw_payload: fragment("EXCLUDED.raw_payload"),
-            updated_at: ^now
-          ]
-        ]
+      %CJActionCorrection{} = correction ->
+        if incoming_correction_at_least_as_new?(
+             correction,
+             posting_date,
+             network_correction_ref
+           ) do
+          correction
+          |> CJActionCorrection.changeset(attrs)
+          |> Repo.update()
+        else
+          {:ok, correction}
+        end
+    end
+  end
 
-    Repo.insert(
-      changeset,
-      on_conflict: conflict_query,
-      conflict_target: [:affiliate_network_id, :network_action_ref],
-      allow_stale: true,
-      returning: true
-    )
+  defp incoming_correction_at_least_as_new?(correction, posting_date, correction_ref) do
+    case DateTime.compare(posting_date, correction.posting_date) do
+      :gt -> true
+      :lt -> false
+      :eq -> ordered_correction_ref_at_least?(correction_ref, correction.network_correction_ref)
+    end
   end
 
   defp persist_or_rollback(attrs) do

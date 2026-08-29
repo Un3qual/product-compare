@@ -844,10 +844,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
           Repo.transaction(fn ->
             backend_pid = ProductCompare.DatabaseTestHelpers.database_backend_pid()
 
-            Repo.query!(
-              "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
-              ["product_compare:cj_action:" <> String.trim(action_ref)]
-            )
+            :ok = Persistence.lock_cj_action_key(action_ref)
 
             send(parent, {:cj_action_lock_held, self(), backend_pid})
 
