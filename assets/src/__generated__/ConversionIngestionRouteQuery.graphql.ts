@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<70f2ed91037070fda5d89756dd13265c>>
+ * @generated SignedSource<<e5d88e4ed2a5d80e6a99c5f925d52892>>
  * @lightSyntaxTransform
  */
 
@@ -142,7 +142,7 @@ return {
                 "alias": null,
                 "args": null,
                 "kind": "ScalarField",
-                "name": "accountIdConfigured",
+                "name": "publisherIdsConfigured",
                 "storageKey": null
               }
             ],
@@ -233,12 +233,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "b3c73929f2d8ce1a5b49497b195525f6",
+    "cacheID": "a2b1c41ed533830d96eeec58a2e2bb71",
     "id": null,
     "metadata": {},
     "name": "ConversionIngestionRouteQuery",
     "operationKind": "query",
-    "text": "query ConversionIngestionRouteQuery {\n  ...ConversionIngestionStatus_query\n}\n\nfragment ConversionIngestionSettings_ingestion on CJCommissionIngestion {\n  settings {\n    enabled\n    intervalMinutes\n    lookbackDays\n    maxPages\n    updatedAt\n  }\n  credentials {\n    ready\n  }\n  latestSuccess {\n    id\n  }\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    ...ConversionIngestionSettings_ingestion\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      accountIdConfigured\n      ready\n    }\n    activity {\n      state\n      windowStart\n      windowEnd\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      errorSummary\n      id\n    }\n  }\n}\n"
+    "text": "query ConversionIngestionRouteQuery {\n  ...ConversionIngestionStatus_query\n}\n\nfragment ConversionIngestionSettings_ingestion on CJCommissionIngestion {\n  settings {\n    enabled\n    intervalMinutes\n    lookbackDays\n    maxPages\n    updatedAt\n  }\n  credentials {\n    ready\n  }\n  latestSuccess {\n    id\n  }\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    ...ConversionIngestionSettings_ingestion\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      publisherIdsConfigured\n      ready\n    }\n    activity {\n      state\n      windowStart\n      windowEnd\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      errorSummary\n      id\n    }\n  }\n}\n"
   }
 };
 })();

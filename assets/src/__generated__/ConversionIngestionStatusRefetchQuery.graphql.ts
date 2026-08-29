@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<58cdfb895792de8b8b5d880815cfd5e0>>
+ * @generated SignedSource<<5a3281076139434f086dca239eb16e45>>
  * @lightSyntaxTransform
  */
 
@@ -142,7 +142,7 @@ return {
                 "alias": null,
                 "args": null,
                 "kind": "ScalarField",
-                "name": "accountIdConfigured",
+                "name": "publisherIdsConfigured",
                 "storageKey": null
               }
             ],
@@ -233,16 +233,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "f19c8de705a24cc3f21a4933c92c5ffb",
+    "cacheID": "bda9ff730b9eee5f4f1fc6ad29f8b437",
     "id": null,
     "metadata": {},
     "name": "ConversionIngestionStatusRefetchQuery",
     "operationKind": "query",
-    "text": "query ConversionIngestionStatusRefetchQuery {\n  ...ConversionIngestionStatus_query\n}\n\nfragment ConversionIngestionSettings_ingestion on CJCommissionIngestion {\n  settings {\n    enabled\n    intervalMinutes\n    lookbackDays\n    maxPages\n    updatedAt\n  }\n  credentials {\n    ready\n  }\n  latestSuccess {\n    id\n  }\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    ...ConversionIngestionSettings_ingestion\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      accountIdConfigured\n      ready\n    }\n    activity {\n      state\n      windowStart\n      windowEnd\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      errorSummary\n      id\n    }\n  }\n}\n"
+    "text": "query ConversionIngestionStatusRefetchQuery {\n  ...ConversionIngestionStatus_query\n}\n\nfragment ConversionIngestionSettings_ingestion on CJCommissionIngestion {\n  settings {\n    enabled\n    intervalMinutes\n    lookbackDays\n    maxPages\n    updatedAt\n  }\n  credentials {\n    ready\n  }\n  latestSuccess {\n    id\n  }\n}\n\nfragment ConversionIngestionStatus_query on RootQueryType {\n  cjCommissionIngestion {\n    ...ConversionIngestionSettings_ingestion\n    settings {\n      nextRunAt\n    }\n    credentials {\n      apiTokenConfigured\n      publisherIdsConfigured\n      ready\n    }\n    activity {\n      state\n      windowStart\n      windowEnd\n      scheduledAt\n      attemptedAt\n    }\n    latestSuccess {\n      finishedAt\n      id\n    }\n    latestFailure {\n      finishedAt\n      errorSummary\n      id\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "1c697ecd6d3289e86856770e84e5db6b";
+(node as any).hash = "6ca0623b46c8a91723bc74a38fd1a203";
 
 export default node;

@@ -83,7 +83,7 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
     changeset =
       ConversionSyncRun.changeset(
         %ConversionSyncRun{},
-        Map.put(run_attrs(), :error_summary, String.duplicate("x", 501))
+        Map.put(run_attrs(), :error_summary, String.duplicate("e\u0301", 500))
       )
 
     refute changeset.valid?

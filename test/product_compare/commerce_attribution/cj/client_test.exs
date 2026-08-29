@@ -443,7 +443,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ClientTest do
       assert Client.credential_status() == %{
                ready: false,
                api_token_configured: false,
-               account_id_configured: false
+               publisher_ids_configured: false
              }
     end
 
@@ -456,7 +456,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ClientTest do
       assert status == %{
                ready: true,
                api_token_configured: true,
-               account_id_configured: true
+               publisher_ids_configured: true
              }
 
       refute inspect(status) =~ "secret-token"

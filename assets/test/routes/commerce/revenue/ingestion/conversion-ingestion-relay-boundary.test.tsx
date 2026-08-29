@@ -118,7 +118,7 @@ function overviewResponse(settings: {
   return {
     cjCommissionIngestion: {
       activity: null,
-      credentials: { accountIdConfigured: true, apiTokenConfigured: true, ready: true },
+      credentials: { publisherIdsConfigured: true, apiTokenConfigured: true, ready: true },
       latestFailure: null,
       latestSuccess: { finishedAt: "2026-08-26T10:15:00Z", id: "sync-run-success" },
       settings: { ...settings, nextRunAt: "2026-08-28T10:15:00Z" },

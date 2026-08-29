@@ -167,7 +167,7 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
                    },
                    "credentials" => %{
                      "apiTokenConfigured" => true,
-                     "accountIdConfigured" => true,
+                     "publisherIdsConfigured" => true,
                      "ready" => true
                    },
                    "activity" => nil,
@@ -371,6 +371,12 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
                "startCursor" => first_cursor
              }
 
+      run_fixture(%{
+        status: :succeeded,
+        started_at: ~U[2026-08-27 10:00:00Z],
+        finished_at: ~U[2026-08-27 10:01:00Z]
+      })
+
       assert %{
                "data" => %{
                  "cjCommissionSyncRuns" => %{
@@ -414,7 +420,7 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
                ~w(enabled intervalMinutes lookbackDays maxPages nextRunAt updatedAt updatedByEmail)
 
       assert field_names(credential_fields) ==
-               ~w(accountIdConfigured apiTokenConfigured ready)
+               ~w(apiTokenConfigured publisherIdsConfigured ready)
 
       assert field_names(activity_fields) ==
                ~w(attemptedAt scheduledAt state windowEnd windowStart)
@@ -434,7 +440,7 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
       assert "updateCjCommissionIngestionSettings" in mutation_names
       assert "runCjCommissionIngestionNow" in mutation_names
 
-      safe_configuration_fields = ~w(apiTokenConfigured accountIdConfigured)
+      safe_configuration_fields = ~w(apiTokenConfigured publisherIdsConfigured)
 
       exposed_names =
         Enum.flat_map(
@@ -892,7 +898,7 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
         settings {
           enabled intervalMinutes lookbackDays maxPages nextRunAt updatedAt updatedByEmail
         }
-        credentials { apiTokenConfigured accountIdConfigured ready }
+        credentials { apiTokenConfigured publisherIdsConfigured ready }
         activity { state windowStart windowEnd scheduledAt attemptedAt }
         latestSuccess { id status trigger requesterEmail errorSummary }
         latestFailure { id status trigger requesterEmail errorSummary }
@@ -927,7 +933,7 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
           settings {
             enabled intervalMinutes lookbackDays maxPages nextRunAt updatedAt updatedByEmail
           }
-          credentials { apiTokenConfigured accountIdConfigured ready }
+          credentials { apiTokenConfigured publisherIdsConfigured ready }
           activity { state windowStart windowEnd scheduledAt attemptedAt }
           latestSuccess { id status trigger requesterEmail errorSummary }
           latestFailure { id status trigger requesterEmail errorSummary }

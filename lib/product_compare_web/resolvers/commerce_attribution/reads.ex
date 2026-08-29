@@ -59,15 +59,23 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   defp cj_commission_sync_runs_read(args) do
     with {:ok, settings} <- cj_settings(),
          connection_args = Input.connection_args(args || %{}),
-         query =
-           ConversionSyncRuns.query()
-           |> where([run], run.affiliate_network_id == ^settings.affiliate_network_id)
-           |> preload([:requested_by_user]),
-         {:ok, connection} <- Connection.from_query_result(query, connection_args, Repo) do
+         {:ok, %{fetch_limit: fetch_limit}} <-
+           connection_args
+           |> Map.delete(:after)
+           |> Connection.batch_window(),
+         {:ok, connection} <-
+           ConversionSyncRuns.page_for_affiliate(
+             settings.affiliate_network_id,
+             fetch_limit - 1,
+             Map.get(connection_args, :after)
+           ) do
       {:ok, project_sync_run_connection(connection)}
     else
-      {:error, reason} when is_binary(reason) ->
-        {:error, reason}
+      {:error, :invalid_first} ->
+        {:error, "invalid first"}
+
+      {:error, :invalid_cursor} ->
+        {:error, "invalid cursor"}
 
       {:error, _reason} ->
         {:error, "CJ commission ingestion is unavailable"}

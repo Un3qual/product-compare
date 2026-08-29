@@ -48,7 +48,7 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
       IO.puts(
         "provider=#{report.provider} surface=#{report.surface} ready=#{report.ready} " <>
           "api_token_configured=#{report.api_token_configured} " <>
-          "account_id_configured=#{report.account_id_configured}"
+          "publisher_ids_configured=#{report.publisher_ids_configured}"
       )
     end
 

@@ -34,10 +34,13 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcher do
         Application.get_env(:product_compare, :cj_commission_sync_defaults, %{})
       end)
 
-    log_bootstrap(ConversionSyncSettings.ensure_cj(defaults))
+    bootstrap_result = safe_bootstrap(defaults)
+    log_bootstrap(bootstrap_result)
 
     state = %{
+      bootstrapped?: match?({:ok, _settings}, bootstrap_result),
       clock: Keyword.get(opts, :clock, &DateTime.utc_now/0),
+      defaults: defaults,
       enqueuer: Keyword.get(opts, :enqueuer, &CJCommissionSyncWorker.enqueue/1),
       scheduler: Keyword.get(opts, :scheduler, &Process.send_after/3)
     }
@@ -47,11 +50,31 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcher do
 
   @impl GenServer
   def handle_info(:dispatch_due, state) do
-    state.clock.()
-    |> safe_dispatch(state.enqueuer)
-    |> log_dispatch()
+    state = retry_bootstrap(state)
+
+    if state.bootstrapped? do
+      state.clock.()
+      |> safe_dispatch(state.enqueuer)
+      |> log_dispatch()
+    end
 
     {:noreply, schedule_tick(state)}
+  end
+
+  defp retry_bootstrap(%{bootstrapped?: true} = state), do: state
+
+  defp retry_bootstrap(state) do
+    result = safe_bootstrap(state.defaults)
+    log_bootstrap(result)
+    %{state | bootstrapped?: match?({:ok, _settings}, result)}
+  end
+
+  defp safe_bootstrap(defaults) do
+    ConversionSyncSettings.ensure_cj(defaults)
+  rescue
+    _exception -> {:error, :dispatcher_exception}
+  catch
+    _kind, _reason -> {:error, :dispatcher_exception}
   end
 
   defp safe_dispatch(now, enqueuer) do

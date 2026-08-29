@@ -1087,7 +1087,7 @@ type CJCommissionIngestionSettings {
 
 type CJCommissionCredentialStatus {
   apiTokenConfigured: Boolean!
-  accountIdConfigured: Boolean!
+  publisherIdsConfigured: Boolean!
   ready: Boolean!
 }
 

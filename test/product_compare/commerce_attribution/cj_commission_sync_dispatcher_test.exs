@@ -217,6 +217,43 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcherTest do
     assert_receive {:scheduled, ^pid, :dispatch_due, 60_000}
   end
 
+  test "the supervised dispatcher retries bootstrap after the CJ network becomes available" do
+    Repo.delete_all(ConversionSyncSetting)
+    cj_network = Repo.get_by!(AffiliateNetwork, code: "cj")
+    Repo.delete!(cj_network)
+    parent = self()
+
+    scheduler = fn recipient, message, delay_ms ->
+      send(parent, {:scheduled, recipient, message, delay_ms})
+      make_ref()
+    end
+
+    pid =
+      start_supervised!(
+        {CJCommissionSyncDispatcher,
+         name: :cj_commission_sync_dispatcher_bootstrap_retry_test,
+         scheduler: scheduler,
+         clock: fn -> ~U[2026-08-28 12:00:00Z] end,
+         defaults: %{interval_minutes: 60, lookback_days: 7, max_pages: 5}}
+      )
+
+    assert_receive {:scheduled, ^pid, :dispatch_due, 60_000}
+    assert Repo.aggregate(ConversionSyncSetting, :count, :id) == 0
+
+    network_fixture("cj")
+    send(pid, :dispatch_due)
+    :sys.get_state(pid)
+
+    assert %ConversionSyncSetting{
+             enabled: false,
+             interval_minutes: 60,
+             lookback_days: 7,
+             max_pages: 5
+           } = Repo.one!(ConversionSyncSetting)
+
+    assert_receive {:scheduled, ^pid, :dispatch_due, 60_000}
+  end
+
   test "the application-supervised dispatcher uses the test scheduler without arming a tick" do
     scheduler =
       :product_compare

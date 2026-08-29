@@ -163,7 +163,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.ConversionSyncRun do
 
   defp validate_error_summary(changeset) do
     validate_change(changeset, :error_summary, fn :error_summary, value ->
-      if is_binary(value) and String.length(value) <= 500 do
+      if is_binary(value) and Enum.count_until(String.codepoints(value), 501) <= 500 do
         []
       else
         [error_summary: "must be 500 characters or fewer"]

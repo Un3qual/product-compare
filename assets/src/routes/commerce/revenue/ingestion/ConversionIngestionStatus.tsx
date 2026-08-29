@@ -19,7 +19,7 @@ export const conversionIngestionStatusQuery = graphql`
       }
       credentials {
         apiTokenConfigured
-        accountIdConfigured
+        publisherIdsConfigured
         ready
       }
       activity {
@@ -262,13 +262,15 @@ function activityTone(state: ActivityState): StatusTone {
 }
 
 function credentialDetail(credentials: IngestionStatus["credentials"]) {
-  if (credentials.accountIdConfigured && credentials.apiTokenConfigured) {
-    return "Account ID and API token are configured.";
+  if (credentials.publisherIdsConfigured && credentials.apiTokenConfigured) {
+    return "Publisher IDs and API token are configured.";
   }
 
-  if (!credentials.accountIdConfigured && !credentials.apiTokenConfigured) {
-    return "Account ID and API token are both missing.";
+  if (!credentials.publisherIdsConfigured && !credentials.apiTokenConfigured) {
+    return "Publisher IDs and API token are both missing.";
   }
 
-  return credentials.accountIdConfigured ? "API token is missing." : "Account ID is missing.";
+  return credentials.publisherIdsConfigured
+    ? "API token is missing."
+    : "Publisher IDs are missing.";
 }

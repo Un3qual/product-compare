@@ -848,7 +848,7 @@ function conversionIngestionOverviewData({
         windowEnd: "2026-08-27T10:00:00Z",
         windowStart: "2026-08-20T10:00:00Z",
       },
-      credentials: { accountIdConfigured: true, apiTokenConfigured: true, ready: true },
+      credentials: { publisherIdsConfigured: true, apiTokenConfigured: true, ready: true },
       latestFailure: {
         errorSummary: "Provider request timed out.",
         finishedAt: "2026-08-26T12:05:00Z",

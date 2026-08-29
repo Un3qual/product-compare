@@ -156,7 +156,7 @@ defmodule ProductCompareWeb.Schema.CommerceAttribution.Types do
 
   object :cj_commission_credential_status, name: "CJCommissionCredentialStatus" do
     field :api_token_configured, non_null(:boolean)
-    field :account_id_configured, non_null(:boolean)
+    field :publisher_ids_configured, non_null(:boolean)
     field :ready, non_null(:boolean)
   end
 

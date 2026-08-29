@@ -98,7 +98,7 @@ const INGESTION = {
     windowEnd: "2026-08-27T12:00:00Z",
     windowStart: "2026-08-20T12:00:00Z",
   },
-  credentials: { accountIdConfigured: true, apiTokenConfigured: true, ready: true },
+  credentials: { publisherIdsConfigured: true, apiTokenConfigured: true, ready: true },
   latestFailure: {
     errorSummary: "Provider timed out after the bounded request window.",
     finishedAt: "2026-08-26T12:05:00Z",
@@ -206,6 +206,7 @@ test("conversion ingestion presents current activity timing, safe failure eviden
   expect(status).toHaveTextContent("Next run");
   expect(status).toHaveTextContent("Window");
   expect(status).toHaveTextContent("Latest failure");
+  expect(status).toHaveTextContent("Publisher IDs and API token are configured.");
   expect(status).toHaveTextContent("Provider timed out after the bounded request window.");
   expect(within(status).getByText("Aug 27, 2026, 11:58 AM")).toHaveAttribute(
     "dateTime",

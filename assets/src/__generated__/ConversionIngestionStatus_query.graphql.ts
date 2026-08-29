@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<795cc0a03686759b9696a7ba10be0ad4>>
+ * @generated SignedSource<<0d115e34cf76f8f06607ed9c6e1c54a9>>
  * @lightSyntaxTransform
  */
 
@@ -20,8 +20,8 @@ export type ConversionIngestionStatus_query$data = {
       readonly windowStart: string | null;
     } | null;
     readonly credentials: {
-      readonly accountIdConfigured: boolean;
       readonly apiTokenConfigured: boolean;
+      readonly publisherIdsConfigured: boolean;
       readonly ready: boolean;
     };
     readonly latestFailure: {
@@ -115,7 +115,7 @@ return {
               "alias": null,
               "args": null,
               "kind": "ScalarField",
-              "name": "accountIdConfigured",
+              "name": "publisherIdsConfigured",
               "storageKey": null
             },
             {
@@ -214,6 +214,6 @@ return {
 };
 })();
 
-(node as any).hash = "1c697ecd6d3289e86856770e84e5db6b";
+(node as any).hash = "6ca0623b46c8a91723bc74a38fd1a203";
 
 export default node;

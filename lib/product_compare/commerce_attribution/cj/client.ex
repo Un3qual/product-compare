@@ -61,17 +61,17 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
   @spec credential_status(map() | keyword()) :: %{
           ready: boolean(),
           api_token_configured: boolean(),
-          account_id_configured: boolean()
+          publisher_ids_configured: boolean()
         }
   def credential_status(opts \\ []) do
     opts = Map.new(opts)
     token? = present?(option_or_env(opts, :api_token, "CJ_API_TOKEN"))
-    account? = match?({:ok, [_ | _]}, publisher_ids(opts))
+    publisher_ids? = match?({:ok, [_ | _]}, publisher_ids(opts))
 
     %{
-      ready: token? and account?,
+      ready: token? and publisher_ids?,
       api_token_configured: token?,
-      account_id_configured: account?
+      publisher_ids_configured: publisher_ids?
     }
   end
 

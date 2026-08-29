@@ -57,7 +57,7 @@ defmodule ProductCompare.Repo.CommerceConversionSyncConstraintsTest do
     )
 
     assert_check_violation(
-      insert_run(network_id, error_summary: String.duplicate("x", 501)),
+      insert_run(network_id, error_summary: String.duplicate("e\u0301", 500)),
       "commerce_conversion_sync_runs_error_summary_length"
     )
 

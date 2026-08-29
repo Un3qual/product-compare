@@ -107,7 +107,7 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissionsTest do
                   surface: "publisherCommissions",
                   ready: true,
                   api_token_configured: true,
-                  account_id_configured: true
+                  publisher_ids_configured: true
                 }} =
                  CjCommissions.run_import(
                    check_credentials: true,
@@ -120,7 +120,7 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissionsTest do
     assert output =~ "surface=publisherCommissions"
     assert output =~ "ready=true"
     assert output =~ "api_token_configured=true"
-    assert output =~ "account_id_configured=true"
+    assert output =~ "publisher_ids_configured=true"
     refute output =~ "secret-test-token"
     refute output =~ "secret-publisher-id"
   end

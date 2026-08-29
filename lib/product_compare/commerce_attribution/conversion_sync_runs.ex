@@ -107,6 +107,39 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncRuns do
       order_by: [desc: run.started_at, desc: run.id]
   end
 
+  @spec page_for_affiliate(pos_integer(), non_neg_integer(), String.t() | nil) ::
+          {:ok, map()} | {:error, :invalid_cursor}
+  def page_for_affiliate(affiliate_network_id, first, after_cursor)
+      when is_integer(affiliate_network_id) and affiliate_network_id > 0 and
+             is_integer(first) and first >= 0 and first <= 100 do
+    with {:ok, after_key} <- decode_page_cursor(after_cursor) do
+      rows =
+        query()
+        |> where([run], run.affiliate_network_id == ^affiliate_network_id)
+        |> after_cursor(after_key)
+        |> preload([:requested_by_user])
+        |> limit(^(first + 1))
+        |> Repo.all()
+
+      {page, overflow} = Enum.split(rows, first)
+
+      edges = Enum.map(page, &%{cursor: encode_page_cursor(&1), node: &1})
+      start_cursor = edges |> List.first() |> edge_cursor()
+      end_cursor = edges |> List.last() |> edge_cursor()
+
+      {:ok,
+       %{
+         edges: edges,
+         page_info: %{
+           start_cursor: start_cursor,
+           end_cursor: end_cursor,
+           has_next_page: overflow != [],
+           has_previous_page: not is_nil(after_key)
+         }
+       }}
+    end
+  end
+
   @spec reconcile_interrupted_cj(DateTime.t()) :: {:ok, non_neg_integer()} | {:error, term()}
   def reconcile_interrupted_cj(%DateTime{} = now) do
     Repo.transaction(fn ->
@@ -250,4 +283,41 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncRuns do
       if normalized_key, do: Map.put(normalized, normalized_key, value), else: normalized
     end)
   end
+
+  defp after_cursor(query, nil), do: query
+
+  defp after_cursor(query, {started_at, id}) do
+    where(
+      query,
+      [run],
+      run.started_at < ^started_at or (run.started_at == ^started_at and run.id < ^id)
+    )
+  end
+
+  defp encode_page_cursor(%ConversionSyncRun{started_at: started_at, id: id}) do
+    started_at
+    |> DateTime.to_unix(:microsecond)
+    |> then(&"#{&1}:#{id}")
+    |> Base.url_encode64(padding: false)
+  end
+
+  defp decode_page_cursor(nil), do: {:ok, nil}
+
+  defp decode_page_cursor(cursor) when is_binary(cursor) do
+    with {:ok, decoded} <- Base.url_decode64(cursor, padding: false),
+         [started_at_value, id_value] <- String.split(decoded, ":", parts: 2),
+         {started_at_microseconds, ""} <- Integer.parse(started_at_value),
+         {id, ""} when id > 0 <- Integer.parse(id_value),
+         {:ok, started_at} <- DateTime.from_unix(started_at_microseconds, :microsecond),
+         ^cursor <- encode_page_cursor(%ConversionSyncRun{started_at: started_at, id: id}) do
+      {:ok, {started_at, id}}
+    else
+      _invalid -> {:error, :invalid_cursor}
+    end
+  end
+
+  defp decode_page_cursor(_cursor), do: {:error, :invalid_cursor}
+
+  defp edge_cursor(nil), do: nil
+  defp edge_cursor(edge), do: edge.cursor
 end
