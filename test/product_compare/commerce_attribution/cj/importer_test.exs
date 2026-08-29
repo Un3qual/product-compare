@@ -526,16 +526,16 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
 
   test "selects the correction deterministically by commission identity at equal UTC freshness" do
     earlier_correction =
-      correction("c-2", "a-1", %{"postingDate" => "2026-08-01T10:00:00Z"})
+      correction("9", "a-1", %{"postingDate" => "2026-08-01T10:00:00Z"})
 
     later_correction =
-      correction("c-3", "a-1", %{"postingDate" => "2026-08-01T10:00:00Z"})
+      correction("10", "a-1", %{"postingDate" => "2026-08-01T10:00:00Z"})
 
-    assert {:ok, %{persisted: 3, reversed: 2}} =
+    assert {:ok, %{persisted: 3, reversed: 1}} =
              Conversions.persist_cj_action_group([
                later_correction,
                earlier_correction,
-               original("c-1", "a-1")
+               original("1", "a-1")
              ])
 
     assert %CommerceConversion{
@@ -551,6 +551,33 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
 
     assert %CommerceConversion{raw_payload: ^later_correction} = Repo.one!(CommerceConversion)
     assert {:ok, %{raw_payload: ^later_correction}} = Persistence.latest_cj_correction("a-1")
+  end
+
+  test "replays correction evidence safely when a legacy reversed row has no freshness timestamp" do
+    action_ref = "legacy-freshness-#{Ecto.UUID.generate()}"
+
+    assert {:ok, %{persisted: 2, reversed: 1}} =
+             Conversions.persist_cj_action_group([
+               original("1", action_ref),
+               correction("9", action_ref)
+             ])
+
+    Repo.update_all(CommerceConversion, set: [data_freshness_at: nil])
+    later_correction = correction("10", action_ref)
+
+    assert {:ok, %{persisted: 1, reversed: 2}} =
+             Conversions.persist_cj_action_group([later_correction])
+
+    assert %CommerceConversion{
+             data_freshness_at: ~U[2026-08-01 10:00:00.000000Z],
+             raw_payload: ^later_correction
+           } = Repo.one!(CommerceConversion)
+  end
+
+  test "action-key advisory locking requires a database transaction" do
+    assert_raise ArgumentError,
+                 "lock_cj_action_key/1 requires a database transaction",
+                 fn -> Persistence.lock_cj_action_key("outside-transaction") end
   end
 
   test "action persistence rejects a malformed correction before it can bypass the adapter" do

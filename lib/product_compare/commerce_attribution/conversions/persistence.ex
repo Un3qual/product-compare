@@ -73,6 +73,10 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
   @spec lock_cj_action_key(String.t()) :: :ok | {:error, Ecto.Changeset.t()}
   def lock_cj_action_key(network_action_ref) do
     with {:ok, network_action_ref} <- validate_action_ref(network_action_ref) do
+      unless Repo.in_transaction?() do
+        raise ArgumentError, "lock_cj_action_key/1 requires a database transaction"
+      end
+
       Repo.query!(
         "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
         ["product_compare:cj_action:" <> network_action_ref]
@@ -133,8 +137,26 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
       from correction in CJActionCorrection,
         where:
           fragment(
-            "(EXCLUDED.posting_date, EXCLUDED.network_correction_ref) >= (?, ?)",
+            """
+            EXCLUDED.posting_date > ? OR
+              (EXCLUDED.posting_date = ? AND
+                CASE
+                  WHEN EXCLUDED.network_correction_ref ~ '^[0-9]+$' AND ? ~ '^[0-9]+$'
+                    THEN (
+                      length(trim(leading '0' from EXCLUDED.network_correction_ref)),
+                      trim(leading '0' from EXCLUDED.network_correction_ref)
+                    ) >= (
+                      length(trim(leading '0' from ?)),
+                      trim(leading '0' from ?)
+                    )
+                  ELSE EXCLUDED.network_correction_ref >= ?
+                END)
+            """,
             correction.posting_date,
+            correction.posting_date,
+            correction.network_correction_ref,
+            correction.network_correction_ref,
+            correction.network_correction_ref,
             correction.network_correction_ref
           ),
         update: [
@@ -323,6 +345,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
   defp correction_at_least_as_new?(conversion, posting_date, raw_payload) do
     conversion.status == :reversed and
       DateTime.compare(conversion.reported_at, posting_date) == :eq and
+      not is_nil(conversion.data_freshness_at) and
       DateTime.compare(conversion.data_freshness_at, posting_date) == :eq and
       match?(%{"original" => false}, conversion.raw_payload) and
       correction_ref_at_least?(conversion.raw_payload, raw_payload)
@@ -332,8 +355,19 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
     current_ref = normalize_string(Map.get(current_payload, "commissionId"))
     incoming_ref = normalize_string(Map.get(incoming_payload, "commissionId"))
 
-    is_binary(current_ref) and is_binary(incoming_ref) and current_ref >= incoming_ref
+    is_binary(current_ref) and is_binary(incoming_ref) and
+      ordered_correction_ref_at_least?(current_ref, incoming_ref)
   end
+
+  defp ordered_correction_ref_at_least?(current_ref, incoming_ref) do
+    if numeric_ref?(current_ref) and numeric_ref?(incoming_ref) do
+      String.to_integer(current_ref) >= String.to_integer(incoming_ref)
+    else
+      current_ref >= incoming_ref
+    end
+  end
+
+  defp numeric_ref?(ref), do: Regex.match?(~r/^[0-9]+$/, ref)
 
   defp correction_changeset(field, message) do
     %CommerceConversion{}

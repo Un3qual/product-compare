@@ -9,8 +9,11 @@ defmodule ProductCompare.CommerceAttribution.CJ.ClientTest do
 
   setup do
     original_env = Map.new(@env_keys, &{&1, System.get_env(&1)})
+    original_req_options = Req.default_options()
 
     on_exit(fn ->
+      Req.default_options(original_req_options)
+
       Enum.each(original_env, fn
         {key, nil} -> System.delete_env(key)
         {key, value} -> System.put_env(key, value)
@@ -40,6 +43,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ClientTest do
                    since_commission_id: nil
                  },
                  api_token: "secret-token",
+                 req_options: [redirect: true, receive_timeout: 1_234],
                  transport: transport
                )
 
@@ -47,10 +51,13 @@ defmodule ProductCompare.CommerceAttribution.CJ.ClientTest do
                       %{
                         url: "https://commissions.api.cj.com/query",
                         headers: headers,
-                        body: body
+                        body: body,
+                        options: options
                       }}
 
       assert {"Authorization", "Bearer secret-token"} in headers
+      assert options[:redirect] == false
+      assert options[:receive_timeout] == 1_234
 
       decoded = Jason.decode!(body)
 
@@ -65,6 +72,78 @@ defmodule ProductCompare.CommerceAttribution.CJ.ClientTest do
       assert decoded["query"] =~ "shopperId"
       assert decoded["query"] =~ "pubCommissionAmountUsd"
       refute decoded["query"] =~ " sid "
+    end
+
+    test "does not follow provider redirects even when request options enable them" do
+      parent = self()
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        send(parent, {:request_path, conn.request_path})
+
+        conn
+        |> Plug.Conn.put_resp_header("location", "http://127.0.0.1/private")
+        |> Plug.Conn.send_resp(307, "")
+      end)
+
+      assert {:error, {:http_error, 307}} =
+               Client.fetch_page(
+                 page_request(),
+                 api_token: "secret-token",
+                 req_options: [
+                   plug: {Req.Test, __MODULE__},
+                   follow_redirects: true,
+                   location_trusted: true,
+                   redirect: true,
+                   redirect_trusted: true
+                 ]
+               )
+
+      assert_receive {:request_path, "/query"}
+      refute_receive {:request_path, "/private"}
+    end
+
+    test "does not follow redirects enabled through Req defaults" do
+      parent = self()
+      Req.default_options(follow_redirects: true, location_trusted: true)
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        send(parent, {:redirect_request, conn.request_path})
+
+        conn
+        |> Plug.Conn.put_resp_header("location", "http://127.0.0.1/private")
+        |> Plug.Conn.send_resp(307, "")
+      end)
+
+      assert {:error, {:http_error, 307}} =
+               Client.fetch_page(
+                 page_request(),
+                 api_token: "secret-token",
+                 req_options: [plug: {Req.Test, __MODULE__}]
+               )
+
+      assert_receive {:redirect_request, "/query"}
+      refute_receive {:redirect_request, "/private"}
+    end
+
+    test "keeps the request on the pinned CJ endpoint" do
+      parent = self()
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        send(parent, {:request_destination, conn.host, conn.request_path})
+        Plug.Conn.send_resp(conn, 429, "")
+      end)
+
+      assert {:error, {:http_error, 429}} =
+               Client.fetch_page(
+                 page_request(),
+                 api_token: "secret-token",
+                 req_options: [
+                   plug: {Req.Test, __MODULE__},
+                   url: "http://127.0.0.1/private"
+                 ]
+               )
+
+      assert_receive {:request_destination, "commissions.api.cj.com", "/query"}
     end
 
     test "returns status-only HTTP errors without provider bodies or credentials" do

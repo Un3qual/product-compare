@@ -521,6 +521,34 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
       assert updated_by_email == operator.email
     end
 
+    test "an applied settings update reports a distinct error when its post-commit read fails", %{
+      operator_conn: conn
+    } do
+      settings = ensure_settings!()
+      Repo.query!("ALTER TABLE oban_jobs RENAME TO oban_jobs_unavailable")
+
+      assert %{
+               "data" => %{
+                 "updateCjCommissionIngestionSettings" => %{
+                   "errors" => [
+                     %{
+                       "code" => "INGESTION_UNAVAILABLE",
+                       "field" => nil,
+                       "message" =>
+                         "the change was applied but CJ commission ingestion state could not be read"
+                     }
+                   ],
+                   "ingestion" => nil
+                 }
+               }
+             } =
+               graphql(conn, update_settings_mutation(), %{
+                 "input" => %{"lookbackDays" => 30}
+               })
+
+      assert Repo.get!(ConversionSyncSetting, settings.id).lookback_days == 30
+    end
+
     test "settings update returns INVALID_ARGUMENT for each invalid field", %{
       operator_conn: conn
     } do

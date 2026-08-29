@@ -1439,7 +1439,7 @@ defmodule ProductCompare.CommerceAttributionTest do
         commission_id: "cj-commission-#{System.unique_integer([:positive])}",
         sid: "not-a-product-compare-click",
         action_status: :new,
-        currency: "USD",
+        currency: "EUR",
         sale_amount: Decimal.new("25.00"),
         commission_amount: Decimal.new("2.50"),
         event_date: ~U[2026-05-20 12:00:00Z],
@@ -1451,6 +1451,9 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert conversion.click_session_id == nil
       assert conversion.network_click_ref == "not-a-product-compare-click"
       assert conversion.status == :pending
+      assert conversion.currency == "EUR"
+      assert Decimal.equal?(conversion.order_amount, Decimal.new("25.00"))
+      assert Decimal.equal?(conversion.commission_amount, Decimal.new("2.50"))
       assert conversion.attribution_confidence == :unmatched
       assert conversion.raw_payload["sid"] == "not-a-product-compare-click"
       assert conversion.raw_payload["action_status"] == "new"

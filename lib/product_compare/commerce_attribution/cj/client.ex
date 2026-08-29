@@ -8,7 +8,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
   @default_req_options [
     receive_timeout: 15_000,
     connect_options: [timeout: 5_000],
-    redirect: true
+    redirect: false
   ]
 
   alias ProductCompare.CommerceAttribution.CJ.CommissionDetail
@@ -155,8 +155,15 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
         {"Content-Type", "application/json"}
       ],
       body: body,
-      options: Keyword.merge(@default_req_options, Map.get(opts, :req_options, []))
+      options: request_options(opts)
     }
+  end
+
+  defp request_options(opts) do
+    @default_req_options
+    |> Keyword.merge(Map.get(opts, :req_options, []))
+    |> Keyword.drop([:follow_redirects, :location_trusted, :redirect_trusted, :url])
+    |> Keyword.put(:redirect, false)
   end
 
   defp call_transport(request, opts) do
@@ -186,7 +193,19 @@ defmodule ProductCompare.CommerceAttribution.CJ.Client do
          body: body,
          options: options
        }) do
-    case Req.post(url, Keyword.merge(options, headers: headers, body: body, decode_body: false)) do
+    request =
+      url
+      |> Req.new(Keyword.merge(options, headers: headers, body: body, decode_body: false))
+      |> Map.put(:method, :post)
+      |> Map.put(:url, URI.parse(url))
+      |> update_in(
+        [Access.key!(:options)],
+        &(&1
+          |> Map.drop([:follow_redirects, :location_trusted, :redirect_trusted])
+          |> Map.put(:redirect, false))
+      )
+
+    case Req.request(request) do
       {:ok, %{status: status, body: response_body}} ->
         {:ok, %{status: status, body: IO.iodata_to_binary(response_body)}}
 

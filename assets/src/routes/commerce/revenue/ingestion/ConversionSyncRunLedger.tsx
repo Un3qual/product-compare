@@ -136,7 +136,11 @@ export function ConversionSyncRunLedger({
   const table = useTable({ columns, data: runs, features: tableModel, getRowId: (run) => run.id });
 
   useEffect(() => {
-    if (runningRunIsPresent) onRunningRunObserved();
+    if (!runningRunIsPresent) return;
+
+    onRunningRunObserved();
+    const timer = window.setInterval(onRunningRunObserved, 10_000);
+    return () => window.clearInterval(timer);
   }, [onRunningRunObserved, runningRunIsPresent]);
 
   return (

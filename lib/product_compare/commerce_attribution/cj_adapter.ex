@@ -40,7 +40,11 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
         |> value(:original_action_id, "originalActionId", "OriginalActionId")
         |> reference_token(),
       status: normalize_status(value(payload, :action_status, "actionStatus", "ActionStatus")),
-      currency: "USD",
+      currency:
+        if(usd_amounts?(payload),
+          do: "USD",
+          else: value(payload, :currency, "currency", "Currency")
+        ),
       order_amount:
         decimal(
           value(payload, :sale_amount_usd, "saleAmountUsd", "SaleAmountUsd") ||
@@ -106,6 +110,18 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
 
   defp value(payload, atom_key, string_key, fallback_key) do
     Map.get(payload, atom_key) || Map.get(payload, string_key) || Map.get(payload, fallback_key)
+  end
+
+  defp usd_amounts?(payload) do
+    not is_nil(value(payload, :sale_amount_usd, "saleAmountUsd", "SaleAmountUsd")) and
+      not is_nil(
+        value(
+          payload,
+          :pub_commission_amount_usd,
+          "pubCommissionAmountUsd",
+          "PubCommissionAmountUsd"
+        )
+      )
   end
 
   defp normalize_status(status) when status in [:pending, :approved, :reversed, :paid],

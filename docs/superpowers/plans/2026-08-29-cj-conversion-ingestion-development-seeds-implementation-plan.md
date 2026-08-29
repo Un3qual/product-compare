@@ -126,7 +126,7 @@ inventory and operator routes with the ingestion run count and
 Run:
 
 ```bash
-mix format priv/repo/seeds/conversion_ingestion.exs priv/repo/seeds/operations.exs priv/repo/seeds/guide.exs test/product_compare/repo/seeds_test.exs test/product_compare_web/graphql/development_seeds_test.exs docs/superpowers/specs/2026-08-29-cj-conversion-ingestion-development-seeds-design.md docs/superpowers/plans/2026-08-29-cj-conversion-ingestion-development-seeds-implementation-plan.md
+mix format priv/repo/seeds/conversion_ingestion.exs priv/repo/seeds/operations.exs priv/repo/seeds/guide.exs test/product_compare/repo/seeds_test.exs test/product_compare_web/graphql/development_seeds_test.exs
 mix test test/product_compare/repo/seeds_test.exs:<new-test-line>
 mix test test/product_compare_web/graphql/development_seeds_test.exs
 ```

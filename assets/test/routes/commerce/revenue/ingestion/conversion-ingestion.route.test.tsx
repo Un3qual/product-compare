@@ -250,7 +250,8 @@ test("active ingestion refetches its overview once per visible ten-second interv
   expect(refetchMock).toHaveBeenCalledWith({}, { fetchPolicy: "network-only" });
 });
 
-test("a running ledger snapshot revalidates an idle overview", async () => {
+test("a running ledger snapshot keeps revalidating an idle overview", async () => {
+  vi.useFakeTimers();
   mockedUseRefetchableFragment.mockReturnValue([
     { ...OVERVIEW, cjCommissionIngestion: withActivity(null) },
     refetchMock,
@@ -273,9 +274,12 @@ test("a running ledger snapshot revalidates an idle overview", async () => {
   } as never);
 
   renderConversionIngestionRoute();
+  await act(() => Promise.resolve());
 
-  await screen.findByRole("table", { name: "Conversion sync runs" });
-  await waitFor(() => expect(revalidateMock).toHaveBeenCalledTimes(1));
+  expect(screen.getByRole("table", { name: "Conversion sync runs" })).toBeVisible();
+  expect(revalidateMock).toHaveBeenCalledTimes(1);
+  act(() => vi.advanceTimersByTime(10_000));
+  expect(revalidateMock).toHaveBeenCalledTimes(2);
   expect(refetchMock).not.toHaveBeenCalled();
 });
 
@@ -482,7 +486,8 @@ test("the deferred ledger retries history only while status and settings stay us
   } as never);
   renderConversionIngestionRoute();
 
-  await act(async () => runsQuery.reject(new Error("history unavailable")));
+  runsQuery.reject(new Error("history unavailable"));
+  await act(() => runsQuery.promise.catch(() => undefined));
 
   expect(await screen.findByText("Conversion sync runs unavailable.")).toBeVisible();
   expect(screen.getByRole("region", { name: "Ingestion status" })).toBeVisible();
@@ -637,9 +642,10 @@ function renderConversionIngestionRoute() {
   );
 }
 
-async function completeMutation(index: number, response: object) {
-  await act(async () => {
+function completeMutation(index: number, response: object) {
+  return act(() => {
     commitMutationMock.mock.calls[index]?.[0]?.onCompleted(response, []);
+    return Promise.resolve();
   });
 }
 

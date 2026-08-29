@@ -165,7 +165,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Mutations do
   defp mutation_payload({:ok, _result}, resolution) do
     case Reads.cj_commission_ingestion(nil, %{}, resolution) do
       {:ok, ingestion} -> {:ok, %{ingestion: ingestion, errors: []}}
-      {:error, _reason} -> {:ok, error_payload(:not_found)}
+      {:error, _reason} -> {:ok, error_payload(:ingestion_unavailable)}
     end
   end
 
@@ -186,6 +186,13 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Mutations do
     mutation_error_payload(
       "ACTIVATION_NOT_READY",
       "a successful CJ commission sync is required before enabling ingestion"
+    )
+  end
+
+  defp error_payload(:ingestion_unavailable) do
+    mutation_error_payload(
+      "INGESTION_UNAVAILABLE",
+      "the change was applied but CJ commission ingestion state could not be read"
     )
   end
 

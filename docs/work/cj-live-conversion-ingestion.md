@@ -114,15 +114,17 @@ authored operations change.
   reported 88 reader, 62 normalization, and 88 operation-text artifacts;
   focused frontend typecheck, lint, format, and unit gates passed 113 files and
   1,522 tests.
-- Final complete verification passed: `mix format --check-formatted`, `mix typecheck`,
+- Final complete verification passed again on August 29 after the deterministic
+  development ingestion settings, run ledger, and correction evidence seeds
+  landed: `mix format --check-formatted`, `mix typecheck`,
   `mix quality` (Credo zero issues, ExDNA 3/3 clone budget, Reach zero new
   smells, Dialyzer successful with the existing single ignored warning), and
-  `mix test --cover` with 1,644 tests, zero failures, and 86.70% total coverage.
-  `mix frontend_check` passed Relay, typecheck, lint, format, 114 unit-test files
-  with 1,526 tests, client and SSR builds, StyleX mangling, and the 227,414-byte
-  gzip initial bundle within its 300,000-byte budget. The unchanged Node engine
-  warning remained non-blocking because every frontend command exited
-  successfully.
+  `mix test --cover` with 1,671 tests, zero failures, and 86.83% total coverage.
+  The seed suites include repeat-run stability and operator GraphQL visibility
+  for the seeded ingestion state. `mix frontend_check` passed Relay, typecheck,
+  lint, format, 114 unit-test files with 1,530 tests, client and SSR builds,
+  StyleX mangling, and the bundle budget. The unchanged Node engine warning
+  remained non-blocking because every frontend command exited successfully.
 - Credential preflight completed locally without disclosing environment values:
   readiness was false, with both required credential indicators false. **live
   evidence not run: credentials unavailable**. No live window or replay ran,

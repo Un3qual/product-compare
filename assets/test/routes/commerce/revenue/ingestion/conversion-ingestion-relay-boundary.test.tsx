@@ -83,7 +83,7 @@ test("the network-only overview refetch normalizes persisted settings into the o
   });
   expect(screen.getByLabelText("Interval minutes")).toHaveValue(999);
 
-  await act(async () => {
+  act(() => {
     environment.commitPayload(
       createOperationDescriptor(
         getRequest(conversionIngestionStatusRefetchQueryArtifact),
