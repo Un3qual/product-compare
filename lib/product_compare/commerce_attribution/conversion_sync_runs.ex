@@ -3,8 +3,11 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncRuns do
 
   import Ecto.Query
 
+  alias ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
+
+  @execution_recovery_margin :timer.minutes(10)
 
   @start_fields [
     :entropy_id,
@@ -110,18 +113,64 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncRuns do
       interrupted_cj_runs()
       |> Enum.reduce_while(0, fn run, count ->
         case lock_oban_job(run.oban_job_id) do
-          %Oban.Job{state: "executing"} ->
-            {:cont, count}
+          %Oban.Job{state: "executing"} = job ->
+            if stale_execution?(job, now) do
+              finalize_and_replace_stale_execution(run, job, now, count)
+            else
+              {:cont, count}
+            end
 
           _missing_or_not_executing ->
-            case finalize_interrupted(run, now) do
-              {:ok, _run} -> {:cont, count + 1}
-              {:error, changeset} -> {:halt, Repo.rollback(changeset)}
-            end
+            finalize_interrupted_run(run, now, count)
         end
       end)
     end)
   end
+
+  defp stale_execution?(%Oban.Job{attempted_at: %DateTime{} = attempted_at} = job, now) do
+    stale_before =
+      DateTime.add(
+        now,
+        -(CJCommissionSyncWorker.timeout(job) + @execution_recovery_margin),
+        :millisecond
+      )
+
+    DateTime.compare(attempted_at, stale_before) in [:lt, :eq]
+  end
+
+  defp stale_execution?(_job, _now), do: false
+
+  defp finalize_and_replace_stale_execution(run, job, now, count) do
+    with {:ok, _run} <- finalize_interrupted(run, now),
+         :ok <- replace_stale_job(job) do
+      {:cont, count + 1}
+    else
+      {:error, reason} -> {:halt, Repo.rollback(reason)}
+    end
+  end
+
+  defp finalize_interrupted_run(run, now, count) do
+    case finalize_interrupted(run, now) do
+      {:ok, _run} -> {:cont, count + 1}
+      {:error, changeset} -> {:halt, Repo.rollback(changeset)}
+    end
+  end
+
+  defp replace_stale_job(%Oban.Job{} = job) do
+    with :ok <- Oban.cancel_job(job),
+         {:ok, _replacement} <- enqueue_remaining_attempts(job) do
+      :ok
+    end
+  end
+
+  defp enqueue_remaining_attempts(%Oban.Job{attempt: attempt, max_attempts: max_attempts} = job)
+       when attempt < max_attempts do
+    job.args
+    |> CJCommissionSyncWorker.new(max_attempts: max_attempts - attempt)
+    |> Oban.insert()
+  end
+
+  defp enqueue_remaining_attempts(%Oban.Job{}), do: {:ok, nil}
 
   defp interrupt_older_attempts(
          %{oban_job_id: oban_job_id, oban_attempt: oban_attempt},

@@ -126,9 +126,13 @@ function ConversionIngestionPanel({
   );
   const { revalidate } = useRevalidator();
   const [statusData, refetchOverview] = useConversionIngestionStatus(data);
+  const activityIsPresent = Boolean(statusData.cjCommissionIngestion.activity);
   const refreshOverview = useCallback(() => {
     refetchOverview({}, { fetchPolicy: "network-only" });
   }, [refetchOverview]);
+  const reconcileRunningHistory = useCallback(() => {
+    if (!activityIsPresent) revalidate();
+  }, [activityIsPresent, revalidate]);
 
   return (
     <PageShell
@@ -151,15 +155,21 @@ function ConversionIngestionPanel({
         ingestion={statusData.cjCommissionIngestion}
         onOverviewRefresh={refreshOverview}
       />
-      <DeferredRunLedger query={loaderData.runsQuery} variables={loaderData.runsVariables} />
+      <DeferredRunLedger
+        onRunningRunObserved={reconcileRunningHistory}
+        query={loaderData.runsQuery}
+        variables={loaderData.runsVariables}
+      />
     </PageShell>
   );
 }
 
 function DeferredRunLedger({
+  onRunningRunObserved,
   query,
   variables,
 }: {
+  onRunningRunObserved: () => void;
   query: Extract<ConversionIngestionLoaderData, { status: "ready" }>["runsQuery"];
   variables: Extract<ConversionIngestionLoaderData, { status: "ready" }>["runsVariables"];
 }) {
@@ -196,15 +206,19 @@ function DeferredRunLedger({
           />
         }
       >
-        {(resolvedQuery) => <RunLedgerBoundary query={resolvedQuery} />}
+        {(resolvedQuery) => (
+          <RunLedgerBoundary onRunningRunObserved={onRunningRunObserved} query={resolvedQuery} />
+        )}
       </Await>
     </Suspense>
   );
 }
 
 function RunLedgerBoundary({
+  onRunningRunObserved,
   query,
 }: {
+  onRunningRunObserved: () => void;
   query: Awaited<Extract<ConversionIngestionLoaderData, { status: "ready" }>["runsQuery"]>;
 }) {
   return (
@@ -213,22 +227,28 @@ function RunLedgerBoundary({
       resetToken={query}
     >
       <Suspense fallback={<FeedbackState kind="loading" title="Loading conversion sync runs..." />}>
-        <RunLedgerPanel query={query} />
+        <RunLedgerPanel onRunningRunObserved={onRunningRunObserved} query={query} />
       </Suspense>
     </ResettableErrorBoundary>
   );
 }
 
 function RunLedgerPanel({
+  onRunningRunObserved,
   query,
 }: {
+  onRunningRunObserved: () => void;
   query: Awaited<Extract<ConversionIngestionLoaderData, { status: "ready" }>["runsQuery"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<ConversionSyncRunsQuery>(conversionSyncRunsQuery, query);
   const data = usePreloadedQuery<ConversionSyncRunsQuery>(conversionSyncRunsQuery, queryRef);
 
   return (
-    <ConversionSyncRunLedger fragmentRef={data} key={relayRouteQueryDescriptorIdentity(query)} />
+    <ConversionSyncRunLedger
+      fragmentRef={data}
+      key={relayRouteQueryDescriptorIdentity(query)}
+      onRunningRunObserved={onRunningRunObserved}
+    />
   );
 }
 

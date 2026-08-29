@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { graphql, usePaginationFragment } from "react-relay";
@@ -121,8 +121,10 @@ const columns = columnHelper.columns([
 
 export function ConversionSyncRunLedger({
   fragmentRef,
+  onRunningRunObserved,
 }: {
   fragmentRef: ConversionSyncRunLedger_connection$key;
+  onRunningRunObserved: () => void;
 }) {
   const { data, hasNext, isLoadingNext, loadNext } = usePaginationFragment<
     ConversionSyncRunLedgerPaginationQuery,
@@ -130,7 +132,12 @@ export function ConversionSyncRunLedger({
   >(conversionSyncRunLedgerConnection, fragmentRef);
   const [paginationError, setPaginationError] = useState(false);
   const runs = data.cjCommissionSyncRuns.edges.map(({ node }) => node);
+  const runningRunIsPresent = runs.some(({ status }) => status === "RUNNING");
   const table = useTable({ columns, data: runs, features: tableModel, getRowId: (run) => run.id });
+
+  useEffect(() => {
+    if (runningRunIsPresent) onRunningRunObserved();
+  }, [onRunningRunObserved, runningRunIsPresent]);
 
   return (
     <section aria-labelledby="conversion-sync-runs-heading" {...props(styles.surface)}>

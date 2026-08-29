@@ -291,6 +291,46 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcherTest do
     assert Repo.get!(ConversionSyncRun, cli_run.id).status == :running
   end
 
+  test "reconciliation replaces a stale executing job with its remaining attempts" do
+    now = ~U[2026-08-28 12:00:00Z]
+
+    assert {:ok, job} =
+             CJCommissionSyncWorker.enqueue(
+               worker_opts(schedule_window: ~U[2026-08-04 00:00:00Z])
+             )
+
+    Repo.update_all(
+      from(current_job in Oban.Job, where: current_job.id == ^job.id),
+      set: [
+        state: "executing",
+        attempt: 2,
+        attempted_at: DateTime.add(now, -56, :minute)
+      ]
+    )
+
+    run = start_run!(oban_job_id: job.id, oban_attempt: 2)
+
+    assert {:ok, 1} = ConversionSyncRuns.reconcile_interrupted_cj(now)
+
+    interrupted = Repo.get!(ConversionSyncRun, run.id)
+    assert interrupted.status == :failed
+    assert interrupted.error_summary == "worker_interrupted"
+    assert DateTime.compare(interrupted.finished_at, now) == :eq
+    assert Repo.get!(Oban.Job, job.id).state == "cancelled"
+
+    replacement =
+      Repo.one!(
+        from current_job in Oban.Job,
+          where:
+            current_job.worker == ^inspect(CJCommissionSyncWorker) and
+              current_job.id != ^job.id and current_job.state == "available"
+      )
+
+    assert replacement.args == job.args
+    assert replacement.attempt == 0
+    assert replacement.max_attempts == job.max_attempts - 2
+  end
+
   test "reconciliation locks the Oban row before preserving a live executing attempt" do
     now = ~U[2026-08-28 12:00:00Z]
 

@@ -250,6 +250,35 @@ test("active ingestion refetches its overview once per visible ten-second interv
   expect(refetchMock).toHaveBeenCalledWith({}, { fetchPolicy: "network-only" });
 });
 
+test("a running ledger snapshot revalidates an idle overview", async () => {
+  mockedUseRefetchableFragment.mockReturnValue([
+    { ...OVERVIEW, cjCommissionIngestion: withActivity(null) },
+    refetchMock,
+  ] as never);
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      cjCommissionSyncRuns: {
+        edges: [
+          {
+            cursor: "cursor-running",
+            node: { ...LATEST_SUCCESS_RUN, finishedAt: null, id: "run-running", status: "RUNNING" },
+          },
+        ],
+        pageInfo: { endCursor: "cursor-running", hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  renderConversionIngestionRoute();
+
+  await screen.findByRole("table", { name: "Conversion sync runs" });
+  await waitFor(() => expect(revalidateMock).toHaveBeenCalledTimes(1));
+  expect(refetchMock).not.toHaveBeenCalled();
+});
+
 test("settings submit preserves exact bounded values, disables while pending, and refreshes only the overview on success", async () => {
   renderConversionIngestionRoute();
 
