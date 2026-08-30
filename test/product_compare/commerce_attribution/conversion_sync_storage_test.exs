@@ -324,6 +324,30 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
     assert disabled.next_run_at == nil
   end
 
+  test "locked settings updates preserve the CJ network identity" do
+    cj_network = network_fixture("cj")
+    other_network = network_fixture("impact")
+    operator = AccountsFixtures.user_fixture()
+    assert {:ok, settings} = ConversionSyncSettings.ensure_cj(%{})
+    settings_id = settings.id
+    cj_network_id = cj_network.id
+
+    assert {:ok, {:ok, %ConversionSyncSetting{}}} =
+             Repo.transaction(fn ->
+               ConversionSyncSettings.update_locked(
+                 ConversionSyncSettings.lock_cj(),
+                 operator.id,
+                 %{affiliate_network_id: other_network.id},
+                 ~U[2026-08-28 12:00:00Z]
+               )
+             end)
+
+    assert %ConversionSyncSetting{
+             id: ^settings_id,
+             affiliate_network_id: ^cj_network_id
+           } = ConversionSyncSettings.get_cj()
+  end
+
   test "run lifecycle starts running, completes once, and lists newest first" do
     now = ~U[2026-08-28 12:00:00Z]
     network = network_fixture("cj")

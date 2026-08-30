@@ -77,7 +77,7 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
 
     attrs =
       attrs
-      |> Map.drop([:next_run_at])
+      |> Map.drop([:affiliate_network_id, :next_run_at])
       |> Map.put(:updated_by_user_id, operator_id)
 
     proposed_attrs =
