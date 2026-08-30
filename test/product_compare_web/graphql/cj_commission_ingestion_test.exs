@@ -2,6 +2,7 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
   use ProductCompareWeb.ConnCase, async: false
 
   import Ecto.Query
+  import ExUnit.CaptureLog
 
   import ProductCompare.DatabaseTestHelpers,
     only: [
@@ -128,7 +129,15 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
       ensure_settings!()
       Repo.query!("ALTER TABLE oban_jobs RENAME TO oban_jobs_unavailable")
 
-      assert_cj_read_unavailable(graphql(conn, overview_query(), %{}), "cjCommissionIngestion")
+      log =
+        capture_log(fn ->
+          assert_cj_read_unavailable(
+            graphql(conn, overview_query(), %{}),
+            "cjCommissionIngestion"
+          )
+        end)
+
+      assert log =~ "CJ commission ingestion overview read failed"
     end
 
     test "operator sync-run history maps downstream database read failures to unavailable", %{
@@ -140,10 +149,15 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
         "ALTER TABLE commerce_conversion_sync_runs RENAME TO commerce_conversion_sync_runs_unavailable"
       )
 
-      assert_cj_read_unavailable(
-        graphql(conn, runs_query(), %{"first" => 1}),
-        "cjCommissionSyncRuns"
-      )
+      log =
+        capture_log(fn ->
+          assert_cj_read_unavailable(
+            graphql(conn, runs_query(), %{"first" => 1}),
+            "cjCommissionSyncRuns"
+          )
+        end)
+
+      assert log =~ "CJ commission ingestion history read failed"
     end
 
     test "operator overview reads persisted settings without locking or writes", %{
@@ -555,6 +569,7 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
       assert updated_by_email == operator.email
     end
 
+    @tag capture_log: true
     test "an applied settings update reports a distinct error when its post-commit read fails", %{
       operator_conn: conn
     } do

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2b2cec39bfe5d6d76a764bfa7c00b5c3>>
+ * @generated SignedSource<<b8e2f48ee512d9f4ee59b568de6cce76>>
  * @lightSyntaxTransform
  */
 
@@ -45,14 +45,7 @@ v1 = [
     "name": "first",
     "variableName": "first"
   }
-],
-v2 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "cursor",
-  "storageKey": null
-};
+];
 return {
   "fragment": {
     "argumentDefinitions": (v0/*:: as any*/),
@@ -91,7 +84,13 @@ return {
             "name": "edges",
             "plural": true,
             "selections": [
-              (v2/*:: as any*/),
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "cursor",
+                "storageKey": null
+              },
               {
                 "alias": null,
                 "args": null,
@@ -125,13 +124,6 @@ return {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "requesterEmail",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
                     "name": "windowStart",
                     "storageKey": null
                   },
@@ -142,7 +134,6 @@ return {
                     "name": "windowEnd",
                     "storageKey": null
                   },
-                  (v2/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -245,16 +236,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "9aacee6f1ac19723d848ba2237dd894f",
+    "cacheID": "9d9053c54ffd55dcc62cad7818ab15a0",
     "id": null,
     "metadata": {},
     "name": "ConversionSyncRunLedgerPaginationQuery",
     "operationKind": "query",
-    "text": "query ConversionSyncRunLedgerPaginationQuery(\n  $after: String\n  $first: Int!\n) {\n  ...ConversionSyncRunLedger_connection_2HEEH6\n}\n\nfragment ConversionSyncRunLedger_connection_2HEEH6 on RootQueryType {\n  cjCommissionSyncRuns(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        status\n        trigger\n        requesterEmail\n        windowStart\n        windowEnd\n        cursor\n        pagesFetched\n        recordsFetched\n        recordsPersisted\n        recordsFailed\n        startedAt\n        finishedAt\n        errorSummary\n        __typename\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query ConversionSyncRunLedgerPaginationQuery(\n  $after: String\n  $first: Int!\n) {\n  ...ConversionSyncRunLedger_connection_2HEEH6\n}\n\nfragment ConversionSyncRunLedger_connection_2HEEH6 on RootQueryType {\n  cjCommissionSyncRuns(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        status\n        trigger\n        windowStart\n        windowEnd\n        pagesFetched\n        recordsFetched\n        recordsPersisted\n        recordsFailed\n        startedAt\n        finishedAt\n        errorSummary\n        __typename\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "a04edf9679b6f70deaf8f6431a7ef0fa";
+(node as any).hash = "d2f658efbf602faf852c0e502f2a835d";
 
 export default node;

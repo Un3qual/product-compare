@@ -31,10 +31,8 @@ export const conversionSyncRunLedgerConnection = graphql`
           id
           status
           trigger
-          requesterEmail
           windowStart
           windowEnd
-          cursor
           pagesFetched
           recordsFetched
           recordsPersisted

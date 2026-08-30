@@ -2,6 +2,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   @moduledoc false
 
   import Ecto.Query
+  require Logger
 
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.CommerceAttribution.CJ.Client
@@ -20,6 +21,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
 
   @invalid_filters_error "invalid revenue summary filters"
   @invalid_click_filters_error "invalid commerce attribution click filters"
+  @ingestion_unavailable_error "CJ commission ingestion is unavailable"
 
   @spec cj_commission_ingestion(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, GraphQLErrors.top_level_error()}
@@ -50,10 +52,10 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
       {:ok, project_cj_commission_ingestion(settings)}
     else
       {:error, _reason} ->
-        {:error, "CJ commission ingestion is unavailable"}
+        {:error, @ingestion_unavailable_error}
     end
   rescue
-    _exception -> {:error, "CJ commission ingestion is unavailable"}
+    exception -> unavailable_ingestion_read("overview", exception, __STACKTRACE__)
   end
 
   defp cj_commission_sync_runs_read(args) do
@@ -78,10 +80,19 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
         {:error, "invalid cursor"}
 
       {:error, _reason} ->
-        {:error, "CJ commission ingestion is unavailable"}
+        {:error, @ingestion_unavailable_error}
     end
   rescue
-    _exception -> {:error, "CJ commission ingestion is unavailable"}
+    exception -> unavailable_ingestion_read("history", exception, __STACKTRACE__)
+  end
+
+  defp unavailable_ingestion_read(surface, exception, stacktrace) do
+    Logger.error(fn ->
+      "CJ commission ingestion #{surface} read failed\n" <>
+        Exception.format(:error, exception, stacktrace)
+    end)
+
+    {:error, @ingestion_unavailable_error}
   end
 
   @spec commerce_attribution_clicks(any(), map(), Absinthe.Resolution.t()) ::

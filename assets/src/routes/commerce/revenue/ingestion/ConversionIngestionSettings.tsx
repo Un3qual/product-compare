@@ -15,6 +15,7 @@ import {
   updateCJCommissionIngestionSettingsMutation,
 } from "./ConversionIngestionOperations";
 import {
+  SETTINGS_BOUNDS,
   SettingsValidationError,
   buildSettingsVariables,
   resolveIngestionMutationOutcome,
@@ -182,24 +183,24 @@ export function ConversionIngestionSettings({
       <div {...props(styles.fields)}>
         <NumberField
           label="Interval minutes"
-          maximum={10_080}
-          minimum={15}
+          maximum={SETTINGS_BOUNDS.intervalMinutes.maximum}
+          minimum={SETTINGS_BOUNDS.intervalMinutes.minimum}
           name="intervalMinutes"
           pending={pending}
           value={data.settings.intervalMinutes}
         />
         <NumberField
           label="Lookback days"
-          maximum={90}
-          minimum={1}
+          maximum={SETTINGS_BOUNDS.lookbackDays.maximum}
+          minimum={SETTINGS_BOUNDS.lookbackDays.minimum}
           name="lookbackDays"
           pending={pending}
           value={data.settings.lookbackDays}
         />
         <NumberField
           label="Maximum pages"
-          maximum={100}
-          minimum={1}
+          maximum={SETTINGS_BOUNDS.maxPages.maximum}
+          minimum={SETTINGS_BOUNDS.maxPages.minimum}
           name="maxPages"
           pending={pending}
           value={data.settings.maxPages}

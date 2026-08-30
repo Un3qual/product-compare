@@ -297,13 +297,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Importer do
         oban_job_id: Keyword.get(opts, :oban_job_id),
         oban_attempt: Keyword.get(opts, :oban_attempt),
         window_start: request.from,
-        window_end: request.before,
-        cursor: nil,
-        pages_fetched: 0,
-        records_fetched: 0,
-        records_persisted: 0,
-        records_failed: 0,
-        error_summary: nil
+        window_end: request.before
       },
       DateTime.utc_now()
     )

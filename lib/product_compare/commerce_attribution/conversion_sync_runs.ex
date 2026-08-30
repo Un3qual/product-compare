@@ -10,25 +10,14 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncRuns do
   @execution_recovery_margin :timer.minutes(10)
 
   @start_fields [
-    :entropy_id,
     :affiliate_network_id,
-    :status,
     :trigger,
     :requested_by_user_id,
     :oban_job_id,
     :oban_attempt,
     :window_start,
-    :window_end,
-    :cursor,
-    :pages_fetched,
-    :records_fetched,
-    :records_persisted,
-    :records_failed,
-    :started_at,
-    :finished_at,
-    :error_summary
+    :window_end
   ]
-  @start_field_map Map.new(@start_fields, &{Atom.to_string(&1), &1})
   @completion_fields [
     :status,
     :cursor,
@@ -39,16 +28,14 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncRuns do
     :finished_at,
     :error_summary
   ]
-  @completion_field_map Map.new(@completion_fields, &{Atom.to_string(&1), &1})
 
   @spec start(map(), DateTime.t()) ::
           {:ok, ConversionSyncRun.t()} | {:error, Ecto.Changeset.t()}
   def start(attrs, now) do
     attrs =
       attrs
-      |> normalize_attrs(@start_field_map)
+      |> Map.take(@start_fields)
       |> Map.put(:status, :running)
-      |> Map.put(:finished_at, nil)
       |> Map.put(:started_at, now)
 
     changeset = ConversionSyncRun.changeset(%ConversionSyncRun{}, attrs)
@@ -88,7 +75,7 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncRuns do
         %ConversionSyncRun{} = running_run ->
           attrs =
             attrs
-            |> normalize_attrs(@completion_field_map)
+            |> Map.take(@completion_fields)
             |> Map.put(:finished_at, now)
 
           case running_run
@@ -267,21 +254,6 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncRuns do
       error_summary: "worker_interrupted"
     })
     |> Repo.update()
-  end
-
-  defp normalize_attrs(attrs, field_map) do
-    attrs
-    |> Map.new()
-    |> Enum.reduce(%{}, fn {key, value}, normalized ->
-      normalized_key =
-        cond do
-          is_atom(key) and Map.has_key?(field_map, Atom.to_string(key)) -> key
-          is_binary(key) -> Map.get(field_map, key)
-          true -> nil
-        end
-
-      if normalized_key, do: Map.put(normalized, normalized_key, value), else: normalized
-    end)
   end
 
   defp after_cursor(query, nil), do: query

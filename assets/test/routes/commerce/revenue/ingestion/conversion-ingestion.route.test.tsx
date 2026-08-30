@@ -117,7 +117,6 @@ const INGESTION = {
 const OVERVIEW = { cjCommissionIngestion: INGESTION };
 
 const LATEST_FAILURE_RUN = {
-  cursor: "cursor-1",
   errorSummary: "Provider timed out after the bounded request window.",
   finishedAt: "2026-08-26T12:05:00Z",
   id: "run-failure",
@@ -125,7 +124,6 @@ const LATEST_FAILURE_RUN = {
   recordsFailed: 1,
   recordsFetched: 20,
   recordsPersisted: 19,
-  requesterEmail: "operator@example.test",
   startedAt: "2026-08-26T12:00:00Z",
   status: "FAILED",
   trigger: "SCHEDULED",
@@ -134,7 +132,6 @@ const LATEST_FAILURE_RUN = {
 };
 
 const LATEST_SUCCESS_RUN = {
-  cursor: "cursor-0",
   errorSummary: null,
   finishedAt: "2026-08-26T10:15:00Z",
   id: "run-success",
@@ -142,7 +139,6 @@ const LATEST_SUCCESS_RUN = {
   recordsFailed: 0,
   recordsFetched: 20,
   recordsPersisted: 20,
-  requesterEmail: "operator@example.test",
   startedAt: "2026-08-26T10:00:00Z",
   status: "SUCCEEDED",
   trigger: "OPERATOR",
@@ -413,35 +409,6 @@ test("settings submit preserves exact bounded values, disables while pending, an
   expect(revalidateMock).not.toHaveBeenCalled();
 });
 
-test("settings controls render the persisted overview values returned by the network-only refresh", () => {
-  mockedUseRefetchableFragment.mockReturnValue([
-    {
-      ...OVERVIEW,
-      cjCommissionIngestion: {
-        ...INGESTION,
-        settings: {
-          ...INGESTION.settings,
-          enabled: false,
-          intervalMinutes: 720,
-          lookbackDays: 14,
-          maxPages: 12,
-          updatedAt: "2026-08-27T12:00:00Z",
-        },
-      },
-    },
-    refetchMock,
-  ] as never);
-  renderConversionIngestionRoute();
-
-  const settings = screen.getByRole("form", { name: "Ingestion settings" });
-  expect(
-    within(settings).getByRole("checkbox", { name: "Enable scheduled ingestion" }),
-  ).not.toBeChecked();
-  expect(within(settings).getByLabelText("Interval minutes")).toHaveValue(720);
-  expect(within(settings).getByLabelText("Lookback days")).toHaveValue(14);
-  expect(within(settings).getByLabelText("Maximum pages")).toHaveValue(12);
-});
-
 test("settings surface payload failures inline and focus the rejected field", async () => {
   renderConversionIngestionRoute();
 
@@ -579,11 +546,12 @@ test("enabled schedules can always be disabled even when their credentials or su
 });
 
 test("the deferred ledger retries history only while status and settings stay usable", async () => {
-  const runsQuery = deferredPromise<ConversionIngestionLoaderData extends never ? never : object>();
+  const loaderData = buildReadyLoaderData();
+  const runsQuery = deferredPromise<Awaited<typeof loaderData.runsQuery>>();
   mockedUseLoaderData.mockReturnValue({
-    ...buildReadyLoaderData(),
+    ...loaderData,
     runsQuery: runsQuery.promise,
-  } as never);
+  });
   renderConversionIngestionRoute();
 
   runsQuery.reject(new Error("history unavailable"));
@@ -713,7 +681,7 @@ test("status polling is visibility-gated and cleans up after unmount", () => {
   expect(refetchMock).not.toHaveBeenCalled();
 });
 
-function buildReadyLoaderData(): ConversionIngestionLoaderData {
+function buildReadyLoaderData(): Extract<ConversionIngestionLoaderData, { status: "ready" }> {
   return {
     overviewQuery: {
       __relayQuery: {

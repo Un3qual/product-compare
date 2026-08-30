@@ -6,7 +6,7 @@ import type { UpdateCJCommissionIngestionSettingsMutation$variables } from "$gen
 
 export const SYNC_RUN_PAGE_SIZE = 25;
 
-const SETTINGS_BOUNDS = {
+export const SETTINGS_BOUNDS = {
   intervalMinutes: { label: "Interval", maximum: 10_080, minimum: 15, unit: "minutes" },
   lookbackDays: { label: "Lookback", maximum: 90, minimum: 1, unit: "days" },
   maxPages: { label: "Maximum pages", maximum: 100, minimum: 1, unit: "pages" },

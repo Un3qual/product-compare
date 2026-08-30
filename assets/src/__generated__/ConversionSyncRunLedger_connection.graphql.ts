@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<25fbae7ef6350999a4616c39e21d6878>>
+ * @generated SignedSource<<1b5a4e9743ef0c273f5e52c8abf4994a>>
  * @lightSyntaxTransform
  */
 
@@ -16,7 +16,6 @@ export type ConversionSyncRunLedger_connection$data = {
     readonly edges: ReadonlyArray<{
       readonly cursor: string;
       readonly node: {
-        readonly cursor: string | null;
         readonly errorSummary: string | null;
         readonly finishedAt: string | null;
         readonly id: string;
@@ -24,7 +23,6 @@ export type ConversionSyncRunLedger_connection$data = {
         readonly recordsFailed: number;
         readonly recordsFetched: number;
         readonly recordsPersisted: number;
-        readonly requesterEmail: string | null;
         readonly startedAt: string;
         readonly status: CJCommissionSyncRunStatus;
         readonly trigger: CJCommissionSyncRunTrigger;
@@ -45,14 +43,7 @@ import ConversionSyncRunLedgerPaginationQuery_graphql from './ConversionSyncRunL
 const node: ReaderFragment = (function(){
 var v0 = [
   "cjCommissionSyncRuns"
-],
-v1 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "cursor",
-  "storageKey": null
-};
+];
 return {
   "argumentDefinitions": [
     {
@@ -107,7 +98,13 @@ return {
           "name": "edges",
           "plural": true,
           "selections": [
-            (v1/*:: as any*/),
+            {
+              "alias": null,
+              "args": null,
+              "kind": "ScalarField",
+              "name": "cursor",
+              "storageKey": null
+            },
             {
               "alias": null,
               "args": null,
@@ -141,13 +138,6 @@ return {
                   "alias": null,
                   "args": null,
                   "kind": "ScalarField",
-                  "name": "requesterEmail",
-                  "storageKey": null
-                },
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
                   "name": "windowStart",
                   "storageKey": null
                 },
@@ -158,7 +148,6 @@ return {
                   "name": "windowEnd",
                   "storageKey": null
                 },
-                (v1/*:: as any*/),
                 {
                   "alias": null,
                   "args": null,
@@ -255,6 +244,6 @@ return {
 };
 })();
 
-(node as any).hash = "a04edf9679b6f70deaf8f6431a7ef0fa";
+(node as any).hash = "d2f658efbf602faf852c0e502f2a835d";
 
 export default node;

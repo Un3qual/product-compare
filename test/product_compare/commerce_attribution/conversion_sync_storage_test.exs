@@ -226,27 +226,6 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
     assert ConversionSyncSettings.get_cj() == nil
   end
 
-  test "context owners accept string-keyed input maps" do
-    assert {:ok, setting} =
-             ConversionSyncSettings.ensure_cj(%{
-               "interval_minutes" => 60,
-               "lookback_days" => 7,
-               "max_pages" => 5
-             })
-
-    assert setting.interval_minutes == 60
-    assert setting.lookback_days == 7
-    assert setting.max_pages == 5
-
-    assert {:ok, run} =
-             ConversionSyncRuns.start(
-               string_keyed(run_attrs(%{status: "failed"})),
-               ~U[2026-08-28 12:00:00Z]
-             )
-
-    assert run.status == :running
-  end
-
   test "lock_cj requires a transaction and returns the CJ settings row when locked" do
     assert {:ok, settings} = ConversionSyncSettings.ensure_cj(%{})
 
@@ -393,6 +372,39 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
     assert [^second, ^completed] = Repo.all(ConversionSyncRuns.query())
   end
 
+  test "run start owns lifecycle initialization" do
+    now = ~U[2026-08-28 12:00:00Z]
+    supplied_entropy_id = Ecto.UUID.generate()
+
+    assert {:ok, run} =
+             ConversionSyncRuns.start(
+               run_attrs(%{
+                 entropy_id: supplied_entropy_id,
+                 status: :failed,
+                 cursor: "supplied-cursor",
+                 pages_fetched: 2,
+                 records_fetched: 4,
+                 records_persisted: 3,
+                 records_failed: 1,
+                 started_at: DateTime.add(now, -60, :second),
+                 finished_at: now,
+                 error_summary: "supplied-error"
+               }),
+               now
+             )
+
+    refute run.entropy_id == supplied_entropy_id
+    assert run.status == :running
+    assert run.cursor == nil
+    assert run.pages_fetched == 0
+    assert run.records_fetched == 0
+    assert run.records_persisted == 0
+    assert run.records_failed == 0
+    assert DateTime.compare(run.started_at, now) == :eq
+    assert run.finished_at == nil
+    assert run.error_summary == nil
+  end
+
   test "starting a retried Oban attempt atomically interrupts an older running attempt" do
     first_started_at = ~U[2026-08-28 12:00:00Z]
     retry_started_at = DateTime.add(first_started_at, 60, :second)
@@ -487,10 +499,6 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncStorageTest do
         {:ok, network} = Affiliate.upsert_network(%{code: code, name: String.upcase(code)})
         network
     end
-  end
-
-  defp string_keyed(attrs) do
-    Map.new(attrs, fn {key, value} -> {Atom.to_string(key), value} end)
   end
 
   defp run_attrs(overrides \\ %{}) do
