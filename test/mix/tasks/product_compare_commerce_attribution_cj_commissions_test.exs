@@ -211,25 +211,31 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissionsTest do
                     }}
   end
 
-  test "provider failures print only a classified failure" do
+  test "provider failures use the shared secret-safe classification" do
     assert {:ok, _settings} = ConversionSyncSettings.ensure_cj(%{})
 
-    output =
-      capture_io(fn ->
-        assert {:error, :transient_provider_failure} =
-                 CjCommissions.run_import(
-                   now: ~U[2026-08-28 12:00:00Z],
-                   importer: fn _request, _opts ->
-                     {:error, {:transport_error, "secret provider body"}}
-                   end
-                 )
-      end)
+    for {reason, category} <- [
+          {{:transport_error, "secret provider body"}, :transient_provider_failure},
+          {{:http_error, 401}, :authentication_error},
+          {{:http_error, 403}, :authorization_error},
+          {{:http_error, 429}, :transient_provider_failure},
+          {{:graphql_error, "FORBIDDEN"}, :authorization_error}
+        ] do
+      output =
+        capture_io(fn ->
+          assert {:error, ^category} =
+                   CjCommissions.run_import(
+                     now: ~U[2026-08-28 12:00:00Z],
+                     importer: fn _request, _opts -> {:error, reason} end
+                   )
+        end)
 
-    assert output =~ "provider=cj"
-    assert output =~ "surface=publisherCommissions"
-    assert output =~ "status=failed"
-    assert output =~ "failure=transient_provider_failure"
-    refute output =~ "secret provider body"
+      assert output =~ "provider=cj"
+      assert output =~ "surface=publisherCommissions"
+      assert output =~ "status=failed"
+      assert output =~ "failure=#{category}"
+      refute output =~ "secret provider body"
+    end
   end
 
   test "raised and thrown importer failures are normalized without exposing secrets" do

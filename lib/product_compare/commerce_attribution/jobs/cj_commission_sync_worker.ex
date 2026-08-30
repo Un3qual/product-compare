@@ -14,6 +14,7 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker do
 
   alias ProductCompare.CommerceAttribution.CJ.Importer
   alias ProductCompare.CommerceAttribution.CJ.ImportRequest
+  alias ProductCompare.CommerceAttribution.CJ.Failure
 
   @max_run_duration :timer.minutes(45)
 
@@ -65,43 +66,16 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker do
   defp classify_result({:ok, _report}), do: :ok
   defp classify_result(:ok), do: :ok
 
-  defp classify_result({:error, {:missing_env, _name}}),
-    do: {:cancel, "configuration_error"}
+  defp classify_result({:error, reason}) do
+    category = reason |> Failure.category() |> Atom.to_string()
 
-  defp classify_result({:error, :missing_credentials}), do: {:cancel, "configuration_error"}
+    if Failure.retryable?(reason) do
+      {:error, category}
+    else
+      {:cancel, category}
+    end
+  end
 
-  defp classify_result({:error, {:authentication_failed, _reason}}),
-    do: {:cancel, "authentication_error"}
-
-  defp classify_result({:error, {:authorization_failed, _reason}}),
-    do: {:cancel, "authorization_error"}
-
-  defp classify_result({:error, {:transport_error, _reason}}),
-    do: {:error, "transient_provider_failure"}
-
-  defp classify_result({:error, {:http_error, status}}) when status in [408, 429],
-    do: {:error, "transient_provider_failure"}
-
-  defp classify_result({:error, {:http_error, status}})
-       when is_integer(status) and status in 500..599,
-       do: {:error, "transient_provider_failure"}
-
-  defp classify_result({:error, {:http_error, _status}}), do: {:cancel, "http_error"}
-
-  defp classify_result({:error, {:invalid_response, _category}}),
-    do: {:cancel, "invalid_response"}
-
-  defp classify_result({:error, {:decode_error, _category}}), do: {:cancel, "decode_error"}
-  defp classify_result({:error, {:graphql_error, _category}}), do: {:cancel, "graphql_error"}
-  defp classify_result({:error, :page_ceiling_exhausted}), do: {:cancel, "page_ceiling_exhausted"}
-  defp classify_result({:error, :unmatched_correction}), do: {:cancel, "unmatched_correction"}
-
-  defp classify_result({:error, %Ecto.Changeset{}}),
-    do: {:cancel, "persistence_validation_failed"}
-
-  defp classify_result({:error, {:invalid_request, _field}}), do: {:cancel, "invalid_request"}
-  defp classify_result({:error, :runner_exception}), do: {:error, "runner_exception"}
-  defp classify_result({:error, _reason}), do: {:cancel, "provider_error"}
   defp classify_result(_unexpected), do: {:cancel, "unexpected_runner_result"}
 
   defp request_from_args(args) do

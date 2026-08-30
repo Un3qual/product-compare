@@ -324,7 +324,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
     assert log =~ "run_id=#{run.entropy_id}"
     assert log =~ "from=#{DateTime.to_iso8601(run.window_start)}"
     assert log =~ "before=#{DateTime.to_iso8601(run.window_end)}"
-    assert log =~ "category=transport_error"
+    assert log =~ "category=transient_provider_failure"
     assert log =~ "pages=0 fetched=0 persisted=0 failed=0"
     refute log =~ "provider secret"
   end
@@ -414,8 +414,23 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
              status: :failed,
              pages_fetched: 0,
              records_fetched: 0,
-             error_summary: "transport_error"
+             error_summary: "transient_provider_failure"
            } = latest_run()
+  end
+
+  test "persists the same secret-safe provider failure categories used by callers" do
+    for {reason, category} <- [
+          {{:http_error, 401}, "authentication_error"},
+          {{:http_error, 403}, "authorization_error"},
+          {{:http_error, 429}, "transient_provider_failure"},
+          {{:graphql_error, "FORBIDDEN"}, "authorization_error"},
+          {{:graphql_error, "UNAUTHENTICATED"}, "authentication_error"}
+        ] do
+      fetch_page = fn _request, _opts -> {:error, reason} end
+
+      assert {:error, ^reason} = Importer.run(import_request(), fetch_page: fetch_page)
+      assert %{status: :failed, error_summary: ^category} = latest_run()
+    end
   end
 
   test "rescues callback failures into a category-only runner exception" do

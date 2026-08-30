@@ -149,10 +149,11 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
     for {reason, category} <- [
           {{:invalid_response, :record}, "invalid_response"},
           {{:decode_error, :invalid_json}, "decode_error"},
-          {{:graphql_error, "FORBIDDEN"}, "graphql_error"},
+          {{:graphql_error, "FORBIDDEN"}, "authorization_error"},
+          {{:graphql_error, "UNAUTHENTICATED"}, "authentication_error"},
           {{:http_error, 400}, "http_error"},
-          {{:http_error, 401}, "http_error"},
-          {{:http_error, 403}, "http_error"},
+          {{:http_error, 401}, "authentication_error"},
+          {{:http_error, 403}, "authorization_error"},
           {{:http_error, 404}, "http_error"},
           {:page_ceiling_exhausted, "page_ceiling_exhausted"},
           {:unmatched_correction, "unmatched_correction"},
@@ -178,7 +179,7 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
       {:error, {:provider_error, "provider secret"}}
     end)
 
-    assert {:cancel, "provider_error"} =
+    assert {:cancel, "provider_failure"} =
              CJCommissionSyncWorker.perform(
                struct!(Oban.Job, args: CJCommissionSyncWorker.args(worker_opts()))
              )

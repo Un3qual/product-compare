@@ -7,6 +7,7 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
 
   alias Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions.Options
   alias ProductCompare.CommerceAttribution.CJ.Client
+  alias ProductCompare.CommerceAttribution.CJ.Failure
   alias ProductCompare.CommerceAttribution.CJ.Importer
   alias ProductCompare.CommerceAttribution.ConversionSyncSettings
   alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
@@ -28,7 +29,7 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
         :ok
 
       {:error, reason} ->
-        Mix.raise("CJ commission import failed: #{failure_category(reason)}")
+        Mix.raise("CJ commission import failed: #{Failure.category(reason)}")
     end
   end
 
@@ -71,7 +72,7 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
       result
     else
       {:error, reason} ->
-        category = failure_category(reason)
+        category = Failure.category(reason)
         print_failure(category, opts)
         {:error, category}
     end
@@ -97,7 +98,7 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
   defp normalize_importer_result({:ok, %ConversionSyncRun{} = run}), do: {:ok, run}
 
   defp normalize_importer_result({:error, reason}),
-    do: {:error, failure_category(reason)}
+    do: {:error, Failure.category(reason)}
 
   defp normalize_importer_result(_unexpected), do: {:error, :unexpected_importer_result}
 
@@ -118,30 +119,8 @@ defmodule Mix.Tasks.ProductCompare.CommerceAttribution.CjCommissions do
   defp print_failure(reason, opts) do
     if Keyword.get(opts, :print_report, true) do
       IO.puts(
-        "provider=#{@provider} surface=#{@surface} status=failed failure=#{failure_category(reason)}"
+        "provider=#{@provider} surface=#{@surface} status=failed failure=#{Failure.category(reason)}"
       )
     end
   end
-
-  defp failure_category(category)
-       when category in [
-              :configuration_error,
-              :authentication_error,
-              :authorization_error,
-              :invalid_request,
-              :transient_provider_failure,
-              :persistence_validation_failed,
-              :unexpected_importer_result,
-              :provider_failure
-            ],
-       do: category
-
-  defp failure_category({:missing_env, _name}), do: :configuration_error
-  defp failure_category(:credentials_missing), do: :configuration_error
-  defp failure_category({:authentication_failed, _reason}), do: :authentication_error
-  defp failure_category({:authorization_failed, _reason}), do: :authorization_error
-  defp failure_category({:invalid_request, _field}), do: :invalid_request
-  defp failure_category({:transport_error, _reason}), do: :transient_provider_failure
-  defp failure_category(%Ecto.Changeset{}), do: :persistence_validation_failed
-  defp failure_category(_reason), do: :provider_failure
 end

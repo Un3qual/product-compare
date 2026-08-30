@@ -5,6 +5,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Importer do
 
   alias ProductCompare.CommerceAttribution.CJ.Client
   alias ProductCompare.CommerceAttribution.CJ.CommissionDetail
+  alias ProductCompare.CommerceAttribution.CJ.Failure
   alias ProductCompare.CommerceAttribution.CJ.ImportRequest
   alias ProductCompare.CommerceAttribution.ConversionSyncRuns
   alias ProductCompare.CommerceAttribution.Conversions
@@ -349,13 +350,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Importer do
     end
   end
 
-  defp error_summary({:invalid_response, _category}), do: "invalid_response"
-  defp error_summary({:transport_error, _reason}), do: "transport_error"
-  defp error_summary(%Ecto.Changeset{}), do: "persistence_validation_failed"
-  defp error_summary(:page_ceiling_exhausted), do: "page_ceiling_exhausted"
-  defp error_summary(:unmatched_correction), do: "unmatched_correction"
-  defp error_summary(:runner_exception), do: "runner_exception"
-  defp error_summary(_reason), do: "runner_error"
+  defp error_summary(reason), do: reason |> Failure.category() |> Atom.to_string()
 
   defp correction_changeset(field, message) do
     %ProductCompareSchemas.CommerceAttribution.CommerceConversion{}
