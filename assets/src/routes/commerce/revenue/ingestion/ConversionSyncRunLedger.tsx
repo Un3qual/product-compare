@@ -230,7 +230,9 @@ function RunRow({
             >
               {open ? "Hide failure details" : "Show failure details"}
             </Button>
-            {open ? <p id={detailsId}>{run.errorSummary}</p> : null}
+            <p hidden={!open} id={detailsId}>
+              {run.errorSummary}
+            </p>
           </TableCell>
         </TableRow>
       ) : null}

@@ -277,6 +277,7 @@ test("failure disclosures identify and control their own run details", async () 
 
   expect(controlledIds.every(Boolean)).toBe(true);
   expect(new Set(controlledIds).size).toBe(2);
+  expect(document.getElementById(controlledIds[0]!)).not.toBeVisible();
 
   fireEvent.click(disclosures[0]!);
   expect(document.getElementById(controlledIds[0]!)).toHaveTextContent(
