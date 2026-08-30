@@ -227,28 +227,37 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
       {:error, {:provider_error, :redacted_reason}}
     end
 
-    pid =
-      start_supervised!(
-        {CJProductImportScheduler,
-         [
-           initial_delay_ms: 0,
-           interval_ms: 20,
-           runner: runner
-         ]}
-      )
+    scheduler = controlled_scheduler(parent)
 
     log =
       capture_log(fn ->
-        assert_receive {:run, _opts}, 2_000
-        assert_receive {:run, _opts}, 250
+        pid =
+          start_supervised!(
+            {CJProductImportScheduler,
+             [
+               initial_delay_ms: 0,
+               interval_ms: 20,
+               runner: runner,
+               scheduler: scheduler
+             ]}
+          )
+
+        assert_receive {:scheduled, ^pid, :run_import, 0}
+        send(pid, :run_import)
+        assert_receive {:run, _opts}
+
+        assert_receive {:scheduled, ^pid, :run_import, 20}
+        send(pid, :run_import)
+        assert_receive {:run, _opts}
+        assert_receive {:scheduled, ^pid, :run_import, 20}
+
+        GenServer.stop(pid)
       end)
 
     assert log =~ "CJ product import failed"
     assert log =~ "failure=runner_error"
     refute log =~ "provider_error"
     refute log =~ "redacted_reason"
-
-    GenServer.stop(pid)
   end
 
   test "passes only non-secret import fields to the runner" do

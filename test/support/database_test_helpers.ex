@@ -8,6 +8,10 @@ defmodule ProductCompare.DatabaseTestHelpers do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.User
 
+  @poll_timeout_ms 2_000
+  @initial_poll_delay_ms 5
+  @maximum_poll_delay_ms 50
+
   def capture_queries(fun) when is_function(fun, 0) do
     handler_id = {__MODULE__, System.unique_integer([:positive])}
     ref = make_ref()
@@ -89,23 +93,102 @@ defmodule ProductCompare.DatabaseTestHelpers do
   end
 
   def assert_blocked_by(waiting_backend_pid, blocking_backend_pid) do
-    deadline = System.monotonic_time(:millisecond) + 2_000
-    wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline)
+    poll_until(
+      fn ->
+        blocked? =
+          Sandbox.unboxed_run(Repo, fn ->
+            Repo.query!("SELECT $1 = ANY(pg_blocking_pids($2))", [
+              blocking_backend_pid,
+              waiting_backend_pid
+            ])
+            |> then(&(&1.rows == [[true]]))
+          end)
+
+        if blocked?, do: :ready, else: {:retry, blocked?}
+      end,
+      "expected database backend #{waiting_backend_pid} to wait for #{blocking_backend_pid}"
+    )
   end
 
   def assert_some_backend_blocked_by(blocking_backend_pid) do
-    deadline = System.monotonic_time(:millisecond) + 2_000
-    wait_until_any_backend_blocked(blocking_backend_pid, deadline)
+    poll_until(
+      fn ->
+        blocked? =
+          Sandbox.unboxed_run(Repo, fn ->
+            Repo.query!(
+              """
+              SELECT EXISTS (
+                SELECT 1
+                FROM pg_stat_activity AS activity
+                WHERE $1 = ANY(pg_blocking_pids(activity.pid))
+              )
+              """,
+              [blocking_backend_pid]
+            )
+            |> then(&(&1.rows == [[true]]))
+          end)
+
+        if blocked?, do: :ready, else: {:retry, blocked?}
+      end,
+      "expected a database backend to wait for #{blocking_backend_pid}"
+    )
   end
 
   def assert_backend_blocked(waiting_backend_pid) do
-    deadline = System.monotonic_time(:millisecond) + 2_000
-    wait_until_backend_blocked(waiting_backend_pid, deadline)
+    poll_until(
+      fn ->
+        blocked? =
+          Sandbox.unboxed_run(Repo, fn ->
+            Repo.query!("SELECT cardinality(pg_blocking_pids($1)) > 0", [waiting_backend_pid])
+            |> then(&(&1.rows == [[true]]))
+          end)
+
+        if blocked?, do: :ready, else: {:retry, blocked?}
+      end,
+      "expected database backend #{waiting_backend_pid} to be blocked"
+    )
   end
 
   def assert_not_blocked_by(waiting_backend_pid, blocking_backend_pid) do
-    deadline = System.monotonic_time(:millisecond) + 2_000
-    wait_until_idle_or_blocked(waiting_backend_pid, blocking_backend_pid, deadline)
+    poll_until(
+      fn ->
+        status =
+          Sandbox.unboxed_run(Repo, fn ->
+            Repo.query!(
+              """
+              SELECT activity.state, $1 = ANY(pg_blocking_pids(activity.pid))
+              FROM pg_stat_activity AS activity
+              WHERE activity.pid = $2
+              """,
+              [blocking_backend_pid, waiting_backend_pid]
+            ).rows
+          end)
+
+        case status do
+          [[_state, true]] ->
+            {:error,
+             "expected database backend #{waiting_backend_pid} not to wait for #{blocking_backend_pid}"}
+
+          [["idle in transaction", false]] ->
+            :ready
+
+          other ->
+            {:retry, other}
+        end
+      end,
+      "expected database backend #{waiting_backend_pid} to finish without waiting for #{blocking_backend_pid}"
+    )
+  end
+
+  @doc false
+  def poll_until(probe, expectation, opts \\ [])
+      when is_function(probe, 0) and is_binary(expectation) and is_list(opts) do
+    clock = Keyword.get(opts, :clock, fn -> System.monotonic_time(:millisecond) end)
+    sleep = Keyword.get(opts, :sleep, &Process.sleep/1)
+    timeout_ms = Keyword.get(opts, :timeout_ms, @poll_timeout_ms)
+    deadline = clock.() + timeout_ms
+
+    poll_until(probe, expectation, deadline, clock, sleep, @initial_poll_delay_ms)
   end
 
   def hold_row_lock(schema, id, transition) when is_function(transition, 1) do
@@ -212,107 +295,34 @@ defmodule ProductCompare.DatabaseTestHelpers do
     self() == pid or pid in Process.get(:"$callers", [])
   end
 
-  defp wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline) do
-    blocked? =
-      Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
-        Repo.query!("SELECT $1 = ANY(pg_blocking_pids($2))", [
-          blocking_backend_pid,
-          waiting_backend_pid
-        ])
-        |> then(&(&1.rows == [[true]]))
-      end)
-
-    cond do
-      blocked? ->
+  defp poll_until(probe, expectation, deadline, clock, sleep, delay_ms) do
+    case probe.() do
+      :ready ->
         :ok
 
-      System.monotonic_time(:millisecond) < deadline ->
-        wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline)
+      {:error, message} ->
+        flunk(message)
 
-      true ->
-        flunk(
-          "expected database backend #{waiting_backend_pid} to wait for #{blocking_backend_pid}"
-        )
-    end
-  end
+      {:retry, observed_state} ->
+        now = clock.()
 
-  defp wait_until_any_backend_blocked(blocking_backend_pid, deadline) do
-    blocked? =
-      Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
-        Repo.query!(
-          """
-          SELECT EXISTS (
-            SELECT 1
-            FROM pg_stat_activity AS activity
-            WHERE $1 = ANY(pg_blocking_pids(activity.pid))
+        if now < deadline do
+          sleep.(min(delay_ms, deadline - now))
+
+          poll_until(
+            probe,
+            expectation,
+            deadline,
+            clock,
+            sleep,
+            min(delay_ms * 2, @maximum_poll_delay_ms)
           )
-          """,
-          [blocking_backend_pid]
-        )
-        |> then(&(&1.rows == [[true]]))
-      end)
-
-    cond do
-      blocked? ->
-        :ok
-
-      System.monotonic_time(:millisecond) < deadline ->
-        wait_until_any_backend_blocked(blocking_backend_pid, deadline)
-
-      true ->
-        flunk("expected a database backend to wait for #{blocking_backend_pid}")
-    end
-  end
-
-  defp wait_until_backend_blocked(waiting_backend_pid, deadline) do
-    blocked? =
-      Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
-        Repo.query!("SELECT cardinality(pg_blocking_pids($1)) > 0", [waiting_backend_pid])
-        |> then(&(&1.rows == [[true]]))
-      end)
-
-    cond do
-      blocked? ->
-        :ok
-
-      System.monotonic_time(:millisecond) < deadline ->
-        wait_until_backend_blocked(waiting_backend_pid, deadline)
-
-      true ->
-        flunk("expected database backend #{waiting_backend_pid} to be blocked")
-    end
-  end
-
-  defp wait_until_idle_or_blocked(waiting_backend_pid, blocking_backend_pid, deadline) do
-    status =
-      Sandbox.unboxed_run(Repo, fn ->
-        Repo.query!(
-          """
-          SELECT activity.state, $1 = ANY(pg_blocking_pids(activity.pid))
-          FROM pg_stat_activity AS activity
-          WHERE activity.pid = $2
-          """,
-          [blocking_backend_pid, waiting_backend_pid]
-        ).rows
-      end)
-
-    case status do
-      [[_state, true]] ->
-        flunk(
-          "expected database backend #{waiting_backend_pid} not to wait for #{blocking_backend_pid}"
-        )
-
-      [["idle in transaction", false]] ->
-        :ok
-
-      _other ->
-        if System.monotonic_time(:millisecond) < deadline do
-          wait_until_idle_or_blocked(waiting_backend_pid, blocking_backend_pid, deadline)
         else
-          flunk(
-            "expected database backend #{waiting_backend_pid} to finish without waiting for #{blocking_backend_pid}"
-          )
+          flunk("#{expectation}; last observed state: #{inspect(observed_state)}")
         end
+
+      invalid_result ->
+        raise ArgumentError, "invalid polling result: #{inspect(invalid_result)}"
     end
   end
 end
