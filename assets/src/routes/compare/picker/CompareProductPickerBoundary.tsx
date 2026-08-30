@@ -1,25 +1,28 @@
-import { Suspense, useEffect, useMemo, useState } from "react";
-import { graphql, useLazyLoadQuery } from "react-relay";
+import { Suspense } from "react";
+import { graphql, useLazyLoadQuery, usePaginationFragment } from "react-relay";
 import type { CompareProductPickerBoundaryQuery } from "$generated/CompareProductPickerBoundaryQuery.graphql";
+import type { CompareProductPickerBoundary_products$key } from "$generated/CompareProductPickerBoundary_products.graphql";
+import type { CompareProductPickerPaginationQuery } from "$generated/CompareProductPickerPaginationQuery.graphql";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import {
-  appendUniqueComparePickerProducts,
   availableComparePickerProducts,
   buildComparePickerOptions,
   comparePickerEmptyMessage,
   comparePickerResetToken,
   isComparePickerEmpty,
-  nextComparePickerPageCursor,
-  type ComparePickerProduct,
 } from "./compare-picker";
 import type { CompareSpecMode } from "../paths";
 import { CompareProductPickerView } from "./CompareProductPickerView";
 
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
-const compareProductPickerQuery = graphql`
-  query CompareProductPickerBoundaryQuery($first: Int!, $after: String) {
-    products(first: $first, after: $after) {
+
+export const compareProductPickerFragment = graphql`
+  fragment CompareProductPickerBoundary_products on RootQueryType
+  @argumentDefinitions(first: { type: "Int!" }, after: { type: "String" })
+  @refetchable(queryName: "CompareProductPickerPaginationQuery") {
+    products(first: $first, after: $after)
+      @connection(key: "CompareProductPickerBoundary_products") {
       edges {
         node {
           id
@@ -31,11 +34,13 @@ const compareProductPickerQuery = graphql`
           }
         }
       }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
     }
+  }
+`;
+
+const compareProductPickerQuery = graphql`
+  query CompareProductPickerBoundaryQuery($first: Int!, $after: String) {
+    ...CompareProductPickerBoundary_products @arguments(first: $first, after: $after)
   }
 `;
 
@@ -76,36 +81,28 @@ function CompareProductPicker({
   specMode: CompareSpecMode;
   selectedSlugs: readonly string[];
 }) {
-  const [after, setAfter] = useState<string | null>(null);
-  const [loadedProducts, setLoadedProducts] = useState<ComparePickerProduct[]>([]);
-
-  const data = useLazyLoadQuery<CompareProductPickerBoundaryQuery>(
+  const queryData = useLazyLoadQuery<CompareProductPickerBoundaryQuery>(
     compareProductPickerQuery,
-    { first: COMPARE_PRODUCT_PICKER_PAGE_SIZE, after },
+    { first: COMPARE_PRODUCT_PICKER_PAGE_SIZE, after: null },
     { fetchPolicy: "store-or-network" },
   );
-  const productConnection = data.products;
-  const pageProducts = useMemo(
-    () => productConnection?.edges.map(({ node }) => node) ?? [],
-    [productConnection],
-  );
-  const productOptions = appendUniqueComparePickerProducts(loadedProducts, pageProducts);
+  const { data, hasNext, isLoadingNext, loadNext } = usePaginationFragment<
+    CompareProductPickerPaginationQuery,
+    CompareProductPickerBoundary_products$key
+  >(compareProductPickerFragment, queryData);
+  const productOptions = data.products?.edges.map(({ node }) => node) ?? [];
   const availableProducts = availableComparePickerProducts(productOptions, selectedSlugs);
-  const nextCursor = nextComparePickerPageCursor(productConnection?.pageInfo ?? null, after);
   const options = buildComparePickerOptions(availableProducts, selectedSlugs, specMode);
 
-  useEffect(() => {
-    setLoadedProducts((products) => appendUniqueComparePickerProducts(products, pageProducts));
-  }, [pageProducts]);
-
-  if (isComparePickerEmpty(availableProducts, nextCursor)) {
+  if (isComparePickerEmpty(availableProducts, hasNext)) {
     return <p>{comparePickerEmptyMessage(selectedSlugs)}</p>;
   }
 
   return (
     <CompareProductPickerView
       heading={heading}
-      onShowMore={nextCursor ? () => setAfter(nextCursor) : null}
+      isLoadingMore={isLoadingNext}
+      onShowMore={hasNext ? () => loadNext(COMPARE_PRODUCT_PICKER_PAGE_SIZE) : null}
       options={options}
     />
   );

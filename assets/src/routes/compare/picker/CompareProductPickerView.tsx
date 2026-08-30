@@ -46,10 +46,12 @@ const styles = create({
 
 export function CompareProductPickerView({
   heading,
+  isLoadingMore,
   onShowMore,
   options,
 }: {
   heading: string;
+  isLoadingMore: boolean;
   onShowMore: (() => void) | null;
   options: readonly ComparePickerOption[];
 }) {
@@ -101,8 +103,8 @@ export function CompareProductPickerView({
         </DataList>
       )}
       {onShowMore ? (
-        <Button onClick={onShowMore} type="button" variant="link">
-          Show more products
+        <Button disabled={isLoadingMore} onClick={onShowMore} type="button" variant="link">
+          {isLoadingMore ? "Loading more products…" : "Show more products"}
         </Button>
       ) : null}
     </section>

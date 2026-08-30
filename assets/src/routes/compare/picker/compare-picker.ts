@@ -1,14 +1,13 @@
-import type { CompareProductPickerBoundaryQuery } from "$generated/CompareProductPickerBoundaryQuery.graphql";
+import type { CompareProductPickerBoundary_products$data } from "$generated/CompareProductPickerBoundary_products.graphql";
 import {
   MAX_COMPARE_PRODUCTS,
   buildComparePathFromSlugs,
   selectedCompareSlugsAfterAdding,
   type CompareSpecMode,
 } from "../paths";
-import { nextPageCursor } from "$relay/pagination";
 
 export type ComparePickerProduct = NonNullable<
-  CompareProductPickerBoundaryQuery["response"]["products"]
+  CompareProductPickerBoundary_products$data["products"]
 >["edges"][number]["node"];
 
 export type ComparePickerOption = {
@@ -18,39 +17,11 @@ export type ComparePickerOption = {
   name: string;
 };
 
-export type ComparePickerPageInfo = {
-  readonly endCursor: string | null;
-  readonly hasNextPage: boolean;
-};
-
 export function comparePickerResetToken(
   specMode: CompareSpecMode,
   selectedSlugs: readonly string[],
 ) {
   return `${specMode}:${selectedSlugs.join("|")}`;
-}
-
-export function appendUniqueComparePickerProducts<Product extends ComparePickerProduct>(
-  existingProducts: Product[],
-  newProducts: readonly Product[],
-): Product[] {
-  if (newProducts.length === 0) {
-    return existingProducts;
-  }
-
-  const seenProductIds = new Set(existingProducts.map((product) => product.id));
-  const nextProducts = [...existingProducts];
-
-  for (const product of newProducts) {
-    if (seenProductIds.has(product.id)) {
-      continue;
-    }
-
-    seenProductIds.add(product.id);
-    nextProducts.push(product);
-  }
-
-  return nextProducts.length === existingProducts.length ? existingProducts : nextProducts;
 }
 
 export function availableComparePickerProducts<Product extends ComparePickerProduct>(
@@ -76,18 +47,11 @@ export function buildComparePickerOptions(
   }));
 }
 
-export function nextComparePickerPageCursor(
-  pageInfo: ComparePickerPageInfo | null,
-  currentAfter: string | null = null,
-) {
-  return nextPageCursor(pageInfo, currentAfter);
-}
-
 export function isComparePickerEmpty(
   availableProducts: readonly ComparePickerProduct[],
-  nextCursor: string | null,
+  hasNext: boolean,
 ) {
-  return availableProducts.length === 0 && !nextCursor;
+  return availableProducts.length === 0 && !hasNext;
 }
 
 export function comparePickerEmptyMessage(selectedSlugs: readonly string[]) {

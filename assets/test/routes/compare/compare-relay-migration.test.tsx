@@ -1,6 +1,12 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes, useLoaderData } from "react-router-dom";
-import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import {
+  useFragment,
+  useLazyLoadQuery,
+  useMutation,
+  usePaginationFragment,
+  usePreloadedQuery,
+} from "react-relay";
 import { fetchGraphQL } from "../../../src/relay/fetch-graphql";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
@@ -15,6 +21,7 @@ const {
   useLazyLoadQueryMock,
   useLoaderDataMock,
   useMutationMock,
+  usePaginationFragmentMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
@@ -24,6 +31,7 @@ const {
   useLazyLoadQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
+  usePaginationFragmentMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn(),
 }));
@@ -52,6 +60,7 @@ vi.mock("react-relay", async () => {
     useFragment: useFragmentMock,
     useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
+    usePaginationFragment: usePaginationFragmentMock,
     usePreloadedQuery: usePreloadedQueryMock,
   };
 });
@@ -71,6 +80,7 @@ const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseMutation = vi.mocked(useMutation);
+const mockedUsePaginationFragment = vi.mocked(usePaginationFragment);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
@@ -178,6 +188,7 @@ beforeEach(() => {
   useLazyLoadQueryMock.mockReset();
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
+  usePaginationFragmentMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   detailProductQueryRef.dispose.mockReset();
@@ -198,6 +209,10 @@ beforeEach(() => {
     },
   } as never);
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
+  mockedUsePaginationFragment.mockImplementation(
+    (_fragment, fragmentRef) =>
+      ({ data: fragmentRef, hasNext: false, isLoadingNext: false, loadNext: vi.fn() }) as never,
+  );
 });
 
 test("compare loader preloads the batched comparison query through Relay", async () => {

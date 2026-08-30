@@ -7,7 +7,12 @@ import {
   useRoutePreloadedQuery,
 } from "../../../src/relay/route-preload";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import {
+  useLazyLoadQuery,
+  useMutation,
+  usePaginationFragment,
+  usePreloadedQuery,
+} from "react-relay";
 import {
   publishComparisonSnapshotMutation,
   revokeComparisonSnapshotMutation,
@@ -25,6 +30,7 @@ const {
   useLoaderDataMock,
   useLazyLoadQueryMock,
   useMutationMock,
+  usePaginationFragmentMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
@@ -34,6 +40,7 @@ const {
   useLoaderDataMock: vi.fn(),
   useLazyLoadQueryMock: vi.fn(),
   useMutationMock: vi.fn(),
+  usePaginationFragmentMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn(),
 }));
@@ -60,6 +67,7 @@ vi.mock("react-relay", async () => {
     ...actual,
     useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
+    usePaginationFragment: usePaginationFragmentMock,
     usePreloadedQuery: usePreloadedQueryMock,
   };
 });
@@ -68,6 +76,7 @@ const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
+const mockedUsePaginationFragment = vi.mocked(usePaginationFragment);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
@@ -78,9 +87,14 @@ beforeEach(() => {
   useLoaderDataMock.mockReset();
   useLazyLoadQueryMock.mockReset();
   useMutationMock.mockReset();
+  usePaginationFragmentMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   mockedUseLazyLoadQuery.mockReturnValue({ viewer: null } as never);
+  mockedUsePaginationFragment.mockImplementation(
+    (_fragment, fragmentRef) =>
+      ({ data: fragmentRef, hasNext: false, isLoadingNext: false, loadNext: vi.fn() }) as never,
+  );
   mockedUseMutation.mockImplementation((mutation) => {
     if (mutation === publishComparisonSnapshotMutation) {
       return [publishMutationMock, false] as never;
@@ -458,43 +472,51 @@ test("ShareComparisonControl scopes revoke pending and failure state to one snap
   expect(secondButton).not.toBeDisabled();
 });
 
-test("ShareComparisonControl reaches snapshots beyond the first page", async () => {
-  mockedUseLazyLoadQuery.mockImplementation((_query, variables) => {
-    const after = (variables as { after?: string | null }).after;
-    return (
-      after
-        ? {
-            viewer: {
-              comparisonSnapshots: {
-                edges: [
-                  {
-                    node: {
-                      id: "snapshot-21",
-                      sharePath: "/compare/shared/21",
-                      title: "Snapshot 21",
-                    },
-                  },
-                ],
-                pageInfo: { endCursor: null, hasNextPage: false },
-              },
-            },
-          }
-        : {
-            viewer: {
-              comparisonSnapshots: {
-                edges: [
-                  {
-                    node: { id: "snapshot-1", sharePath: "/compare/shared/1", title: "Snapshot 1" },
-                  },
-                ],
-                pageInfo: { endCursor: "cursor-20", hasNextPage: true },
-              },
-            },
-          }
-    ) as never;
+test("snapshot pagination preserves accumulated links and pending revoke state", async () => {
+  const snapshotOne = {
+    id: "snapshot-1",
+    sharePath: "/compare/shared/1",
+    title: "Snapshot 1",
+  };
+  const snapshotTwentyOne = {
+    id: "snapshot-21",
+    sharePath: "/compare/shared/21",
+    title: "Snapshot 21",
+  };
+  const queryData = {
+    viewer: {
+      comparisonSnapshots: {
+        edges: [{ node: snapshotOne }],
+        pageInfo: { endCursor: "cursor-20", hasNextPage: true },
+      },
+    },
+  };
+  let snapshotNodes = [snapshotOne];
+  let hasNext = true;
+  let isLoadingNext = false;
+  const loadNext = vi.fn(() => {
+    snapshotNodes = [snapshotOne, snapshotTwentyOne];
+    isLoadingNext = true;
   });
 
-  render(
+  mockedUseLazyLoadQuery.mockReturnValue(queryData as never);
+  mockedUsePaginationFragment.mockImplementation(
+    () =>
+      ({
+        data: {
+          viewer: {
+            comparisonSnapshots: {
+              edges: snapshotNodes.map((node) => ({ node })),
+            },
+          },
+        },
+        hasNext,
+        isLoadingNext,
+        loadNext,
+      }) as never,
+  );
+
+  const view = render(
     <MemoryRouter>
       <ShareComparisonControl
         products={[
@@ -520,16 +542,78 @@ test("ShareComparisonControl reaches snapshots beyond the first page", async () 
   );
 
   fireEvent.click(screen.getByText("Share this comparison"));
-  expect(await screen.findByRole("link", { name: "Snapshot 1" })).toBeVisible();
+  const firstRevoke = await screen.findByRole("button", {
+    name: "Revoke public link: Snapshot 1",
+  });
+  fireEvent.click(firstRevoke);
+  confirmPublicLinkRevocation();
+  await waitFor(() => expect(revokeMutationMock).toHaveBeenCalledTimes(1));
+  expect(firstRevoke).toBeDisabled();
 
   fireEvent.click(screen.getByRole("button", { name: "Show more links" }));
-
-  expect(await screen.findByRole("link", { name: "Snapshot 21" })).toBeVisible();
-  expect(mockedUseLazyLoadQuery).toHaveBeenLastCalledWith(
-    expect.anything(),
-    { first: 20, after: "cursor-20" },
-    { fetchPolicy: "store-or-network" },
+  view.rerender(
+    <MemoryRouter>
+      <ShareComparisonControl
+        products={[
+          {
+            id: "product-1",
+            name: "First",
+            slug: "first",
+            description: null,
+            brandName: null,
+            currentAttributes: [],
+          },
+          {
+            id: "product-2",
+            name: "Second",
+            slug: "second",
+            description: null,
+            brandName: null,
+            currentAttributes: [],
+          },
+        ]}
+      />
+    </MemoryRouter>,
   );
+
+  expect(loadNext).toHaveBeenCalledWith(20);
+  expect(screen.getByRole("link", { name: "Snapshot 1" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Snapshot 21" })).toBeVisible();
+  expect(firstRevoke).toBeDisabled();
+  const loadingButton = screen.getByRole("button", { name: "Loading more links…" });
+  expect(loadingButton).toBeDisabled();
+  fireEvent.click(loadingButton);
+  expect(loadNext).toHaveBeenCalledTimes(1);
+
+  hasNext = false;
+  isLoadingNext = false;
+  view.rerender(
+    <MemoryRouter>
+      <ShareComparisonControl
+        products={[
+          {
+            id: "product-1",
+            name: "First",
+            slug: "first",
+            description: null,
+            brandName: null,
+            currentAttributes: [],
+          },
+          {
+            id: "product-2",
+            name: "Second",
+            slug: "second",
+            description: null,
+            brandName: null,
+            currentAttributes: [],
+          },
+        ]}
+      />
+    </MemoryRouter>,
+  );
+
+  expect(screen.queryByRole("button", { name: "Show more links" })).not.toBeInTheDocument();
+  expect(firstRevoke).toBeDisabled();
 });
 
 test("shared snapshot loader returns an HTTP 404 for invalid or revoked tokens", async () => {
@@ -731,7 +815,9 @@ test("SharedComparisonRoute renders unavailable captured details safely", () => 
   expect(screen.getByRole("heading", { name: "Shared product comparison" })).toBeVisible();
   expect(screen.getByText("No supported winner", { selector: "strong" })).toBeVisible();
   expect(screen.getByText("One or more products need verified product details.")).toBeVisible();
-  expect(screen.queryByText("Accepted specification evidence is unavailable")).not.toBeInTheDocument();
+  expect(
+    screen.queryByText("Accepted specification evidence is unavailable"),
+  ).not.toBeInTheDocument();
   expect(screen.getByText("Unknown brand")).toBeVisible();
   expect(screen.getByText("Source details unavailable")).toBeVisible();
   expect(screen.getByText("Unknown merchant: Current total price unavailable")).toBeVisible();

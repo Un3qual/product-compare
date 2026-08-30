@@ -1,9 +1,12 @@
 import { graphql } from "react-relay";
 
-export const comparisonSharingOperationsQuery = graphql`
-  query ComparisonSharingOperationsQuery($first: Int!, $after: String) {
+export const comparisonSharingSnapshotsFragment = graphql`
+  fragment ComparisonSharingOperations_snapshots on RootQueryType
+  @argumentDefinitions(first: { type: "Int!" }, after: { type: "String" })
+  @refetchable(queryName: "ComparisonSharingSnapshotsPaginationQuery") {
     viewer {
-      comparisonSnapshots(first: $first, after: $after) {
+      comparisonSnapshots(first: $first, after: $after)
+        @connection(key: "ComparisonSharingOperations_comparisonSnapshots") {
         edges {
           node {
             id
@@ -11,12 +14,14 @@ export const comparisonSharingOperationsQuery = graphql`
             sharePath
           }
         }
-        pageInfo {
-          endCursor
-          hasNextPage
-        }
       }
     }
+  }
+`;
+
+export const comparisonSharingOperationsQuery = graphql`
+  query ComparisonSharingOperationsQuery($first: Int!, $after: String) {
+    ...ComparisonSharingOperations_snapshots @arguments(first: $first, after: $after)
   }
 `;
 

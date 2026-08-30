@@ -1,6 +1,6 @@
 import type { ComparisonSharingOperationsPublishComparisonSnapshotMutation } from "$generated/ComparisonSharingOperationsPublishComparisonSnapshotMutation.graphql";
-import type { ComparisonSharingOperationsQuery } from "$generated/ComparisonSharingOperationsQuery.graphql";
 import type { ComparisonSharingOperationsRevokeComparisonSnapshotMutation } from "$generated/ComparisonSharingOperationsRevokeComparisonSnapshotMutation.graphql";
+import type { ComparisonSharingOperations_snapshots$data } from "$generated/ComparisonSharingOperations_snapshots.graphql";
 import {
   hasGraphQLErrors,
   mutationErrorMessage,
@@ -20,9 +20,8 @@ export interface ComparisonSnapshotState {
 }
 
 type GeneratedSnapshotConnection = NonNullable<
-  ComparisonSharingOperationsQuery["response"]["viewer"]
+  ComparisonSharingOperations_snapshots$data["viewer"]
 >["comparisonSnapshots"];
-export type ComparisonSnapshotPageConnection = Pick<GeneratedSnapshotConnection, "pageInfo">;
 
 export type ComparisonSnapshotMutationOutcome =
   | { readonly error: null; readonly snapshot: PublishedComparisonSnapshot }
@@ -139,34 +138,6 @@ export function mergeComparisonSnapshots(
   }
 
   return snapshots;
-}
-
-export function appendComparisonSnapshotPage(
-  current: PublishedComparisonSnapshot[],
-  page: readonly PublishedComparisonSnapshot[],
-) {
-  const seen = new Set(current.map(({ id }) => id));
-  const additions: PublishedComparisonSnapshot[] = [];
-
-  for (const snapshot of page) {
-    if (!seen.has(snapshot.id)) {
-      seen.add(snapshot.id);
-      additions.push(snapshot);
-    }
-  }
-
-  return additions.length ? [...current, ...additions] : current;
-}
-
-export function nextComparisonSnapshotCursor(
-  connection: ComparisonSnapshotPageConnection | null,
-  after: string | null,
-) {
-  const pageInfo = connection?.pageInfo;
-  const endCursor = pageInfo?.endCursor;
-
-  if (!pageInfo?.hasNextPage || !endCursor?.trim() || endCursor === after) return null;
-  return endCursor;
 }
 
 export function removeComparisonSnapshotId(ids: ReadonlySet<string>, id: string) {

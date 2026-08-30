@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<f019fdfce947e24910f35f08cfcc7857>>
+ * @generated SignedSource<<861a59cb244149498a980aedd5fdfe10>>
  * @lightSyntaxTransform
  */
 
@@ -9,30 +9,32 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ComparisonSharingOperationsQuery$variables = {
+export type ComparisonSharingSnapshotsPaginationQuery$variables = {
   after?: string | null;
   first: number;
 };
-export type ComparisonSharingOperationsQuery$data = {
+export type ComparisonSharingSnapshotsPaginationQuery$data = {
   readonly " $fragmentSpreads": FragmentRefs<"ComparisonSharingOperations_snapshots">;
 };
-export type ComparisonSharingOperationsQuery = {
-  response: ComparisonSharingOperationsQuery$data;
-  variables: ComparisonSharingOperationsQuery$variables;
+export type ComparisonSharingSnapshotsPaginationQuery = {
+  response: ComparisonSharingSnapshotsPaginationQuery$data;
+  variables: ComparisonSharingSnapshotsPaginationQuery$variables;
 };
 
 const node: ConcreteRequest = (function(){
-var v0 = {
-  "defaultValue": null,
-  "kind": "LocalArgument",
-  "name": "after"
-},
-v1 = {
-  "defaultValue": null,
-  "kind": "LocalArgument",
-  "name": "first"
-},
-v2 = [
+var v0 = [
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "after"
+  },
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "first"
+  }
+],
+v1 = [
   {
     "kind": "Variable",
     "name": "after",
@@ -44,7 +46,7 @@ v2 = [
     "variableName": "first"
   }
 ],
-v3 = {
+v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
@@ -53,16 +55,13 @@ v3 = {
 };
 return {
   "fragment": {
-    "argumentDefinitions": [
-      (v0/*:: as any*/),
-      (v1/*:: as any*/)
-    ],
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ComparisonSharingOperationsQuery",
+    "name": "ComparisonSharingSnapshotsPaginationQuery",
     "selections": [
       {
-        "args": (v2/*:: as any*/),
+        "args": (v1/*:: as any*/),
         "kind": "FragmentSpread",
         "name": "ComparisonSharingOperations_snapshots"
       }
@@ -72,12 +71,9 @@ return {
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": [
-      (v1/*:: as any*/),
-      (v0/*:: as any*/)
-    ],
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
-    "name": "ComparisonSharingOperationsQuery",
+    "name": "ComparisonSharingSnapshotsPaginationQuery",
     "selections": [
       {
         "alias": null,
@@ -89,7 +85,7 @@ return {
         "selections": [
           {
             "alias": null,
-            "args": (v2/*:: as any*/),
+            "args": (v1/*:: as any*/),
             "concreteType": "ComparisonSnapshotConnection",
             "kind": "LinkedField",
             "name": "comparisonSnapshots",
@@ -111,7 +107,7 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v3/*:: as any*/),
+                      (v2/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -176,30 +172,30 @@ return {
           },
           {
             "alias": null,
-            "args": (v2/*:: as any*/),
+            "args": (v1/*:: as any*/),
             "filters": null,
             "handle": "connection",
             "key": "ComparisonSharingOperations_comparisonSnapshots",
             "kind": "LinkedHandle",
             "name": "comparisonSnapshots"
           },
-          (v3/*:: as any*/)
+          (v2/*:: as any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "581ecde67269bb1a6eea231f13d6aa5d",
+    "cacheID": "1cc4476d85b3d84e87a8a1954787a177",
     "id": null,
     "metadata": {},
-    "name": "ComparisonSharingOperationsQuery",
+    "name": "ComparisonSharingSnapshotsPaginationQuery",
     "operationKind": "query",
-    "text": "query ComparisonSharingOperationsQuery(\n  $first: Int!\n  $after: String\n) {\n  ...ComparisonSharingOperations_snapshots_2HEEH6\n}\n\nfragment ComparisonSharingOperations_snapshots_2HEEH6 on RootQueryType {\n  viewer {\n    comparisonSnapshots(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          title\n          sharePath\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    id\n  }\n}\n"
+    "text": "query ComparisonSharingSnapshotsPaginationQuery(\n  $after: String\n  $first: Int!\n) {\n  ...ComparisonSharingOperations_snapshots_2HEEH6\n}\n\nfragment ComparisonSharingOperations_snapshots_2HEEH6 on RootQueryType {\n  viewer {\n    comparisonSnapshots(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          title\n          sharePath\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    id\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "7aad6d8be01d525960f5fbb8c39a8c44";
+(node as any).hash = "ba502c0e0bf2bcc3b5761aa2a1a9bef1";
 
 export default node;
