@@ -19,11 +19,6 @@ vi.mock("../../../../src/relay/route-preload", async () => {
 
 const preloadRouteQueryMock = vi.mocked(preloadRouteQuery);
 
-const CJ_PROGRAMS_QUERY_TEXT =
-  "query CJProgramsRouteQuery($first: Int!, $after: String, $stage: CJProgramStage, $sort: CJProgramSort!) { cjProgramStageCounts { new } cjPrograms(first: $first, after: $after, stage: $stage, sort: $sort) { edges { node { id } } } }";
-const UNMATCHED_FEEDS_QUERY_TEXT =
-  "query UnmatchedFeedsQuery($first: Int!, $after: String) { unmatchedCjFeeds(first: $first, after: $after) { edges { node { id } } } }";
-
 beforeEach(() => {
   preloadRouteQueryMock.mockReset();
 });
@@ -283,8 +278,8 @@ function buildCJProgramsLoaderArgs({
 function cjProgramsQueryDescriptor(variables: CJProgramsRouteQuery["variables"]) {
   return {
     __relayQuery: {
+      cacheID: "CJProgramsRouteQuery-cache-id",
       operationName: "CJProgramsRouteQuery",
-      text: CJ_PROGRAMS_QUERY_TEXT,
       variables,
     },
   };
@@ -293,8 +288,8 @@ function cjProgramsQueryDescriptor(variables: CJProgramsRouteQuery["variables"])
 function unmatchedFeedsQueryDescriptor(variables: UnmatchedFeedsQuery["variables"]) {
   return {
     __relayQuery: {
+      cacheID: "UnmatchedFeedsQuery-cache-id",
       operationName: "UnmatchedFeedsQuery",
-      text: UNMATCHED_FEEDS_QUERY_TEXT,
       variables,
     },
   };

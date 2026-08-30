@@ -2,15 +2,7 @@ import { Select as SelectPrimitive } from "@base-ui/react/select";
 import type { SelectRootProps } from "@base-ui/react/select";
 import * as stylex from "@stylexjs/stylex";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ComponentProps,
-  type Ref,
-} from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type Ref } from "react";
 import { tokens } from "../theme/tokens.stylex";
 import type { StyleXPrimitiveProps } from "./stylex-props";
 
@@ -119,24 +111,12 @@ const styles = stylex.create({
 
 const hidden = (status: string | undefined) => status === "starting" || status === "ending";
 
-export function Select<Value, Multiple extends boolean | undefined = false>(
-  props: SelectRootProps<Value, Multiple>,
-) {
-  const {
-    defaultValue,
-    inputRef,
-    multiple,
-    onValueChange,
-    value: controlledValue,
-    ...rootProps
-  } = props;
-  type ChangeHandler = NonNullable<SelectRootProps<Value, Multiple>["onValueChange"]>;
+export function Select<Value>(props: SelectRootProps<Value, false>) {
+  const { defaultValue, inputRef, onValueChange, value: controlledValue, ...rootProps } = props;
+  type ChangeHandler = NonNullable<SelectRootProps<Value, false>["onValueChange"]>;
   type RootValue = Parameters<ChangeHandler>[0];
   const controlled = controlledValue !== undefined;
-  const resetValue = useMemo(
-    () => (defaultValue ?? (multiple ? [] : null)) as RootValue,
-    [defaultValue, multiple],
-  );
+  const resetValue = (defaultValue ?? null) as RootValue;
   const [uncontrolledValue, setUncontrolledValue] = useState<RootValue>(() => resetValue);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
   const mergedInputRef = useCallback(
@@ -171,7 +151,6 @@ export function Select<Value, Multiple extends boolean | undefined = false>(
     <SelectPrimitive.Root
       data-slot="select"
       inputRef={mergedInputRef}
-      multiple={multiple}
       onValueChange={handleValueChange}
       value={controlled ? controlledValue : uncontrolledValue}
       {...rootProps}
@@ -214,10 +193,7 @@ export function SelectTrigger({
       {...stylex.props(styles.trigger, style)}
       data-slot="select-trigger"
       render={(triggerRenderProps, state) => (
-        <button
-          {...triggerRenderProps}
-          value={Array.isArray(state.value) ? state.value.join(",") : String(state.value ?? "")}
-        />
+        <button {...triggerRenderProps} value={String(state.value ?? "")} />
       )}
       {...triggerProps}
     >

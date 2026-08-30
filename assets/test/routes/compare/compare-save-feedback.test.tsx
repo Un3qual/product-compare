@@ -1,7 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Outlet, Route, Routes, useLoaderData } from "react-router-dom";
-import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import {
+  useFragment,
+  useLazyLoadQuery,
+  useMutation,
+  usePaginationFragment,
+  usePreloadedQuery,
+} from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import {
@@ -17,6 +23,7 @@ const {
   useLazyLoadQueryMock,
   useLoaderDataMock,
   useMutationMock,
+  usePaginationFragmentMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
@@ -25,6 +32,7 @@ const {
   useLazyLoadQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
+  usePaginationFragmentMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn(),
 }));
@@ -37,6 +45,7 @@ vi.mock("react-relay", async () => {
     useFragment: useFragmentMock,
     useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
+    usePaginationFragment: usePaginationFragmentMock,
     usePreloadedQuery: usePreloadedQueryMock,
   };
 });
@@ -65,6 +74,7 @@ const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
+const mockedUsePaginationFragment = vi.mocked(usePaginationFragment);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
@@ -94,16 +104,16 @@ const DESK_CHAIR = {
 
 const deskLampQueryDescriptor = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: DESK_LAMP.slug },
   },
 };
 
 const deskChairQueryDescriptor = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: DESK_CHAIR.slug },
   },
 };
@@ -114,16 +124,16 @@ const deskChairQueryRef = mockPreloadedQuery(deskChairQueryDescriptor.__relayQue
 
 const deskLampCompareQueryDescriptor = {
   __relayQuery: {
+    cacheID: "CompareRouteQuery-cache-id",
     operationName: "CompareRouteQuery",
-    text: "query CompareRouteQuery($slugs: [String!]!) { comparisonProducts(slugs: $slugs) { id } }",
     variables: { slugs: [DESK_LAMP.slug] },
   },
 };
 
 const deskChairCompareQueryDescriptor = {
   __relayQuery: {
+    cacheID: "CompareRouteQuery-cache-id",
     operationName: "CompareRouteQuery",
-    text: "query CompareRouteQuery($slugs: [String!]!) { comparisonProducts(slugs: $slugs) { id } }",
     variables: { slugs: [DESK_CHAIR.slug] },
   },
 };
@@ -184,6 +194,7 @@ beforeEach(() => {
   useLazyLoadQueryMock.mockReset();
   mockedUseLoaderData.mockReset();
   mockedUseMutation.mockReset();
+  mockedUsePaginationFragment.mockReset();
   mockedUsePreloadedQuery.mockReset();
   mockedUseRoutePreloadedQuery.mockReset();
   deskLampQueryRef.dispose.mockReset();
@@ -194,6 +205,10 @@ beforeEach(() => {
     },
   });
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
+  mockedUsePaginationFragment.mockImplementation(
+    (_fragment, fragmentRef) =>
+      ({ data: fragmentRef, hasNext: false, isLoadingNext: false, loadNext: vi.fn() }) as never,
+  );
   mockRouteQueryRefs();
   mockProductQueries();
 });

@@ -73,15 +73,15 @@ const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const WORKSPACE_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "HomeRouteQuery-cache-id",
     operationName: "HomeRouteQuery",
-    text: null,
     variables: { first: 6, selectedSlugs: ["model-1"] },
   },
 };
 const DEALS_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "HomeDealsQuery-cache-id",
     operationName: "HomeDealsQuery",
-    text: null,
     variables: { first: 6, selectedSlugs: ["model-1"] },
   },
 };

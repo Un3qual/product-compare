@@ -77,8 +77,8 @@ const COUPON_ID = "Q291cG9uOjE=";
 
 const AFFILIATE_SETUP_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "AffiliateSetupRouteQuery-cache-id",
     operationName: "AffiliateSetupRouteQuery",
-    text: "query AffiliateSetupRouteQuery($first: Int, $after: String) { merchants(first: $first, after: $after) { edges { node { id } } } }",
     variables: {
       first: 20,
       after: null,

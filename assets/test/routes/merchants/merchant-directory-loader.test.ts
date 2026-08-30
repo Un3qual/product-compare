@@ -17,9 +17,6 @@ vi.mock("../../../src/relay/route-preload", async () => {
 
 const preloadRouteQueryMock = vi.mocked(preloadRouteQuery);
 
-const MERCHANT_DIRECTORY_QUERY_TEXT =
-  "query MerchantDirectoryRouteQuery($first: Int, $after: String) { merchants(first: $first, after: $after) { edges { node { id } } } }";
-
 beforeEach(() => {
   preloadRouteQueryMock.mockReset();
 });
@@ -284,8 +281,8 @@ function buildMerchantDirectoryLoaderArgs({
 function merchantDirectoryQueryDescriptor(variables: { first: number; after: string | null }) {
   return {
     __relayQuery: {
+      cacheID: "MerchantDirectoryRouteQuery-cache-id",
       operationName: "MerchantDirectoryRouteQuery",
-      text: MERCHANT_DIRECTORY_QUERY_TEXT,
       variables,
     },
   };

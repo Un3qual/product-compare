@@ -16,9 +16,6 @@ vi.mock("../../../src/relay/route-preload", async () => {
 
 const preloadRouteQueryMock = vi.mocked(preloadRouteQuery);
 
-const OFFER_DISCOVERY_QUERY_TEXT =
-  "query OfferDiscoveryRouteQuery($after: String, $first: Int!, $input: MerchantProductsInput!, $productId: ID!) { selectedProduct: node(id: $productId) { __typename } merchantProducts(after: $after, first: $first, input: $input) { edges { node { id } } } }";
-
 const PRODUCT_ID = "UHJvZHVjdDoxMjM=";
 const MERCHANT_ID = "TWVyY2hhbnQ6NDU2";
 
@@ -545,8 +542,8 @@ function offerDiscoveryQueryDescriptor(variables: {
 }) {
   return {
     __relayQuery: {
+      cacheID: "OfferDiscoveryRouteQuery-cache-id",
       operationName: "OfferDiscoveryRouteQuery",
-      text: OFFER_DISCOVERY_QUERY_TEXT,
       variables: {
         ...variables,
         productId: variables.input.productId,

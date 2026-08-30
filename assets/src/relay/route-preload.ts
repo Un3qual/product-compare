@@ -35,8 +35,8 @@ interface RouteQueryRefEntry {
 
 export interface RelayRouteQueryDescriptor<TVariables = Record<string, unknown>> {
   __relayQuery: {
+    cacheID: string;
     operationName: string;
-    text: string | null;
     variables: TVariables;
   };
 }
@@ -358,11 +358,16 @@ function createRouteQueryDescriptor<TQuery extends OperationType>(
   variables: TQuery["variables"],
 ) {
   const request = getRequest(query);
+  const cacheID = "cacheID" in request.params ? request.params.cacheID : null;
+
+  if (!cacheID) {
+    throw new Error(`${request.params.name} is missing a generated cache ID`);
+  }
 
   return {
     __relayQuery: {
+      cacheID,
       operationName: request.params.name,
-      text: request.params.text,
       variables,
     },
   };
@@ -372,8 +377,7 @@ export function relayRouteQueryDescriptorIdentity<TVariables>(
   descriptor: RelayRouteQueryDescriptor<TVariables>,
 ) {
   return JSON.stringify([
-    descriptor.__relayQuery.operationName,
-    descriptor.__relayQuery.text,
+    descriptor.__relayQuery.cacheID,
     stableJsonValue(descriptor.__relayQuery.variables),
   ]);
 }

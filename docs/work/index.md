@@ -45,48 +45,7 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 1. Frontend Correctness And Simplification
-
-Status: active
-Lane: Frontend correctness and simplification
-Plan: `docs/superpowers/plans/2026-08-30-frontend-correctness-simplification-implementation-plan.md`
-Batch outcome: product-detail recovery is structurally safe, Relay owns every
-in-scope connection, affiliate mutation state lives with its submitting step,
-and select/query descriptor APIs retain only used behavior.
-Next action: add product-detail loader cases that reject unrelated GraphQL
-partials and malformed SEO projections.
-Owned paths:
-
-- `assets/src/routes/products/{ProductDetailRoute.tsx,community/**}`
-- `assets/src/routes/compare/{picker/**,sharing/**}`
-- `assets/src/routes/affiliate/setup/**`
-- `assets/src/ui/primitives/Select.tsx`
-- `assets/src/relay/route-preload.ts`
-- Matching generated Relay artifacts and focused tests named in the plan
-- `docs/work/frontend-correctness-simplification.md`
-
-Internal slices:
-
-- Safe product-detail partial recovery.
-- Community and compare Relay pagination ownership.
-- Step-local affiliate mutations.
-- Single-select and compact route-descriptor contracts.
-
-Prerequisites:
-
-- Approved design.
-- Current generated Relay schema/artifacts and full frontend baseline pass.
-
-Verification:
-
-- Focused Vitest suites listed in the plan.
-- `cd assets && pnpm run check`
-- Targeted Playwright product-experience flow on an isolated port.
-- `git diff --check`
-
-Exit condition: manual append effects and unused type branches are absent from
-the named surfaces, real input/generated boundaries remain, generated artifacts
-are current, and focused/full frontend/browser gates pass.
+None.
 
 ## Ready Work
 
@@ -135,8 +94,8 @@ recorded exactly.
 
 ## Ready Floor Exception
 
-Reason: After claiming the frontend outcome, the approved remediation contains
-only one unclaimed independently shippable outcome; no second or third
+Reason: After completing the frontend outcome, the approved remediation
+contains only one independently shippable outcome; no second or third
 source-backed batch exists without a fresh final-state audit.
 Rejected split: Splitting frontend pagination, state ownership, select/query
 contracts, or tooling setup, scheduler, helper, and dependency work into

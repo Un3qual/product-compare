@@ -84,8 +84,8 @@ const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const CJ_PROGRAMS_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<CJProgramsRouteQuery["variables"]> = {
   __relayQuery: {
+    cacheID: "CJProgramsRouteQuery-cache-id",
     operationName: "CJProgramsRouteQuery",
-    text: null,
     variables: {
       first: 20,
       after: null,
@@ -99,8 +99,8 @@ const UNMATCHED_FEEDS_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<
   UnmatchedFeedsQuery["variables"]
 > = {
   __relayQuery: {
+    cacheID: "UnmatchedFeedsQuery-cache-id",
     operationName: "UnmatchedFeedsQuery",
-    text: null,
     variables: { first: 10, after: null },
   },
 };

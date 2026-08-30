@@ -21,11 +21,12 @@ for (const viewport of VIEWPORTS) {
       "true",
     );
     await expect(page.getByRole("tab", { name: "Overview" })).toHaveCount(0);
-    await expect(page.getByText("199.99 USD", { exact: true })).toBeVisible();
+    await expect(page.getByText("199.99 USD at Camera Shop", { exact: true })).toBeVisible();
     await expect(page.getByText("Field Camera", { exact: true })).toHaveCount(1);
     await expect(page.getByText("field-camera", { exact: true })).toHaveCount(0);
 
-    const freshness = page.getByText("Observed 1 day ago", { exact: true });
+    const freshness = page.getByRole("button", { name: "Observed 1 day ago" });
+    await expect(freshness.locator("time")).toHaveAttribute("datetime", "2026-08-11T17:00:00Z");
     await expect(freshness).toHaveAttribute("title", "Aug 11, 2026, 5:00 PM UTC");
     await freshness.hover();
     await expect(page.getByRole("tooltip")).toHaveText("Aug 11, 2026, 5:00 PM UTC");
@@ -249,6 +250,7 @@ function productFixture() {
           eligibleOfferCount: 2,
           bestOffer: {
             merchantProductId: "merchant-product-camera-shop",
+            merchantName: "Camera Shop",
             landedPrice: "199.99",
             observedAt: "2026-08-11T17:00:00Z",
             freshness: "FRESH",

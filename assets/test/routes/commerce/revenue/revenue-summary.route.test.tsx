@@ -74,8 +74,8 @@ const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const REVENUE_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<RevenueSummaryRouteQuery$variables> = {
   __relayQuery: {
+    cacheID: "RevenueSummaryRouteQuery-cache-id",
     operationName: "RevenueSummaryRouteQuery",
-    text: "query RevenueSummaryRouteQuery($input: RevenueSummaryInput) { revenueSummary(input: $input) { metrics { clicks } } }",
     variables: {
       input: null,
     },
@@ -85,8 +85,8 @@ const REVENUE_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<RevenueSummaryRouteQue
 const ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<AttributionLedgerRouteQuery$variables> =
   {
     __relayQuery: {
+      cacheID: "AttributionLedgerRouteQuery-cache-id",
       operationName: "AttributionLedgerRouteQuery",
-      text: "query AttributionLedgerRouteQuery($input: RevenueSummaryInput, $after: String, $first: Int!) { commerceAttributionClicks(input: $input, after: $after, first: $first) { edges { cursor } } }",
       variables: {
         input: null,
         after: null,

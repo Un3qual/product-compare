@@ -75,8 +75,8 @@ const SCRIPT_SCHEME_REDIRECT = ["java", "script:alert(1)"].join("");
 
 const OFFER_DISCOVERY_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "OfferDiscoveryRouteQuery-cache-id",
     operationName: "OfferDiscoveryRouteQuery",
-    text: "query OfferDiscoveryRouteQuery($first: Int!, $input: MerchantProductsInput!, $productId: ID!) { selectedProduct: node(id: $productId) { __typename } merchantProducts(first: $first, input: $input) { edges { node { id } } } }",
     variables: {
       first: 6,
       productId: "UHJvZHVjdDoxMjM=",

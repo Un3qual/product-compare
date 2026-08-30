@@ -230,24 +230,24 @@ const THIRD_PRODUCT = {
 
 const DETAIL_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: DETAIL_PRODUCT.slug, offerFirst: 3, offersAfter: null },
   },
 };
 
 const SECOND_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: SECOND_PRODUCT.slug, offerFirst: 3, offersAfter: null },
   },
 };
 
 const THIRD_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: THIRD_PRODUCT.slug, offerFirst: 3, offersAfter: null },
   },
 };
@@ -266,8 +266,8 @@ const THIRD_PRODUCT_QUERY_REF = mockPreloadedQuery(
 
 const COMPARE_ROUTE_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "CompareRouteQuery-cache-id",
     operationName: "CompareRouteQuery",
-    text: "query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!) { comparisonProducts(slugs: $slugs) { id } }",
     variables: {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
       offerFirst: 3,
@@ -281,8 +281,8 @@ const COMPARE_ROUTE_QUERY_REF = mockPreloadedQuery(
 
 const savedComparisonsQueryDescriptor = (variables: { first: number; after?: string }) => ({
   __relayQuery: {
+    cacheID: "SavedComparisonOperationsQuery-cache-id",
     operationName: "SavedComparisonOperationsQuery",
-    text: "query SavedComparisonOperationsQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
     variables,
   },
 });

@@ -110,19 +110,17 @@ const API_ORIGIN = "http://localhost:4000";
 
 const PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: "detail-product" },
   },
 };
 
-const OFFERS_QUERY_TEXT =
-  "query ProductOffersRouteQuery($productId: ID!, $first: Int!) { merchantProducts(input: { productId: $productId, activeOnly: true, first: $first }) { edges { node { id } } } }";
 function makeOffersQueryDescriptor(offersAfter?: string | null) {
   return {
     __relayQuery: {
+      cacheID: "ProductOffersRouteQuery-cache-id",
       operationName: "ProductOffersRouteQuery",
-      text: OFFERS_QUERY_TEXT,
       variables: {
         productId: "UHJvZHVjdDox",
         first: 6,

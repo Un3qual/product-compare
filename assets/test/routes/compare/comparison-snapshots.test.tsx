@@ -649,8 +649,8 @@ test("SharedComparisonRoute renders captured facts, warning, and a live comparis
     status: "ready",
     query: {
       __relayQuery: {
+        cacheID: "SharedComparisonRouteQuery-cache-id",
         operationName: "SharedComparisonRouteQuery",
-        text: 'query SharedComparisonRouteQuery { comparisonSnapshot(token: "x") { id } }',
         variables: { token: "x" },
       },
     },
@@ -757,8 +757,8 @@ test("SharedComparisonRoute renders unavailable captured details safely", () => 
     status: "ready",
     query: {
       __relayQuery: {
+        cacheID: "SharedComparisonRouteQuery-cache-id",
         operationName: "SharedComparisonRouteQuery",
-        text: 'query SharedComparisonRouteQuery { comparisonSnapshot(token: "x") { id } }',
         variables: { token: "x" },
       },
     },
@@ -829,8 +829,8 @@ test("SharedComparisonRoute links an empty captured product list to the base com
     status: "ready",
     query: {
       __relayQuery: {
+        cacheID: "SharedComparisonRouteQuery-cache-id",
         operationName: "SharedComparisonRouteQuery",
-        text: 'query SharedComparisonRouteQuery { comparisonSnapshot(token: "x") { id } }',
         variables: { token: "x" },
       },
     },

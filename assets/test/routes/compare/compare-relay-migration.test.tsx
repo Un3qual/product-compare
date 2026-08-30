@@ -110,16 +110,16 @@ const SECOND_PRODUCT = {
 
 const detailProductQueryDescriptor = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: DETAIL_PRODUCT.slug },
   },
 };
 
 const secondProductQueryDescriptor = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: SECOND_PRODUCT.slug },
   },
 };
@@ -134,8 +134,8 @@ const secondProductQueryRef = mockPreloadedQuery(
 
 const compareRouteQueryDescriptor = {
   __relayQuery: {
+    cacheID: "CompareRouteQuery-cache-id",
     operationName: "CompareRouteQuery",
-    text: "query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!) { comparisonProducts(slugs: $slugs) { id } }",
     variables: {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
       offerFirst: 3,

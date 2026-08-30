@@ -89,8 +89,8 @@ test("MerchantDetailRoute renders complete summary, safe destination, and produc
     status: "ready",
     query: {
       __relayQuery: {
+        cacheID: "MerchantDetailRouteQuery-cache-id",
         operationName: "MerchantDetailRouteQuery",
-        text: 'query MerchantDetailRouteQuery { merchant(slug: "shop") { id } }',
         variables: { slug: "shop", first: 20, after: null },
       },
     },
@@ -171,8 +171,8 @@ test("MerchantDetailRoute suppresses a repeated next-page cursor", () => {
     status: "ready",
     query: {
       __relayQuery: {
+        cacheID: "MerchantDetailRouteQuery-cache-id",
         operationName: "MerchantDetailRouteQuery",
-        text: 'query MerchantDetailRouteQuery { merchant(slug: "shop") { id } }',
         variables: { slug: "shop", first: 20, after: "same-cursor" },
       },
     },
@@ -211,8 +211,8 @@ test("MerchantDetailRoute renders missing observations and incomplete offers saf
     status: "ready",
     query: {
       __relayQuery: {
+        cacheID: "MerchantDetailRouteQuery-cache-id",
         operationName: "MerchantDetailRouteQuery",
-        text: 'query MerchantDetailRouteQuery { merchant(slug: "shop") { id } }',
         variables: { slug: "shop", first: 20, after: null },
       },
     },

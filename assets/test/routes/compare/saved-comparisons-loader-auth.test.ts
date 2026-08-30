@@ -88,8 +88,8 @@ test("savedComparisonsLoader preserves the URL cursor in its Relay descriptor", 
   const request = new Request("https://app.example.test/compare/saved?after=cursor-1");
   const descriptor = {
     __relayQuery: {
+      cacheID: "SavedComparisonsRouteQuery-cache-id",
       operationName: "SavedComparisonsRouteQuery",
-      text: "query SavedComparisonsRouteQuery { mySavedComparisonSets { pageInfo { hasNextPage } } }",
       variables: { first: 20, after: "cursor-1" },
     },
   };
@@ -141,8 +141,8 @@ test("savedComparisonsLoader disposes a page when navigation aborts after the fe
       },
       descriptor: {
         __relayQuery: {
+          cacheID: "SavedComparisonsRouteQuery-cache-id",
           operationName: "SavedComparisonsRouteQuery",
-          text: null,
           variables: { first: 20 },
         },
       },
