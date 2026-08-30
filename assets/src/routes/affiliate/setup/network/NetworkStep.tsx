@@ -1,28 +1,77 @@
-import type { FormEventHandler } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { props } from "@stylexjs/stylex";
+import { useMutation } from "react-relay";
 import type { AffiliateSetupOperationsUpsertAffiliateNetworkMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateNetworkMutation.graphql";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
+import { commitRouteMutationPromise } from "$relay/mutations";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
+import {
+  resolveAffiliateNetworkMutationOutcome,
+  upsertAffiliateNetworkMutation,
+} from "../AffiliateSetupOperations";
+import { buildNetworkVariables, formDataToScalarValues } from "../affiliate-form-values";
 import { affiliateWorkflowStyles as styles } from "../affiliate-workflow.stylex";
 
-export type NetworkResult = NonNullable<
+type NetworkResult = NonNullable<
   NonNullable<
     AffiliateSetupOperationsUpsertAffiliateNetworkMutation["response"]["upsertAffiliateNetwork"]
   >["network"]
 >;
 
 export function NetworkStep({
-  error,
-  onSubmit,
-  pending,
-  result,
+  onNetworkIdChange,
 }: {
-  error: string | null;
-  onSubmit: FormEventHandler<HTMLFormElement>;
-  pending: boolean;
-  result: NetworkResult | null;
+  onNetworkIdChange: (networkId: string) => void;
 }) {
+  const [commitUpsertAffiliateNetwork] =
+    useMutation<AffiliateSetupOperationsUpsertAffiliateNetworkMutation>(
+      upsertAffiliateNetworkMutation,
+    );
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [result, setResult] = useState<NetworkResult | null>(null);
+  const inFlightRef = useRef(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (inFlightRef.current) return;
+
+    inFlightRef.current = true;
+    setPending(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(
+        commitUpsertAffiliateNetwork,
+        {
+          variables: buildNetworkVariables(
+            formDataToScalarValues(new FormData(event.currentTarget)),
+          ),
+        },
+      );
+      const outcome = resolveAffiliateNetworkMutationOutcome(
+        response.upsertAffiliateNetwork,
+        graphQLErrors,
+      );
+
+      if (outcome.error === null) {
+        setResult(outcome.result);
+        onNetworkIdChange(outcome.result.id);
+      } else {
+        setError(outcome.error);
+      }
+    } catch {
+      setError(DEFAULT_MUTATION_ERROR_MESSAGE);
+    } finally {
+      inFlightRef.current = false;
+      setPending(false);
+    }
+  }
+
   return (
     <section aria-label="Step 1: Network" {...props(styles.step)}>
       <header {...props(styles.stepHeader)}>
@@ -35,7 +84,7 @@ export function NetworkStep({
       <form
         aria-label="Save affiliate network"
         method="post"
-        onSubmit={onSubmit}
+        onSubmit={handleSubmit}
         {...props(styles.form)}
       >
         <Label>
