@@ -36,8 +36,7 @@ defmodule ProductCompare.ToolchainContractTest do
     package = "assets/package.json" |> path() |> File.read!() |> Jason.decode!()
     mise = ".mise.toml" |> path() |> File.read!()
 
-    assert package["packageManager"] == "pnpm@11.18.0"
-    assert package["engines"] == %{"node" => "24.18.1", "pnpm" => "11.18.0"}
+    assert_frontend_toolchain_matches!(mise, package)
     assert package["devDependencies"]["vite"] == "8.2.0"
     assert package["devDependencies"]["@vitejs/plugin-react"] == "6.0.5"
     assert package["devDependencies"]["@rolldown/plugin-babel"] == "0.2.3"
@@ -48,7 +47,7 @@ defmodule ProductCompare.ToolchainContractTest do
     assert package["scripts"]["check"] =~ "pnpm run lint"
     assert package["scripts"]["check"] =~ "pnpm run format:check"
 
-    for tool <- ~w(erlang elixir node pnpm) do
+    for tool <- ~w(erlang elixir) do
       assert Regex.match?(~r/^#{tool}\s*=\s*"[^"]+"$/m, mise),
              ".mise.toml must pin #{tool}"
     end
@@ -57,6 +56,23 @@ defmodule ProductCompare.ToolchainContractTest do
            "Docker Compose owns the PostgreSQL runtime; mise install must not require a plugin"
 
     assert mise =~ "disable_tools = [\"ruby\"]"
+  end
+
+  test "toolchain mismatch identifies both conflicting sources and values" do
+    mise = """
+    [tools]
+    node = "24.18.1"
+    pnpm = "11.18.0"
+    """
+
+    package = %{
+      "engines" => %{"node" => "22.0.0", "pnpm" => "11.18.0"},
+      "packageManager" => "pnpm@11.18.0"
+    }
+
+    assert_raise ExUnit.AssertionError,
+                 ~r/Node pin mismatch: \.mise\.toml node="24\.18\.1"; package\.json engines\.node="22\.0\.0"/,
+                 fn -> assert_frontend_toolchain_matches!(mise, package) end
   end
 
   test "setup installs frozen frontend dependencies" do
@@ -84,6 +100,39 @@ defmodule ProductCompare.ToolchainContractTest do
     assert readme =~ "http://localhost:4000"
     assert readme =~ "http://localhost:5173"
     refute readme =~ "pnpm run dev"
+  end
+
+  defp assert_frontend_toolchain_matches!(mise, package) do
+    mise_node = mise_tool_version!(mise, "node")
+    package_node = get_in(package, ["engines", "node"])
+
+    assert mise_node == package_node,
+           "Node pin mismatch: .mise.toml node=#{inspect(mise_node)}; " <>
+             "package.json engines.node=#{inspect(package_node)}"
+
+    mise_pnpm = mise_tool_version!(mise, "pnpm")
+    package_pnpm = get_in(package, ["engines", "pnpm"])
+
+    assert mise_pnpm == package_pnpm,
+           "pnpm pin mismatch: .mise.toml pnpm=#{inspect(mise_pnpm)}; " <>
+             "package.json engines.pnpm=#{inspect(package_pnpm)}"
+
+    assert package["packageManager"] == "pnpm@#{mise_pnpm}",
+           "pnpm packageManager mismatch: .mise.toml pnpm=#{inspect(mise_pnpm)}; " <>
+             "package.json packageManager=#{inspect(package["packageManager"])}"
+  end
+
+  defp mise_tool_version!(mise, tool) do
+    pattern =
+      Regex.compile!(
+        "^#{Regex.escape(tool)}\\s*=\\s*\"(?<version>[^\"]+)\"\\s*$",
+        "m"
+      )
+
+    case Regex.named_captures(pattern, mise) do
+      %{"version" => version} -> version
+      nil -> flunk(".mise.toml must pin #{tool}")
+    end
   end
 
   defp path(relative_path), do: Path.join(@repo_root, relative_path)
