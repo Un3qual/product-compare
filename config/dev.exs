@@ -23,7 +23,9 @@ config :product_compare, ProductCompareWeb.Endpoint,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "HLuoZA/X0e8R43SNWkLoZOcLk12hSOTRxafPw/NYu4K5kHrRCvZuLDbUsAIS1S5Z",
-  watchers: []
+  watchers: [
+    vite: {ProductCompareWeb.ViteWatcher, :run, [Path.expand("../assets", __DIR__)]}
+  ]
 
 # ## SSL Support
 #

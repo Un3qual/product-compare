@@ -89,7 +89,7 @@ defmodule ProductCompare.MixProject do
     ecto_setup = ["ecto.create", "ecto.migrate"] ++ seed_tasks()
 
     [
-      setup: ["deps.get"] ++ ecto_setup,
+      setup: ["deps.get", "cmd --cd assets pnpm install --frozen-lockfile"] ++ ecto_setup,
       "ecto.setup": ecto_setup,
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],

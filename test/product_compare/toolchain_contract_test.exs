@@ -59,5 +59,32 @@ defmodule ProductCompare.ToolchainContractTest do
     assert mise =~ "disable_tools = [\"ruby\"]"
   end
 
+  test "setup installs frozen frontend dependencies" do
+    aliases = Mix.Project.config() |> Keyword.fetch!(:aliases)
+
+    assert "cmd --cd assets pnpm install --frozen-lockfile" in aliases[:setup]
+  end
+
+  test "Phoenix owns the development Vite watcher" do
+    config = Config.Reader.read!(path("config/dev.exs"))
+
+    endpoint =
+      config |> Keyword.fetch!(:product_compare) |> Keyword.fetch!(ProductCompareWeb.Endpoint)
+
+    assert endpoint[:watchers] == [
+             vite: {ProductCompareWeb.ViteWatcher, :run, [path("assets")]}
+           ]
+  end
+
+  test "README documents one complete development command" do
+    readme = "README.md" |> path() |> File.read!()
+
+    assert readme =~ "mix setup"
+    assert readme =~ "mix phx.server"
+    assert readme =~ "http://localhost:4000"
+    assert readme =~ "http://localhost:5173"
+    refute readme =~ "pnpm run dev"
+  end
+
   defp path(relative_path), do: Path.join(@repo_root, relative_path)
 end
