@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { graphql, usePaginationFragment } from "react-relay";
@@ -74,9 +74,10 @@ const styles = create({
 });
 
 const tableModel = tableFeatures({});
-type SyncRun =
-  ConversionSyncRunLedger_connection$data["cjCommissionSyncRuns"]["edges"][number]["node"];
-const columnHelper = createColumnHelper<typeof tableModel, SyncRun>();
+const columnHelper = createColumnHelper<
+  typeof tableModel,
+  ConversionSyncRunLedger_connection$data["cjCommissionSyncRuns"]["edges"][number]["node"]
+>();
 const columns = columnHelper.columns([
   columnHelper.display({
     id: "trigger",
@@ -121,9 +122,11 @@ const columns = columnHelper.columns([
 
 export function ConversionSyncRunLedger({
   fragmentRef,
+  isVisible,
   onRunningRunObserved,
 }: {
   fragmentRef: ConversionSyncRunLedger_connection$key;
+  isVisible: boolean;
   onRunningRunObserved: () => void;
 }) {
   const { data, hasNext, isLoadingNext, loadNext } = usePaginationFragment<
@@ -136,14 +139,14 @@ export function ConversionSyncRunLedger({
   const table = useTable({ columns, data: runs, features: tableModel, getRowId: (run) => run.id });
 
   useEffect(() => {
-    if (!runningRunIsPresent) return;
+    if (!runningRunIsPresent || !isVisible) return;
 
     onRunningRunObserved();
     const timer = window.setInterval(onRunningRunObserved, 10_000);
     return () => {
       window.clearInterval(timer);
     };
-  }, [onRunningRunObserved, runningRunIsPresent]);
+  }, [isVisible, onRunningRunObserved, runningRunIsPresent]);
 
   return (
     <section aria-labelledby="conversion-sync-runs-heading" {...props(styles.surface)}>
@@ -202,18 +205,32 @@ export function ConversionSyncRunLedger({
   );
 }
 
-function RunRow({ children, run }: { children: ReactNode; run: SyncRun }) {
+function RunRow({
+  children,
+  run,
+}: {
+  children: ReactNode;
+  run: ConversionSyncRunLedger_connection$data["cjCommissionSyncRuns"]["edges"][number]["node"];
+}) {
   const [open, setOpen] = useState(false);
+  const detailsId = useId();
+  const runLabel = `run started ${formatProductDateTimeLabel(run.startedAt)}`;
   return (
     <>
       <TableRow>{children}</TableRow>
       {run.errorSummary ? (
         <TableRow>
           <TableCell colSpan={7} {...props(styles.detail)}>
-            <Button aria-expanded={open} onClick={() => setOpen((value) => !value)} variant="ghost">
+            <Button
+              aria-controls={detailsId}
+              aria-expanded={open}
+              aria-label={`${open ? "Hide" : "Show"} failure details for ${runLabel}`}
+              onClick={() => setOpen((value) => !value)}
+              variant="ghost"
+            >
               {open ? "Hide failure details" : "Show failure details"}
             </Button>
-            {open ? <p>{run.errorSummary}</p> : null}
+            {open ? <p id={detailsId}>{run.errorSummary}</p> : null}
           </TableCell>
         </TableRow>
       ) : null}
@@ -221,7 +238,11 @@ function RunRow({ children, run }: { children: ReactNode; run: SyncRun }) {
   );
 }
 
-function TimeRange({ run }: { run: SyncRun }) {
+function TimeRange({
+  run,
+}: {
+  run: ConversionSyncRunLedger_connection$data["cjCommissionSyncRuns"]["edges"][number]["node"];
+}) {
   return (
     <>
       <time dateTime={run.windowStart}>{formatProductDateTimeLabel(run.windowStart)}</time>
@@ -231,7 +252,11 @@ function TimeRange({ run }: { run: SyncRun }) {
   );
 }
 
-function RecordCounts({ run }: { run: SyncRun }) {
+function RecordCounts({
+  run,
+}: {
+  run: ConversionSyncRunLedger_connection$data["cjCommissionSyncRuns"]["edges"][number]["node"];
+}) {
   return (
     <span {...props(styles.counts)}>
       <span>Fetched {run.recordsFetched}</span>
@@ -241,7 +266,11 @@ function RecordCounts({ run }: { run: SyncRun }) {
   );
 }
 
-function Outcome({ run }: { run: SyncRun }) {
+function Outcome({
+  run,
+}: {
+  run: ConversionSyncRunLedger_connection$data["cjCommissionSyncRuns"]["edges"][number]["node"];
+}) {
   const tone =
     run.status === "SUCCEEDED" ? "positive" : run.status === "FAILED" ? "danger" : "warning";
   return <StatusBadge tone={tone}>{run.status[0] + run.status.slice(1).toLowerCase()}</StatusBadge>;

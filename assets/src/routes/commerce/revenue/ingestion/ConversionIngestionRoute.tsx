@@ -126,6 +126,9 @@ function ConversionIngestionPanel({
   );
   const { revalidate } = useRevalidator();
   const [statusData, refetchOverview] = useConversionIngestionStatus(data);
+  const [isDocumentVisible, setIsDocumentVisible] = useState(
+    () => typeof document === "undefined" || document.visibilityState === "visible",
+  );
   const activityIsPresent = Boolean(statusData.cjCommissionIngestion.activity);
   const refreshOverview = useCallback(() => {
     refetchOverview({}, { fetchPolicy: "network-only" });
@@ -133,6 +136,14 @@ function ConversionIngestionPanel({
   const reconcileRunningHistory = useCallback(() => {
     if (!activityIsPresent) revalidate();
   }, [activityIsPresent, revalidate]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const updateVisibility = () => setIsDocumentVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", updateVisibility);
+    return () => document.removeEventListener("visibilitychange", updateVisibility);
+  }, []);
 
   return (
     <PageShell
@@ -148,6 +159,7 @@ function ConversionIngestionPanel({
     >
       <ConversionIngestionStatus
         ingestion={statusData.cjCommissionIngestion}
+        isVisible={isDocumentVisible}
         onOverviewRefresh={refreshOverview}
         onTerminal={revalidate}
       />
@@ -156,6 +168,7 @@ function ConversionIngestionPanel({
         onOverviewRefresh={refreshOverview}
       />
       <DeferredRunLedger
+        isVisible={isDocumentVisible}
         onRunningRunObserved={reconcileRunningHistory}
         query={loaderData.runsQuery}
         variables={loaderData.runsVariables}
@@ -165,10 +178,12 @@ function ConversionIngestionPanel({
 }
 
 function DeferredRunLedger({
+  isVisible,
   onRunningRunObserved,
   query,
   variables,
 }: {
+  isVisible: boolean;
   onRunningRunObserved: () => void;
   query: Extract<ConversionIngestionLoaderData, { status: "ready" }>["runsQuery"];
   variables: Extract<ConversionIngestionLoaderData, { status: "ready" }>["runsVariables"];
@@ -207,7 +222,11 @@ function DeferredRunLedger({
         }
       >
         {(resolvedQuery) => (
-          <RunLedgerBoundary onRunningRunObserved={onRunningRunObserved} query={resolvedQuery} />
+          <RunLedgerBoundary
+            isVisible={isVisible}
+            onRunningRunObserved={onRunningRunObserved}
+            query={resolvedQuery}
+          />
         )}
       </Await>
     </Suspense>
@@ -215,9 +234,11 @@ function DeferredRunLedger({
 }
 
 function RunLedgerBoundary({
+  isVisible,
   onRunningRunObserved,
   query,
 }: {
+  isVisible: boolean;
   onRunningRunObserved: () => void;
   query: Awaited<Extract<ConversionIngestionLoaderData, { status: "ready" }>["runsQuery"]>;
 }) {
@@ -227,16 +248,22 @@ function RunLedgerBoundary({
       resetToken={query}
     >
       <Suspense fallback={<FeedbackState kind="loading" title="Loading conversion sync runs..." />}>
-        <RunLedgerPanel onRunningRunObserved={onRunningRunObserved} query={query} />
+        <RunLedgerPanel
+          isVisible={isVisible}
+          onRunningRunObserved={onRunningRunObserved}
+          query={query}
+        />
       </Suspense>
     </ResettableErrorBoundary>
   );
 }
 
 function RunLedgerPanel({
+  isVisible,
   onRunningRunObserved,
   query,
 }: {
+  isVisible: boolean;
   onRunningRunObserved: () => void;
   query: Awaited<Extract<ConversionIngestionLoaderData, { status: "ready" }>["runsQuery"]>;
 }) {
@@ -246,6 +273,7 @@ function RunLedgerPanel({
   return (
     <ConversionSyncRunLedger
       fragmentRef={data}
+      isVisible={isVisible}
       key={relayRouteQueryDescriptorIdentity(query)}
       onRunningRunObserved={onRunningRunObserved}
     />

@@ -69,8 +69,8 @@ defmodule ProductCompare.DevSeeds.ConversionIngestion do
         cursor: "development:complete",
         pages_fetched: 3,
         records_fetched: 54,
-        records_persisted: 53,
-        records_failed: 1,
+        records_persisted: 54,
+        records_failed: 0,
         started_at: hours(anchor, -4),
         finished_at: seconds(hours(anchor, -4), 84),
         error_summary: nil

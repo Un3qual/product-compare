@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { graphql, useRefetchableFragment } from "react-relay";
 import type { ConversionIngestionStatus_query$key } from "$generated/ConversionIngestionStatus_query.graphql";
-import type { ConversionIngestionStatus_query$data } from "$generated/ConversionIngestionStatus_query.graphql";
+import type {
+  CJCommissionIngestionActivityState,
+  ConversionIngestionStatus_query$data,
+} from "$generated/ConversionIngestionStatus_query.graphql";
 import type { ConversionIngestionStatusRefetchQuery } from "$generated/ConversionIngestionStatusRefetchQuery.graphql";
 import { formatProductDateTimeLabel } from "$frontend/formatting";
 import { StatusBadge, type StatusTone } from "$ui/components/status/StatusBadge";
@@ -75,37 +78,25 @@ export function useConversionIngestionStatus(query: ConversionIngestionStatus_qu
   >(conversionIngestionStatusQuery, query);
 }
 
-type IngestionStatus = ConversionIngestionStatus_query$data["cjCommissionIngestion"];
-type ActivityState = NonNullable<IngestionStatus["activity"]>["state"] | null;
-
 export function ConversionIngestionStatus({
   ingestion,
+  isVisible,
   onOverviewRefresh,
   onTerminal,
 }: {
-  ingestion: IngestionStatus;
+  ingestion: ConversionIngestionStatus_query$data["cjCommissionIngestion"];
+  isVisible: boolean;
   onOverviewRefresh: () => void;
   onTerminal: () => void;
 }) {
   const activityState = ingestion.activity?.state ?? null;
   const activityIsPresent = Boolean(ingestion.activity);
-  const [isVisible, setIsVisible] = useState(
-    () => typeof document === "undefined" || document.visibilityState === "visible",
-  );
   const onOverviewRefreshRef = useRef(onOverviewRefresh);
   const onTerminalRef = useRef(onTerminal);
   const hadActivityRef = useRef(false);
 
   onOverviewRefreshRef.current = onOverviewRefresh;
   onTerminalRef.current = onTerminal;
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-
-    const updateVisibility = () => setIsVisible(document.visibilityState === "visible");
-    document.addEventListener("visibilitychange", updateVisibility);
-    return () => document.removeEventListener("visibilitychange", updateVisibility);
-  }, []);
 
   useEffect(() => {
     if (!activityIsPresent || !isVisible) return;
@@ -159,7 +150,7 @@ export function ConversionIngestionStatus({
         }
       />
       <StatusItem
-        detail={nextRunAt ? undefined : "Enable the schedule after credentials are configured."}
+        detail={nextRunDetail(ingestion)}
         label="Next run"
         value={
           nextRunAt ? (
@@ -189,7 +180,11 @@ export function ConversionIngestionStatus({
   );
 }
 
-function ActivityTiming({ activity }: { activity: IngestionStatus["activity"] }) {
+function ActivityTiming({
+  activity,
+}: {
+  activity: ConversionIngestionStatus_query$data["cjCommissionIngestion"]["activity"];
+}) {
   if (!activity) return "No run is currently scheduled or running.";
 
   const timing = activity.attemptedAt ?? activity.scheduledAt;
@@ -242,7 +237,7 @@ function StatusItem({
   );
 }
 
-function activityLabel(state: ActivityState) {
+function activityLabel(state: CJCommissionIngestionActivityState | null) {
   if (state === null) return "Available";
   if (state === "EXECUTING") return "Running";
   if (state === "AVAILABLE" || state === "SCHEDULED") return "Queued";
@@ -251,7 +246,7 @@ function activityLabel(state: ActivityState) {
   return "In progress";
 }
 
-function activityTone(state: ActivityState): StatusTone {
+function activityTone(state: CJCommissionIngestionActivityState | null): StatusTone {
   if (state === null) return "positive";
   if (state === "EXECUTING") return "accent";
   if (state === "AVAILABLE" || state === "SCHEDULED" || state === "RETRYABLE") {
@@ -261,7 +256,9 @@ function activityTone(state: ActivityState): StatusTone {
   return "neutral";
 }
 
-function credentialDetail(credentials: IngestionStatus["credentials"]) {
+function credentialDetail(
+  credentials: ConversionIngestionStatus_query$data["cjCommissionIngestion"]["credentials"],
+) {
   if (credentials.publisherIdsConfigured && credentials.apiTokenConfigured) {
     return "Publisher IDs and API token are configured.";
   }
@@ -273,4 +270,13 @@ function credentialDetail(credentials: IngestionStatus["credentials"]) {
   return credentials.publisherIdsConfigured
     ? "API token is missing."
     : "Publisher IDs are missing.";
+}
+
+function nextRunDetail(ingestion: ConversionIngestionStatus_query$data["cjCommissionIngestion"]) {
+  if (ingestion.settings.nextRunAt) return undefined;
+  if (!ingestion.credentials.ready) return "Enable the schedule after credentials are configured.";
+  if (!ingestion.latestSuccess) {
+    return "A successful CJ run is required before scheduled ingestion can be enabled.";
+  }
+  return "Enable scheduled ingestion to create the next run.";
 }

@@ -236,9 +236,71 @@ test("conversion ingestion focuses an invalid setting and retains bounded run-fa
 
   expect(interval).toHaveFocus();
   expect(screen.getByRole("alert")).toHaveTextContent("Interval must be between 15 and 10080");
-  fireEvent.click(await screen.findByRole("button", { name: "Show failure details" }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: /Show failure details for run started/ }),
+  );
   expect(screen.getAllByText("Provider timed out after the bounded request window.")).toHaveLength(
     2,
+  );
+});
+
+test("failure disclosures identify and control their own run details", async () => {
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      cjCommissionSyncRuns: {
+        edges: [
+          { cursor: "cursor-1", node: LATEST_FAILURE_RUN },
+          {
+            cursor: "cursor-2",
+            node: {
+              ...LATEST_FAILURE_RUN,
+              errorSummary: "A second bounded failure.",
+              id: "run-failure-2",
+              startedAt: "2026-08-25T12:00:00Z",
+            },
+          },
+        ],
+        pageInfo: { endCursor: "cursor-2", hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  renderConversionIngestionRoute();
+
+  const disclosures = await screen.findAllByRole("button", {
+    name: /Show failure details for run started/,
+  });
+  const controlledIds = disclosures.map((button) => button.getAttribute("aria-controls"));
+
+  expect(controlledIds.every(Boolean)).toBe(true);
+  expect(new Set(controlledIds).size).toBe(2);
+
+  fireEvent.click(disclosures[0]!);
+  expect(document.getElementById(controlledIds[0]!)).toHaveTextContent(
+    "Provider timed out after the bounded request window.",
+  );
+});
+
+test("next run explains the successful-run prerequisite when credentials are ready", () => {
+  mockedUseRefetchableFragment.mockReturnValue([
+    {
+      ...OVERVIEW,
+      cjCommissionIngestion: {
+        ...INGESTION,
+        latestSuccess: null,
+        settings: { ...INGESTION.settings, enabled: false, nextRunAt: null },
+      },
+    },
+    refetchMock,
+  ] as never);
+
+  renderConversionIngestionRoute();
+
+  expect(screen.getByRole("region", { name: "Ingestion status" })).toHaveTextContent(
+    "A successful CJ run is required before scheduled ingestion can be enabled.",
   );
 });
 
@@ -282,6 +344,42 @@ test("a running ledger snapshot keeps revalidating an idle overview", async () =
   act(() => vi.advanceTimersByTime(10_000));
   expect(revalidateMock).toHaveBeenCalledTimes(2);
   expect(refetchMock).not.toHaveBeenCalled();
+});
+
+test("a running ledger pauses history refresh while hidden and resumes when visible", async () => {
+  vi.useFakeTimers();
+  Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" });
+  mockedUseRefetchableFragment.mockReturnValue([
+    { ...OVERVIEW, cjCommissionIngestion: withActivity(null) },
+    refetchMock,
+  ] as never);
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      cjCommissionSyncRuns: {
+        edges: [
+          {
+            cursor: "cursor-running",
+            node: { ...LATEST_SUCCESS_RUN, finishedAt: null, id: "run-running", status: "RUNNING" },
+          },
+        ],
+        pageInfo: { endCursor: "cursor-running", hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  renderConversionIngestionRoute();
+  await act(() => Promise.resolve());
+  act(() => vi.advanceTimersByTime(10_000));
+  expect(revalidateMock).not.toHaveBeenCalled();
+
+  Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
+  fireEvent(document, new Event("visibilitychange"));
+  expect(revalidateMock).toHaveBeenCalledTimes(1);
+  act(() => vi.advanceTimersByTime(10_000));
+  expect(revalidateMock).toHaveBeenCalledTimes(2);
 });
 
 test("settings submit preserves exact bounded values, disables while pending, and refreshes only the overview on success", async () => {
