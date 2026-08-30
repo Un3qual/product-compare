@@ -13,7 +13,7 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
   @spec ingest_transaction(map()) ::
           {:ok, struct()} | {:error, Ecto.Changeset.t() | {:invalid_response, :record}}
   def ingest_transaction(payload) when is_map(payload) do
-    if current_commission_detail?(payload) and not CommissionDetail.valid_record?(payload) do
+    if invalid_record?(payload) do
       {:error, {:invalid_response, :record}}
     else
       payload
@@ -22,7 +22,29 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
     end
   end
 
+  defp invalid_record?(payload) do
+    (current_commission_detail?(payload) and not CommissionDetail.valid_record?(payload)) or
+      partial_usd_amounts?(payload)
+  end
+
   defp current_commission_detail?(payload), do: Map.has_key?(payload, "original")
+
+  defp partial_usd_amounts?(payload) do
+    sale_amount? =
+      not is_nil(value(payload, :sale_amount_usd, "saleAmountUsd", "SaleAmountUsd"))
+
+    commission_amount? =
+      not is_nil(
+        value(
+          payload,
+          :pub_commission_amount_usd,
+          "pubCommissionAmountUsd",
+          "PubCommissionAmountUsd"
+        )
+      )
+
+    sale_amount? != commission_amount?
+  end
 
   defp normalize_transaction(payload) do
     reported_at = parse_datetime(value(payload, :posting_date, "postingDate", "PostingDate"))

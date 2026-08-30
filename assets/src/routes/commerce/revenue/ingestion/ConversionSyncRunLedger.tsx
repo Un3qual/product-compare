@@ -140,7 +140,9 @@ export function ConversionSyncRunLedger({
 
     onRunningRunObserved();
     const timer = window.setInterval(onRunningRunObserved, 10_000);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+    };
   }, [onRunningRunObserved, runningRunIsPresent]);
 
   return (

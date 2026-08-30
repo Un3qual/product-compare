@@ -580,6 +580,20 @@ defmodule ProductCompare.CommerceAttribution.CJ.ImporterTest do
                  fn -> Persistence.lock_cj_action_key("outside-transaction") end
   end
 
+  test "CJ action reversal requires a database transaction" do
+    correction = correction("outside-transaction-correction", "outside-transaction-action")
+
+    assert_raise ArgumentError,
+                 "reverse_cj_action/3 requires a database transaction",
+                 fn ->
+                   Persistence.reverse_cj_action(
+                     correction["originalActionId"],
+                     ~U[2026-08-01 10:00:00Z],
+                     correction
+                   )
+                 end
+  end
+
   test "action persistence rejects a malformed correction before it can bypass the adapter" do
     original = original("valid-original", "direct-validation-action")
 

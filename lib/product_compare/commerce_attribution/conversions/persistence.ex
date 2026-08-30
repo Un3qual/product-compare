@@ -48,6 +48,8 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
           {:ok, %{matched: pos_integer(), updated: non_neg_integer()}}
           | {:error, :unmatched_correction | Ecto.Changeset.t()}
   def reverse_cj_action(network_action_ref, posting_date, raw_payload) do
+    require_transaction!("reverse_cj_action/3")
+
     with {:ok, network_action_ref} <- validate_action_ref(network_action_ref),
          :ok <- validate_posting_date(posting_date),
          :ok <- validate_raw_payload(raw_payload),
@@ -73,9 +75,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
   @spec lock_cj_action_key(String.t()) :: :ok | {:error, Ecto.Changeset.t()}
   def lock_cj_action_key(network_action_ref) do
     with {:ok, network_action_ref} <- validate_action_ref(network_action_ref) do
-      unless Repo.in_transaction?() do
-        raise ArgumentError, "lock_cj_action_key/1 requires a database transaction"
-      end
+      require_transaction!("lock_cj_action_key/1")
 
       Repo.query!(
         "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
@@ -358,6 +358,12 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
     %CommerceConversion{}
     |> Ecto.Changeset.change()
     |> Ecto.Changeset.add_error(field, message)
+  end
+
+  defp require_transaction!(function_name) do
+    unless Repo.in_transaction?() do
+      raise ArgumentError, "#{function_name} requires a database transaction"
+    end
   end
 
   defp normalize_string(value) when is_binary(value) do

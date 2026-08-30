@@ -207,6 +207,13 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Mutations do
     %{ingestion: nil, errors: errors}
   end
 
+  defp error_payload(:not_found) do
+    mutation_error_payload(
+      "INGESTION_UNAVAILABLE",
+      "CJ commission ingestion is unavailable"
+    )
+  end
+
   defp error_payload(_reason) do
     mutation_error_payload("INVALID_ARGUMENT", "CJ commission ingestion request is invalid")
   end

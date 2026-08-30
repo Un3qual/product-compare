@@ -61,7 +61,7 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
 
   @spec lock_cj() :: ConversionSyncSetting.t() | nil
   def lock_cj do
-    require_transaction!()
+    require_transaction!("lock_cj/0")
 
     Repo.one(
       from setting in ConversionSyncSetting,
@@ -75,7 +75,7 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
   @spec update_locked(ConversionSyncSetting.t(), pos_integer(), map(), DateTime.t()) ::
           {:ok, ConversionSyncSetting.t()} | {:error, Ecto.Changeset.t()}
   def update_locked(%ConversionSyncSetting{} = settings, operator_id, attrs, now) do
-    require_transaction!()
+    require_transaction!("update_locked/4")
 
     attrs =
       attrs
@@ -214,9 +214,9 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
   defp normalize_key(key) when is_binary(key), do: Map.get(@setting_field_map, key)
   defp normalize_key(_key), do: nil
 
-  defp require_transaction! do
+  defp require_transaction!(function_name) do
     unless Repo.in_transaction?() do
-      raise ArgumentError, "lock_cj/0 requires a database transaction"
+      raise ArgumentError, "#{function_name} requires a database transaction"
     end
   end
 end

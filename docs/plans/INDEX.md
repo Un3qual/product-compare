@@ -40,7 +40,7 @@ automated verification; the 2026-08-27 preflight found credentials unavailable,
 so live evidence was not run and scheduling remains disabled. Final
 whole-branch review hardened durable action-level correction evidence, semantic
 CJ validation, nonterminal operator polling, and Relay settings reconciliation;
-the final gates passed 1,644 backend tests and 1,526 frontend tests.
+  the final gates passed 1,674 backend tests and 1,530 frontend tests.
 
 The approved Product Experience And Code Simplification program is planned as
 five immediately executable, path-disjoint outcomes plus one prerequisite-gated

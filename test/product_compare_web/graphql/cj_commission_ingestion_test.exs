@@ -493,6 +493,34 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
       end
     end
 
+    test "operator mutations report unavailable when CJ settings are absent", %{
+      operator_conn: conn
+    } do
+      network_fixture()
+      Repo.delete_all(ConversionSyncSetting)
+
+      for {query, variables, mutation_name} <- [
+            {update_settings_mutation(), %{"input" => %{"lookbackDays" => 30}},
+             "updateCjCommissionIngestionSettings"},
+            {run_now_mutation(), %{}, "runCjCommissionIngestionNow"}
+          ] do
+        assert %{
+                 "data" => %{
+                   ^mutation_name => %{
+                     "ingestion" => nil,
+                     "errors" => [
+                       %{
+                         "code" => "INGESTION_UNAVAILABLE",
+                         "field" => nil,
+                         "message" => "CJ commission ingestion is unavailable"
+                       }
+                     ]
+                   }
+                 }
+               } = graphql(conn, query, variables)
+      end
+    end
+
     test "settings update accepts only the four editable fields and records the operator", %{
       operator: operator,
       operator_conn: conn

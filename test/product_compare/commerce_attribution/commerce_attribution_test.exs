@@ -1460,6 +1460,36 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert conversion.raw_payload["commission_amount"] == "2.50"
     end
 
+    test "rejects compatibility payloads that mix USD and legacy amount fields" do
+      affiliate_network_fixture(%{name: "CJ"})
+
+      base_payload = %{
+        action_status: :new,
+        currency: "EUR",
+        sale_amount: Decimal.new("25.00"),
+        commission_amount: Decimal.new("2.50"),
+        event_date: ~U[2026-05-20 12:00:00Z],
+        posting_date: ~U[2026-05-20 12:05:00Z]
+      }
+
+      for {usd_field, usd_amount} <- [
+            sale_amount_usd: Decimal.new("30.00"),
+            pub_commission_amount_usd: Decimal.new("3.00")
+          ] do
+        payload =
+          base_payload
+          |> Map.put(
+            :commission_id,
+            "cj-hybrid-#{usd_field}-#{System.unique_integer([:positive])}"
+          )
+          |> Map.put(usd_field, usd_amount)
+
+        assert {:error, {:invalid_response, :record}} = CJAdapter.ingest_transaction(payload)
+      end
+
+      assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+    end
+
     test "maps all current CJ statuses and USD amount fields" do
       affiliate_network_fixture(%{name: "CJ"})
 
@@ -1516,6 +1546,15 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert {:ok, updated} = CJAdapter.ingest_transaction(fresher_payload)
       assert updated.id == initial.id
       assert updated.network_action_ref == "cj-action-established-later"
+
+      omitted_payload =
+        fresher_payload
+        |> Map.delete("originalActionId")
+        |> Map.put("postingDate", "2026-05-22T12:05:00Z")
+
+      assert {:ok, retained} = CJAdapter.ingest_transaction(omitted_payload)
+      assert retained.id == initial.id
+      assert retained.network_action_ref == "cj-action-established-later"
     end
   end
 
