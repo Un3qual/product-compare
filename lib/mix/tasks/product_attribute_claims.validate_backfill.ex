@@ -157,10 +157,13 @@ defmodule Mix.Tasks.ProductAttributeClaims.ValidateBackfill do
   use Mix.Task
 
   alias ProductCompare.ProductAttributeClaims.ValidationBackfillWorkflow
+  alias ProductCompare.MixTasks.CliOptions
+  alias ProductCompare.MixTasks.RepoOnlyStartup
 
   @shortdoc "Validate existing product_attribute_claims rows for typed value and confidence violations"
   @switches [sample_size: :integer, strict: :boolean]
   @aliases [s: :sample_size]
+  @default_sample_size 10
 
   @moduledoc """
   Scans `product_attribute_claims` and reports existing-row violations for:
@@ -181,33 +184,23 @@ defmodule Mix.Tasks.ProductAttributeClaims.ValidateBackfill do
 
   @impl Mix.Task
   def run(args) do
-    Mix.Task.run("app.start")
+    opts = CliOptions.parse!(args, @switches, @aliases)
 
-    {opts, _argv, invalid} = OptionParser.parse(args, strict: @switches, aliases: @aliases)
-    validate_cli!(invalid)
+    sample_size =
+      CliOptions.positive_integer!(
+        Keyword.get(opts, :sample_size),
+        @default_sample_size,
+        "--sample-size"
+      )
 
-    report =
-      ValidationBackfillWorkflow.run(sample_size: Keyword.get(opts, :sample_size, 10))
+    RepoOnlyStartup.start!()
+
+    report = ValidationBackfillWorkflow.run(sample_size: sample_size)
 
     Mix.shell().info(ValidationBackfillWorkflow.format_report(report))
 
     if opts[:strict] && report.total_violating_rows > 0 do
       Mix.raise("Validation found existing-row violations in product_attribute_claims")
     end
-  end
-
-  defp validate_cli!([]), do: :ok
-
-  defp validate_cli!(invalid) do
-    invalid_flags =
-      invalid
-      |> Enum.map_join(", ", fn {flag, _value} -> format_invalid_flag(flag) end)
-
-    Mix.raise("Unknown or invalid options: #{invalid_flags}")
-  end
-
-  defp format_invalid_flag(flag) do
-    flag = to_string(flag)
-    if String.starts_with?(flag, "--"), do: flag, else: "--#{flag}"
   end
 end

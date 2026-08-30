@@ -3,6 +3,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCredentials do
 
   use Mix.Task
 
+  alias ProductCompare.MixTasks.CliOptions
+
   @shortdoc "Reports CJ credential readiness"
   @required_vars ~w(CJ_API_TOKEN CJ_ACCOUNT_ID)
   @optional_vars ~w(CJ_PROPERTY_ID)
@@ -18,12 +20,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCredentials do
   end
 
   defp parse_argv(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        switches: [
-          require_ready: :boolean
-        ]
-      )
+    opts = CliOptions.parse!(argv, require_ready: :boolean)
 
     %{require_ready: Keyword.get(opts, :require_ready, false)}
   end

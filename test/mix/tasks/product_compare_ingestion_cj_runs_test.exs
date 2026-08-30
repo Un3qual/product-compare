@@ -115,6 +115,33 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
         capture_io(fn -> CjRuns.run(["--report", "latest", "--max-age-hours", "0"]) end)
       end
     end
+
+    test "rejects invalid report options before starting the repository" do
+      script = """
+      result =
+        try do
+          Mix.Task.run("product_compare.ingestion.cj_runs", ["--report", "history", "--limit", "0"])
+          "ok"
+        rescue
+          error -> "error: " <> Exception.message(error)
+        end
+
+      IO.puts("result=\#{result}")
+      IO.puts("repo_started=\#{is_pid(Process.whereis(ProductCompare.Repo))}")
+      IO.puts("application_started=\#{is_pid(Process.whereis(ProductCompare.Supervisor))}")
+      """
+
+      {output, exit_status} =
+        System.cmd("mix", ["run", "--no-start", "-e", script],
+          env: [{"MIX_ENV", "test"}],
+          stderr_to_stdout: true
+        )
+
+      assert exit_status == 0, output
+      assert output =~ "result=error: invalid --limit: expected a positive integer"
+      assert output =~ "repo_started=false"
+      assert output =~ "application_started=false"
+    end
   end
 
   describe "run_resume/1" do
@@ -286,7 +313,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
         }
       })
 
-      runner = fn _opts -> raise "intentional resume failure" end
+      runner = fn _opts ->
+        raise ArgumentError,
+              "provider-body-marker authorization-header-marker credential-token-marker"
+      end
 
       log =
         capture_log(fn ->
@@ -298,8 +328,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
         end)
 
       assert log =~ "CJ import resume runner failed"
-      assert log =~ "RuntimeError"
-      assert log =~ "intentional resume failure"
+      assert log =~ "kind=error"
+      assert log =~ "reason=ArgumentError"
+      assert log =~ "product_compare_ingestion_cj_runs_test.exs"
       assert log =~ "surface=shoppingProducts"
       assert log =~ "cursor=100"
       assert log =~ "limit=25"
@@ -309,6 +340,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
       refute log =~ "secret keyword"
       refute log =~ "secret-feed"
       refute log =~ "secret-partner"
+      refute log =~ "provider-body-marker"
+      refute log =~ "authorization-header-marker"
+      refute log =~ "credential-token-marker"
     end
 
     test "logs runner throws with sanitized resume context" do
@@ -322,7 +356,16 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
         query: %{"advertiserCountry" => "CA"}
       })
 
-      runner = fn _opts -> throw({:resume_failed, :from_runner}) end
+      runner = fn _opts ->
+        throw(
+          {:resume_failed,
+           %{
+             body: "provider-body-marker",
+             authorization: "authorization-header-marker",
+             token: "credential-token-marker"
+           }}
+        )
+      end
 
       log =
         capture_log(fn ->
@@ -334,13 +377,17 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
         end)
 
       assert log =~ "CJ discovery resume runner failed"
-      assert log =~ "throw"
-      assert log =~ "{:resume_failed, :from_runner}"
+      assert log =~ "kind=throw"
+      assert log =~ "reason=resume_failed"
+      assert log =~ "product_compare_ingestion_cj_runs_test.exs"
       assert log =~ "surface=shoppingProductFeeds"
       assert log =~ "advertiser_country=CA"
       assert log =~ "cursor=80"
       assert log =~ "limit=50"
       assert log =~ "pages=3"
+      refute log =~ "provider-body-marker"
+      refute log =~ "authorization-header-marker"
+      refute log =~ "credential-token-marker"
     end
   end
 

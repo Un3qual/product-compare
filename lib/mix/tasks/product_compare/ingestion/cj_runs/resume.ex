@@ -7,6 +7,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Resume do
   alias Mix.Tasks.ProductCompare.Ingestion.CjRuns.Options
   alias Mix.Tasks.ProductCompare.Ingestion.CjRuns.ValueFormatter
   alias ProductCompare.Ingestion.CJFeedDiscovery
+  alias ProductCompare.Ingestion.CJFailureDiagnostics
   alias ProductCompare.Ingestion.CJRunReadiness
   alias ProductCompare.MixTasks.CliOptions
   alias ProductCompareSchemas.Ingestion.ImportRun
@@ -177,8 +178,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Resume do
     Logger.error(fn ->
       "CJ #{runner_label(surface)} resume runner failed " <>
         runner_context(surface, runner_opts) <>
-        "\n" <>
-        Exception.format(kind, reason, stacktrace)
+        " kind=#{kind} reason=#{CJFailureDiagnostics.category(reason)}\n" <>
+        Exception.format_stacktrace(CJFailureDiagnostics.sanitize_stacktrace(stacktrace))
     end)
   end
 

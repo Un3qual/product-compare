@@ -281,6 +281,33 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
                    end
     end
 
+    test "rejects malformed input before starting the repository" do
+      script = """
+      result =
+        try do
+          Mix.Task.run("product_compare.ingestion.cj_readiness_gate", ["--bogus"])
+          "ok"
+        rescue
+          error -> "error: " <> Exception.message(error)
+        end
+
+      IO.puts("result=\#{result}")
+      IO.puts("repo_started=\#{is_pid(Process.whereis(ProductCompare.Repo))}")
+      IO.puts("application_started=\#{is_pid(Process.whereis(ProductCompare.Supervisor))}")
+      """
+
+      {output, exit_status} =
+        System.cmd("mix", ["run", "--no-start", "-e", script],
+          env: [{"MIX_ENV", "test"}],
+          stderr_to_stdout: true
+        )
+
+      assert exit_status == 0, output
+      assert output =~ "result=error: unsupported option: --bogus"
+      assert output =~ "repo_started=false"
+      assert output =~ "application_started=false"
+    end
+
     test "does not start ProductCompare.Supervisor or CJ schedulers" do
       script = """
       Mix.Task.run("product_compare.ingestion.cj_readiness_gate", [])

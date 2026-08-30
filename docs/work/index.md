@@ -45,48 +45,11 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 1. Operator Command Safety And Diagnostics
-
-Status: active
-Lane: Operator command safety and diagnostics
-Plan: `docs/superpowers/plans/2026-08-30-operator-command-safety-diagnostics-implementation-plan.md`
-Batch outcome: dry-run and CJ commands validate every argument before startup,
-use repo-only services when sufficient, and expose useful categories and safe
-stacktrace locations without raw provider or credential data.
-Next action: add duplicate, positional, malformed, and range-error RED cases to
-CJ feed and credential task tests.
-Owned paths:
-
-- Named Mix tasks and support modules in the linked plan
-- `lib/product_compare/ingestion/cj_failure_diagnostics.ex`
-- Focused task tests named in the linked plan
-- `docs/work/operator-command-safety-diagnostics.md`
-
-Internal slices:
-
-- Strict duplicate/range-aware CJ CLI parsing.
-- Validation-first repo-only backfill dry run.
-- Shared sanitized CJ failure diagnostics.
-
-Prerequisites:
-
-- Approved design.
-- Existing `CliOptions`, `RepoOnlyStartup`, and CJ runner sanitization contracts.
-
-Verification:
-
-- Focused Mix task suites listed in the plan under `MIX_TEST_PARTITION=quality_operator` where database-backed.
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-
-Exit condition: invalid commands perform no application/provider work, valid
-commands retain output and return contracts, adversarial secret markers remain
-absent, and every focused command suite passes.
+None.
 
 ## Ready Work
 
-### 2. Frontend Correctness And Simplification
+### 1. Frontend Correctness And Simplification
 
 Status: ready
 Lane: Frontend correctness and simplification
@@ -129,7 +92,7 @@ Exit condition: manual append effects and unused type branches are absent from
 the named surfaces, real input/generated boundaries remain, generated artifacts
 are current, and focused/full frontend/browser gates pass.
 
-### 3. Deterministic Tooling And Dependency Health
+### 2. Deterministic Tooling And Dependency Health
 
 Status: ready
 Lane: Deterministic tooling and dependency health
@@ -174,9 +137,9 @@ recorded exactly.
 
 ## Ready Floor Exception
 
-Reason: After claiming the operator outcome, the approved remediation contains
-only two other unclaimed, independently shippable outcomes; no third
-source-backed batch exists without a fresh final-state audit.
+Reason: After completing the operator outcome, the approved remediation contains
+only two remaining independently shippable outcomes; no third source-backed
+batch exists without a fresh final-state audit.
 Rejected split: Splitting frontend pagination, state ownership, select/query
 contracts, or tooling setup, scheduler, helper, and dependency work into
 helper-sized rows would violate the shared acceptance boundaries.

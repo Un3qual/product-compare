@@ -6,6 +6,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
   use Mix.Task
 
   alias ProductCompare.Ingestion.CJFeedDiscovery
+  alias ProductCompare.Ingestion.CJFailureDiagnostics
+  alias ProductCompare.MixTasks.CliOptions
 
   @shortdoc "Discovers manual CJ shopping product feeds"
 
@@ -35,10 +37,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
 
         {:error, {:row_failures, report} = reason} ->
           print_report(report)
-          Mix.raise("CJ feed discovery failed: #{inspect(reason)}")
+          raise_discovery_failure(reason)
 
         {:error, reason} ->
-          Mix.raise("CJ feed discovery failed: #{inspect(reason)}")
+          raise_discovery_failure(reason)
       end
     end
   end
@@ -59,26 +61,35 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
   end
 
   defp parse_argv(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        switches: [
-          advertiser_country: :string,
-          check_credentials: :boolean,
-          limit: :integer,
-          offset: :integer,
-          pages: :integer,
-          require_ready: :boolean
-        ]
+    opts =
+      CliOptions.parse!(argv,
+        advertiser_country: :string,
+        check_credentials: :boolean,
+        limit: :integer,
+        offset: :integer,
+        pages: :integer,
+        require_ready: :boolean
       )
 
-    opts
-    |> Keyword.put_new(:advertiser_country, "US")
-    |> Keyword.put_new(:check_credentials, false)
-    |> Keyword.put_new(:limit, 25)
-    |> Keyword.put_new(:pages, 1)
-    |> Keyword.put_new(:require_ready, false)
-    |> Keyword.put_new(:cursor, Keyword.get(opts, :offset))
+    [
+      advertiser_country:
+        CliOptions.non_blank_string!(
+          Keyword.get(opts, :advertiser_country),
+          "US",
+          "--advertiser-country"
+        ),
+      check_credentials: Keyword.get(opts, :check_credentials, false),
+      limit: CliOptions.positive_integer!(Keyword.get(opts, :limit), 25, "--limit"),
+      cursor: normalize_offset(Keyword.get(opts, :offset)),
+      pages: CliOptions.positive_integer!(Keyword.get(opts, :pages), 1, "--pages"),
+      require_ready: Keyword.get(opts, :require_ready, false)
+    ]
   end
+
+  defp normalize_offset(nil), do: nil
+
+  defp normalize_offset(offset),
+    do: CliOptions.non_negative_integer!(offset, 0, "--offset")
 
   defp credential_preflight(opts) do
     missing_required =
@@ -119,6 +130,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
     IO.puts(
       "provider=#{report.provider} surface=#{report.surface} ready=#{report.ready} missing_required=#{Enum.join(report.missing_required, ",")}"
     )
+  end
+
+  defp raise_discovery_failure(reason) do
+    Mix.raise("CJ feed discovery failed: category=#{CJFailureDiagnostics.category(reason)}")
   end
 
   defp runner do

@@ -102,6 +102,33 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsTest do
   end
 
   describe "run/1" do
+    test "rejects malformed CLI input before invoking discovery" do
+      Application.put_env(:product_compare, :cj_feed_discovery_runner, fn _opts ->
+        flunk("invalid CLI input must not invoke discovery")
+      end)
+
+      invalid_cases = [
+        {["--bogus"], "unsupported option: --bogus"},
+        {["extra"], "unexpected argument: extra"},
+        {["--limit", "10", "--limit", "20"], "duplicate option: --limit"},
+        {["--limit", "0"], "invalid --limit: expected a positive integer"},
+        {["--limit", "-1"], "invalid --limit: expected a positive integer"},
+        {["--limit", "many"], "invalid value for --limit: many"},
+        {["--offset", "-1"], "invalid --offset: expected a non-negative integer"},
+        {["--pages", "0"], "invalid --pages: expected a positive integer"},
+        {["--pages", "-1"], "invalid --pages: expected a positive integer"},
+        {["--advertiser-country", "  "],
+         "invalid --advertiser-country: expected a non-blank string"},
+        {["--check-credentials=maybe"], "invalid value for --check-credentials: maybe"}
+      ]
+
+      Enum.each(invalid_cases, fn {argv, expected_message} ->
+        assert_raise Mix.Error, expected_message, fn ->
+          capture_io(fn -> CjFeeds.run(argv) end)
+        end
+      end)
+    end
+
     test "parses CLI options, calls the runner, and prints the report" do
       parent = self()
 
@@ -165,18 +192,27 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsTest do
       assert opts[:pages] == 1
     end
 
-    test "raises with existing failure wording when the runner fails" do
+    test "raises with a category without exposing provider failure details" do
       Application.put_env(:product_compare, :cj_feed_discovery_runner, fn _opts ->
-        {:error, {:missing_env, "CJ_API_TOKEN"}}
+        {:error,
+         {:provider_error,
+          %{
+            body: "provider-body-marker",
+            headers: [{"authorization", "authorization-header-marker"}],
+            token: "credential-token-marker"
+          }}}
       end)
 
-      assert_raise Mix.Error,
-                   "CJ feed discovery failed: {:missing_env, \"CJ_API_TOKEN\"}",
-                   fn ->
-                     capture_io(fn ->
-                       CjFeeds.run(["--advertiser-country", "US"])
-                     end)
-                   end
+      error =
+        assert_raise Mix.Error, "CJ feed discovery failed: category=provider_error", fn ->
+          capture_io(fn ->
+            CjFeeds.run(["--advertiser-country", "US"])
+          end)
+        end
+
+      refute error.message =~ "provider-body-marker"
+      refute error.message =~ "authorization-header-marker"
+      refute error.message =~ "credential-token-marker"
     end
 
     test "prints the report before raising on row failures" do
@@ -193,9 +229,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsTest do
 
       output =
         capture_io(fn ->
-          error = assert_raise Mix.Error, fn -> CjFeeds.run([]) end
-
-          assert error.message =~ "CJ feed discovery failed: {:row_failures,"
+          assert_raise Mix.Error, "CJ feed discovery failed: category=row_failures", fn ->
+            CjFeeds.run([])
+          end
         end)
 
       assert output =~ "feeds_fetched=1 candidates_persisted=0 pages_fetched=1 failed=1"
