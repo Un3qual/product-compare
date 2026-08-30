@@ -47,8 +47,9 @@ for (const viewport of OFFER_VIEWPORTS) {
     const priceColors = await page
       .locator('[data-slot="offer-card-price-value"]')
       .evaluateAll((prices) => prices.map((price) => getComputedStyle(price).color));
-    expect(priceColors[1]).not.toBe(priceColors[0]);
-    expect(priceColors[2]).not.toBe(priceColors[0]);
+    const primaryPriceColor = priceColors.at(0);
+    expect(primaryPriceColor).toBeDefined();
+    expect(priceColors.slice(1)).not.toContain(primaryPriceColor);
 
     const order = await page.evaluate(() => {
       const overview = document.querySelector('[data-slot="offer-price-overview"]');
@@ -56,12 +57,14 @@ for (const viewport of OFFER_VIEWPORTS) {
       const list = document.querySelector('ul[aria-label="Offers"]');
 
       return {
-        filtersBeforeList: Boolean(
-          filters?.compareDocumentPosition(list as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
-        ),
-        overviewBeforeFilters: Boolean(
-          overview?.compareDocumentPosition(filters as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
-        ),
+        filtersBeforeList:
+          filters !== null &&
+          list !== null &&
+          Boolean(filters.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING),
+        overviewBeforeFilters:
+          overview !== null &&
+          filters !== null &&
+          Boolean(overview.compareDocumentPosition(filters) & Node.DOCUMENT_POSITION_FOLLOWING),
       };
     });
 

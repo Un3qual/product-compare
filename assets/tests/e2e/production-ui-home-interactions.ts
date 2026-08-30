@@ -21,7 +21,7 @@ export async function expectVisibleFocus(target: ReturnType<Page["locator"]>) {
     .poll(() =>
       target.evaluate((element) => {
         const candidates = [element, element.parentElement].filter(
-          (candidate): candidate is Element => candidate !== null,
+          (candidate) => candidate !== null,
         );
 
         return candidates.some((candidate) => {
@@ -79,7 +79,7 @@ export function plainLanguageViolations(page: Page) {
       "source artifact",
       "taxon",
     ];
-    const visibleCopy = body.innerText.toLowerCase();
+    const visibleCopy = body instanceof HTMLElement ? body.innerText.toLowerCase() : "";
     return forbidden.filter((term) => visibleCopy.includes(term));
   });
 }

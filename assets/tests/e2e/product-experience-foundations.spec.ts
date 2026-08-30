@@ -84,6 +84,7 @@ for (const viewport of VIEWPORTS) {
           (scripts) =>
             scripts.filter(
               (script) =>
+                script instanceof HTMLScriptElement &&
                 script.type !== "application/ld+json" &&
                 script.textContent?.includes("metadata injection"),
             ).length,

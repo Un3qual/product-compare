@@ -17,7 +17,11 @@ export function offerResponders() {
           merchantProducts: offerConnection([
             offer({
               id: "offer-kitchen-supply",
-              merchant: merchant("merchant-kitchen-supply", "Kitchen Supply", "kitchen.example"),
+              merchant: merchantFixture(
+                "merchant-kitchen-supply",
+                "Kitchen Supply",
+                "kitchen.example",
+              ),
               price: "129.99",
               coupons: [
                 {
@@ -40,12 +44,20 @@ export function offerResponders() {
             }),
             offer({
               id: "offer-coffee-tools",
-              merchant: merchant("merchant-coffee-tools", "Coffee Tools", "coffee-tools.example"),
+              merchant: merchantFixture(
+                "merchant-coffee-tools",
+                "Coffee Tools",
+                "coffee-tools.example",
+              ),
               price: "136.50",
             }),
             offer({
               id: "offer-brew-market",
-              merchant: merchant("merchant-brew-market", "Brew Market", "brew-market.example"),
+              merchant: merchantFixture(
+                "merchant-brew-market",
+                "Brew Market",
+                "brew-market.example",
+              ),
               price: null,
             }),
           ]),
@@ -76,7 +88,7 @@ function offer({
   }>;
   history?: Array<{ id: string; observedAt: string; price: string }>;
   id: string;
-  merchant: ReturnType<typeof merchant>;
+  merchant: ReturnType<typeof merchantFixture>;
   price: string | null;
 }) {
   return {
@@ -103,7 +115,7 @@ function offer({
   };
 }
 
-function merchant(id: string, name: string, domain: string) {
+function merchantFixture(id: string, name: string, domain: string) {
   return { domain, id, name };
 }
 

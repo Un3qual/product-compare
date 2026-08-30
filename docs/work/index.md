@@ -45,13 +45,9 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### 1. Deterministic Tooling And Dependency Health
 
-Status: ready
+Status: active
 Lane: Deterministic tooling and dependency health
 Plan: `docs/superpowers/plans/2026-08-30-deterministic-tooling-dependency-health-implementation-plan.md`
 Batch outcome: strict type coverage includes E2E source, Phoenix starts the
@@ -92,11 +88,15 @@ compatible dependency fixes are locked and audited, full isolated backend and
 frontend gates plus Playwright pass, and any no-compatible-fix blocker is
 recorded exactly.
 
+## Ready Work
+
+None.
+
 ## Ready Floor Exception
 
-Reason: After completing the frontend outcome, the approved remediation
-contains only one independently shippable outcome; no second or third
-source-backed batch exists without a fresh final-state audit.
+Reason: The final approved remediation outcome is active, leaving no unclaimed
+independently shippable outcome; no additional source-backed batch exists
+without a fresh final-state audit.
 Rejected split: Splitting frontend pagination, state ownership, select/query
 contracts, or tooling setup, scheduler, helper, and dependency work into
 helper-sized rows would violate the shared acceptance boundaries.
