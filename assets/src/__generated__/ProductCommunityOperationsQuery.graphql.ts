@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<dc1d369f09c936b5e28395b2eb984e1d>>
+ * @generated SignedSource<<2911ddaae6bc17641e937bb6bd67aca8>>
  * @lightSyntaxTransform
  */
 
@@ -20,46 +20,9 @@ export type ProductCommunityOperationsQuery$variables = {
 export type ProductCommunityOperationsQuery$data = {
   readonly product: {
     readonly id: string;
-    readonly questions: {
-      readonly edges: ReadonlyArray<{
-        readonly node: {
-          readonly acceptedAnswerId: string | null;
-          readonly answers: {
-            readonly edges: ReadonlyArray<{
-              readonly node: {
-                readonly id: string;
-                readonly " $fragmentSpreads": FragmentRefs<"ProductCommunityItems_answer">;
-              };
-            }>;
-            readonly pageInfo: {
-              readonly endCursor: string | null;
-              readonly hasNextPage: boolean;
-            };
-          };
-          readonly id: string;
-          readonly " $fragmentSpreads": FragmentRefs<"ProductCommunityItems_question">;
-        };
-      }>;
-      readonly pageInfo: {
-        readonly endCursor: string | null;
-        readonly hasNextPage: boolean;
-      };
-    };
     readonly reviewSummary: {
       readonly averageRating: string | null;
       readonly count: number;
-    };
-    readonly reviews: {
-      readonly edges: ReadonlyArray<{
-        readonly node: {
-          readonly id: string;
-          readonly " $fragmentSpreads": FragmentRefs<"ProductCommunityItems_review">;
-        };
-      }>;
-      readonly pageInfo: {
-        readonly endCursor: string | null;
-        readonly hasNextPage: boolean;
-      };
     };
     readonly viewerCommunitySubmissions: {
       readonly answers: ReadonlyArray<{
@@ -75,6 +38,7 @@ export type ProductCommunityOperationsQuery$data = {
         readonly " $fragmentSpreads": FragmentRefs<"ProductCommunityItems_review">;
       }>;
     };
+    readonly " $fragmentSpreads": FragmentRefs<"ProductCommunityPanel_questions" | "ProductCommunityPanel_reviews">;
   } | null;
 };
 export type ProductCommunityOperationsQuery = {
@@ -164,15 +128,77 @@ v9 = [
     "variableName": "reviewFirst"
   }
 ],
-v10 = [
-  (v7/*:: as any*/),
-  {
-    "args": null,
-    "kind": "FragmentSpread",
-    "name": "ProductCommunityItems_review"
-  }
-],
+v10 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "rating",
+  "storageKey": null
+},
 v11 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "title",
+  "storageKey": null
+},
+v12 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "body",
+  "storageKey": null
+},
+v13 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "verifiedPurchase",
+  "storageKey": null
+},
+v14 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "authorLabel",
+  "storageKey": null
+},
+v15 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "moderationStatus",
+  "storageKey": null
+},
+v16 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "viewerCanEdit",
+  "storageKey": null
+},
+v17 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "viewerCanRemove",
+  "storageKey": null
+},
+v18 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "__typename",
+  "storageKey": null
+},
+v19 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "cursor",
+  "storageKey": null
+},
+v20 = {
   "alias": null,
   "args": null,
   "concreteType": "PageInfo",
@@ -197,7 +223,7 @@ v11 = {
   ],
   "storageKey": null
 },
-v12 = [
+v21 = [
   {
     "kind": "Variable",
     "name": "after",
@@ -209,105 +235,12 @@ v12 = [
     "variableName": "questionFirst"
   }
 ],
-v13 = {
-  "args": null,
-  "kind": "FragmentSpread",
-  "name": "ProductCommunityItems_question"
-},
-v14 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "acceptedAnswerId",
-  "storageKey": null
-},
-v15 = [
+v22 = [
   {
     "kind": "Variable",
     "name": "first",
     "variableName": "answerFirst"
   }
-],
-v16 = [
-  (v7/*:: as any*/),
-  {
-    "args": null,
-    "kind": "FragmentSpread",
-    "name": "ProductCommunityItems_answer"
-  }
-],
-v17 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "title",
-  "storageKey": null
-},
-v18 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "body",
-  "storageKey": null
-},
-v19 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "authorLabel",
-  "storageKey": null
-},
-v20 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "moderationStatus",
-  "storageKey": null
-},
-v21 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "viewerCanEdit",
-  "storageKey": null
-},
-v22 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "viewerCanRemove",
-  "storageKey": null
-},
-v23 = [
-  (v7/*:: as any*/),
-  {
-    "alias": null,
-    "args": null,
-    "kind": "ScalarField",
-    "name": "rating",
-    "storageKey": null
-  },
-  (v17/*:: as any*/),
-  (v18/*:: as any*/),
-  {
-    "alias": null,
-    "args": null,
-    "kind": "ScalarField",
-    "name": "verifiedPurchase",
-    "storageKey": null
-  },
-  (v19/*:: as any*/),
-  (v20/*:: as any*/),
-  (v21/*:: as any*/),
-  (v22/*:: as any*/)
-],
-v24 = [
-  (v7/*:: as any*/),
-  (v18/*:: as any*/),
-  (v19/*:: as any*/),
-  (v20/*:: as any*/),
-  (v21/*:: as any*/),
-  (v22/*:: as any*/)
 ];
 return {
   "fragment": {
@@ -334,107 +267,41 @@ return {
           (v7/*:: as any*/),
           (v8/*:: as any*/),
           {
-            "alias": null,
-            "args": (v9/*:: as any*/),
-            "concreteType": "ProductReviewConnection",
-            "kind": "LinkedField",
-            "name": "reviews",
-            "plural": false,
-            "selections": [
+            "args": [
               {
-                "alias": null,
-                "args": null,
-                "concreteType": "ProductReviewEdge",
-                "kind": "LinkedField",
-                "name": "edges",
-                "plural": true,
-                "selections": [
-                  {
-                    "alias": null,
-                    "args": null,
-                    "concreteType": "ProductReview",
-                    "kind": "LinkedField",
-                    "name": "node",
-                    "plural": false,
-                    "selections": (v10/*:: as any*/),
-                    "storageKey": null
-                  }
-                ],
-                "storageKey": null
+                "kind": "Variable",
+                "name": "reviewFirst",
+                "variableName": "reviewFirst"
               },
-              (v11/*:: as any*/)
+              {
+                "kind": "Variable",
+                "name": "reviewsAfter",
+                "variableName": "reviewsAfter"
+              }
             ],
-            "storageKey": null
+            "kind": "FragmentSpread",
+            "name": "ProductCommunityPanel_reviews"
           },
           {
-            "alias": null,
-            "args": (v12/*:: as any*/),
-            "concreteType": "ProductQuestionConnection",
-            "kind": "LinkedField",
-            "name": "questions",
-            "plural": false,
-            "selections": [
+            "args": [
               {
-                "alias": null,
-                "args": null,
-                "concreteType": "ProductQuestionEdge",
-                "kind": "LinkedField",
-                "name": "edges",
-                "plural": true,
-                "selections": [
-                  {
-                    "alias": null,
-                    "args": null,
-                    "concreteType": "ProductQuestion",
-                    "kind": "LinkedField",
-                    "name": "node",
-                    "plural": false,
-                    "selections": [
-                      (v7/*:: as any*/),
-                      (v13/*:: as any*/),
-                      (v14/*:: as any*/),
-                      {
-                        "alias": null,
-                        "args": (v15/*:: as any*/),
-                        "concreteType": "ProductAnswerConnection",
-                        "kind": "LinkedField",
-                        "name": "answers",
-                        "plural": false,
-                        "selections": [
-                          {
-                            "alias": null,
-                            "args": null,
-                            "concreteType": "ProductAnswerEdge",
-                            "kind": "LinkedField",
-                            "name": "edges",
-                            "plural": true,
-                            "selections": [
-                              {
-                                "alias": null,
-                                "args": null,
-                                "concreteType": "ProductAnswer",
-                                "kind": "LinkedField",
-                                "name": "node",
-                                "plural": false,
-                                "selections": (v16/*:: as any*/),
-                                "storageKey": null
-                              }
-                            ],
-                            "storageKey": null
-                          },
-                          (v11/*:: as any*/)
-                        ],
-                        "storageKey": null
-                      }
-                    ],
-                    "storageKey": null
-                  }
-                ],
-                "storageKey": null
+                "kind": "Variable",
+                "name": "answerFirst",
+                "variableName": "answerFirst"
               },
-              (v11/*:: as any*/)
+              {
+                "kind": "Variable",
+                "name": "questionFirst",
+                "variableName": "questionFirst"
+              },
+              {
+                "kind": "Variable",
+                "name": "questionsAfter",
+                "variableName": "questionsAfter"
+              }
             ],
-            "storageKey": null
+            "kind": "FragmentSpread",
+            "name": "ProductCommunityPanel_questions"
           },
           {
             "alias": null,
@@ -451,7 +318,14 @@ return {
                 "kind": "LinkedField",
                 "name": "reviews",
                 "plural": true,
-                "selections": (v10/*:: as any*/),
+                "selections": [
+                  (v7/*:: as any*/),
+                  {
+                    "args": null,
+                    "kind": "FragmentSpread",
+                    "name": "ProductCommunityItems_review"
+                  }
+                ],
                 "storageKey": null
               },
               {
@@ -463,7 +337,11 @@ return {
                 "plural": true,
                 "selections": [
                   (v7/*:: as any*/),
-                  (v13/*:: as any*/)
+                  {
+                    "args": null,
+                    "kind": "FragmentSpread",
+                    "name": "ProductCommunityItems_question"
+                  }
                 ],
                 "storageKey": null
               },
@@ -474,7 +352,14 @@ return {
                 "kind": "LinkedField",
                 "name": "answers",
                 "plural": true,
-                "selections": (v16/*:: as any*/),
+                "selections": [
+                  (v7/*:: as any*/),
+                  {
+                    "args": null,
+                    "kind": "FragmentSpread",
+                    "name": "ProductCommunityItems_answer"
+                  }
+                ],
                 "storageKey": null
               }
             ],
@@ -533,19 +418,40 @@ return {
                     "kind": "LinkedField",
                     "name": "node",
                     "plural": false,
-                    "selections": (v23/*:: as any*/),
+                    "selections": [
+                      (v7/*:: as any*/),
+                      (v10/*:: as any*/),
+                      (v11/*:: as any*/),
+                      (v12/*:: as any*/),
+                      (v13/*:: as any*/),
+                      (v14/*:: as any*/),
+                      (v15/*:: as any*/),
+                      (v16/*:: as any*/),
+                      (v17/*:: as any*/),
+                      (v18/*:: as any*/)
+                    ],
                     "storageKey": null
-                  }
+                  },
+                  (v19/*:: as any*/)
                 ],
                 "storageKey": null
               },
-              (v11/*:: as any*/)
+              (v20/*:: as any*/)
             ],
             "storageKey": null
           },
           {
             "alias": null,
-            "args": (v12/*:: as any*/),
+            "args": (v9/*:: as any*/),
+            "filters": null,
+            "handle": "connection",
+            "key": "ProductCommunityPanel_reviews",
+            "kind": "LinkedHandle",
+            "name": "reviews"
+          },
+          {
+            "alias": null,
+            "args": (v21/*:: as any*/),
             "concreteType": "ProductQuestionConnection",
             "kind": "LinkedField",
             "name": "questions",
@@ -568,16 +474,22 @@ return {
                     "plural": false,
                     "selections": [
                       (v7/*:: as any*/),
-                      (v17/*:: as any*/),
-                      (v18/*:: as any*/),
-                      (v19/*:: as any*/),
-                      (v20/*:: as any*/),
-                      (v21/*:: as any*/),
-                      (v22/*:: as any*/),
+                      (v11/*:: as any*/),
+                      (v12/*:: as any*/),
                       (v14/*:: as any*/),
+                      (v15/*:: as any*/),
+                      (v16/*:: as any*/),
+                      (v17/*:: as any*/),
                       {
                         "alias": null,
-                        "args": (v15/*:: as any*/),
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "acceptedAnswerId",
+                        "storageKey": null
+                      },
+                      {
+                        "alias": null,
+                        "args": (v22/*:: as any*/),
                         "concreteType": "ProductAnswerConnection",
                         "kind": "LinkedField",
                         "name": "answers",
@@ -598,25 +510,54 @@ return {
                                 "kind": "LinkedField",
                                 "name": "node",
                                 "plural": false,
-                                "selections": (v24/*:: as any*/),
+                                "selections": [
+                                  (v7/*:: as any*/),
+                                  (v12/*:: as any*/),
+                                  (v14/*:: as any*/),
+                                  (v15/*:: as any*/),
+                                  (v16/*:: as any*/),
+                                  (v17/*:: as any*/),
+                                  (v18/*:: as any*/)
+                                ],
                                 "storageKey": null
-                              }
+                              },
+                              (v19/*:: as any*/)
                             ],
                             "storageKey": null
                           },
-                          (v11/*:: as any*/)
+                          (v20/*:: as any*/)
                         ],
                         "storageKey": null
-                      }
+                      },
+                      {
+                        "alias": null,
+                        "args": (v22/*:: as any*/),
+                        "filters": null,
+                        "handle": "connection",
+                        "key": "CommunityQuestionAnswers_answers",
+                        "kind": "LinkedHandle",
+                        "name": "answers"
+                      },
+                      (v18/*:: as any*/)
                     ],
                     "storageKey": null
-                  }
+                  },
+                  (v19/*:: as any*/)
                 ],
                 "storageKey": null
               },
-              (v11/*:: as any*/)
+              (v20/*:: as any*/)
             ],
             "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": (v21/*:: as any*/),
+            "filters": null,
+            "handle": "connection",
+            "key": "ProductCommunityPanel_questions",
+            "kind": "LinkedHandle",
+            "name": "questions"
           },
           {
             "alias": null,
@@ -633,7 +574,17 @@ return {
                 "kind": "LinkedField",
                 "name": "reviews",
                 "plural": true,
-                "selections": (v23/*:: as any*/),
+                "selections": [
+                  (v7/*:: as any*/),
+                  (v10/*:: as any*/),
+                  (v11/*:: as any*/),
+                  (v12/*:: as any*/),
+                  (v13/*:: as any*/),
+                  (v14/*:: as any*/),
+                  (v15/*:: as any*/),
+                  (v16/*:: as any*/),
+                  (v17/*:: as any*/)
+                ],
                 "storageKey": null
               },
               {
@@ -645,12 +596,12 @@ return {
                 "plural": true,
                 "selections": [
                   (v7/*:: as any*/),
-                  (v17/*:: as any*/),
-                  (v18/*:: as any*/),
-                  (v19/*:: as any*/),
-                  (v20/*:: as any*/),
-                  (v21/*:: as any*/),
-                  (v22/*:: as any*/)
+                  (v11/*:: as any*/),
+                  (v12/*:: as any*/),
+                  (v14/*:: as any*/),
+                  (v15/*:: as any*/),
+                  (v16/*:: as any*/),
+                  (v17/*:: as any*/)
                 ],
                 "storageKey": null
               },
@@ -661,7 +612,14 @@ return {
                 "kind": "LinkedField",
                 "name": "answers",
                 "plural": true,
-                "selections": (v24/*:: as any*/),
+                "selections": [
+                  (v7/*:: as any*/),
+                  (v12/*:: as any*/),
+                  (v14/*:: as any*/),
+                  (v15/*:: as any*/),
+                  (v16/*:: as any*/),
+                  (v17/*:: as any*/)
+                ],
                 "storageKey": null
               }
             ],
@@ -673,16 +631,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "aed2d901aa0f99504193202455d723b3",
+    "cacheID": "8db3ca8d78e54112b79e0e4bf5b4b75e",
     "id": null,
     "metadata": {},
     "name": "ProductCommunityOperationsQuery",
     "operationKind": "query",
-    "text": "query ProductCommunityOperationsQuery(\n  $slug: String!\n  $reviewFirst: Int!\n  $reviewsAfter: String\n  $questionFirst: Int!\n  $questionsAfter: String\n  $answerFirst: Int!\n) {\n  product(slug: $slug) {\n    id\n    reviewSummary {\n      count\n      averageRating\n    }\n    reviews(first: $reviewFirst, after: $reviewsAfter) {\n      edges {\n        node {\n          id\n          ...ProductCommunityItems_review\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    questions(first: $questionFirst, after: $questionsAfter) {\n      edges {\n        node {\n          id\n          ...ProductCommunityItems_question\n          acceptedAnswerId\n          answers(first: $answerFirst) {\n            edges {\n              node {\n                id\n                ...ProductCommunityItems_answer\n              }\n            }\n            pageInfo {\n              endCursor\n              hasNextPage\n            }\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    viewerCommunitySubmissions {\n      reviews {\n        id\n        ...ProductCommunityItems_review\n      }\n      questions {\n        id\n        ...ProductCommunityItems_question\n      }\n      answers {\n        id\n        ...ProductCommunityItems_answer\n      }\n    }\n  }\n}\n\nfragment ProductCommunityItems_answer on ProductAnswer {\n  id\n  body\n  authorLabel\n  moderationStatus\n  viewerCanEdit\n  viewerCanRemove\n}\n\nfragment ProductCommunityItems_question on ProductQuestion {\n  id\n  title\n  body\n  authorLabel\n  moderationStatus\n  viewerCanEdit\n  viewerCanRemove\n}\n\nfragment ProductCommunityItems_review on ProductReview {\n  id\n  rating\n  title\n  body\n  verifiedPurchase\n  authorLabel\n  moderationStatus\n  viewerCanEdit\n  viewerCanRemove\n}\n"
+    "text": "query ProductCommunityOperationsQuery(\n  $slug: String!\n  $reviewFirst: Int!\n  $reviewsAfter: String\n  $questionFirst: Int!\n  $questionsAfter: String\n  $answerFirst: Int!\n) {\n  product(slug: $slug) {\n    id\n    reviewSummary {\n      count\n      averageRating\n    }\n    ...ProductCommunityPanel_reviews_48YXwb\n    ...ProductCommunityPanel_questions_4dO3Lg\n    viewerCommunitySubmissions {\n      reviews {\n        id\n        ...ProductCommunityItems_review\n      }\n      questions {\n        id\n        ...ProductCommunityItems_question\n      }\n      answers {\n        id\n        ...ProductCommunityItems_answer\n      }\n    }\n  }\n}\n\nfragment CommunityQuestionAnswers_question_2KK7X7 on ProductQuestion {\n  id\n  acceptedAnswerId\n  answers(first: $answerFirst) {\n    edges {\n      node {\n        id\n        ...ProductCommunityItems_answer\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment ProductCommunityItems_answer on ProductAnswer {\n  id\n  body\n  authorLabel\n  moderationStatus\n  viewerCanEdit\n  viewerCanRemove\n}\n\nfragment ProductCommunityItems_question on ProductQuestion {\n  id\n  title\n  body\n  authorLabel\n  moderationStatus\n  viewerCanEdit\n  viewerCanRemove\n}\n\nfragment ProductCommunityItems_review on ProductReview {\n  id\n  rating\n  title\n  body\n  verifiedPurchase\n  authorLabel\n  moderationStatus\n  viewerCanEdit\n  viewerCanRemove\n}\n\nfragment ProductCommunityPanel_questions_4dO3Lg on Product {\n  questions(first: $questionFirst, after: $questionsAfter) {\n    edges {\n      node {\n        id\n        ...ProductCommunityItems_question\n        ...CommunityQuestionAnswers_question_2KK7X7\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n  id\n}\n\nfragment ProductCommunityPanel_reviews_48YXwb on Product {\n  reviews(first: $reviewFirst, after: $reviewsAfter) {\n    edges {\n      node {\n        id\n        ...ProductCommunityItems_review\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n  id\n}\n"
   }
 };
 })();
 
-(node as any).hash = "0da6c52681efb97caae1fe614f37af20";
+(node as any).hash = "47e9dd73d04e1dd0e5a181fcfb0dffef";
 
 export default node;

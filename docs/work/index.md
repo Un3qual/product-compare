@@ -45,13 +45,9 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### 1. Frontend Correctness And Simplification
 
-Status: ready
+Status: active
 Lane: Frontend correctness and simplification
 Plan: `docs/superpowers/plans/2026-08-30-frontend-correctness-simplification-implementation-plan.md`
 Batch outcome: product-detail recovery is structurally safe, Relay owns every
@@ -92,7 +88,9 @@ Exit condition: manual append effects and unused type branches are absent from
 the named surfaces, real input/generated boundaries remain, generated artifacts
 are current, and focused/full frontend/browser gates pass.
 
-### 2. Deterministic Tooling And Dependency Health
+## Ready Work
+
+### 1. Deterministic Tooling And Dependency Health
 
 Status: ready
 Lane: Deterministic tooling and dependency health
@@ -137,9 +135,9 @@ recorded exactly.
 
 ## Ready Floor Exception
 
-Reason: After completing the operator outcome, the approved remediation contains
-only two remaining independently shippable outcomes; no third source-backed
-batch exists without a fresh final-state audit.
+Reason: After claiming the frontend outcome, the approved remediation contains
+only one unclaimed independently shippable outcome; no second or third
+source-backed batch exists without a fresh final-state audit.
 Rejected split: Splitting frontend pagination, state ownership, select/query
 contracts, or tooling setup, scheduler, helper, and dependency work into
 helper-sized rows would violate the shared acceptance boundaries.

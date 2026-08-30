@@ -10,7 +10,7 @@ import {
 } from "react-router-dom";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { ProductDetailRouteQuery } from "$generated/ProductDetailRouteQuery.graphql";
-import { RouteLoaderGraphQLError } from "$relay/environment";
+import { hasGraphQLErrors, RouteLoaderGraphQLError } from "$relay/environment";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   cacheRouteQueryData,
@@ -399,17 +399,50 @@ function productNotFoundResult() {
 function partialProductData(error: unknown): ProductDetailResponseWithProduct | null {
   if (!(error instanceof RouteLoaderGraphQLError)) return null;
   const response = error.response;
-  if (Array.isArray(response) || !("data" in response)) return null;
+  if (!hasGraphQLErrors(response) || !("data" in response)) return null;
+  if (!hasOnlyMerchantProductErrors(response.errors)) return null;
 
-  return hasProduct(response.data) ? response.data : null;
+  return hasRecoverableProduct(response.data) ? response.data : null;
 }
 
-function hasProduct(productData: unknown): productData is ProductDetailResponseWithProduct {
+function hasOnlyMerchantProductErrors(
+  errors: readonly { readonly path?: readonly (number | string)[] | null }[] | null | undefined,
+) {
   return Boolean(
-    productData &&
-    typeof productData === "object" &&
-    "product" in productData &&
-    productData.product &&
-    typeof productData.product === "object",
+    errors?.length &&
+    errors.every((error) => error.path?.[0] === "product" && error.path[1] === "merchantProducts"),
   );
+}
+
+function hasRecoverableProduct(value: unknown): value is ProductDetailResponseWithProduct {
+  if (!isObject(value) || !isObject(value.product)) return false;
+
+  const { product } = value;
+
+  return (
+    typeof product.id === "string" &&
+    typeof product.name === "string" &&
+    typeof product.slug === "string" &&
+    hasSeoProjection(product.seo)
+  );
+}
+
+function hasSeoProjection(value: unknown) {
+  return (
+    isObject(value) &&
+    typeof value.canonicalPath === "string" &&
+    typeof value.description === "string" &&
+    nullableString(value.imageUrl) &&
+    typeof value.indexable === "boolean" &&
+    nullableString(value.structuredData) &&
+    typeof value.title === "string"
+  );
+}
+
+function nullableString(value: unknown) {
+  return value === null || typeof value === "string";
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }

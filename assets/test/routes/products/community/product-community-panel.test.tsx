@@ -1,9 +1,12 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useFragment, useLazyLoadQuery, useMutation } from "react-relay";
+import { useFragment, useLazyLoadQuery, useMutation, usePaginationFragment } from "react-relay";
+import { communityQuestionAnswersFragment } from "../../../../src/routes/products/community/CommunityQuestionAnswers";
 import {
   answerProductQuestionMutation,
   askProductQuestionMutation,
+  productCommunityQuestionsFragment,
+  productCommunityReviewsFragment,
   removeCommunityContentMutation,
   submitProductReviewMutation,
   updateProductAnswerMutation,
@@ -24,6 +27,7 @@ const {
   useFragmentMock,
   useLazyLoadQueryMock,
   useMutationMock,
+  usePaginationFragmentMock,
   uuidMock,
 } = vi.hoisted(() => ({
   answerMock: vi.fn(),
@@ -36,6 +40,7 @@ const {
   useFragmentMock: vi.fn(),
   useLazyLoadQueryMock: vi.fn(),
   useMutationMock: vi.fn(),
+  usePaginationFragmentMock: vi.fn(),
   uuidMock: vi.fn(),
 }));
 
@@ -46,12 +51,14 @@ vi.mock("react-relay", async () => {
     useFragment: useFragmentMock,
     useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
+    usePaginationFragment: usePaginationFragmentMock,
   };
 });
 
 const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
+const mockedUsePaginationFragment = vi.mocked(usePaginationFragment);
 
 const productReview = {
   id: "review-1",
@@ -69,7 +76,7 @@ const productQuestion = {
   title: "Weather sealed?",
   body: "Can it handle rain?",
   authorLabel: "Community member",
-  acceptedAnswerId: "answer-1",
+  acceptedAnswerId: "answer-1" as string | null,
   answers: {
     edges: [
       {
@@ -106,6 +113,7 @@ beforeEach(() => {
   mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   useLazyLoadQueryMock.mockReset();
   useMutationMock.mockReset();
+  usePaginationFragmentMock.mockReset();
   mockedUseLazyLoadQuery.mockReturnValue({
     product: {
       id: "product-1",
@@ -121,6 +129,22 @@ beforeEach(() => {
       viewerCommunitySubmissions: { answers: [], questions: [], reviews: [] },
     },
   } as never);
+  mockedUsePaginationFragment.mockImplementation((fragment, fragmentRef) => {
+    if (
+      fragment !== productCommunityReviewsFragment &&
+      fragment !== productCommunityQuestionsFragment &&
+      fragment !== communityQuestionAnswersFragment
+    ) {
+      throw new Error("Unexpected community pagination fragment");
+    }
+
+    return {
+      data: fragmentRef,
+      hasNext: false,
+      isLoadingNext: false,
+      loadNext: vi.fn(),
+    } as never;
+  });
   mockedUseMutation.mockImplementation((mutation) => {
     if (mutation === submitProductReviewMutation) return [reviewMock, false] as never;
     if (mutation === askProductQuestionMutation) return [askMock, false] as never;
@@ -421,63 +445,149 @@ test("ProductCommunityPanel keeps lifecycle failures scoped to their content row
   expect(within(questionRow).getByRole("button", { name: "Edit question" })).toBeEnabled();
 });
 
-test("ProductCommunityPanel removes review and question controls when a page repeats its cursor", async () => {
-  mockedUseLazyLoadQuery.mockReturnValue({
-    product: {
-      id: "product-1",
-      reviewSummary: { count: 1, averageRating: "4.00" },
-      reviews: {
-        edges: [{ node: productReview }],
-        pageInfo: { endCursor: "review-cursor-1", hasNextPage: true },
-      },
-      questions: {
-        edges: [{ node: productQuestion }],
-        pageInfo: { endCursor: "question-cursor-1", hasNextPage: true },
-      },
-      viewerCommunitySubmissions: { answers: [], questions: [], reviews: [] },
-    },
-  } as never);
-  render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
+test("ProductCommunityPanel paginates reviews, questions, and answers independently", () => {
+  const secondReview = {
+    ...productReview,
+    id: "review-2",
+    title: "Useful on long trips",
+  };
+  const secondQuestion = {
+    ...productQuestion,
+    id: "question-2",
+    title: "How long does the battery last?",
+    acceptedAnswerId: null,
+    answers: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } },
+  };
+  const secondAnswer = {
+    ...productQuestion.answers.edges[0].node,
+    id: "answer-2",
+    body: "It lasted a full day in the field.",
+  };
+  let reviewNodes = [productReview];
+  let questionNodes = [productQuestion];
+  let answerNodes = productQuestion.answers.edges.map(({ node }) => node);
+  let reviewsLoading = false;
+  let questionsLoading = false;
+  let answersLoading = false;
+  const loadReviews = vi.fn(() => {
+    reviewNodes = [productReview, secondReview];
+    reviewsLoading = true;
+  });
+  const loadQuestions = vi.fn(() => {
+    questionNodes = [productQuestion, secondQuestion];
+    questionsLoading = true;
+  });
+  const loadAnswers = vi.fn(() => {
+    answerNodes = [...productQuestion.answers.edges.map(({ node }) => node), secondAnswer];
+    answersLoading = true;
+  });
+
+  mockedUsePaginationFragment.mockImplementation((fragment, fragmentRef) => {
+    if (fragment === productCommunityReviewsFragment) {
+      return {
+        data: {
+          id: "product-1",
+          reviews: { edges: reviewNodes.map((node) => ({ node })) },
+        },
+        hasNext: true,
+        isLoadingNext: reviewsLoading,
+        loadNext: loadReviews,
+      } as never;
+    }
+
+    if (fragment === productCommunityQuestionsFragment) {
+      return {
+        data: {
+          id: "product-1",
+          questions: { edges: questionNodes.map((node) => ({ node })) },
+        },
+        hasNext: true,
+        isLoadingNext: questionsLoading,
+        loadNext: loadQuestions,
+      } as never;
+    }
+
+    if (fragment === communityQuestionAnswersFragment && Object.is(fragmentRef, productQuestion)) {
+      return {
+        data: {
+          ...productQuestion,
+          answers: { edges: answerNodes.map((node) => ({ node })) },
+        },
+        hasNext: true,
+        isLoadingNext: answersLoading,
+        loadNext: loadAnswers,
+      } as never;
+    }
+
+    return {
+      data: fragmentRef,
+      hasNext: false,
+      isLoadingNext: false,
+      loadNext: vi.fn(),
+    } as never;
+  });
+
+  const view = render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
 
   fireEvent.click(screen.getByRole("button", { name: "Show more reviews" }));
-  await waitFor(() =>
-    expect(screen.queryByRole("button", { name: "Show more reviews" })).toBeNull(),
-  );
-  expect(screen.getByRole("button", { name: "Show more questions" })).toBeVisible();
+  view.rerender(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
 
+  expect(screen.getByText("Useful outdoors")).toBeVisible();
+  expect(screen.getByText("Useful on long trips")).toBeVisible();
+  const loadingReviews = screen.getByRole("button", { name: /Loading more reviews/ });
+  expect(loadingReviews).toBeDisabled();
+  fireEvent.click(loadingReviews);
+  expect(loadReviews).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("button", { name: "Show more questions" })).toBeEnabled();
+
+  reviewsLoading = false;
   fireEvent.click(screen.getByRole("button", { name: "Show more questions" }));
-  await waitFor(() =>
-    expect(screen.queryByRole("button", { name: "Show more questions" })).toBeNull(),
-  );
+  view.rerender(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
+
+  expect(screen.getByText("Weather sealed?")).toBeVisible();
+  expect(screen.getByText("How long does the battery last?")).toBeVisible();
+  expect(screen.getByRole("button", { name: /Loading more questions/ })).toBeDisabled();
+  expect(loadQuestions).toHaveBeenCalledTimes(1);
+
+  questionsLoading = false;
+  fireEvent.click(screen.getByRole("button", { name: "Show more answers" }));
+  view.rerender(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
+
+  expect(screen.getByText("Yes, with the port cover closed.")).toBeVisible();
+  expect(screen.getByText("It lasted a full day in the field.")).toBeVisible();
+  expect(screen.getByRole("button", { name: /Loading more answers/ })).toBeDisabled();
+  expect(loadAnswers).toHaveBeenCalledTimes(1);
 });
 
-test("ProductCommunityPanel suppresses a blank initial answer cursor", () => {
-  mockedUseLazyLoadQuery.mockReturnValue({
-    product: {
-      id: "product-1",
-      reviewSummary: { count: 1, averageRating: "4.00" },
-      reviews: {
-        edges: [{ node: productReview }],
-        pageInfo: { endCursor: null, hasNextPage: false },
-      },
-      questions: {
-        edges: [
-          {
-            node: {
-              ...productQuestion,
-              answers: {
-                ...productQuestion.answers,
-                pageInfo: { endCursor: "   ", hasNextPage: true },
-              },
-            },
-          },
-        ],
-        pageInfo: { endCursor: null, hasNextPage: false },
-      },
-      viewerCommunitySubmissions: { answers: [], questions: [], reviews: [] },
-    },
-  } as never);
+test("ProductCommunityPanel keeps a failed review page scoped to reviews", async () => {
+  const loadReviews = vi.fn();
+
+  mockedUsePaginationFragment.mockImplementation((fragment, fragmentRef) => {
+    if (fragment === productCommunityReviewsFragment) {
+      return {
+        data: fragmentRef,
+        hasNext: true,
+        isLoadingNext: false,
+        loadNext: loadReviews,
+      } as never;
+    }
+
+    return {
+      data: fragmentRef,
+      hasNext: false,
+      isLoadingNext: false,
+      loadNext: vi.fn(),
+    } as never;
+  });
 
   render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
-  expect(screen.queryByRole("button", { name: "Show more answers" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Show more reviews" }));
+
+  await act(() => loadReviews.mock.calls[0]?.[1]?.onComplete(new Error("review page failed")));
+
+  expect(screen.getByRole("alert")).toHaveTextContent("More reviews unavailable.");
+  expect(screen.getByRole("button", { name: "Retry reviews" })).toBeEnabled();
+  expect(screen.getByText("Weather sealed?")).toBeVisible();
+  expect(screen.queryByText("More questions unavailable.")).toBeNull();
+  expect(screen.queryByText("More answers unavailable.")).toBeNull();
 });

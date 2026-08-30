@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { props } from "@stylexjs/stylex";
-import { useLazyLoadQuery } from "react-relay";
+import { useLazyLoadQuery, usePaginationFragment } from "react-relay";
+import type { ProductCommunityPanel_questions$key } from "$generated/ProductCommunityPanel_questions.graphql";
+import type { ProductCommunityPanel_reviews$key } from "$generated/ProductCommunityPanel_reviews.graphql";
 import type { ProductCommunityOperationsQuery } from "$generated/ProductCommunityOperationsQuery.graphql";
+import type { ProductCommunityQuestionsPaginationQuery } from "$generated/ProductCommunityQuestionsPaginationQuery.graphql";
+import type { ProductCommunityReviewsPaginationQuery } from "$generated/ProductCommunityReviewsPaginationQuery.graphql";
 import { Button } from "$ui/primitives/Button";
 import { CommunityQuestionAnswers } from "./CommunityQuestionAnswers";
 import {
@@ -12,20 +16,18 @@ import {
 import { OwnerCommunitySubmissions } from "./OwnerCommunitySubmissions";
 import { QuestionItem } from "./ProductQuestionItem";
 import { ReviewItem } from "./ProductReviewItem";
-import {
-  appendUniqueCommunityItems,
-  nextCommunityPageCursor,
-  publishedReviewSummary,
-} from "./product-community-data";
+import { publishedReviewSummary } from "./product-community-data";
 import { productCommunityStyles as styles } from "./product-community-styles";
-import { productCommunityOperationsQuery } from "./ProductCommunityOperations";
+import {
+  productCommunityOperationsQuery,
+  productCommunityQuestionsFragment,
+  productCommunityReviewsFragment,
+} from "./ProductCommunityOperations";
 
 const communityPageSize = 10;
 const answerPageSize = 5;
 
 type CommunityProduct = NonNullable<ProductCommunityOperationsQuery["response"]["product"]>;
-type Review = CommunityProduct["reviews"]["edges"][number]["node"];
-type Question = CommunityProduct["questions"]["edges"][number]["node"];
 
 export function ProductCommunityPanel({
   productId,
@@ -34,15 +36,18 @@ export function ProductCommunityPanel({
   productId: string;
   productSlug: string;
 }) {
-  const {
-    product,
-    questions,
-    questionsAfter,
-    reviews,
-    reviewsAfter,
-    setQuestionsAfter,
-    setReviewsAfter,
-  } = useCommunityPages(productSlug);
+  const { product } = useLazyLoadQuery<ProductCommunityOperationsQuery>(
+    productCommunityOperationsQuery,
+    {
+      slug: productSlug,
+      reviewFirst: communityPageSize,
+      reviewsAfter: null,
+      questionFirst: communityPageSize,
+      questionsAfter: null,
+      answerFirst: answerPageSize,
+    },
+    { fetchPolicy: "store-or-network" },
+  );
 
   if (!product) {
     return <p role="alert">Reviews and Q&amp;A unavailable.</p>;
@@ -51,77 +56,34 @@ export function ProductCommunityPanel({
   return (
     <section aria-label="Reviews and product questions" {...props(styles.content)}>
       <OwnerCommunitySubmissions submissions={product.viewerCommunitySubmissions} />
-      <ReviewSection
-        onShowMore={nextPageAction(product.reviews.pageInfo, reviewsAfter, setReviewsAfter)}
-        productId={productId}
-        reviews={reviews}
-        summary={product.reviewSummary}
-      />
-      <QuestionSection
-        onShowMore={nextPageAction(product.questions.pageInfo, questionsAfter, setQuestionsAfter)}
-        productId={productId}
-        questions={questions}
-      />
+      <ReviewSection fragmentRef={product} productId={productId} summary={product.reviewSummary} />
+      <QuestionSection fragmentRef={product} productId={productId} />
     </section>
   );
 }
 
-function useCommunityPages(productSlug: string) {
-  const [reviewsAfter, setReviewsAfter] = useState<string | null>(null);
-  const [questionsAfter, setQuestionsAfter] = useState<string | null>(null);
-  const [loadedReviews, setLoadedReviews] = useState<Review[]>([]);
-  const [loadedQuestions, setLoadedQuestions] = useState<Question[]>([]);
-  const data = useLazyLoadQuery<ProductCommunityOperationsQuery>(
-    productCommunityOperationsQuery,
-    {
-      slug: productSlug,
-      reviewFirst: communityPageSize,
-      reviewsAfter,
-      questionFirst: communityPageSize,
-      questionsAfter,
-      answerFirst: answerPageSize,
-    },
-    { fetchPolicy: "store-or-network" },
-  );
-  const product = data.product;
-  const pageReviews = useMemo(
-    () => product?.reviews.edges.map(({ node }) => node) ?? [],
-    [product?.reviews],
-  );
-  const pageQuestions = useMemo(
-    () => product?.questions.edges.map(({ node }) => node) ?? [],
-    [product?.questions],
-  );
-
-  useEffect(() => {
-    setLoadedReviews((current) => appendUniqueCommunityItems(current, pageReviews));
-  }, [pageReviews]);
-  useEffect(() => {
-    setLoadedQuestions((current) => appendUniqueCommunityItems(current, pageQuestions));
-  }, [pageQuestions]);
-
-  return {
-    product,
-    questions: appendUniqueCommunityItems(loadedQuestions, pageQuestions),
-    questionsAfter,
-    reviews: appendUniqueCommunityItems(loadedReviews, pageReviews),
-    reviewsAfter,
-    setQuestionsAfter,
-    setReviewsAfter,
-  };
-}
-
 function ReviewSection({
-  onShowMore,
+  fragmentRef,
   productId,
-  reviews,
   summary,
 }: {
-  onShowMore: (() => void) | null;
+  fragmentRef: ProductCommunityPanel_reviews$key;
   productId: string;
-  reviews: readonly Review[];
   summary: CommunityProduct["reviewSummary"];
 }) {
+  const { data, hasNext, isLoadingNext, loadNext } = usePaginationFragment<
+    ProductCommunityReviewsPaginationQuery,
+    ProductCommunityPanel_reviews$key
+  >(productCommunityReviewsFragment, fragmentRef);
+  const [paginationFailed, setPaginationFailed] = useState(false);
+  const reviews = data.reviews.edges.map(({ node }) => node);
+  const loadMore = () => {
+    setPaginationFailed(false);
+    loadNext(communityPageSize, {
+      onComplete: (error) => setPaginationFailed(error !== null),
+    });
+  };
+
   return (
     <section aria-labelledby="reviews-heading" {...props(styles.content)}>
       <h2 id="reviews-heading" {...props(styles.title)}>
@@ -133,9 +95,16 @@ function ReviewSection({
           <ReviewItem key={review.id} review={review} />
         ))}
       </ul>
-      {onShowMore ? (
-        <Button onClick={onShowMore} type="button" variant="link">
-          Show more reviews
+      {paginationFailed ? (
+        <div role="alert">
+          <p>More reviews unavailable.</p>
+          <Button disabled={isLoadingNext} onClick={loadMore} type="button">
+            Retry reviews
+          </Button>
+        </div>
+      ) : hasNext ? (
+        <Button disabled={isLoadingNext} onClick={loadMore} type="button" variant="link">
+          {isLoadingNext ? "Loading more reviews…" : "Show more reviews"}
         </Button>
       ) : null}
       <ReviewSubmissionForm productId={productId} />
@@ -144,14 +113,25 @@ function ReviewSection({
 }
 
 function QuestionSection({
-  onShowMore,
+  fragmentRef,
   productId,
-  questions,
 }: {
-  onShowMore: (() => void) | null;
+  fragmentRef: ProductCommunityPanel_questions$key;
   productId: string;
-  questions: readonly Question[];
 }) {
+  const { data, hasNext, isLoadingNext, loadNext } = usePaginationFragment<
+    ProductCommunityQuestionsPaginationQuery,
+    ProductCommunityPanel_questions$key
+  >(productCommunityQuestionsFragment, fragmentRef);
+  const [paginationFailed, setPaginationFailed] = useState(false);
+  const questions = data.questions.edges.map(({ node }) => node);
+  const loadMore = () => {
+    setPaginationFailed(false);
+    loadNext(communityPageSize, {
+      onComplete: (error) => setPaginationFailed(error !== null),
+    });
+  };
+
   return (
     <section aria-labelledby="questions-heading" {...props(styles.content)}>
       <h2 id="questions-heading" {...props(styles.title)}>
@@ -169,21 +149,19 @@ function QuestionSection({
       ) : (
         <p>No published questions yet.</p>
       )}
-      {onShowMore ? (
-        <Button onClick={onShowMore} type="button" variant="link">
-          Show more questions
+      {paginationFailed ? (
+        <div role="alert">
+          <p>More questions unavailable.</p>
+          <Button disabled={isLoadingNext} onClick={loadMore} type="button">
+            Retry questions
+          </Button>
+        </div>
+      ) : hasNext ? (
+        <Button disabled={isLoadingNext} onClick={loadMore} type="button" variant="link">
+          {isLoadingNext ? "Loading more questions…" : "Show more questions"}
         </Button>
       ) : null}
       <QuestionSubmissionForm productId={productId} />
     </section>
   );
-}
-
-function nextPageAction(
-  pageInfo: CommunityProduct["questions"]["pageInfo"],
-  currentAfter: string | null,
-  setAfter: (cursor: string) => void,
-) {
-  const cursor = nextCommunityPageCursor(pageInfo, currentAfter);
-  return cursor ? () => setAfter(cursor) : null;
 }

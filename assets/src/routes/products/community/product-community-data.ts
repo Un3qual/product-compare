@@ -12,7 +12,6 @@ import {
   mutationErrorMessage,
   type MutationGraphQLErrors,
 } from "$relay/mutation-errors";
-import { nextPageCursor } from "$relay/pagination";
 
 type SubmitReviewPayload =
   ProductCommunityOperationsSubmitProductReviewMutation["response"]["submitProductReview"];
@@ -32,9 +31,6 @@ type CommunityMutationErrors = SubmitReviewPayload["errors"];
 type ReviewSummary = NonNullable<
   ProductCommunityOperationsQuery["response"]["product"]
 >["reviewSummary"];
-type CommunityPageInfo = NonNullable<
-  ProductCommunityOperationsQuery["response"]["product"]
->["reviews"]["pageInfo"];
 export type PublishedReviewRowFacts = Pick<
   ProductCommunityItems_review$data,
   "authorLabel" | "rating" | "title" | "verifiedPurchase"
@@ -202,34 +198,6 @@ export function acceptedAnswerAuthorLabel(
   authorLabel: string,
 ) {
   return answerId === acceptedAnswerId ? `Accepted answer · ${authorLabel}` : authorLabel;
-}
-
-export function nextCommunityPageCursor(
-  pageInfo: CommunityPageInfo | null,
-  currentAfter: string | null = null,
-) {
-  return nextPageCursor(pageInfo, currentAfter);
-}
-
-export function appendUniqueCommunityItems<T extends { readonly id: string }>(
-  existing: T[],
-  incoming: readonly T[],
-): T[] {
-  if (incoming.length === 0) {
-    return existing;
-  }
-
-  const seen = new Set(existing.map(({ id }) => id));
-  const appended: T[] = [];
-
-  for (const item of incoming) {
-    if (!seen.has(item.id)) {
-      seen.add(item.id);
-      appended.push(item);
-    }
-  }
-
-  return appended.length ? [...existing, ...appended] : existing;
 }
 
 function normalizedCommunityText(value: unknown) {
