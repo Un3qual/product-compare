@@ -243,14 +243,12 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
     {:error, {:http_error, status, body}}
   end
 
-  defp decode_response(%{status: _status, body: body}, offset, limit, field) do
+  defp decode_response(%{status: _status, body: body}, offset, _limit, field) do
     with {:ok, decoded} <- Jason.decode(body),
          :ok <- reject_graphql_errors(decoded),
-         {:ok, result_set} <- result_set(decoded, field) do
-      records = Map.get(result_set, "resultList", [])
-      count = Map.get(result_set, "count", length(records))
-      total_count = Map.get(result_set, "totalCount", offset + count)
-      effective_limit = Map.get(result_set, "limit", limit)
+         {:ok, result_set} <- result_set(decoded, field),
+         {:ok, records, count, total_count, effective_limit} <-
+           validate_result_set(result_set, field) do
       next_cursor = next_cursor(offset, count, total_count, effective_limit)
 
       {:ok, records, next_cursor}
@@ -273,6 +271,48 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   end
 
   defp result_set(_decoded, field), do: {:error, {:missing_result_set, field}}
+
+  defp validate_result_set(result_set, field) do
+    with {:ok, records} <- list_field(result_set, "resultList", field, :result_list_not_list),
+         {:ok, count} <-
+           non_negative_integer_field(
+             result_set,
+             "count",
+             field,
+             :count_not_non_negative_integer
+           ),
+         {:ok, total_count} <-
+           non_negative_integer_field(
+             result_set,
+             "totalCount",
+             field,
+             :total_count_not_non_negative_integer
+           ),
+         {:ok, limit} <- positive_integer_field(result_set, "limit", field) do
+      {:ok, records, count, total_count, limit}
+    end
+  end
+
+  defp list_field(result_set, key, field, category) do
+    case Map.fetch(result_set, key) do
+      {:ok, value} when is_list(value) -> {:ok, value}
+      _missing_or_invalid -> {:error, {:invalid_result_set, field, category}}
+    end
+  end
+
+  defp non_negative_integer_field(result_set, key, field, category) do
+    case Map.fetch(result_set, key) do
+      {:ok, value} when is_integer(value) and value >= 0 -> {:ok, value}
+      _missing_or_invalid -> {:error, {:invalid_result_set, field, category}}
+    end
+  end
+
+  defp positive_integer_field(result_set, key, field) do
+    case Map.fetch(result_set, key) do
+      {:ok, value} when is_integer(value) and value > 0 -> {:ok, value}
+      _missing_or_invalid -> {:error, {:invalid_result_set, field, :limit_not_positive_integer}}
+    end
+  end
 
   defp next_cursor(offset, count, total_count, limit)
        when count == limit and offset + count < total_count do

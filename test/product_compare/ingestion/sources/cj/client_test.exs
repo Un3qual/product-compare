@@ -216,6 +216,44 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
                )
     end
 
+    test "rejects malformed product and feed result sets with bounded categories" do
+      configure_cj_credentials()
+      valid_result_set = valid_result_set()
+
+      malformed_result_sets = [
+        {Map.put(valid_result_set, "resultList", nil), :result_list_not_list},
+        {Map.put(valid_result_set, "resultList", %{"secret" => "provider-secret-marker"}),
+         :result_list_not_list},
+        {Map.delete(valid_result_set, "resultList"), :result_list_not_list},
+        {Map.put(valid_result_set, "count", "1"), :count_not_non_negative_integer},
+        {Map.put(valid_result_set, "count", 1.5), :count_not_non_negative_integer},
+        {Map.put(valid_result_set, "count", -1), :count_not_non_negative_integer},
+        {Map.delete(valid_result_set, "count"), :count_not_non_negative_integer},
+        {Map.put(valid_result_set, "totalCount", "1"), :total_count_not_non_negative_integer},
+        {Map.put(valid_result_set, "totalCount", -1), :total_count_not_non_negative_integer},
+        {Map.delete(valid_result_set, "totalCount"), :total_count_not_non_negative_integer},
+        {Map.put(valid_result_set, "limit", 0), :limit_not_positive_integer},
+        {Map.put(valid_result_set, "limit", "1"), :limit_not_positive_integer},
+        {Map.delete(valid_result_set, "limit"), :limit_not_positive_integer}
+      ]
+
+      for field <- ["shoppingProducts", "shoppingProductFeeds"],
+          {result_set, category} <- malformed_result_sets do
+        result = fetch_result_set(field, result_set)
+
+        assert result == {:error, {:invalid_result_set, field, category}}
+        refute inspect(result) =~ "provider-secret-marker"
+      end
+    end
+
+    test "accepts valid empty product and feed result lists" do
+      configure_cj_credentials()
+
+      for field <- ["shoppingProducts", "shoppingProductFeeds"] do
+        assert {:ok, [], nil} = fetch_result_set(field, valid_result_set())
+      end
+    end
+
     test "uses Req with the configured request contract and normalizes a JSON response" do
       configure_cj_credentials()
 
@@ -375,6 +413,30 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
   defp configure_cj_credentials do
     System.put_env("CJ_API_TOKEN", "test-token")
     System.put_env("CJ_ACCOUNT_ID", "1234567")
+  end
+
+  defp valid_result_set do
+    %{
+      "count" => 0,
+      "limit" => 25,
+      "totalCount" => 0,
+      "resultList" => []
+    }
+  end
+
+  defp fetch_result_set(field, result_set) do
+    transport = fn _request ->
+      {:ok,
+       %{
+         status: 200,
+         body: Jason.encode!(%{"data" => %{field => result_set}})
+       }}
+    end
+
+    case field do
+      "shoppingProducts" -> Client.fetch_batch(nil, limit: 25, transport: transport)
+      "shoppingProductFeeds" -> Client.fetch_feeds(nil, limit: 25, transport: transport)
+    end
   end
 
   defp req_test_options, do: [plug: {Req.Test, __MODULE__}]

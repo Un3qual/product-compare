@@ -70,19 +70,47 @@ defmodule ProductCompare.Catalog.Evidence do
       }
 
       changeset = ProductMedia.changeset(%ProductMedia{}, attrs)
-      now = DateTime.utc_now()
+
+      conflict_query =
+        from media in ProductMedia,
+          update: [
+            set: [
+              source_artifact_id:
+                fragment(
+                  "CASE WHEN EXCLUDED.observed_at >= ? THEN EXCLUDED.source_artifact_id ELSE ? END",
+                  media.observed_at,
+                  media.source_artifact_id
+                ),
+              role:
+                fragment(
+                  "CASE WHEN EXCLUDED.observed_at >= ? THEN EXCLUDED.role ELSE ? END",
+                  media.observed_at,
+                  media.role
+                ),
+              position:
+                fragment(
+                  "CASE WHEN EXCLUDED.observed_at >= ? THEN EXCLUDED.position ELSE ? END",
+                  media.observed_at,
+                  media.position
+                ),
+              alt_text:
+                fragment(
+                  "CASE WHEN EXCLUDED.observed_at >= ? THEN EXCLUDED.alt_text ELSE ? END",
+                  media.observed_at,
+                  media.alt_text
+                ),
+              observed_at: fragment("GREATEST(EXCLUDED.observed_at, ?)", media.observed_at),
+              updated_at:
+                fragment(
+                  "CASE WHEN EXCLUDED.observed_at >= ? THEN EXCLUDED.updated_at ELSE ? END",
+                  media.observed_at,
+                  media.updated_at
+                )
+            ]
+          ]
 
       case Repo.insert(changeset,
-             on_conflict: [
-               set: [
-                 source_artifact_id: source_artifact_id,
-                 role: Ecto.Changeset.get_field(changeset, :role),
-                 position: attrs.position,
-                 alt_text: attrs.alt_text,
-                 observed_at: observed_at,
-                 updated_at: now
-               ]
-             ],
+             on_conflict: conflict_query,
              conflict_target: [:product_id, :url],
              returning: true
            ) do

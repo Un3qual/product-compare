@@ -45,52 +45,9 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 1. Ingestion Concurrency And Observation Ordering
+### 1. Operator Command Safety And Diagnostics
 
 Status: active
-Lane: Ingestion concurrency and observation ordering
-Plan: `docs/superpowers/plans/2026-08-30-ingestion-concurrency-observation-ordering-implementation-plan.md`
-Batch outcome: concurrent first-sighting merchant resolutions converge without
-orphans, stale evidence cannot replace newer facts, and malformed CJ success
-payloads return bounded errors before enumeration or arithmetic.
-Next action: add a deterministic same-key first-sighting concurrency test with
-a database lock barrier.
-Owned paths:
-
-- `lib/product_compare/ingestion/merchant_identities.ex`
-- `lib/product_compare/catalog/evidence.ex`
-- `lib/product_compare/ingestion/listing_persistence/enrichment.ex`
-- `lib/product_compare/ingestion/sources/cj/client.ex`
-- Focused ingestion tests and deterministic test helper named in the linked plan
-- `docs/work/ingestion-concurrency-observation-ordering.md`
-
-Internal slices:
-
-- Logical-key advisory lock and first-sighting convergence.
-- Timestamp-aware media and category conflict updates.
-- CJ result-set and pagination validation.
-
-Prerequisites:
-
-- Approved design and existing source identity uniqueness.
-- PostgreSQL sandbox connections available for deterministic lock tests.
-
-Verification:
-
-- Focused ingestion suites listed in the plan under `MIX_TEST_PARTITION=quality_ingestion`.
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-
-Exit condition: concurrency, stale-observation, malformed-result, and existing
-ingestion behavior tests pass with no global lock, unlocked read/write decision,
-or provider-data-bearing error category.
-
-## Ready Work
-
-### 2. Operator Command Safety And Diagnostics
-
-Status: ready
 Lane: Operator command safety and diagnostics
 Plan: `docs/superpowers/plans/2026-08-30-operator-command-safety-diagnostics-implementation-plan.md`
 Batch outcome: dry-run and CJ commands validate every argument before startup,
@@ -127,7 +84,9 @@ Exit condition: invalid commands perform no application/provider work, valid
 commands retain output and return contracts, adversarial secret markers remain
 absent, and every focused command suite passes.
 
-### 3. Frontend Correctness And Simplification
+## Ready Work
+
+### 2. Frontend Correctness And Simplification
 
 Status: ready
 Lane: Frontend correctness and simplification
@@ -170,7 +129,7 @@ Exit condition: manual append effects and unused type branches are absent from
 the named surfaces, real input/generated boundaries remain, generated artifacts
 are current, and focused/full frontend/browser gates pass.
 
-### 4. Deterministic Tooling And Dependency Health
+### 3. Deterministic Tooling And Dependency Health
 
 Status: ready
 Lane: Deterministic tooling and dependency health
@@ -212,6 +171,18 @@ Exit condition: source/setup/test/toolchain contracts are deterministic,
 compatible dependency fixes are locked and audited, full isolated backend and
 frontend gates plus Playwright pass, and any no-compatible-fix blocker is
 recorded exactly.
+
+## Ready Floor Exception
+
+Reason: After claiming the operator outcome, the approved remediation contains
+only two other unclaimed, independently shippable outcomes; no third
+source-backed batch exists without a fresh final-state audit.
+Rejected split: Splitting frontend pagination, state ownership, select/query
+contracts, or tooling setup, scheduler, helper, and dependency work into
+helper-sized rows would violate the shared acceptance boundaries.
+Replenishment action: Finish the approved remediation outcomes, then audit the
+final code, tests, and architecture for additional independently shippable work
+before starting another dispatch cycle.
 
 ## Needs Decision Work
 

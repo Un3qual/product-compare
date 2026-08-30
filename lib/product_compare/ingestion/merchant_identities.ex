@@ -14,24 +14,8 @@ defmodule ProductCompare.Ingestion.MerchantIdentities do
   @spec resolve(Source.t(), NormalizedListing.t()) ::
           {:ok, MerchantSourceIdentity.t()} | {:error, term()}
   def resolve(%Source{id: source_id}, %NormalizedListing{} = listing) do
-    case get_identity(source_id, listing.merchant_identifier) do
-      nil -> create_identity(source_id, listing)
-      %MerchantSourceIdentity{} = identity -> update_identity(identity, listing)
-    end
-  end
-
-  @spec resolve_in_transaction(integer(), NormalizedListing.t()) ::
-          {:ok, MerchantSourceIdentity.t()} | {:error, term()}
-  def resolve_in_transaction(source_id, %NormalizedListing{} = listing) do
-    case get_identity(source_id, listing.merchant_identifier) do
-      nil -> create_or_fetch_identity(source_id, listing)
-      %MerchantSourceIdentity{} = identity -> update_or_fetch_identity(identity, listing)
-    end
-  end
-
-  defp create_identity(source_id, listing) do
     Repo.transaction(fn ->
-      case create_or_fetch_identity(source_id, listing) do
+      case resolve_in_transaction(source_id, listing) do
         {:ok, identity} -> identity
         {:error, reason} -> Repo.rollback(reason)
       end
@@ -39,6 +23,21 @@ defmodule ProductCompare.Ingestion.MerchantIdentities do
     |> case do
       {:ok, %MerchantSourceIdentity{} = identity} -> {:ok, identity}
       {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @spec resolve_in_transaction(integer(), NormalizedListing.t()) ::
+          {:ok, MerchantSourceIdentity.t()} | {:error, term()}
+  def resolve_in_transaction(source_id, %NormalizedListing{} = listing) do
+    unless Repo.in_transaction?() do
+      raise ArgumentError, "resolve_in_transaction/2 requires a database transaction"
+    end
+
+    lock_identity_key!(source_id, listing.merchant_identifier)
+
+    case get_identity(source_id, listing.merchant_identifier) do
+      nil -> create_or_fetch_identity(source_id, listing)
+      %MerchantSourceIdentity{} = identity -> update_or_fetch_identity(identity, listing)
     end
   end
 
@@ -65,19 +64,6 @@ defmodule ProductCompare.Ingestion.MerchantIdentities do
 
       {:error, reason} ->
         {:error, reason}
-    end
-  end
-
-  defp update_identity(identity, listing) do
-    Repo.transaction(fn ->
-      case update_or_fetch_identity(identity, listing) do
-        {:ok, updated_identity} -> updated_identity
-        {:error, reason} -> Repo.rollback(reason)
-      end
-    end)
-    |> case do
-      {:ok, %MerchantSourceIdentity{} = updated_identity} -> {:ok, updated_identity}
-      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -179,6 +165,14 @@ defmodule ProductCompare.Ingestion.MerchantIdentities do
             identity.merchant_identifier == ^merchant_identifier,
         preload: [:merchant]
     )
+  end
+
+  defp lock_identity_key!(source_id, merchant_identifier) do
+    Repo.query!("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+      "#{source_id}:#{merchant_identifier}"
+    ])
+
+    :ok
   end
 
   defp upsert_merchant(listing), do: Pricing.upsert_merchant(merchant_attrs(listing))

@@ -157,7 +157,16 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Enrichment do
     conflict_query =
       from candidate in CategoryMappingCandidate,
         update: [
-          set: [display_path: ^display_path, last_seen_at: ^observed_at, updated_at: ^now],
+          set: [
+            display_path:
+              fragment(
+                "CASE WHEN EXCLUDED.last_seen_at >= ? THEN EXCLUDED.display_path ELSE ? END",
+                candidate.last_seen_at,
+                candidate.display_path
+              ),
+            last_seen_at: fragment("GREATEST(EXCLUDED.last_seen_at, ?)", candidate.last_seen_at),
+            updated_at: ^now
+          ],
           inc: [observation_count: 1]
         ]
 

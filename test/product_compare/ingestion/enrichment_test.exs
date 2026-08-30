@@ -21,6 +21,7 @@ defmodule ProductCompare.Ingestion.EnrichmentTest do
   alias ProductCompareSchemas.Specs.ClaimEvidence
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
+  alias ProductCompareSchemas.Specs.SourceArtifact
   alias ProductCompareSchemas.Taxonomy.Taxon
 
   setup do
@@ -122,6 +123,94 @@ defmodule ProductCompare.Ingestion.EnrichmentTest do
     assert candidate.display_path == "Footwear > Running shoes"
     assert candidate.normalized_path == "footwear > running shoes"
     assert candidate.observation_count == 2
+  end
+
+  test "older media observations cannot replace newer media facts" do
+    source = source_fixture()
+    product = SpecsFixtures.product_fixture()
+    current_at = ~U[2026-08-30 12:00:00Z]
+    stale_at = ~U[2026-08-29 12:00:00Z]
+    current_artifact = source_artifact_fixture(source, current_at, "current")
+    stale_artifact = source_artifact_fixture(source, stale_at, "stale")
+    media_url = "https://cdn.example/products/ordered-media.jpg"
+
+    assert %{persisted: 1, rejected: 0} =
+             Catalog.upsert_product_media(
+               product,
+               current_artifact.id,
+               [
+                 %MediaObservation{
+                   url: media_url,
+                   role: :primary,
+                   position: 1,
+                   alt_text: "Current product image"
+                 }
+               ],
+               current_at
+             )
+
+    assert %{persisted: 1, rejected: 0} =
+             Catalog.upsert_product_media(
+               product,
+               stale_artifact.id,
+               [
+                 %MediaObservation{
+                   url: media_url,
+                   role: :gallery,
+                   position: 9,
+                   alt_text: "Stale product image"
+                 }
+               ],
+               stale_at
+             )
+
+    assert %ProductMedia{
+             source_artifact_id: source_artifact_id,
+             role: :primary,
+             position: 1,
+             alt_text: "Current product image",
+             observed_at: observed_at
+           } = Repo.get_by!(ProductMedia, product_id: product.id, url: media_url)
+
+    assert source_artifact_id == current_artifact.id
+    assert DateTime.compare(observed_at, current_at) == :eq
+  end
+
+  test "older category observations increment arrivals without regressing display facts" do
+    source = source_fixture()
+    product = SpecsFixtures.product_fixture()
+    suffix = Ecto.UUID.generate()
+    current_at = ~U[2026-08-30 12:00:00Z]
+    stale_at = ~U[2026-08-29 12:00:00Z]
+    current_path = ["Unmapped #{suffix}", "Headphones"]
+    stale_path = [" unmapped #{suffix} ", "HEADPHONES"]
+
+    assert {:ok, {:ok, _product, %{status: :candidate}}} =
+             Repo.transaction(fn ->
+               Enrichment.enrich_product(
+                 product,
+                 %{source_id: source.id},
+                 category_listing(current_path, current_at)
+               )
+             end)
+
+    assert {:ok, {:ok, _product, %{status: :candidate}}} =
+             Repo.transaction(fn ->
+               Enrichment.enrich_product(
+                 product,
+                 %{source_id: source.id},
+                 category_listing(stale_path, stale_at)
+               )
+             end)
+
+    assert %CategoryMappingCandidate{
+             display_path: display_path,
+             observation_count: 2,
+             last_seen_at: last_seen_at
+           } = Repo.get_by!(CategoryMappingCandidate, source_id: source.id)
+
+    assert display_path == Enum.join(current_path, " > ")
+    assert DateTime.compare(last_seen_at, current_at) == :eq
   end
 
   test "product attribute claims reject fingerprints that are not SHA-256 digests" do
@@ -383,6 +472,27 @@ defmodule ProductCompare.Ingestion.EnrichmentTest do
       })
 
     attribute
+  end
+
+  defp source_artifact_fixture(source, fetched_at, label) do
+    %SourceArtifact{}
+    |> SourceArtifact.changeset(%{
+      source_id: source.id,
+      fetched_at: fetched_at,
+      content_hash: :crypto.hash(:sha256, "#{label}-#{Ecto.UUID.generate()}"),
+      raw_json: %{},
+      url: "https://example.invalid/#{label}-artifact"
+    })
+    |> Repo.insert!()
+  end
+
+  defp category_listing(path, observed_at) do
+    %{
+      description: nil,
+      manufacturer_category_path: path,
+      model_number: nil,
+      observed_at: observed_at
+    }
   end
 
   defp listing(overrides) do
