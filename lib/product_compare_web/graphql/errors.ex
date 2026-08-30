@@ -83,7 +83,7 @@ defmodule ProductCompareWeb.GraphQL.Errors do
     changeset
     |> Ecto.Changeset.traverse_errors(&interpolate_error/1)
     |> Enum.flat_map(fn {field, messages} ->
-      Enum.map(messages, &mutation_error("INVALID_ARGUMENT", &1, field))
+      Enum.map(messages, &camelized_mutation_error("INVALID_ARGUMENT", &1, field))
     end)
   end
 

@@ -29,6 +29,10 @@ defmodule ProductCompareSchemas.Discussions.CommunityReport do
     |> unique_constraint([:reporter_id, :review_id])
     |> unique_constraint([:reporter_id, :thread_id])
     |> unique_constraint([:reporter_id, :post_id])
+    |> foreign_key_constraint(:reporter_id)
+    |> foreign_key_constraint(:review_id)
+    |> foreign_key_constraint(:thread_id)
+    |> foreign_key_constraint(:post_id)
   end
 
   defp validate_target(changeset) do

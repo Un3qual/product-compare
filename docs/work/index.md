@@ -45,57 +45,9 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 1. Runtime And Database Trust Boundaries
+### 1. Ingestion Concurrency And Observation Ordering
 
 Status: active
-Lane: Runtime and database trust boundaries
-Plan: `docs/superpowers/plans/2026-08-30-runtime-database-trust-boundaries-implementation-plan.md`
-Batch outcome: configured Phoenix authority, finite commerce facts, mapped
-relationships, camelCase mutation fields, and community storage checks fail
-closed at both application and PostgreSQL boundaries.
-Next action: write the forged-host, host-only-cookie, and production-host RED
-tests before changing runtime behavior.
-Owned paths:
-
-- `config/runtime.exs`
-- `lib/product_compare_web/{endpoint,runtime_config}.ex`
-- `lib/product_compare_web/plugs/require_same_origin.ex`
-- `lib/product_compare_web/graphql/errors.ex`
-- Named catalog, taxonomy, discussion, and commerce-attribution schemas in the linked plan
-- `priv/repo/migrations/20260830120000_enforce_commerce_numeric_integrity.exs`
-- Focused tests named in the linked plan
-- `docs/work/runtime-database-trust-boundaries.md`
-
-Internal slices:
-
-- Configured same-origin and host-only session authority.
-- Finite commerce changesets and PostgreSQL checks.
-- Foreign-key mappings and camelCase mutation fields.
-- Direct community write-storage evidence.
-
-Prerequisites:
-
-- Approved 2026-08-30 whole-project remediation design.
-- Unique `MIX_TEST_PARTITION` for database-backed verification.
-- Existing Phoenix session, GraphQL auth, and database constraint contracts remain authoritative.
-
-Verification:
-
-- Focused tests listed in the linked plan under `MIX_TEST_PARTITION=quality_runtime`.
-- `mix format --check-formatted`
-- `mix typecheck`
-- `git diff --check`
-
-Exit condition: forged request hosts cannot redefine origin trust, production
-host/cookie configuration fails safely, numeric and relationship failures are
-mapped at both layers, community constraints have direct evidence, and the
-focused outcome suite passes.
-
-## Ready Work
-
-### 2. Ingestion Concurrency And Observation Ordering
-
-Status: ready
 Lane: Ingestion concurrency and observation ordering
 Plan: `docs/superpowers/plans/2026-08-30-ingestion-concurrency-observation-ordering-implementation-plan.md`
 Batch outcome: concurrent first-sighting merchant resolutions converge without
@@ -134,7 +86,9 @@ Exit condition: concurrency, stale-observation, malformed-result, and existing
 ingestion behavior tests pass with no global lock, unlocked read/write decision,
 or provider-data-bearing error category.
 
-### 3. Operator Command Safety And Diagnostics
+## Ready Work
+
+### 2. Operator Command Safety And Diagnostics
 
 Status: ready
 Lane: Operator command safety and diagnostics
@@ -173,7 +127,7 @@ Exit condition: invalid commands perform no application/provider work, valid
 commands retain output and return contracts, adversarial secret markers remain
 absent, and every focused command suite passes.
 
-### 4. Frontend Correctness And Simplification
+### 3. Frontend Correctness And Simplification
 
 Status: ready
 Lane: Frontend correctness and simplification
@@ -216,7 +170,7 @@ Exit condition: manual append effects and unused type branches are absent from
 the named surfaces, real input/generated boundaries remain, generated artifacts
 are current, and focused/full frontend/browser gates pass.
 
-### 5. Deterministic Tooling And Dependency Health
+### 4. Deterministic Tooling And Dependency Health
 
 Status: ready
 Lane: Deterministic tooling and dependency health

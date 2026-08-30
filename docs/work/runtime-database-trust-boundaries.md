@@ -2,12 +2,14 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P0
 - Plan: `docs/superpowers/plans/2026-08-30-runtime-database-trust-boundaries-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-30-whole-project-quality-and-complexity-remediation-design.md`
+- Last verified: 2026-08-30 against the focused runtime, commerce,
+  relationship-error, GraphQL-error, and community-storage suites.
 
-## Target Outcome
+## Batch Outcome
 
 Configured Phoenix authority, finite commerce facts, mapped relationships, and
 community storage constraints fail closed at both the application and database
@@ -48,5 +50,28 @@ race-prone preflight query.
 
 ## Completion Evidence
 
-Pending implementation. Record focused RED/GREEN commands, migration review,
-typecheck/format evidence, and the milestone commit here.
+- Same-origin enforcement now derives canonical scheme, host, and effective
+  port from configured endpoint authority. A forged request `Host` plus
+  matching `Origin` is rejected, while exact configured trusted origins remain
+  supported.
+- Production requires a valid explicit `PHX_HOST`. Session cookies are
+  host-only by default and accept an explicit cookie domain only when it is the
+  configured host or one of its non-public parent domains.
+- Commerce conversion and purchase-price changesets reject `NaN` and both
+  infinities before casting. The finite-aware PostgreSQL checks reject direct
+  bypass writes while preserving nullable values and finite signed deltas.
+- Product, product-taxon, and community-report changesets map every cast
+  foreign key without relationship preflight queries. GraphQL changeset error
+  fields now reuse the existing camelCase normalizer.
+- Community write receipt and window tests now prove key shape, digest length,
+  non-negative counts, and UTC-hour alignment through both changesets and
+  named PostgreSQL checks; the existing schemas required no behavior change.
+- The complete focused outcome command passed 149 tests with zero failures on
+  `MIX_TEST_PARTITION=quality_runtime`.
+- `mix typecheck`, `mix format --check-formatted`, and `git diff --check`
+  passed.
+
+## Remaining Work
+
+None in this lane. Ingestion concurrency and observation ordering is the next
+active row; three independently shippable outcomes remain ready.

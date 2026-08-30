@@ -31,5 +31,7 @@ defmodule ProductCompareSchemas.Catalog.Product do
     |> check_constraint(:slug, name: :products_slug_format_check)
     |> unique_constraint(:slug)
     |> unique_constraint(:slug, name: :product_slug_namespace_uq)
+    |> foreign_key_constraint(:brand_id)
+    |> foreign_key_constraint(:primary_type_taxon_id)
   end
 end

@@ -2,6 +2,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.PurchasePriceFact do
   use ProductCompareSchemas.Schema, :relational
 
   alias ProductCompareSchemas.Reference.CurrencyCode
+  alias ProductCompareSchemas.Schema
 
   @type t :: %__MODULE__{}
 
@@ -25,6 +26,17 @@ defmodule ProductCompareSchemas.CommerceAttribution.PurchasePriceFact do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(price_fact, attrs) do
+    attrs =
+      Schema.normalize_non_finite_decimals(attrs, [
+        :listed_price_at_click,
+        :reported_paid_price,
+        :shipping_amount,
+        :tax_amount,
+        :discount_amount,
+        :observed_price,
+        :price_delta
+      ])
+
     price_fact
     |> cast(attrs, [
       :conversion_id,
@@ -51,5 +63,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.PurchasePriceFact do
     |> foreign_key_constraint(:price_observation_id)
     |> foreign_key_constraint(:currency, name: :purchase_price_facts_currency_id_fkey)
     |> check_constraint(:reported_paid_price, name: :purchase_price_facts_amounts_non_negative)
+    |> check_constraint(:price_delta, name: :purchase_price_facts_price_delta_finite)
   end
 end

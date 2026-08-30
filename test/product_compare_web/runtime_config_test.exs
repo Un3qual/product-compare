@@ -49,20 +49,54 @@ defmodule ProductCompareWeb.RuntimeConfigTest do
              "https://shop.example.net"
   end
 
-  test "endpoint_host/1 falls back to example.com for nil" do
-    assert RuntimeConfig.endpoint_host(nil) == "example.com"
+  test "endpoint_host!/1 requires an explicit production host" do
+    assert_raise ArgumentError, ~r/PHX_HOST/, fn ->
+      RuntimeConfig.endpoint_host!(nil)
+    end
+
+    assert_raise ArgumentError, ~r/PHX_HOST/, fn ->
+      RuntimeConfig.endpoint_host!("  ")
+    end
   end
 
-  test "endpoint_host/1 preserves plain hosts" do
-    assert RuntimeConfig.endpoint_host("example.com") == "example.com"
+  test "endpoint_host!/1 preserves plain hosts" do
+    assert RuntimeConfig.endpoint_host!("example.com") == "example.com"
   end
 
-  test "endpoint_host/1 strips ports from host-only inputs" do
-    assert RuntimeConfig.endpoint_host("api.example.com:4000") == "api.example.com"
+  test "endpoint_host!/1 strips ports from host-only inputs" do
+    assert RuntimeConfig.endpoint_host!("api.example.com:4000") == "api.example.com"
   end
 
-  test "endpoint_host/1 normalizes full PHX_HOST URLs" do
-    assert RuntimeConfig.endpoint_host(" https://api.example.com:4000/path ") == "api.example.com"
-    assert RuntimeConfig.endpoint_host("  ") == "example.com"
+  test "endpoint_host!/1 normalizes full PHX_HOST URLs" do
+    assert RuntimeConfig.endpoint_host!(" https://api.example.com:4000/path ") ==
+             "api.example.com"
+  end
+
+  test "endpoint_host!/1 rejects values without a valid host" do
+    for invalid <- ["https://", "/relative", ".example.com", "example.com/path"] do
+      assert_raise ArgumentError, ~r/PHX_HOST/, fn ->
+        RuntimeConfig.endpoint_host!(invalid)
+      end
+    end
+  end
+
+  test "session_cookie_domain/2 keeps cookies host-only without an explicit domain" do
+    assert RuntimeConfig.session_cookie_domain("api.example.com", nil) == nil
+  end
+
+  test "session_cookie_domain/2 accepts an explicit configured host or parent domain" do
+    assert RuntimeConfig.session_cookie_domain("api.example.com", "api.example.com") ==
+             "api.example.com"
+
+    assert RuntimeConfig.session_cookie_domain("api.example.com", ".example.com") ==
+             ".example.com"
+  end
+
+  test "session_cookie_domain/2 rejects unrelated and public-suffix-like domains" do
+    for invalid <- ["", ".com", ".example.net", ".api.example.com.evil"] do
+      assert_raise ArgumentError, ~r/SESSION_COOKIE_DOMAIN/, fn ->
+        RuntimeConfig.session_cookie_domain("api.example.com", invalid)
+      end
+    end
   end
 end

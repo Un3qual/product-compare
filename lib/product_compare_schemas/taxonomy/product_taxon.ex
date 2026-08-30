@@ -33,5 +33,8 @@ defmodule ProductCompareSchemas.Taxonomy.ProductTaxon do
     |> validate_number(:confidence, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
     |> check_constraint(:confidence, name: :product_taxons_confidence_range)
     |> unique_constraint([:product_id, :taxon_id], name: :product_taxons_product_taxon_uq)
+    |> foreign_key_constraint(:product_id)
+    |> foreign_key_constraint(:taxon_id)
+    |> foreign_key_constraint(:created_by)
   end
 end

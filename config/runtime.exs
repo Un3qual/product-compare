@@ -121,19 +121,15 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  host = ProductCompareWeb.RuntimeConfig.endpoint_host(phx_host)
+  host = ProductCompareWeb.RuntimeConfig.endpoint_host!(phx_host)
 
-  session_cookie_domain =
-    case System.get_env("SESSION_COOKIE_DOMAIN") do
-      nil ->
-        if String.starts_with?(host, "api.") do
-          "." <> String.trim_leading(host, "api.")
-        else
-          "." <> host
-        end
-
-      value ->
-        value
+  session_options =
+    case ProductCompareWeb.RuntimeConfig.session_cookie_domain(
+           host,
+           System.get_env("SESSION_COOKIE_DOMAIN")
+         ) do
+      nil -> [secure: true]
+      domain -> [domain: domain, secure: true]
     end
 
   config :product_compare, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
@@ -144,7 +140,7 @@ if config_env() == :prod do
 
   config :product_compare, ProductCompareWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
-    session_options: [domain: session_cookie_domain, secure: true],
+    session_options: session_options,
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.

@@ -2,6 +2,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
   use ProductCompareSchemas.Schema, :relational
 
   alias ProductCompareSchemas.Reference.CurrencyCode
+  alias ProductCompareSchemas.Schema
 
   @statuses [:pending, :approved, :reversed, :paid]
   @attribution_confidences [:high, :low, :unmatched]
@@ -41,6 +42,13 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(conversion, attrs) do
+    attrs =
+      Schema.normalize_non_finite_decimals(attrs, [
+        :order_amount,
+        :commission_amount,
+        :commission_rate
+      ])
+
     conversion
     |> cast(attrs, [
       :source_network,
