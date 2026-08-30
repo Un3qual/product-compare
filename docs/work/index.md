@@ -45,24 +45,219 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-No work is currently claimed.
+### 1. Runtime And Database Trust Boundaries
+
+Status: active
+Lane: Runtime and database trust boundaries
+Plan: `docs/superpowers/plans/2026-08-30-runtime-database-trust-boundaries-implementation-plan.md`
+Batch outcome: configured Phoenix authority, finite commerce facts, mapped
+relationships, camelCase mutation fields, and community storage checks fail
+closed at both application and PostgreSQL boundaries.
+Next action: write the forged-host, host-only-cookie, and production-host RED
+tests before changing runtime behavior.
+Owned paths:
+
+- `config/runtime.exs`
+- `lib/product_compare_web/{endpoint,runtime_config}.ex`
+- `lib/product_compare_web/plugs/require_same_origin.ex`
+- `lib/product_compare_web/graphql/errors.ex`
+- Named catalog, taxonomy, discussion, and commerce-attribution schemas in the linked plan
+- `priv/repo/migrations/20260830120000_enforce_commerce_numeric_integrity.exs`
+- Focused tests named in the linked plan
+- `docs/work/runtime-database-trust-boundaries.md`
+
+Internal slices:
+
+- Configured same-origin and host-only session authority.
+- Finite commerce changesets and PostgreSQL checks.
+- Foreign-key mappings and camelCase mutation fields.
+- Direct community write-storage evidence.
+
+Prerequisites:
+
+- Approved 2026-08-30 whole-project remediation design.
+- Unique `MIX_TEST_PARTITION` for database-backed verification.
+- Existing Phoenix session, GraphQL auth, and database constraint contracts remain authoritative.
+
+Verification:
+
+- Focused tests listed in the linked plan under `MIX_TEST_PARTITION=quality_runtime`.
+- `mix format --check-formatted`
+- `mix typecheck`
+- `git diff --check`
+
+Exit condition: forged request hosts cannot redefine origin trust, production
+host/cookie configuration fails safely, numeric and relationship failures are
+mapped at both layers, community constraints have direct evidence, and the
+focused outcome suite passes.
 
 ## Ready Work
 
-## Ready Floor Exception
+### 2. Ingestion Concurrency And Observation Ordering
 
-Reason: The 2026-08-15 closeout curation found the Product Experience And Code
-Simplification program complete. Current product behavior, full repository
-gates, active lane evidence, and the catalog expose no source-backed,
-independently reviewable successor; historical and superseded entries are not
-live candidates.
-Rejected split: Reopening completed generated-type, route-projection,
-trusted-ID, or formatter work as file- or test-sized rows would manufacture
-cleanup milestones with no new product invariant or reviewer decision.
-Replenishment action: At the next coordinator dispatch, re-check current
-product behavior, failing or coverage gaps, architecture, and lane evidence;
-write and validate every coherent successor found, then remove this exception
-only when at least three complete ready outcomes exist.
+Status: ready
+Lane: Ingestion concurrency and observation ordering
+Plan: `docs/superpowers/plans/2026-08-30-ingestion-concurrency-observation-ordering-implementation-plan.md`
+Batch outcome: concurrent first-sighting merchant resolutions converge without
+orphans, stale evidence cannot replace newer facts, and malformed CJ success
+payloads return bounded errors before enumeration or arithmetic.
+Next action: add a deterministic same-key first-sighting concurrency test with
+a database lock barrier.
+Owned paths:
+
+- `lib/product_compare/ingestion/merchant_identities.ex`
+- `lib/product_compare/catalog/evidence.ex`
+- `lib/product_compare/ingestion/listing_persistence/enrichment.ex`
+- `lib/product_compare/ingestion/sources/cj/client.ex`
+- Focused ingestion tests and deterministic test helper named in the linked plan
+- `docs/work/ingestion-concurrency-observation-ordering.md`
+
+Internal slices:
+
+- Logical-key advisory lock and first-sighting convergence.
+- Timestamp-aware media and category conflict updates.
+- CJ result-set and pagination validation.
+
+Prerequisites:
+
+- Approved design and existing source identity uniqueness.
+- PostgreSQL sandbox connections available for deterministic lock tests.
+
+Verification:
+
+- Focused ingestion suites listed in the plan under `MIX_TEST_PARTITION=quality_ingestion`.
+- `mix format --check-formatted`
+- `mix typecheck`
+- `git diff --check`
+
+Exit condition: concurrency, stale-observation, malformed-result, and existing
+ingestion behavior tests pass with no global lock, unlocked read/write decision,
+or provider-data-bearing error category.
+
+### 3. Operator Command Safety And Diagnostics
+
+Status: ready
+Lane: Operator command safety and diagnostics
+Plan: `docs/superpowers/plans/2026-08-30-operator-command-safety-diagnostics-implementation-plan.md`
+Batch outcome: dry-run and CJ commands validate every argument before startup,
+use repo-only services when sufficient, and expose useful categories and safe
+stacktrace locations without raw provider or credential data.
+Next action: add duplicate, positional, malformed, and range-error RED cases to
+CJ feed and credential task tests.
+Owned paths:
+
+- Named Mix tasks and support modules in the linked plan
+- `lib/product_compare/ingestion/cj_failure_diagnostics.ex`
+- Focused task tests named in the linked plan
+- `docs/work/operator-command-safety-diagnostics.md`
+
+Internal slices:
+
+- Strict duplicate/range-aware CJ CLI parsing.
+- Validation-first repo-only backfill dry run.
+- Shared sanitized CJ failure diagnostics.
+
+Prerequisites:
+
+- Approved design.
+- Existing `CliOptions`, `RepoOnlyStartup`, and CJ runner sanitization contracts.
+
+Verification:
+
+- Focused Mix task suites listed in the plan under `MIX_TEST_PARTITION=quality_operator` where database-backed.
+- `mix format --check-formatted`
+- `mix typecheck`
+- `git diff --check`
+
+Exit condition: invalid commands perform no application/provider work, valid
+commands retain output and return contracts, adversarial secret markers remain
+absent, and every focused command suite passes.
+
+### 4. Frontend Correctness And Simplification
+
+Status: ready
+Lane: Frontend correctness and simplification
+Plan: `docs/superpowers/plans/2026-08-30-frontend-correctness-simplification-implementation-plan.md`
+Batch outcome: product-detail recovery is structurally safe, Relay owns every
+in-scope connection, affiliate mutation state lives with its submitting step,
+and select/query descriptor APIs retain only used behavior.
+Next action: add product-detail loader cases that reject unrelated GraphQL
+partials and malformed SEO projections.
+Owned paths:
+
+- `assets/src/routes/products/{ProductDetailRoute.tsx,community/**}`
+- `assets/src/routes/compare/{picker/**,sharing/**}`
+- `assets/src/routes/affiliate/setup/**`
+- `assets/src/ui/primitives/Select.tsx`
+- `assets/src/relay/route-preload.ts`
+- Matching generated Relay artifacts and focused tests named in the plan
+- `docs/work/frontend-correctness-simplification.md`
+
+Internal slices:
+
+- Safe product-detail partial recovery.
+- Community and compare Relay pagination ownership.
+- Step-local affiliate mutations.
+- Single-select and compact route-descriptor contracts.
+
+Prerequisites:
+
+- Approved design.
+- Current generated Relay schema/artifacts and full frontend baseline pass.
+
+Verification:
+
+- Focused Vitest suites listed in the plan.
+- `cd assets && pnpm run check`
+- Targeted Playwright product-experience flow on an isolated port.
+- `git diff --check`
+
+Exit condition: manual append effects and unused type branches are absent from
+the named surfaces, real input/generated boundaries remain, generated artifacts
+are current, and focused/full frontend/browser gates pass.
+
+### 5. Deterministic Tooling And Dependency Health
+
+Status: ready
+Lane: Deterministic tooling and dependency health
+Plan: `docs/superpowers/plans/2026-08-30-deterministic-tooling-dependency-health-implementation-plan.md`
+Batch outcome: strict type coverage includes E2E source, Phoenix starts the
+complete dev stack, scheduler/database tests are deterministic, toolchain pins
+match, and compatible dependencies include available security fixes.
+Next action: include `assets/tests/e2e` in the main TypeScript project and
+capture every newly exposed diagnostic before fixing it.
+Owned paths:
+
+- Frontend, Mix, config, test helper, toolchain, documentation, and lock files named in the linked plan
+- `docs/work/deterministic-tooling-dependency-health.md`
+
+Internal slices:
+
+- E2E TypeScript coverage.
+- Frozen setup and Phoenix-owned Vite watcher.
+- Scheduler capture and bounded database polling.
+- Exact mise/package pin comparison.
+- Compatible dependency security refresh.
+
+Prerequisites:
+
+- Approved design.
+- Current mise/pnpm/Hex lockfiles and live advisory evidence.
+- Unique final test partition and isolated Playwright ports.
+
+Verification:
+
+- Focused TypeScript, scheduler, database-helper, and toolchain tests in the plan.
+- `MIX_TEST_PARTITION=quality_tooling mix ci`
+- `mix hex.audit`
+- `cd assets && pnpm audit --prod`
+- Full Playwright suite on an isolated port.
+- `git diff --check`
+
+Exit condition: source/setup/test/toolchain contracts are deterministic,
+compatible dependency fixes are locked and audited, full isolated backend and
+frontend gates plus Playwright pass, and any no-compatible-fix blocker is
+recorded exactly.
 
 ## Needs Decision Work
 
