@@ -227,10 +227,10 @@ export function ConversionIngestionSettings({
 
 export function RunNowControl({
   ingestion,
-  onOverviewRefresh,
+  onQueued,
 }: {
   ingestion: ConversionIngestionSettings_ingestion$key;
-  onOverviewRefresh: () => void;
+  onQueued: () => void;
 }) {
   const data = useFragment(settingsFragment, ingestion);
   const [commitRunNow] = useMutation<RunCJCommissionIngestionNowMutation>(
@@ -255,7 +255,7 @@ export function RunNowControl({
         setError(outcome.message);
         return;
       }
-      onOverviewRefresh();
+      onQueued();
     } catch {
       setError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {

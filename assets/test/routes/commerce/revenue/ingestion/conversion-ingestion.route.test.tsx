@@ -6,7 +6,7 @@ import {
   usePreloadedQuery,
   useRefetchableFragment,
 } from "react-relay";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, assert, expect, test, vi } from "vitest";
 import type { ConversionIngestionSettings_ingestion$data } from "../../../../../src/__generated__/ConversionIngestionSettings_ingestion.graphql";
 import type { ConversionIngestionStatus_query$data } from "../../../../../src/__generated__/ConversionIngestionStatus_query.graphql";
 import { useRoutePreloadedQuery } from "../../../../../src/relay/route-preload";
@@ -270,13 +270,17 @@ test("failure disclosures identify and control their own run details", async () 
     name: /Show failure details for run started/,
   });
   const controlledIds = disclosures.map((button) => button.getAttribute("aria-controls"));
+  const firstControlledId = controlledIds[0];
+  const firstDisclosure = disclosures[0];
 
   expect(controlledIds.every(Boolean)).toBe(true);
   expect(new Set(controlledIds).size).toBe(2);
-  expect(document.getElementById(controlledIds[0]!)).not.toBeVisible();
+  assert(firstControlledId);
+  assert(firstDisclosure);
+  expect(document.getElementById(firstControlledId)).not.toBeVisible();
 
-  fireEvent.click(disclosures[0]!);
-  expect(document.getElementById(controlledIds[0]!)).toHaveTextContent(
+  fireEvent.click(firstDisclosure);
+  expect(document.getElementById(firstControlledId)).toHaveTextContent(
     "Provider timed out after the bounded request window.",
   );
 });
@@ -448,7 +452,7 @@ test("run now is credentials-gated and deduplicates while its mutation is pendin
   expect(enabledRunNow).toBeDisabled();
 });
 
-test("run now refreshes only the overview after success and reports a sanitized payload error", async () => {
+test("run now refreshes the overview and history after success and reports a sanitized payload error", async () => {
   renderConversionIngestionRoute();
 
   fireEvent.click(screen.getByRole("button", { name: "Run now" }));
@@ -462,7 +466,7 @@ test("run now refreshes only the overview after success and reports a sanitized 
   await waitFor(() =>
     expect(refetchMock).toHaveBeenCalledWith({}, { fetchPolicy: "network-only" }),
   );
-  expect(revalidateMock).not.toHaveBeenCalled();
+  expect(revalidateMock).toHaveBeenCalledTimes(1);
 
   fireEvent.click(screen.getByRole("button", { name: "Run now" }));
   await waitFor(() => expect(commitMutationMock).toHaveBeenCalledTimes(2));
@@ -474,7 +478,7 @@ test("run now refreshes only the overview after success and reports a sanitized 
   });
 
   expect(await screen.findByRole("alert")).toHaveTextContent("A run is already queued.");
-  expect(revalidateMock).not.toHaveBeenCalled();
+  expect(revalidateMock).toHaveBeenCalledTimes(1);
 });
 
 test("disabled schedules cannot be activated when credentials are missing", () => {

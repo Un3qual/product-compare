@@ -133,12 +133,16 @@ function ConversionIngestionPanel({
   const refreshOverview = useCallback(() => {
     refetchOverview({}, { fetchPolicy: "network-only" });
   }, [refetchOverview]);
+  const refreshAfterRunQueued = useCallback(() => {
+    refreshOverview();
+    revalidate();
+  }, [refreshOverview, revalidate]);
   const reconcileRunningHistory = useCallback(() => {
     if (!activityIsPresent) revalidate();
   }, [activityIsPresent, revalidate]);
 
   useEffect(() => {
-    if (typeof document === "undefined") return;
+    if (typeof document === "undefined") return undefined;
 
     const updateVisibility = () => setIsDocumentVisible(document.visibilityState === "visible");
     document.addEventListener("visibilitychange", updateVisibility);
@@ -150,7 +154,7 @@ function ConversionIngestionPanel({
       actions={
         <RunNowControl
           ingestion={statusData.cjCommissionIngestion}
-          onOverviewRefresh={refreshOverview}
+          onQueued={refreshAfterRunQueued}
         />
       }
       description={<ConversionIngestionDescription />}

@@ -355,6 +355,8 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
       [run],
       run.affiliate_network_id == ^affiliate_network_id and run.status == ^status
     )
+    |> exclude(:order_by)
+    |> order_by([run], desc: run.finished_at, desc: run.id)
     |> preload([:requested_by_user])
     |> limit(1)
     |> Repo.one()

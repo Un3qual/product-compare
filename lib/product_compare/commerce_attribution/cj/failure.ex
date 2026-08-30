@@ -27,6 +27,7 @@ defmodule ProductCompare.CommerceAttribution.CJ.Failure do
   def category(reason) when reason in [:credentials_missing, :missing_credentials],
     do: :configuration_error
 
+  def category(:cj_network_not_found), do: :configuration_error
   def category({:authentication_failed, _reason}), do: :authentication_error
   def category({:authorization_failed, _reason}), do: :authorization_error
   def category({:http_error, 401}), do: :authentication_error

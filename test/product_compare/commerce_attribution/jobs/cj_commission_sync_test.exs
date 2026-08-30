@@ -159,6 +159,7 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
           {:unmatched_correction, "unmatched_correction"},
           {%Ecto.Changeset{}, "persistence_validation_failed"},
           {{:invalid_request, :max_pages}, "invalid_request"},
+          {:cj_network_not_found, "configuration_error"},
           {{:missing_env, "CJ_API_TOKEN"}, "configuration_error"},
           {{:authentication_failed, "provider secret"}, "authentication_error"},
           {{:authorization_failed, "provider secret"}, "authorization_error"}

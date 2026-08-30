@@ -67,12 +67,14 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncJobs do
     )
   end
 
-  defp parse_datetime(value) do
+  defp parse_datetime(value) when is_binary(value) do
     case DateTime.from_iso8601(value) do
       {:ok, datetime, 0} -> DateTime.truncate(datetime, :second)
       _invalid -> nil
     end
   end
+
+  defp parse_datetime(_value), do: nil
 
   defp require_transaction! do
     unless Repo.in_transaction?() do

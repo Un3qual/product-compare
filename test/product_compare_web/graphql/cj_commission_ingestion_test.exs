@@ -314,6 +314,71 @@ defmodule ProductCompareWeb.GraphQL.CJCommissionIngestionTest do
       refute inspect(response) =~ "publisher_ids"
     end
 
+    test "operator overview selects terminal evidence by completion time", %{
+      operator_conn: conn
+    } do
+      ensure_settings!()
+
+      latest_success =
+        run_fixture(%{
+          status: :succeeded,
+          started_at: ~U[2026-08-27 09:00:00Z],
+          finished_at: ~U[2026-08-27 11:00:00Z]
+        })
+
+      run_fixture(%{
+        status: :succeeded,
+        started_at: ~U[2026-08-27 10:00:00Z],
+        finished_at: ~U[2026-08-27 10:30:00Z]
+      })
+
+      response = graphql(conn, overview_query(), %{})
+
+      assert get_in(response, ["data", "cjCommissionIngestion", "latestSuccess", "id"]) ==
+               relay_id(:cj_commission_sync_run, latest_success.entropy_id)
+    end
+
+    test "operator overview tolerates malformed active-job timestamps", %{
+      operator: operator,
+      operator_conn: conn
+    } do
+      ensure_settings!()
+
+      assert {:ok, job} =
+               CJCommissionSyncWorker.enqueue(
+                 publisher_ids: ["secret-publisher-id"],
+                 from: ~U[2026-08-20 12:00:00Z],
+                 before: ~U[2026-08-27 12:00:00Z],
+                 max_pages: 100,
+                 trigger: :operator,
+                 requested_by_user_id: operator.id,
+                 schedule_window: ~U[2026-08-27 12:00:00Z]
+               )
+
+      malformed_args = Map.merge(job.args, %{"from" => nil, "before" => 42})
+
+      Repo.update_all(
+        from(oban_job in Oban.Job, where: oban_job.id == ^job.id),
+        set: [state: "suspended", args: malformed_args]
+      )
+
+      response = graphql(conn, overview_query(), %{})
+
+      assert %{
+               "data" => %{
+                 "cjCommissionIngestion" => %{
+                   "activity" => %{
+                     "state" => "SUSPENDED",
+                     "windowStart" => nil,
+                     "windowEnd" => nil
+                   }
+                 }
+               }
+             } = response
+
+      refute Map.has_key?(response, "errors")
+    end
+
     test "sync runs use newest-first cursor pagination with an id tie-breaker", %{
       operator: operator,
       operator_conn: conn
