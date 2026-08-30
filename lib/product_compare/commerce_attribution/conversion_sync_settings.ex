@@ -169,17 +169,26 @@ defmodule ProductCompare.CommerceAttribution.ConversionSyncSettings do
              trigger: :scheduled,
              requested_by_user_id: nil,
              schedule_window: now
-           ),
-         {:ok, settings} <-
-           settings
-           |> ConversionSyncSetting.changeset(%{
-             next_run_at: DateTime.add(now, settings.interval_minutes * 60, :second)
-           })
-           |> Repo.update() do
-      %{job: job, settings: settings}
+           ) do
+      if job.conflict? do
+        :idle
+      else
+        advance_schedule(settings, job, now)
+      end
     else
       {:error, reason} -> Repo.rollback(reason)
       _unexpected -> Repo.rollback(:invalid_enqueuer_result)
+    end
+  end
+
+  defp advance_schedule(settings, job, now) do
+    case settings
+         |> ConversionSyncSetting.changeset(%{
+           next_run_at: DateTime.add(now, settings.interval_minutes * 60, :second)
+         })
+         |> Repo.update() do
+      {:ok, settings} -> %{job: job, settings: settings}
+      {:error, reason} -> Repo.rollback(reason)
     end
   end
 

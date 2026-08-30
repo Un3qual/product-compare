@@ -202,7 +202,8 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncTest do
              CJCommissionSyncWorker.enqueue(
                worker_opts(
                  from: ~U[2026-08-03 00:00:00Z],
-                 before: ~U[2026-08-04 00:00:00Z]
+                 before: ~U[2026-08-04 00:00:00Z],
+                 trigger: :operator
                )
              )
 

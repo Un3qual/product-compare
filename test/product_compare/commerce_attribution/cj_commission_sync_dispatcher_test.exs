@@ -73,6 +73,37 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcherTest do
            ) == 1
   end
 
+  test "a due claim stays due while any CJ commission sync is incomplete" do
+    now = ~U[2026-08-28 12:00:00Z]
+    original_next_run_at = ~U[2026-08-28 11:00:00Z]
+    settings = enable_settings!(original_next_run_at, interval_minutes: 15)
+
+    assert {:ok, active_job} =
+             CJCommissionSyncWorker.enqueue(
+               worker_opts(
+                 trigger: :operator,
+                 requested_by_user_id: 42,
+                 schedule_window: ~U[2026-08-28 11:30:00Z]
+               )
+             )
+
+    assert {:ok, :idle} =
+             ConversionSyncSettings.claim_due_cj(now, &CJCommissionSyncWorker.enqueue/1)
+
+    assert DateTime.compare(
+             Repo.get!(ConversionSyncSetting, settings.id).next_run_at,
+             original_next_run_at
+           ) == :eq
+
+    assert Repo.aggregate(
+             from(job in Oban.Job, where: job.worker == ^inspect(CJCommissionSyncWorker)),
+             :count,
+             :id
+           ) == 1
+
+    assert Repo.get!(Oban.Job, active_job.id).state == "available"
+  end
+
   test "an enqueue failure rolls back the cadence advance" do
     now = ~U[2026-08-28 12:00:00Z]
     original_next_run_at = ~U[2026-08-28 11:00:00Z]
@@ -298,7 +329,10 @@ defmodule ProductCompare.CommerceAttribution.CJCommissionSyncDispatcherTest do
 
     assert {:ok, available_job} =
              CJCommissionSyncWorker.enqueue(
-               worker_opts(schedule_window: ~U[2026-08-03 00:00:00Z])
+               worker_opts(
+                 schedule_window: ~U[2026-08-03 00:00:00Z],
+                 trigger: :operator
+               )
              )
 
     Repo.update_all(

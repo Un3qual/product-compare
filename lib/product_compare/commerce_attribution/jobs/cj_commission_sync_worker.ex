@@ -12,6 +12,12 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker do
       states: :incomplete
     ]
 
+  @scheduled_unique [
+    period: :infinity,
+    fields: [:worker, :queue],
+    states: :incomplete
+  ]
+
   alias ProductCompare.CommerceAttribution.CJ.Importer
   alias ProductCompare.CommerceAttribution.CJ.ImportRequest
   alias ProductCompare.CommerceAttribution.CJ.Failure
@@ -20,9 +26,11 @@ defmodule ProductCompare.CommerceAttribution.Jobs.CJCommissionSyncWorker do
 
   @spec enqueue(keyword() | map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def enqueue(opts \\ []) do
-    opts
-    |> args()
-    |> new()
+    args = args(opts)
+    new_opts = if args["trigger"] == "scheduled", do: [unique: @scheduled_unique], else: []
+
+    args
+    |> new(new_opts)
     |> Oban.insert()
   end
 
