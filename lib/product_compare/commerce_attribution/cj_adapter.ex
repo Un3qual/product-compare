@@ -8,12 +8,42 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
 
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.CommerceAttribution.ClickReference
+  alias ProductCompare.CommerceAttribution.CJ.CommissionDetail
 
-  @spec ingest_transaction(map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
+  @spec ingest_transaction(map()) ::
+          {:ok, struct()} | {:error, Ecto.Changeset.t() | {:invalid_response, :record}}
   def ingest_transaction(payload) when is_map(payload) do
-    payload
-    |> normalize_transaction()
-    |> CommerceAttribution.ingest_conversion()
+    if invalid_record?(payload) do
+      {:error, {:invalid_response, :record}}
+    else
+      payload
+      |> normalize_transaction()
+      |> CommerceAttribution.ingest_conversion()
+    end
+  end
+
+  defp invalid_record?(payload) do
+    (current_commission_detail?(payload) and not CommissionDetail.valid_record?(payload)) or
+      partial_usd_amounts?(payload)
+  end
+
+  defp current_commission_detail?(payload), do: Map.has_key?(payload, "original")
+
+  defp partial_usd_amounts?(payload) do
+    sale_amount? =
+      not is_nil(value(payload, :sale_amount_usd, "saleAmountUsd", "SaleAmountUsd"))
+
+    commission_amount? =
+      not is_nil(
+        value(
+          payload,
+          :pub_commission_amount_usd,
+          "pubCommissionAmountUsd",
+          "PubCommissionAmountUsd"
+        )
+      )
+
+    sale_amount? != commission_amount?
   end
 
   defp normalize_transaction(payload) do
@@ -27,11 +57,31 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
         payload
         |> value(:commission_id, "commissionId", "CommissionId")
         |> reference_token(),
+      network_action_ref:
+        payload
+        |> value(:original_action_id, "originalActionId", "OriginalActionId")
+        |> reference_token(),
       status: normalize_status(value(payload, :action_status, "actionStatus", "ActionStatus")),
-      currency: value(payload, :currency, "currency", "Currency"),
-      order_amount: decimal(value(payload, :sale_amount, "saleAmount", "SaleAmount")),
+      currency:
+        if(usd_amounts?(payload),
+          do: "USD",
+          else: value(payload, :currency, "currency", "Currency")
+        ),
+      order_amount:
+        decimal(
+          value(payload, :sale_amount_usd, "saleAmountUsd", "SaleAmountUsd") ||
+            value(payload, :sale_amount, "saleAmount", "SaleAmount")
+        ),
       commission_amount:
-        decimal(value(payload, :commission_amount, "commissionAmount", "CommissionAmount")),
+        decimal(
+          value(
+            payload,
+            :pub_commission_amount_usd,
+            "pubCommissionAmountUsd",
+            "PubCommissionAmountUsd"
+          ) ||
+            value(payload, :commission_amount, "commissionAmount", "CommissionAmount")
+        ),
       purchased_at: parse_datetime(value(payload, :event_date, "eventDate", "EventDate")),
       reported_at: reported_at,
       data_freshness_at: reported_at,
@@ -58,7 +108,8 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
     end
   end
 
-  defp publisher_reference(payload), do: first_present(payload, [:sid, "SID", "sid"])
+  defp publisher_reference(payload),
+    do: first_present(payload, [:shopper_id, "shopperId", "ShopperId", :sid, "SID", "sid"])
 
   defp first_present(_payload, []), do: :missing
 
@@ -83,6 +134,18 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
     Map.get(payload, atom_key) || Map.get(payload, string_key) || Map.get(payload, fallback_key)
   end
 
+  defp usd_amounts?(payload) do
+    not is_nil(value(payload, :sale_amount_usd, "saleAmountUsd", "SaleAmountUsd")) and
+      not is_nil(
+        value(
+          payload,
+          :pub_commission_amount_usd,
+          "pubCommissionAmountUsd",
+          "PubCommissionAmountUsd"
+        )
+      )
+  end
+
   defp normalize_status(status) when status in [:pending, :approved, :reversed, :paid],
     do: status
 
@@ -103,18 +166,13 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
   defp normalize_status(status), do: status
 
   defp decimal(nil), do: nil
-  defp decimal(%Decimal{} = value), do: value
 
-  defp decimal(value) when is_binary(value) or is_integer(value) or is_float(value) do
-    value = value |> to_string() |> String.trim()
-
-    case Decimal.parse(value) do
-      {%Decimal{} = decimal, ""} -> decimal
-      _invalid -> nil
+  defp decimal(value) do
+    case CommissionDetail.parse_finite_decimal(value) do
+      {:ok, decimal} -> decimal
+      :error -> nil
     end
   end
-
-  defp decimal(_value), do: nil
 
   defp parse_datetime(nil), do: nil
   defp parse_datetime(%DateTime{} = value), do: value

@@ -10,6 +10,7 @@ Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/community_writes.exs")
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/generated_engagement.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/engagement.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/generated_operations.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/conversion_ingestion.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/operations.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/guide.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/runner.exs"))
@@ -67,8 +68,11 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.ProductIdentifier
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
+  alias ProductCompareSchemas.CommerceAttribution.CJActionCorrection
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
+  alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
+  alias ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Discussions.CommunityReport
   alias ProductCompareSchemas.Discussions.CommunityWriteReceipt
@@ -604,6 +608,78 @@ defmodule ProductCompare.Repo.SeedsTest do
              clicks: 600,
              conversions: 400
            } == operations_counts(full)
+  end
+
+  test "CJ conversion ingestion fixtures use stable owned identities" do
+    first = run_seed(["--density", "bounded"])
+
+    assert %{
+             settings:
+               %ConversionSyncSetting{
+                 enabled: false,
+                 interval_minutes: 1_440,
+                 lookback_days: 90,
+                 max_pages: 100,
+                 next_run_at: nil
+               } = settings,
+             runs: runs,
+             correction:
+               %CJActionCorrection{
+                 network_action_ref: "DEV-CJ-ACTION-REVERSED",
+                 network_correction_ref: "DEV-CJ-CORRECTION-REVERSED",
+                 raw_payload: %{"original" => false}
+               } = correction
+           } = first.operations.conversion_ingestion
+
+    assert [_, _, _] = runs
+
+    assert MapSet.new(runs, &{&1.status, &1.trigger}) ==
+             MapSet.new([{:succeeded, :scheduled}, {:failed, :operator}, {:succeeded, :cli}])
+
+    assert Enum.find(runs, &(&1.trigger == :operator)).requested_by_user_id ==
+             first.accounts.admin.id
+
+    seeded_run_ids = Map.new(runs, &{&1.entropy_id, &1.id})
+
+    settings =
+      settings
+      |> ConversionSyncSetting.changeset(%{
+        interval_minutes: 720,
+        lookback_days: 30,
+        max_pages: 25,
+        updated_by_user_id: first.accounts.admin.id
+      })
+      |> Repo.update!()
+
+    unrelated_run =
+      %ConversionSyncRun{}
+      |> ConversionSyncRun.changeset(%{
+        entropy_id: Ecto.UUID.generate(),
+        affiliate_network_id: settings.affiliate_network_id,
+        status: :succeeded,
+        trigger: :cli,
+        window_start: DateTime.add(first.anchor, -7_200, :second),
+        window_end: DateTime.add(first.anchor, -3_600, :second),
+        started_at: DateTime.add(first.anchor, -3_600, :second),
+        finished_at: DateTime.add(first.anchor, -3_540, :second)
+      })
+      |> Repo.insert!()
+
+    second = run_seed(["--density", "bounded"])
+    second_ingestion = second.operations.conversion_ingestion
+
+    assert Map.new(second_ingestion.runs, &{&1.entropy_id, &1.id}) == seeded_run_ids
+    assert second_ingestion.correction.id == correction.id
+    assert Repo.get!(ConversionSyncRun, unrelated_run.id).entropy_id == unrelated_run.entropy_id
+
+    assert %ConversionSyncSetting{
+             id: id,
+             interval_minutes: 720,
+             lookback_days: 30,
+             max_pages: 25
+           } = second_ingestion.settings
+
+    assert id == settings.id
   end
 
   test "duplicate named import scenarios fail with seed context" do

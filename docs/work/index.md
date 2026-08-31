@@ -49,20 +49,29 @@ No work is currently claimed.
 
 ## Ready Work
 
+No implementation rows are currently ready.
+
 ## Ready Floor Exception
 
-Reason: The 2026-08-15 closeout curation found the Product Experience And Code
-Simplification program complete. Current product behavior, full repository
-gates, active lane evidence, and the catalog expose no source-backed,
-independently reviewable successor; historical and superseded entries are not
-live candidates.
-Rejected split: Reopening completed generated-type, route-projection,
-trusted-ID, or formatter work as file- or test-sized rows would manufacture
-cleanup milestones with no new product invariant or reviewer decision.
-Replenishment action: At the next coordinator dispatch, re-check current
-product behavior, failing or coverage gaps, architecture, and lane evidence;
-write and validate every coherent successor found, then remove this exception
-only when at least three complete ready outcomes exist.
+Reason: The CJ live-conversion lifecycle and deterministic development fixtures
+are complete. Closeout curation checked current product behavior, the green
+1,671-test backend and 1,530-test frontend gates, source TODO/FIXME markers,
+architecture gaps, the candidate catalog, and lane evidence. It found no other
+source-backed, independently reviewable outcome that is both coherent and
+executable; the remaining named product and provider possibilities require an
+explicit decision or external evidence and remain deferred.
+Rejected split: Re-dispatching CJ storage, provider transport, scheduling,
+GraphQL, or the operator workspace would relabel completed internal slices as
+path-sized filler. The August 29 development-seed plan reused those operations
+and is recorded as a completed internal outcome slice, not a new queue row.
+Reopening completed historical cleanup, deferred providers, or unrelated
+operator pages would also create false queue depth.
+Replenishment action: At the 2026-08-29 development-seed closeout, the
+coordinator refreshed current behavior, full test/coverage results, source
+markers, architecture, candidate-catalog classifications, and lane evidence.
+No coherent successor was found. Repeat that evidence-backed curation after a new product decision,
+external provider evidence, failing contract, or architecture gap appears, and
+promote every independently shippable validated outcome then.
 
 ## Needs Decision Work
 

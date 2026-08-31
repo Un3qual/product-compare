@@ -7,12 +7,14 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
   alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.CommerceAttribution.CJActionCorrection
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
 
   @commerce_conversion_upsert_fields [
     :click_session_id,
     :public_click_id,
     :network_click_ref,
+    :network_action_ref,
     :merchant_id,
     :affiliate_program_id,
     :product_id,
@@ -40,6 +42,124 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
         {:error, changeset} -> Repo.rollback(changeset)
       end
     end)
+  end
+
+  @spec reverse_cj_action(String.t(), DateTime.t(), map()) ::
+          {:ok, %{matched: pos_integer(), updated: non_neg_integer()}}
+          | {:error, :unmatched_correction | Ecto.Changeset.t()}
+  def reverse_cj_action(network_action_ref, posting_date, raw_payload) do
+    require_transaction!("reverse_cj_action/3")
+
+    with {:ok, network_action_ref} <- validate_action_ref(network_action_ref),
+         :ok <- validate_posting_date(posting_date),
+         :ok <- validate_raw_payload(raw_payload),
+         {:ok, network} <- cj_network(),
+         {:ok, network_correction_ref} <- correction_ref(raw_payload),
+         [_ | _] = conversions <- lock_cj_action(network.id, network_action_ref),
+         {:ok, result} <- reverse_eligible(conversions, posting_date, raw_payload),
+         {:ok, _evidence} <-
+           persist_cj_action_correction(
+             network.id,
+             network_action_ref,
+             network_correction_ref,
+             posting_date,
+             raw_payload
+           ) do
+      {:ok, result}
+    else
+      [] -> {:error, :unmatched_correction}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
+  @spec lock_cj_action_key(String.t()) :: :ok | {:error, Ecto.Changeset.t()}
+  def lock_cj_action_key(network_action_ref) do
+    with {:ok, network_action_ref} <- validate_action_ref(network_action_ref) do
+      require_transaction!("lock_cj_action_key/1")
+
+      Repo.query!(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+        ["product_compare:cj_action:" <> network_action_ref]
+      )
+
+      :ok
+    end
+  end
+
+  @spec latest_cj_correction(String.t()) ::
+          {:ok, %{posting_date: DateTime.t(), raw_payload: map()} | nil}
+          | {:error, Ecto.Changeset.t()}
+  def latest_cj_correction(network_action_ref) do
+    with {:ok, network_action_ref} <- validate_action_ref(network_action_ref),
+         {:ok, network} <- cj_network() do
+      correction =
+        Repo.one(
+          from correction in CJActionCorrection,
+            where:
+              correction.affiliate_network_id == ^network.id and
+                correction.network_action_ref == ^network_action_ref,
+            limit: 1
+        )
+
+      case correction do
+        nil ->
+          {:ok, nil}
+
+        %CJActionCorrection{} = correction ->
+          {:ok,
+           %{
+             posting_date: correction.posting_date,
+             raw_payload: correction.raw_payload
+           }}
+      end
+    end
+  end
+
+  defp persist_cj_action_correction(
+         affiliate_network_id,
+         network_action_ref,
+         network_correction_ref,
+         posting_date,
+         raw_payload
+       ) do
+    attrs = %{
+      affiliate_network_id: affiliate_network_id,
+      network_action_ref: network_action_ref,
+      network_correction_ref: network_correction_ref,
+      posting_date: posting_date,
+      raw_payload: raw_payload
+    }
+
+    case Repo.get_by(CJActionCorrection,
+           affiliate_network_id: affiliate_network_id,
+           network_action_ref: network_action_ref
+         ) do
+      nil ->
+        %CJActionCorrection{}
+        |> CJActionCorrection.changeset(attrs)
+        |> Repo.insert()
+
+      %CJActionCorrection{} = correction ->
+        if incoming_correction_at_least_as_new?(
+             correction,
+             posting_date,
+             network_correction_ref
+           ) do
+          correction
+          |> CJActionCorrection.changeset(attrs)
+          |> Repo.update()
+        else
+          {:ok, correction}
+        end
+    end
+  end
+
+  defp incoming_correction_at_least_as_new?(correction, posting_date, correction_ref) do
+    case DateTime.compare(posting_date, correction.posting_date) do
+      :gt -> true
+      :lt -> false
+      :eq -> ordered_correction_ref_at_least?(correction_ref, correction.network_correction_ref)
+    end
   end
 
   defp persist_or_rollback(attrs) do
@@ -133,4 +253,125 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
         attrs
     end
   end
+
+  defp validate_action_ref(network_action_ref) do
+    case normalize_string(network_action_ref) do
+      nil -> {:error, correction_changeset(:network_action_ref, "can't be blank")}
+      network_action_ref -> {:ok, network_action_ref}
+    end
+  end
+
+  defp validate_posting_date(%DateTime{utc_offset: 0, std_offset: 0}), do: :ok
+
+  defp validate_posting_date(_posting_date),
+    do: {:error, correction_changeset(:reported_at, "is invalid")}
+
+  defp validate_raw_payload(raw_payload) when is_map(raw_payload), do: :ok
+
+  defp validate_raw_payload(_raw_payload),
+    do: {:error, correction_changeset(:raw_payload, "must be a map")}
+
+  defp correction_ref(raw_payload) do
+    case normalize_string(Map.get(raw_payload, "commissionId")) do
+      nil -> {:error, correction_changeset(:network_conversion_ref, "can't be blank")}
+      correction_ref -> {:ok, correction_ref}
+    end
+  end
+
+  defp cj_network do
+    case Repo.get_by(AffiliateNetwork, code: "cj") do
+      %AffiliateNetwork{} = network ->
+        {:ok, network}
+
+      nil ->
+        {:error,
+         correction_changeset(:source_network, "is not configured as an affiliate network")}
+    end
+  end
+
+  defp lock_cj_action(affiliate_network_id, network_action_ref) do
+    Repo.all(
+      from conversion in CommerceConversion,
+        where:
+          conversion.affiliate_network_id == ^affiliate_network_id and
+            conversion.network_action_ref == ^network_action_ref,
+        order_by: [asc: conversion.id],
+        lock: "FOR UPDATE"
+    )
+  end
+
+  defp reverse_eligible(conversions, posting_date, raw_payload) do
+    Enum.reduce_while(conversions, {:ok, 0}, fn conversion, {:ok, updated} ->
+      if DateTime.compare(conversion.reported_at, posting_date) == :gt or
+           correction_at_least_as_new?(conversion, posting_date, raw_payload) do
+        {:cont, {:ok, updated}}
+      else
+        attrs = %{
+          status: :reversed,
+          data_freshness_at: posting_date,
+          reported_at: posting_date,
+          raw_payload: raw_payload
+        }
+
+        conversion = %{conversion | source_network: "cj"}
+
+        case conversion |> CommerceConversion.changeset(attrs) |> Repo.update() do
+          {:ok, _conversion} -> {:cont, {:ok, updated + 1}}
+          {:error, changeset} -> {:halt, {:error, changeset}}
+        end
+      end
+    end)
+    |> case do
+      {:ok, updated} -> {:ok, %{matched: length(conversions), updated: updated}}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
+  defp correction_at_least_as_new?(conversion, posting_date, raw_payload) do
+    conversion.status == :reversed and
+      DateTime.compare(conversion.reported_at, posting_date) == :eq and
+      not is_nil(conversion.data_freshness_at) and
+      DateTime.compare(conversion.data_freshness_at, posting_date) == :eq and
+      match?(%{"original" => false}, conversion.raw_payload) and
+      correction_ref_at_least?(conversion.raw_payload, raw_payload)
+  end
+
+  defp correction_ref_at_least?(current_payload, incoming_payload) do
+    current_ref = normalize_string(Map.get(current_payload, "commissionId"))
+    incoming_ref = normalize_string(Map.get(incoming_payload, "commissionId"))
+
+    is_binary(current_ref) and is_binary(incoming_ref) and
+      ordered_correction_ref_at_least?(current_ref, incoming_ref)
+  end
+
+  defp ordered_correction_ref_at_least?(current_ref, incoming_ref) do
+    if numeric_ref?(current_ref) and numeric_ref?(incoming_ref) do
+      String.to_integer(current_ref) >= String.to_integer(incoming_ref)
+    else
+      current_ref >= incoming_ref
+    end
+  end
+
+  defp numeric_ref?(ref), do: Regex.match?(~r/^[0-9]+$/, ref)
+
+  defp correction_changeset(field, message) do
+    %CommerceConversion{}
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.add_error(field, message)
+  end
+
+  defp require_transaction!(function_name) do
+    unless Repo.in_transaction?() do
+      raise ArgumentError, "#{function_name} requires a database transaction"
+    end
+  end
+
+  defp normalize_string(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      value -> value
+    end
+  end
+
+  defp normalize_string(_value), do: nil
 end

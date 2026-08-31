@@ -21,10 +21,26 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-11-homepage-query-scaling-and-ownership-design.md`
 - `docs/superpowers/specs/2026-08-11-base-ui-stylex-table-foundation-design.md`
 - `docs/superpowers/specs/2026-08-12-product-experience-and-code-simplification-design.md`
+- `docs/superpowers/specs/2026-08-27-cj-live-conversion-ingestion-design.md`
 
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
+
+The approved CJ Live Conversion Ingestion outcome is complete:
+
+- `docs/superpowers/plans/2026-08-27-cj-live-conversion-ingestion-implementation-plan.md`
+
+It completed one cross-stack Commerce Attribution outcome spanning current CJ
+Commission Detail transport, replay-safe correction persistence, durable run
+and schedule ownership, database-claimed execution, operator GraphQL, and the
+dedicated ingestion workspace. These are internal slices of one live-conversion
+lifecycle, not independent queue rows. Live credentials are optional for
+automated verification; the 2026-08-27 preflight found credentials unavailable,
+so live evidence was not run and scheduling remains disabled. Final
+whole-branch review hardened durable action-level correction evidence, semantic
+CJ validation, nonterminal operator polling, and Relay settings reconciliation;
+  the final gates passed 1,674 backend tests and 1,530 frontend tests.
 
 The approved Product Experience And Code Simplification program is planned as
 five immediately executable, path-disjoint outcomes plus one prerequisite-gated
@@ -43,10 +59,13 @@ authorization, database, and concurrency owners; removed four one-use route
 helpers; and replaced recreated Relay shapes with generated ownership. Its
 checked provenance, production-file delta, and full-gate evidence are in
 `docs/work/type-validation-slop-remediation.md`. Fresh curation found no
-source-backed successor, so the live queue retains a complete Ready Floor
-Exception rather than manufacturing cleanup rows. The previous four
-production-UI rows remain below as completion/supersession history rather than
-live dispatch sources.
+source-backed successor at that closeout. The later user-approved CJ
+live-conversion outcome above is also complete. Its closeout rechecked current
+behavior, green full backend/frontend gates, source markers, architecture, the
+candidate pool, and lane evidence without finding a coherent executable
+successor, so the empty live queue retains a truthful Ready Floor Exception.
+The previous four production-UI rows remain below as completion/supersession
+history rather than live dispatch sources.
 
 The approved homepage query-scaling outcome is complete through:
 

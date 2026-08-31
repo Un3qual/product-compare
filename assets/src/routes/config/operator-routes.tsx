@@ -32,6 +32,21 @@ export const operatorRoutes: RouteObject[] = [
     }),
   },
   {
+    path: "commerce/revenue/ingestion",
+    handle: routeMetadata(
+      "Conversion ingestion | Product Compare",
+      "Monitor CJ commission ingestion freshness and control its bounded schedule.",
+    ),
+    errorElement: (
+      <RouteErrorBoundary resourceName="conversion ingestion" title="Conversion ingestion" />
+    ),
+    lazy: withLazyRouteImportRecovery(async () => {
+      const { ConversionIngestionRoute, conversionIngestionLoader } =
+        await import("../commerce/revenue/ingestion/ConversionIngestionRoute");
+      return { Component: ConversionIngestionRoute, loader: conversionIngestionLoader };
+    }),
+  },
+  {
     path: "ingestion/cj-programs",
     handle: routeMetadata(
       "CJ programs | Product Compare",

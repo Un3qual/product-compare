@@ -138,7 +138,7 @@ for (const viewport of VIEWPORTS) {
     await expect(details.getByRole("heading", { name: "Commerce" })).toBeVisible();
     await expect(details.getByRole("heading", { name: "Conversion" })).toBeVisible();
     await expect(details.getByText("Product Compare website")).toBeVisible();
-    await expect(details.getByText("OperatorBrowser 1.0")).toBeVisible();
+    await expect(details.getByText("OperatorBrowser/1.0")).toBeVisible();
     await expect(details.getByText("203.0.113.10")).toBeVisible();
     await expect(details.getByText("FIELD-CAMERA-1")).toBeVisible();
     await expect(details.getByText("northwind-impact")).toBeVisible();
@@ -160,6 +160,50 @@ for (const viewport of VIEWPORTS) {
       page,
       testInfo.outputPath(`${viewport.name}-revenue-ledger.png`),
     );
+
+    await page.goto("/commerce/revenue/ingestion");
+    const ingestionStatus = page.getByRole("region", { name: "Ingestion status" });
+    const ingestionSettings = page.getByRole("form", { name: "Ingestion settings" });
+    const syncRuns = page.getByRole("table", { name: "Conversion sync runs" });
+    await expect(page.getByRole("heading", { name: "Conversion ingestion" })).toBeVisible();
+    await expect(ingestionStatus).toBeVisible();
+    await expect(ingestionStatus.getByText("Credentials configured")).toBeVisible();
+    await expect(ingestionStatus.locator('time[datetime="2026-08-28T10:15:00Z"]')).toBeVisible();
+    await expect(ingestionSettings).toBeVisible();
+    await expect(
+      ingestionSettings.getByRole("checkbox", { name: "Enable scheduled ingestion" }),
+    ).toBeChecked();
+    await expect(ingestionSettings.getByLabel("Interval minutes")).toHaveValue("1440");
+    await expect(ingestionSettings.getByLabel("Lookback days")).toHaveValue("7");
+    await expect(ingestionSettings.getByLabel("Maximum pages")).toHaveValue("25");
+    await expect(ingestionSettings.getByRole("button", { name: "Save settings" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Run now" })).toBeEnabled();
+    await expect(syncRuns).toBeVisible();
+    await expectTableContained(syncRuns, { compact: false });
+    expect(
+      await ingestionStatus.evaluate((element) => {
+        const settings = document.querySelector('form[aria-label="Ingestion settings"]');
+        const ledger = document.querySelector('table[aria-label="Conversion sync runs"]');
+
+        return Boolean(
+          settings &&
+          ledger &&
+          element.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING &&
+          settings.compareDocumentPosition(ledger) & Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+      }),
+    ).toBe(true);
+    await syncRuns.getByRole("button", { name: "Show failure details" }).click();
+    await expect(syncRuns.getByText("Provider request timed out.")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText("cj-test-api-token-secret");
+    await expectOperatorSurface(page, viewport.width);
+    await captureOperatorWorkspace(
+      page,
+      testInfo.outputPath(`${viewport.name}-conversion-ingestion.png`),
+    );
+
+    await page.getByRole("link", { name: "Revenue reporting" }).click();
+    await expect(page.getByRole("heading", { name: "Revenue reporting" })).toBeVisible();
   });
 }
 
@@ -373,6 +417,123 @@ test("revenue summary, ledger preload, and pagination failures recover independe
   await expect(page.getByText("operator@example.test").first()).toBeVisible();
 });
 
+test("conversion ingestion saves bounded cadence and deduplicates an already-active run", async ({
+  page,
+}) => {
+  let nextRunAt = "2026-08-28T10:15:00Z";
+  let runNowAttempts = 0;
+  const responders = operatorResponders();
+  responders.set("ConversionIngestionStatusRefetchQuery", () => ({
+    data: conversionIngestionOverviewData({
+      activityState: runNowAttempts > 0 ? "SCHEDULED" : "AVAILABLE",
+      nextRunAt,
+    }),
+  }));
+  responders.set("UpdateCJCommissionIngestionSettingsMutation", () => {
+    nextRunAt = "2026-08-27T22:15:00Z";
+    return {
+      data: {
+        updateCjCommissionIngestionSettings: {
+          errors: [],
+          ingestion: {
+            __typename: "CJCommissionIngestion",
+            settings: {
+              __typename: "CJCommissionIngestionSettings",
+              updatedAt: "2026-08-27T10:16:00Z",
+            },
+          },
+        },
+      },
+    };
+  });
+  responders.set("RunCJCommissionIngestionNowMutation", () => {
+    runNowAttempts += 1;
+    return {
+      data: {
+        runCjCommissionIngestionNow: {
+          errors: [],
+          ingestion: {
+            __typename: "CJCommissionIngestion",
+            activity: { __typename: "CJCommissionIngestionActivity", state: "SCHEDULED" },
+          },
+        },
+      },
+    };
+  });
+  const requests = await stubGraphQL(page, responders);
+
+  await page.goto("/commerce/revenue/ingestion");
+  const settings = page.getByRole("form", { name: "Ingestion settings" });
+  await settings.getByLabel("Interval minutes").fill("720");
+  await settings.getByLabel("Lookback days").fill("14");
+  await settings.getByLabel("Maximum pages").fill("12");
+  const editingAccessibility = await new AxeBuilder({ page }).analyze();
+  expect(editingAccessibility.violations).toEqual([]);
+  await settings.getByRole("button", { name: "Save settings" }).click();
+  await expect(settings.getByRole("status")).toContainText("Settings saved.");
+  await expect(page.locator('time[datetime="2026-08-27T22:15:00Z"]')).toBeVisible();
+
+  const runNow = page.getByRole("button", { name: "Run now" });
+  await runNow.click();
+  await expect(
+    page.getByRole("region", { name: "Ingestion status" }).getByText("Queued"),
+  ).toBeVisible();
+  await runNow.click();
+  await expect
+    .poll(
+      () =>
+        requests.filter(
+          ({ operationName }) => operationName === "RunCJCommissionIngestionNowMutation",
+        ).length,
+    )
+    .toBe(2);
+  await expect(page.getByText("Queued")).toHaveCount(1);
+  await expect(page.getByRole("table", { name: "Conversion sync runs" })).toHaveCount(1);
+
+  const settingsRequest = requests.find(
+    ({ operationName }) => operationName === "UpdateCJCommissionIngestionSettingsMutation",
+  );
+  expect(settingsRequest?.variables).toEqual({
+    input: { enabled: true, intervalMinutes: 720, lookbackDays: 14, maxPages: 12 },
+  });
+});
+
+test("conversion ingestion history failure recovers without hiding status or settings", async ({
+  page,
+}) => {
+  let historyAttempts = 0;
+  let overviewAttempts = 0;
+  const responders = operatorResponders();
+  responders.set("ConversionIngestionRouteQuery", () => {
+    overviewAttempts += 1;
+    return overviewAttempts === 1
+      ? { data: conversionIngestionOverviewData() }
+      : { errors: [{ message: "Overview must not reload for history retry" }] };
+  });
+  responders.set("ConversionSyncRunsQuery", () => {
+    historyAttempts += 1;
+    return historyAttempts === 1
+      ? { errors: [{ message: "Conversion sync history unavailable" }] }
+      : { data: conversionSyncRunsData() };
+  });
+  await stubGraphQL(page, responders);
+
+  await page.goto("/commerce/revenue/ingestion");
+  const status = page.getByRole("region", { name: "Ingestion status" });
+  const settings = page.getByRole("form", { name: "Ingestion settings" });
+  await expect(page.getByText("Conversion sync runs unavailable.")).toBeVisible();
+  await expect(status).toBeVisible();
+  await expect(settings).toBeVisible();
+
+  await page.getByRole("button", { name: "Retry conversion sync runs" }).click();
+
+  await expect(page.getByRole("table", { name: "Conversion sync runs" })).toBeVisible();
+  await expect(status).toBeVisible();
+  await expect(settings).toBeVisible();
+  expect(historyAttempts).toBe(2);
+  expect(overviewAttempts).toBe(1);
+});
+
 async function expectOperatorSurface(page: Page, viewportWidth: number) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
     viewportWidth,
@@ -438,6 +599,36 @@ function operatorResponders() {
   responders.set("RevenueSummaryRouteQuery", { data: revenueSummaryData() });
   responders.set("AttributionLedgerRouteQuery", { data: attributionLedgerData() });
   responders.set("AttributionLedgerPaginationQuery", { data: emptyAttributionLedgerData() });
+  responders.set("ConversionIngestionRouteQuery", { data: conversionIngestionOverviewData() });
+  responders.set("ConversionIngestionStatusRefetchQuery", {
+    data: conversionIngestionOverviewData(),
+  });
+  responders.set("ConversionSyncRunsQuery", { data: conversionSyncRunsData() });
+  responders.set("UpdateCJCommissionIngestionSettingsMutation", {
+    data: {
+      updateCjCommissionIngestionSettings: {
+        errors: [],
+        ingestion: {
+          __typename: "CJCommissionIngestion",
+          settings: {
+            __typename: "CJCommissionIngestionSettings",
+            updatedAt: "2026-08-27T10:16:00Z",
+          },
+        },
+      },
+    },
+  });
+  responders.set("RunCJCommissionIngestionNowMutation", {
+    data: {
+      runCjCommissionIngestionNow: {
+        errors: [],
+        ingestion: {
+          __typename: "CJCommissionIngestion",
+          activity: { __typename: "CJCommissionIngestionActivity", state: "SCHEDULED" },
+        },
+      },
+    },
+  });
 
   return responders;
 }
@@ -637,6 +828,94 @@ function emptyAttributionLedgerData() {
     commerceAttributionClicks: {
       edges: [],
       pageInfo: { endCursor: null, hasNextPage: false },
+    },
+  };
+}
+
+function conversionIngestionOverviewData({
+  activityState = "AVAILABLE",
+  nextRunAt = "2026-08-28T10:15:00Z",
+}: {
+  activityState?: "AVAILABLE" | "SCHEDULED";
+  nextRunAt?: string;
+} = {}) {
+  return {
+    cjCommissionIngestion: {
+      activity: {
+        attemptedAt: null,
+        scheduledAt: activityState === "SCHEDULED" ? "2026-08-27T10:20:00Z" : null,
+        state: activityState,
+        windowEnd: "2026-08-27T10:00:00Z",
+        windowStart: "2026-08-20T10:00:00Z",
+      },
+      credentials: { publisherIdsConfigured: true, apiTokenConfigured: true, ready: true },
+      latestFailure: {
+        errorSummary: "Provider request timed out.",
+        finishedAt: "2026-08-26T12:05:00Z",
+        id: "sync-run-failure",
+      },
+      latestSuccess: {
+        finishedAt: "2026-08-26T10:15:00Z",
+        id: "sync-run-success",
+      },
+      settings: {
+        enabled: true,
+        intervalMinutes: 1440,
+        lookbackDays: 7,
+        maxPages: 25,
+        nextRunAt,
+        updatedAt: "2026-08-26T10:20:00Z",
+      },
+    },
+  };
+}
+
+function conversionSyncRunsData() {
+  return {
+    cjCommissionSyncRuns: {
+      edges: [
+        {
+          cursor: "sync-cursor-failure",
+          node: {
+            __typename: "CJCommissionSyncRun",
+            cursor: "provider-cursor-failure",
+            errorSummary: "Provider request timed out.",
+            finishedAt: "2026-08-26T12:05:00Z",
+            id: "sync-run-failure",
+            pagesFetched: 2,
+            recordsFailed: 1,
+            recordsFetched: 10,
+            recordsPersisted: 9,
+            requesterEmail: null,
+            startedAt: "2026-08-26T12:00:00Z",
+            status: "FAILED",
+            trigger: "SCHEDULED",
+            windowEnd: "2026-08-26T12:00:00Z",
+            windowStart: "2026-08-19T12:00:00Z",
+          },
+        },
+        {
+          cursor: "sync-cursor-success",
+          node: {
+            __typename: "CJCommissionSyncRun",
+            cursor: "provider-cursor-success",
+            errorSummary: null,
+            finishedAt: "2026-08-26T10:15:00Z",
+            id: "sync-run-success",
+            pagesFetched: 3,
+            recordsFailed: 0,
+            recordsFetched: 20,
+            recordsPersisted: 20,
+            requesterEmail: "operator@example.test",
+            startedAt: "2026-08-26T10:00:00Z",
+            status: "SUCCEEDED",
+            trigger: "OPERATOR",
+            windowEnd: "2026-08-26T10:00:00Z",
+            windowStart: "2026-08-19T10:00:00Z",
+          },
+        },
+      ],
+      pageInfo: { endCursor: "sync-cursor-success", hasNextPage: false },
     },
   };
 }
