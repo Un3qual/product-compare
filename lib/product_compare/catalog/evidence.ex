@@ -70,49 +70,28 @@ defmodule ProductCompare.Catalog.Evidence do
       }
 
       changeset = ProductMedia.changeset(%ProductMedia{}, attrs)
+      updated_at = DateTime.utc_now()
 
       conflict_query =
         from media in ProductMedia,
+          where: media.observed_at <= ^observed_at,
           update: [
             set: [
-              source_artifact_id:
-                fragment(
-                  "CASE WHEN EXCLUDED.observed_at >= ? THEN EXCLUDED.source_artifact_id ELSE ? END",
-                  media.observed_at,
-                  media.source_artifact_id
-                ),
-              role:
-                fragment(
-                  "CASE WHEN EXCLUDED.observed_at >= ? THEN EXCLUDED.role ELSE ? END",
-                  media.observed_at,
-                  media.role
-                ),
-              position:
-                fragment(
-                  "CASE WHEN EXCLUDED.observed_at >= ? THEN EXCLUDED.position ELSE ? END",
-                  media.observed_at,
-                  media.position
-                ),
-              alt_text:
-                fragment(
-                  "CASE WHEN EXCLUDED.observed_at >= ? THEN EXCLUDED.alt_text ELSE ? END",
-                  media.observed_at,
-                  media.alt_text
-                ),
-              observed_at: fragment("GREATEST(EXCLUDED.observed_at, ?)", media.observed_at),
-              updated_at:
-                fragment(
-                  "CASE WHEN EXCLUDED.observed_at >= ? THEN EXCLUDED.updated_at ELSE ? END",
-                  media.observed_at,
-                  media.updated_at
-                )
+              source_artifact_id: ^attrs.source_artifact_id,
+              role: ^attrs.role,
+              position: ^attrs.position,
+              alt_text: ^attrs.alt_text,
+              observed_at: ^attrs.observed_at,
+              updated_at: ^updated_at
             ]
           ]
 
       case Repo.insert(changeset,
              on_conflict: conflict_query,
              conflict_target: [:product_id, :url],
-             returning: true
+             returning: true,
+             # Older observations intentionally leave the existing row unchanged.
+             allow_stale: true
            ) do
         {:ok, %ProductMedia{}} -> Map.update!(result, :persisted, &(&1 + 1))
         {:error, %Ecto.Changeset{}} -> Map.update!(result, :rejected, &(&1 + 1))
