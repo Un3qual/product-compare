@@ -15,6 +15,7 @@ defmodule ProductCompare.SeoTest do
   alias ProductCompare.Specs
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
+  alias ProductCompareSchemas.Pricing.{Merchant, MerchantProduct}
 
   @now ~U[2026-07-13 20:00:00Z]
   @description String.duplicate("Evidence-rich product description for careful shoppers. ", 3)
@@ -158,6 +159,55 @@ defmodule ProductCompare.SeoTest do
     assert Enum.map(Seo.sitemap_entries(:categories, now: @now), & &1.path) == [
              "/categories/search-cameras"
            ]
+  end
+
+  test "sitemap last-modified timestamps include the latest related activity" do
+    operator = AccountsFixtures.operator_fixture()
+
+    category =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: TaxonomyFixtures.taxonomy_fixture("type", "Type").id,
+        code: "sitemap-activity",
+        name: "Sitemap Activity",
+        seo_slug: "sitemap-activity",
+        seo_description: @description,
+        seo_indexable: true
+      })
+
+    [product | _products] =
+      Enum.map(1..3, &qualified_product("sitemap-activity-#{&1}", operator, category))
+
+    offer = Repo.get_by!(MerchantProduct, product_id: product.id)
+    merchant = Repo.get!(Merchant, offer.merchant_id)
+    latest_activity_at = ~U[2030-01-01 12:00:00Z]
+
+    assert {:ok, _price_point} =
+             Pricing.add_price_point(%{
+               merchant_product_id: offer.id,
+               observed_at: latest_activity_at,
+               price: "95",
+               shipping: "5",
+               in_stock: true
+             })
+
+    product_entries = Map.new(Seo.sitemap_entries(:products, now: @now), &{&1.path, &1})
+    merchant_entries = Map.new(Seo.sitemap_entries(:merchants, now: @now), &{&1.path, &1})
+    category_entries = Map.new(Seo.sitemap_entries(:categories, now: @now), &{&1.path, &1})
+
+    assert DateTime.compare(
+             product_entries["/products/#{product.slug}"].last_modified,
+             latest_activity_at
+           ) == :eq
+
+    assert DateTime.compare(
+             merchant_entries["/merchants/#{merchant.slug}"].last_modified,
+             latest_activity_at
+           ) == :eq
+
+    assert DateTime.compare(
+             category_entries["/categories/#{category.seo_slug}"].last_modified,
+             latest_activity_at
+           ) == :eq
   end
 
   test "EUR-only facts remain qualified on shared SEO surfaces but not homepage shortcuts" do
