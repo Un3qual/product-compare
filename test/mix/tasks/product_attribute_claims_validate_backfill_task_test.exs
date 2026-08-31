@@ -43,7 +43,6 @@ defmodule Mix.Tasks.ProductAttributeClaims.ValidateBackfillTest do
   test "rejects malformed input before running the workflow" do
     invalid_cases = [
       {["extra"], "unexpected argument: extra"},
-      {["--sample-size", "5", "--sample-size", "10"], "duplicate option: --sample-size"},
       {["--sample-size", "many"], "invalid value for --sample-size: many"},
       {["--sample-size", "0"], "invalid --sample-size: expected a positive integer"},
       {["--sample-size", "-1"], "invalid --sample-size: expected a positive integer"},

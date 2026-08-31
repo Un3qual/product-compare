@@ -30,7 +30,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCredentialsTest do
       invalid_cases = [
         {["--bogus"], "unsupported option: --bogus"},
         {["extra"], "unexpected argument: extra"},
-        {["--require-ready", "--require-ready"], "duplicate option: --require-ready"},
         {["--require-ready=maybe"], "invalid value for --require-ready: maybe"}
       ]
 

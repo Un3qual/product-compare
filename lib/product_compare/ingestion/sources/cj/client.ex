@@ -272,56 +272,21 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
 
   defp result_set(_decoded, field), do: {:error, {:missing_result_set, field}}
 
-  defp validate_result_set(result_set, field) do
-    with {:ok, records} <- list_field(result_set, "resultList", field, :result_list_not_list),
-         {:ok, count} <-
-           non_negative_integer_field(
-             result_set,
-             "count",
-             field,
-             :count_not_non_negative_integer
-           ),
-         {:ok, total_count} <-
-           non_negative_integer_field(
-             result_set,
-             "totalCount",
-             field,
-             :total_count_not_non_negative_integer
-           ),
-         {:ok, limit} <- positive_integer_field(result_set, "limit", field) do
-      {:ok, records, count, total_count, limit}
-    end
+  defp validate_result_set(
+         %{
+           "resultList" => records,
+           "count" => count,
+           "totalCount" => total_count,
+           "limit" => limit
+         },
+         _field
+       )
+       when is_list(records) and is_integer(count) and count >= 0 and
+              is_integer(total_count) and total_count >= 0 and is_integer(limit) and limit > 0 do
+    {:ok, records, count, total_count, limit}
   end
 
-  defp list_field(result_set, key, field, category) do
-    validated_field(result_set, key, field, category, &is_list/1)
-  end
-
-  defp non_negative_integer_field(result_set, key, field, category) do
-    validated_field(result_set, key, field, category, &non_negative_integer?/1)
-  end
-
-  defp positive_integer_field(result_set, key, field) do
-    validated_field(
-      result_set,
-      key,
-      field,
-      :limit_not_positive_integer,
-      &positive_integer?/1
-    )
-  end
-
-  defp validated_field(result_set, key, field, category, valid?) do
-    with {:ok, value} <- Map.fetch(result_set, key),
-         true <- valid?.(value) do
-      {:ok, value}
-    else
-      _missing_or_invalid -> {:error, {:invalid_result_set, field, category}}
-    end
-  end
-
-  defp non_negative_integer?(value), do: is_integer(value) and value >= 0
-  defp positive_integer?(value), do: is_integer(value) and value > 0
+  defp validate_result_set(_result_set, field), do: {:error, {:invalid_result_set, field}}
 
   defp next_cursor(offset, count, total_count, limit)
        when count == limit and offset + count < total_count do

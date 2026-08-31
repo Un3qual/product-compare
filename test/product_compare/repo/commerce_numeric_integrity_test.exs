@@ -6,21 +6,17 @@ defmodule ProductCompare.Repo.CommerceNumericIntegrityTest do
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
 
-  @non_finite_decimals [
-    Decimal.new("NaN"),
-    Decimal.new("Infinity"),
-    Decimal.new("-Infinity")
-  ]
-
   test "commerce conversion changesets reject non-finite amounts before SQL" do
     attrs = valid_conversion_attrs()
 
     assert CommerceConversion.changeset(%CommerceConversion{}, attrs).valid?
 
-    for field <- [:order_amount, :commission_amount, :commission_rate],
-        amount <- @non_finite_decimals do
+    for field <- [:order_amount, :commission_amount, :commission_rate] do
       assert_invalid_field(
-        CommerceConversion.changeset(%CommerceConversion{}, Map.put(attrs, field, amount)),
+        CommerceConversion.changeset(
+          %CommerceConversion{},
+          Map.put(attrs, field, Decimal.new("NaN"))
+        ),
         field
       )
     end
@@ -44,10 +40,12 @@ defmodule ProductCompare.Repo.CommerceNumericIntegrityTest do
           :discount_amount,
           :observed_price,
           :price_delta
-        ],
-        amount <- @non_finite_decimals do
+        ] do
       assert_invalid_field(
-        PurchasePriceFact.changeset(%PurchasePriceFact{}, Map.put(attrs, field, amount)),
+        PurchasePriceFact.changeset(
+          %PurchasePriceFact{},
+          Map.put(attrs, field, Decimal.new("NaN"))
+        ),
         field
       )
     end

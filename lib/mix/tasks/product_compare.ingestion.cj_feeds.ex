@@ -71,13 +71,17 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
         require_ready: :boolean
       )
 
+    advertiser_country =
+      opts
+      |> Keyword.get(:advertiser_country, "US")
+      |> String.trim()
+
+    if advertiser_country == "" do
+      Mix.raise("invalid --advertiser-country: expected a non-blank string")
+    end
+
     [
-      advertiser_country:
-        CliOptions.non_blank_string!(
-          Keyword.get(opts, :advertiser_country),
-          "US",
-          "--advertiser-country"
-        ),
+      advertiser_country: advertiser_country,
       check_credentials: Keyword.get(opts, :check_credentials, false),
       limit: CliOptions.positive_integer!(Keyword.get(opts, :limit), 25, "--limit"),
       cursor: normalize_offset(Keyword.get(opts, :offset)),

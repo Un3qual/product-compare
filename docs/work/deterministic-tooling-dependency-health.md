@@ -14,49 +14,14 @@ the complete development stack, flaky test boundaries are deterministic,
 toolchain pins are compared rather than merely present, and compatible locked
 dependencies contain all available security fixes.
 
-## Owned Paths
-
-- `assets/tsconfig.json`
-- `assets/tests/e2e/**`
-- `assets/test/**` only for tooling/type coverage
-- `assets/package.json`
-- `assets/pnpm-lock.yaml`
-- `mix.exs`
-- `mix.lock`
-- `config/dev.exs`
-- `README.md`
-- `.mise.toml` only if an actual mismatch is found
-- `test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
-- `lib/product_compare/ingestion/cj_product_import_scheduler.ex` only if a controlled tick seam is necessary
-- `test/support/database_test_helpers.ex`
-- `test/product_compare/database_test_helpers_test.exs`
-- `test/product_compare/toolchain_contract_test.exs`
-- This lane document
-
-## Internal Slices
-
-1. E2E source in the strict TypeScript project.
-2. Frozen setup and Phoenix-owned Vite watcher.
-3. Scheduler capture and bounded database polling.
-4. Exact mise/package pin comparison.
-5. Compatible security dependency refresh.
-
-## Blocker Rule
-
-Stop if a security fix requires a major compatibility decision, if a package
-has no fixed release in the accepted line, if local development needs an
-environment-specific process choice not represented by current config, or if a
-test can be deterministic only by changing production scheduling behavior.
-
 ## Completion Evidence
 
 - The strict TypeScript project includes `assets/tests/e2e`, and the existing
   E2E helpers were simplified enough to pass without a second relaxed type
   configuration (`79dc925c`).
 - `mix setup` installs the frontend from the frozen pnpm lockfile. Phoenix owns
-  the development Vite process through a supervised port wrapper, so one
-  command starts both services and terminating Phoenix also terminates Vite;
-  live startup/shutdown smoke checks left neither port listening (`e9dc2a0c`).
+  the development Vite process through its standard watcher contract, so one
+  command starts both services and watcher lifetime follows the endpoint.
 - Scheduler tests capture their controlled tick instead of sleeping, and
   database helpers use bounded retry polling instead of fixed timing guesses
   (`c1e607db`). Toolchain tests compare the exact mise, package-manager, and

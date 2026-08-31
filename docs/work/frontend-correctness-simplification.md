@@ -14,39 +14,11 @@ in-scope connection; affiliate mutations live with their submitting steps; and
 the shared select and route descriptor expose only behavior the application
 actually uses.
 
-## Owned Paths
-
-- `assets/src/routes/products/ProductDetailRoute.tsx`
-- `assets/src/routes/products/community/**`
-- `assets/src/routes/compare/picker/**`
-- `assets/src/routes/compare/sharing/**`
-- `assets/src/routes/affiliate/setup/**`
-- `assets/src/ui/primitives/Select.tsx`
-- `assets/src/relay/route-preload.ts`
-- Matching generated Relay artifacts
-- Focused frontend tests named by the plan
-- This lane document
-
-## Internal Slices
-
-1. Safe product-detail partial recovery.
-2. Community review/question/answer Relay pagination.
-3. Compare picker and snapshot Relay pagination.
-4. Step-local affiliate mutation state.
-5. Single-select and compact route-descriptor contracts.
-
-## Blocker Rule
-
-Stop if a connection cannot be expressed with Relay's existing schema without
-a backend API change, if mutation state is shared by more than one workflow
-step, or if descriptor compaction would require weakening SSR query retention
-or operation identity.
-
 ## Completion Evidence
 
 - Product-detail recovery now accepts only errors rooted at
-  `product.merchantProducts` and validates the retained identity and SEO
-  projection before rendering a partial response.
+  `product.merchantProducts` and a present product object, then relies on the
+  generated Relay contract for retained fields.
 - Relay pagination fragments own community reviews, questions, answers, the
   compare picker, and comparison snapshots. Four manual cursor/append helpers
   and their effect-driven accumulation paths were removed.

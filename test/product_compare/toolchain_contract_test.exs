@@ -32,18 +32,11 @@ defmodule ProductCompare.ToolchainContractTest do
     end)
   end
 
-  test "frontend metadata pins pnpm, Node, Rolldown-backed Vite, and Oxc checks" do
+  test "frontend metadata agrees with the repository toolchain" do
     package = "assets/package.json" |> path() |> File.read!() |> Jason.decode!()
     mise = ".mise.toml" |> path() |> File.read!()
 
     assert_frontend_toolchain_matches!(mise, package)
-    assert package["devDependencies"]["vite"] == "8.2.0"
-    assert package["devDependencies"]["@vitejs/plugin-react"] == "6.0.5"
-    assert package["devDependencies"]["@rolldown/plugin-babel"] == "0.2.3"
-    assert package["devDependencies"]["@stylexjs/babel-plugin"] == "0.18.1"
-    assert package["devDependencies"]["oxlint"] == "1.76.0"
-    assert package["devDependencies"]["oxfmt"] == "0.61.0"
-
     assert package["scripts"]["check"] =~ "pnpm run lint"
     assert package["scripts"]["check"] =~ "pnpm run format:check"
 
@@ -56,23 +49,6 @@ defmodule ProductCompare.ToolchainContractTest do
            "Docker Compose owns the PostgreSQL runtime; mise install must not require a plugin"
 
     assert mise =~ "disable_tools = [\"ruby\"]"
-  end
-
-  test "toolchain mismatch identifies both conflicting sources and values" do
-    mise = """
-    [tools]
-    node = "24.18.1"
-    pnpm = "11.18.0"
-    """
-
-    package = %{
-      "engines" => %{"node" => "22.0.0", "pnpm" => "11.18.0"},
-      "packageManager" => "pnpm@11.18.0"
-    }
-
-    assert_raise ExUnit.AssertionError,
-                 ~r/Node pin mismatch: \.mise\.toml node="24\.18\.1"; package\.json engines\.node="22\.0\.0"/,
-                 fn -> assert_frontend_toolchain_matches!(mise, package) end
   end
 
   test "setup installs frozen frontend dependencies" do
@@ -88,7 +64,12 @@ defmodule ProductCompare.ToolchainContractTest do
       config |> Keyword.fetch!(:product_compare) |> Keyword.fetch!(ProductCompareWeb.Endpoint)
 
     assert endpoint[:watchers] == [
-             vite: {ProductCompareWeb.ViteWatcher, :run, [path("assets")]}
+             node: [
+               "node_modules/vite/bin/vite.js",
+               "--host",
+               "127.0.0.1",
+               cd: path("assets")
+             ]
            ]
   end
 

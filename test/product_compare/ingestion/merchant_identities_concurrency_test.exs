@@ -4,7 +4,7 @@ defmodule ProductCompare.Ingestion.MerchantIdentitiesConcurrencyTest do
   import Ecto.Query
 
   import ProductCompare.DatabaseTestHelpers,
-    only: [assert_blocked_by: 2, assert_not_blocked_by: 2, start_unboxed_action: 1]
+    only: [assert_blocked_by: 2, start_unboxed_action: 1]
 
   alias Ecto.Adapters.SQL.Sandbox
   alias ProductCompare.Ingestion.MerchantIdentities
@@ -45,12 +45,12 @@ defmodule ProductCompare.Ingestion.MerchantIdentitiesConcurrencyTest do
       })
 
     {current_attempt, current_backend_pid} =
-      start_resolution(source.id, current_listing)
+      start_resolution(source, current_listing)
 
     assert_blocked_by(current_backend_pid, barrier_backend_pid)
 
     {stale_attempt, stale_backend_pid} =
-      start_resolution(source.id, stale_listing)
+      start_resolution(source, stale_listing)
 
     assert_blocked_by(stale_backend_pid, barrier_backend_pid)
     release_identity_lock(barrier)
@@ -70,65 +70,8 @@ defmodule ProductCompare.Ingestion.MerchantIdentitiesConcurrencyTest do
              Repo.all(from merchant in Merchant, where: merchant.domain in ^merchant_domains)
   end
 
-  test "a different merchant identity key does not wait for the held key" do
-    source = committed_source_fixture()
-    held_identifier = "held-merchant"
-    other_domain = "other-merchant.example"
-    on_exit(fn -> delete_committed_fixture(source.id, [other_domain]) end)
-
-    {barrier, barrier_backend_pid} = hold_identity_lock(source.id, held_identifier)
-
-    {other_attempt, other_backend_pid} =
-      start_held_resolution(
-        source.id,
-        normalized_listing(%{
-          merchant_identifier: "other-merchant",
-          merchant_name: "Other Merchant",
-          merchant_domain: other_domain
-        })
-      )
-
-    assert_not_blocked_by(other_backend_pid, barrier_backend_pid)
-    assert_receive {:resolution_finished, task_pid, {:ok, identity}}, 2_000
-    assert task_pid == other_attempt.pid
-    assert identity.merchant_identifier == "other-merchant"
-
-    send(other_attempt.pid, :finish_resolution)
-    assert {:ok, %MerchantSourceIdentity{}} = Task.await(other_attempt)
-    release_identity_lock(barrier)
-  end
-
-  defp start_resolution(source_id, listing) do
-    start_unboxed_action(fn ->
-      Repo.transaction(fn ->
-        case MerchantIdentities.resolve_in_transaction(source_id, listing) do
-          {:ok, identity} -> identity
-          {:error, reason} -> Repo.rollback(reason)
-        end
-      end)
-    end)
-  end
-
-  defp start_held_resolution(source_id, listing) do
-    parent = self()
-
-    start_unboxed_action(fn ->
-      Repo.transaction(fn ->
-        result = MerchantIdentities.resolve_in_transaction(source_id, listing)
-        send(parent, {:resolution_finished, self(), result})
-
-        receive do
-          :finish_resolution ->
-            case result do
-              {:ok, identity} -> identity
-              {:error, reason} -> Repo.rollback(reason)
-            end
-        after
-          5_000 -> flunk("timed out waiting to finish merchant identity resolution")
-        end
-      end)
-    end)
-  end
+  defp start_resolution(source, listing),
+    do: start_unboxed_action(fn -> MerchantIdentities.resolve(source, listing) end)
 
   defp hold_identity_lock(source_id, merchant_identifier) do
     parent = self()

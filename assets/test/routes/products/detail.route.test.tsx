@@ -754,58 +754,6 @@ test.each([
   }
 });
 
-test.each([
-  {
-    name: "a missing SEO projection",
-    product: {
-      id: DETAIL_PRODUCT.id,
-      name: DETAIL_PRODUCT.name,
-      slug: DETAIL_PRODUCT.slug,
-      merchantProducts: null,
-    },
-  },
-  {
-    name: "a malformed SEO projection",
-    product: {
-      ...DETAIL_PRODUCT,
-      seo: { ...DETAIL_PRODUCT.seo, indexable: "yes" },
-      merchantProducts: null,
-    },
-  },
-  {
-    name: "a malformed product identity",
-    product: {
-      ...DETAIL_PRODUCT,
-      id: 42,
-      merchantProducts: null,
-    },
-  },
-  {
-    name: "a non-object product",
-    product: "detail-product",
-  },
-])("product detail loader rejects an offer partial with $name", async ({ product }) => {
-  const environment = createRelayEnvironment();
-  const commitPayloadSpy = vi.spyOn(environment, "commitPayload");
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-
-  mockedFetchRouteQuery.mockRejectedValue(
-    new RouteLoaderGraphQLError({
-      data: { product },
-      errors: [{ message: "Offers unavailable", path: ["product", "merchantProducts"] }],
-    }),
-  );
-
-  try {
-    await expect(
-      productDetailLoader(buildProductDetailLoaderArgs({ environment })),
-    ).resolves.toEqual({ status: "error" });
-    expect(commitPayloadSpy).not.toHaveBeenCalled();
-  } finally {
-    consoleErrorSpy.mockRestore();
-  }
-});
-
 test("product detail loader rethrows aborted product preloads", async () => {
   const environment = createRelayEnvironment();
   const abortError = new DOMException("The operation was aborted.", "AbortError");

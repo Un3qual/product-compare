@@ -400,49 +400,23 @@ function partialProductData(error: unknown): ProductDetailResponseWithProduct | 
   if (!(error instanceof RouteLoaderGraphQLError)) return null;
   const response = error.response;
   if (!hasGraphQLErrors(response) || !("data" in response)) return null;
-  if (!hasOnlyMerchantProductErrors(response.errors)) return null;
+  if (
+    !response.errors.every(
+      (item) => item.path?.[0] === "product" && item.path[1] === "merchantProducts",
+    )
+  ) {
+    return null;
+  }
 
-  return hasRecoverableProduct(response.data) ? response.data : null;
+  return hasProduct(response.data) ? response.data : null;
 }
 
-function hasOnlyMerchantProductErrors(
-  errors: readonly { readonly path?: readonly (number | string)[] | null }[] | null | undefined,
-) {
+function hasProduct(value: unknown): value is ProductDetailResponseWithProduct {
   return Boolean(
-    errors?.length &&
-    errors.every((error) => error.path?.[0] === "product" && error.path[1] === "merchantProducts"),
+    value &&
+    typeof value === "object" &&
+    "product" in value &&
+    value.product &&
+    typeof value.product === "object",
   );
-}
-
-function hasRecoverableProduct(value: unknown): value is ProductDetailResponseWithProduct {
-  if (!isObject(value) || !isObject(value.product)) return false;
-
-  const { product } = value;
-
-  return (
-    typeof product.id === "string" &&
-    typeof product.name === "string" &&
-    typeof product.slug === "string" &&
-    hasSeoProjection(product.seo)
-  );
-}
-
-function hasSeoProjection(value: unknown) {
-  return (
-    isObject(value) &&
-    typeof value.canonicalPath === "string" &&
-    typeof value.description === "string" &&
-    nullableString(value.imageUrl) &&
-    typeof value.indexable === "boolean" &&
-    nullableString(value.structuredData) &&
-    typeof value.title === "string"
-  );
-}
-
-function nullableString(value: unknown) {
-  return value === null || typeof value === "string";
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }

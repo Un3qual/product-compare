@@ -15,16 +15,7 @@ defmodule ProductCompare.Ingestion.MerchantIdentities do
   @spec resolve(Source.t(), NormalizedListing.t()) ::
           {:ok, MerchantSourceIdentity.t()} | {:error, term()}
   def resolve(%Source{id: source_id}, %NormalizedListing{} = listing) do
-    Repo.transaction(fn ->
-      case resolve_in_transaction(source_id, listing) do
-        {:ok, identity} -> identity
-        {:error, reason} -> Repo.rollback(reason)
-      end
-    end)
-    |> case do
-      {:ok, %MerchantSourceIdentity{} = identity} -> {:ok, identity}
-      {:error, reason} -> {:error, reason}
-    end
+    Repo.transact(fn -> resolve_in_transaction(source_id, listing) end)
   end
 
   @spec resolve_in_transaction(integer(), NormalizedListing.t()) ::

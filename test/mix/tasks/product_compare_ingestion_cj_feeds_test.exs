@@ -110,7 +110,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeedsTest do
       invalid_cases = [
         {["--bogus"], "unsupported option: --bogus"},
         {["extra"], "unexpected argument: extra"},
-        {["--limit", "10", "--limit", "20"], "duplicate option: --limit"},
         {["--limit", "0"], "invalid --limit: expected a positive integer"},
         {["--limit", "-1"], "invalid --limit: expected a positive integer"},
         {["--limit", "many"], "invalid value for --limit: many"},

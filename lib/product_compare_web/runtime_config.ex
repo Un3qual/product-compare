@@ -68,43 +68,24 @@ defmodule ProductCompareWeb.RuntimeConfig do
         host
       end
 
-    "https://" <> origin_host(frontend_host)
+    URI.to_string(%URI{scheme: "https", host: frontend_host})
   end
 
-  defp origin_host("[" <> _rest = host), do: host
+  defp normalize_host(value) when is_binary(value) do
+    value = String.trim(value)
+    absolute? = String.contains?(value, "://")
+    uri = URI.parse(if absolute?, do: value, else: "//" <> value)
 
-  defp origin_host(host) do
-    if String.contains?(host, ":"), do: "[#{host}]", else: host
-  end
-
-  defp normalize_host(nil), do: nil
-
-  defp normalize_host(value) do
-    value
-    |> String.trim()
-    |> case do
-      "" ->
-        nil
-
-      trimmed ->
-        if String.contains?(trimmed, "://") do
-          uri = URI.parse(trimmed)
-
-          if uri.scheme in ["http", "https"] and is_nil(uri.userinfo) do
-            normalize_parsed_host(uri.host)
-          end
-        else
-          if String.contains?(trimmed, "/") do
-            nil
-          else
-            trimmed
-            |> then(&URI.parse("//" <> &1))
-            |> Map.get(:host)
-            |> normalize_parsed_host()
-          end
-        end
+    with true <- value != "" and (absolute? or not String.contains?(value, "/")),
+         true <- not absolute? or uri.scheme in ["http", "https"],
+         nil <- uri.userinfo do
+      normalize_parsed_host(uri.host)
+    else
+      _invalid -> nil
     end
   end
+
+  defp normalize_host(_value), do: nil
 
   defp normalize_parsed_host(host) when is_binary(host) do
     host = String.downcase(host)

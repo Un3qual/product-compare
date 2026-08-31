@@ -3,30 +3,13 @@ defmodule ProductCompare.MixTasks.CliOptions do
 
   @spec parse!([String.t()], keyword(), keyword()) :: keyword()
   def parse!(argv, switches, aliases \\ []) do
-    strict_switches = Enum.map(switches, fn {name, type} -> {name, [type, :keep]} end)
-
-    {opts, args, invalid} =
-      OptionParser.parse(argv, strict: strict_switches, aliases: aliases)
+    {opts, args, invalid} = OptionParser.parse(argv, strict: switches, aliases: aliases)
 
     reject_invalid!(invalid)
     reject_args!(args)
-    reject_duplicates!(opts)
 
     opts
   end
-
-  @spec non_blank_string!(String.t() | nil, String.t(), String.t()) :: String.t()
-  def non_blank_string!(nil, default, _name), do: default
-
-  def non_blank_string!(value, _default, name) when is_binary(value) do
-    case String.trim(value) do
-      "" -> Mix.raise("invalid #{name}: expected a non-blank string")
-      normalized -> normalized
-    end
-  end
-
-  def non_blank_string!(_value, _default, name),
-    do: Mix.raise("invalid #{name}: expected a non-blank string")
 
   @spec positive_integer!(integer() | nil, integer(), String.t()) :: integer()
   def positive_integer!(value, default, name) do
@@ -77,22 +60,4 @@ defmodule ProductCompare.MixTasks.CliOptions do
 
   defp reject_args!([arg | _rest]),
     do: Mix.raise("unexpected argument: #{arg}")
-
-  defp reject_duplicates!(opts) do
-    opts
-    |> Enum.reduce_while(MapSet.new(), fn {name, _value}, seen ->
-      if MapSet.member?(seen, name) do
-        {:halt, name}
-      else
-        {:cont, MapSet.put(seen, name)}
-      end
-    end)
-    |> case do
-      %MapSet{} ->
-        :ok
-
-      name ->
-        Mix.raise("duplicate option: --#{name |> Atom.to_string() |> String.replace("_", "-")}")
-    end
-  end
 end
