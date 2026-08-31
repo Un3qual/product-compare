@@ -45,90 +45,7 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 1. Deterministic Tooling And Dependency Health
-
-Status: active
-Lane: Deterministic tooling and dependency health
-Plan: `docs/superpowers/plans/2026-08-30-deterministic-tooling-dependency-health-implementation-plan.md`
-Batch outcome: strict type coverage includes E2E source, Phoenix starts the
-complete dev stack, scheduler/database tests are deterministic, toolchain pins
-match, and compatible dependencies include available security fixes.
-Next action: include `assets/tests/e2e` in the main TypeScript project and
-finish the final isolated CI, advisory, and Playwright evidence after the Ecto
-query pass lands.
-Owned paths:
-
-- Frontend, Mix, config, test helper, toolchain, documentation, and lock files named in the linked plan
-- `docs/work/deterministic-tooling-dependency-health.md`
-
-Internal slices:
-
-- E2E TypeScript coverage.
-- Frozen setup and Phoenix-owned Vite watcher.
-- Scheduler capture and bounded database polling.
-- Exact mise/package pin comparison.
-- Compatible dependency security refresh.
-
-Prerequisites:
-
-- Approved design.
-- Current mise/pnpm/Hex lockfiles and live advisory evidence.
-- Unique final test partition and isolated Playwright ports.
-
-Verification:
-
-- Focused TypeScript, scheduler, database-helper, and toolchain tests in the plan.
-- `MIX_TEST_PARTITION=quality_tooling mix ci`
-- `mix hex.audit`
-- `cd assets && pnpm audit --prod`
-- Full Playwright suite on an isolated port.
-- `git diff --check`
-
-Exit condition: source/setup/test/toolchain contracts are deterministic,
-compatible dependency fixes are locked and audited, full isolated backend and
-frontend gates plus Playwright pass, and any no-compatible-fix blocker is
-recorded exactly.
-
-### 2. Ecto Query Simplification
-
-Status: active
-Lane: Ecto query simplification
-Plan: `docs/superpowers/plans/2026-08-30-ecto-query-simplification-implementation-plan.md`
-Batch outcome: Ecto owns ordinary query semantics, report business rules no
-longer hide inside complex fragments, application updates use Ecto targeting,
-and unavoidable PostgreSQL locks/functions stay in narrow named boundaries.
-Next action: replace direct typed-null, coalesce, null-ordering, date-cast, and
-existence SQL expressions with Ecto built-ins under focused characterization
-tests.
-Owned paths:
-
-- Application query, database-boundary, focused test, and documentation files named in the linked plan
-- `docs/work/ecto-query-simplification.md`
-
-Internal slices:
-
-- Direct Ecto built-in substitutions.
-- Aggregate report classification and enum ownership.
-- Atomic observation conflict simplification.
-- Search-document updates and advisory-lock boundary.
-
-Prerequisites:
-
-- Approved whole-project quality design and explicit Ecto-first follow-up.
-- Existing focused behavior, concurrency, and query-budget tests.
-- Ecto 3.13 and PostgreSQL semantics verified from the locked dependencies.
-
-Verification:
-
-- Focused query/report/concurrency tests in the linked plan.
-- `MIX_TEST_PARTITION=quality_tooling mix ci`
-- `mix credo --strict`
-- `mix dialyzer`
-- `git diff --check`
-
-Exit condition: every application fragment/raw query is reviewed; standard
-operations use Ecto; retained SQL has an unsupported PostgreSQL or direct
-database-contract reason; focused and full gates pass.
+None.
 
 ## Ready Work
 
@@ -136,15 +53,17 @@ None.
 
 ## Ready Floor Exception
 
-Reason: The two remaining approved remediation outcomes are active, leaving no
-unclaimed independently shippable outcome; the fresh query audit produced the
-Ecto batch now owned by this branch and no additional coherent ready batch.
-Rejected split: Splitting individual fragments, report fields, database locks,
-tooling helpers, or advisory packages into file-sized rows would violate their
-shared behavior and verification boundaries.
-Replenishment action: Finish deterministic tooling and Ecto query
-simplification, then audit the final code, tests, and architecture before the
-next dispatch cycle.
+Reason: The approved repository-wide quality, frontend complexity, tooling,
+dependency, and Ecto-query remediation outcomes are complete; the final code,
+test, query, and architecture audit found no additional validated,
+independently shippable candidate.
+Rejected split: Remaining PostgreSQL-specific expressions and native database
+boundaries are intentional, while individual style edits, test assertions,
+helpers, or speculative abstractions would be micro-batches rather than
+coherent product outcomes.
+Replenishment action: Before the next dispatch, curate current product
+behavior, code, tests, architecture gaps, and lane evidence, then promote every
+new coherent candidate that is source-backed and executable.
 
 ## Needs Decision Work
 
