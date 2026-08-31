@@ -233,8 +233,8 @@ defmodule ProductCompare.Catalog.Search do
       [product: product, brand: brand],
       ilike(product.name, ^pattern) or
         ilike(product.slug, ^pattern) or
-        ilike(fragment("coalesce(?, '')", product.model_number), ^pattern) or
-        ilike(fragment("coalesce(?, '')", brand.name), ^pattern)
+        ilike(coalesce(product.model_number, ""), ^pattern) or
+        ilike(coalesce(brand.name, ""), ^pattern)
     )
   end
 
@@ -292,7 +292,7 @@ defmodule ProductCompare.Catalog.Search do
   defp description_contains_expression(pattern) do
     dynamic(
       [product: product],
-      ilike(fragment("coalesce(?, '')", product.description), ^pattern)
+      ilike(coalesce(product.description, ""), ^pattern)
     )
   end
 

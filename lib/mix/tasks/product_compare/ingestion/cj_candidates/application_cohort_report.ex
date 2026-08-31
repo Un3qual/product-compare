@@ -54,11 +54,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.ApplicationCohortRepor
   defp maybe_filter_min_product_count(query, nil), do: query
 
   defp maybe_filter_min_product_count(query, min_product_count) do
-    where(
-      query,
-      [candidate],
-      fragment("coalesce(?, 0) >= ?", candidate.product_count, ^min_product_count)
-    )
+    where(query, [candidate], coalesce(candidate.product_count, 0) >= ^min_product_count)
   end
 
   defp render_lines(candidates) do

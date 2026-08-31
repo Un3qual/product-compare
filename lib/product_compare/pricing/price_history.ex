@@ -235,7 +235,7 @@ defmodule ProductCompare.Pricing.PriceHistory do
       select: %{
         product_id: offer.product_id,
         currency: offer.currency,
-        median: type(fragment("NULL"), :decimal)
+        median: type(^nil, :decimal)
       }
   end
 

@@ -104,7 +104,7 @@ defmodule ProductCompare.Pricing.CurrentOffers do
     case product_ids do
       [] ->
         select_merge(query, [offer: _offer], %{
-          median_30d: type(fragment("NULL"), :decimal),
+          median_30d: type(^nil, :decimal),
           below_30_day_median?: false
         })
 

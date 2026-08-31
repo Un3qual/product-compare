@@ -21,13 +21,13 @@ defmodule ProductCompare.Alerts.HomeRelevance do
 
   defmacrop null_decimal do
     quote do
-      type(fragment("NULL"), :decimal)
+      type(^nil, :decimal)
     end
   end
 
   defmacrop null_bigint do
     quote do
-      type(fragment("NULL"), :integer)
+      type(^nil, :integer)
     end
   end
 

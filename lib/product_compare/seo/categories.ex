@@ -6,7 +6,8 @@ defmodule ProductCompare.Seo.Categories do
   alias ProductCompare.{Input, Repo}
   alias ProductCompare.Pricing.CurrentOffers
   alias ProductCompare.Seo.QualificationPolicy
-  alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Catalog.{Product, ProductMedia}
+  alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonClosure}
 
   @spec get(String.t(), keyword()) :: map() | nil
@@ -241,24 +242,27 @@ defmodule ProductCompare.Seo.Categories do
     minimum_description_length = QualificationPolicy.minimum_description_length()
     specification_offset = QualificationPolicy.minimum_specification_count() - 1
 
-    queryable
-    |> where(
-      [product],
-      fragment(
-        "EXISTS (SELECT 1 FROM product_attribute_current pac WHERE pac.product_id = ? OFFSET ? LIMIT 1)",
-        product.id,
-        ^specification_offset
-      )
-    )
-    |> where(
-      [product],
-      fragment(
-        "char_length(trim(coalesce(?, ''))) >= ?",
-        product.description,
-        ^minimum_description_length
-      ) or
-        fragment("EXISTS (SELECT 1 FROM product_media pm WHERE pm.product_id = ?)", product.id)
-    )
+    specifications =
+      from current in ProductAttributeCurrent,
+        where: current.product_id == parent_as(:product).id,
+        offset: ^specification_offset,
+        limit: 1,
+        select: 1
+
+    media =
+      from media in ProductMedia,
+        where: media.product_id == parent_as(:product).id,
+        select: 1
+
+    from product in queryable,
+      as: :product,
+      where: exists(specifications),
+      where:
+        fragment(
+          "char_length(trim(?)) >= ?",
+          coalesce(product.description, ""),
+          ^minimum_description_length
+        ) or exists(media)
   end
 
   defp category_summary(taxon, qualified_product_count, now) do

@@ -667,9 +667,9 @@ defmodule ProductCompare.SeoTest do
       end)
 
     assert shortcut_query =~ "JOIN LATERAL"
-    assert shortcut_query =~ ~s(FROM product_attribute_current)
+    assert shortcut_query =~ ~r/exists\(\(SELECT 1 FROM "?product_attribute_current"?/i
     assert shortcut_query =~ "OFFSET"
-    refute shortcut_query =~ "SELECT count(*) FROM product_attribute_current"
+    refute shortcut_query =~ ~r/SELECT count\(\*\) FROM "?product_attribute_current"?/i
     refute shortcut_query =~ "count(DISTINCT"
   end
 
