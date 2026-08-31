@@ -10,13 +10,13 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
 
   import Ecto.Query
 
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.{CJProgram, MerchantFeedCandidate}
   alias ProductCompareSchemas.Reference.Currency
 
   @provider "cj"
   @stages Map.values(CJProgram.stage_keys()) ++ [:unmatched]
-  @stage_keys Map.new(@stages, &{Atom.to_string(&1), &1})
   @dimensions [:advertiser_country, :currency, :language, :source_feed_type]
 
   @type stage_counts :: %{
@@ -158,7 +158,7 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
   defp summarize_dimension_rows(rows) do
     rows
     |> Enum.reduce(%{}, fn {bucket, stage_code, candidate_count}, buckets ->
-      stage = stage(stage_code)
+      stage = CJPrograms.normalize_report_stage(stage_code)
 
       Map.update(
         buckets,
@@ -191,15 +191,10 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
   defp stage_counts_from_rows(rows) do
     rows
     |> Enum.reduce(empty_stage_counts(), fn row, counts ->
-      stage = stage(row.stage)
+      stage = CJPrograms.normalize_report_stage(row.stage)
       Map.update!(counts, stage, &(&1 + row.candidate_count))
     end)
   end
-
-  defp stage(nil), do: :unmatched
-  defp stage(stage) when stage in @stages, do: stage
-  defp stage(stage) when is_binary(stage), do: Map.get(@stage_keys, stage, :unmatched)
-  defp stage(_stage), do: :unmatched
 
   defp complete_stage_counts(counts), do: Map.merge(empty_stage_counts(), counts)
   defp empty_stage_counts, do: Map.new(@stages, &{&1, 0})

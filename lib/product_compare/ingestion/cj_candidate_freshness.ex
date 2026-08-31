@@ -9,6 +9,7 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
 
   import Ecto.Query
 
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.CJProgram
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
@@ -17,7 +18,6 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
   @default_fresh_hours 48
   @default_stale_hours 168
   @stages Map.values(CJProgram.stage_keys()) ++ [:unmatched]
-  @stage_keys Map.new(@stages, &{Atom.to_string(&1), &1})
   @buckets [:fresh, :aging, :stale]
 
   @type stage_counts :: %{
@@ -103,7 +103,7 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
     })
     |> Repo.all()
     |> Enum.reduce(empty_buckets(), fn row, buckets ->
-      stage = stage(row.stage)
+      stage = CJPrograms.normalize_report_stage(row.stage)
       aging_count = row.candidate_count - row.fresh_count - row.stale_count
 
       buckets
@@ -121,11 +121,6 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
       }
     end)
   end
-
-  defp stage(nil), do: :unmatched
-  defp stage(stage) when stage in @stages, do: stage
-  defp stage(stage) when is_binary(stage), do: Map.get(@stage_keys, stage, :unmatched)
-  defp stage(_stage), do: :unmatched
 
   defp empty_buckets do
     Map.new(@buckets, fn bucket ->

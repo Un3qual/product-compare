@@ -9,6 +9,8 @@ defmodule ProductCompare.Ingestion.CJPrograms do
 
   @provider "cj"
   @stage_keys CJProgram.stage_keys()
+  @report_stages Map.values(@stage_keys) ++ [:unmatched]
+  @report_stage_keys Map.new(@report_stages, &{Atom.to_string(&1), &1})
   @safe_feed_fields [
     :id,
     :entropy_id,
@@ -82,6 +84,16 @@ defmodule ProductCompare.Ingestion.CJPrograms do
 
   @spec pursued_stages() :: [atom()]
   def pursued_stages, do: [:selected, :applied, :accepted]
+
+  @doc false
+  @spec normalize_report_stage(term()) :: atom()
+  def normalize_report_stage(nil), do: :unmatched
+  def normalize_report_stage(stage) when stage in @report_stages, do: stage
+
+  def normalize_report_stage(stage) when is_binary(stage),
+    do: Map.get(@report_stage_keys, stage, :unmatched)
+
+  def normalize_report_stage(_stage), do: :unmatched
 
   @spec ensure_in_transaction(pos_integer(), String.t() | nil) ::
           {:ok, CJProgram.t()} | {:error, :blank_advertiser_id | Ecto.Changeset.t()}
