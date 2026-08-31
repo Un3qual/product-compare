@@ -68,7 +68,11 @@ defmodule ProductCompareWeb.RuntimeConfig do
         host
       end
 
-    URI.to_string(%URI{scheme: "https", host: frontend_host})
+    "https://" <> origin_host(frontend_host)
+  end
+
+  defp origin_host(host) do
+    if String.contains?(host, ":"), do: "[#{host}]", else: host
   end
 
   defp normalize_host(value) when is_binary(value) do
