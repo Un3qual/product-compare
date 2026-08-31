@@ -10,6 +10,12 @@ defmodule ProductCompare.Seo.Categories do
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonClosure}
 
+  defmacrop parent_product_id do
+    quote do
+      parent_as(:product).id
+    end
+  end
+
   @spec get(String.t(), keyword()) :: map() | nil
   def get(slug, opts \\ [])
 
@@ -244,14 +250,14 @@ defmodule ProductCompare.Seo.Categories do
 
     specifications =
       from current in ProductAttributeCurrent,
-        where: current.product_id == parent_as(:product).id,
+        where: current.product_id == parent_product_id(),
         offset: ^specification_offset,
         limit: 1,
         select: 1
 
     media =
       from media in ProductMedia,
-        where: media.product_id == parent_as(:product).id,
+        where: media.product_id == parent_product_id(),
         select: 1
 
     from product in queryable,
