@@ -10,7 +10,8 @@ defmodule ProductCompare.Ingestion.SourceHealth do
 
   alias ProductCompare.Ingestion.OptionNormalization
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Specs.Source
+  alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Specs.{Source, SourceArtifact}
 
   @default_recent_failure_hours 168
   @min_recent_failure_hours 1
@@ -56,7 +57,7 @@ defmodule ProductCompare.Ingestion.SourceHealth do
         artifact_count: Map.get(artifact_summary, :artifact_count, 0),
         latest_artifact_fetched_at:
           artifact_summary |> Map.get(:latest_artifact_fetched_at) |> utc_datetime(),
-        latest_import_run_status: Map.get(latest_run, :latest_import_run_status),
+        latest_import_run_status: latest_run |> Map.get(:latest_import_run_status) |> status(),
         latest_import_run_finished_at:
           latest_run |> Map.get(:latest_import_run_finished_at) |> utc_datetime(),
         recent_failed_run_count: Map.get(recent_failures, :recent_failed_run_count, 0)
@@ -78,47 +79,43 @@ defmodule ProductCompare.Ingestion.SourceHealth do
   end
 
   defp artifact_summaries do
-    "source_artifacts"
-    |> from(as: :artifact)
-    |> group_by([artifact: artifact], field(artifact, :source_id))
-    |> select([artifact: artifact], %{
-      source_id: field(artifact, :source_id),
-      artifact_count: count(field(artifact, :id)),
-      latest_artifact_fetched_at: max(field(artifact, :fetched_at))
+    SourceArtifact
+    |> group_by([artifact], artifact.source_id)
+    |> select([artifact], %{
+      source_id: artifact.source_id,
+      artifact_count: count(artifact.id),
+      latest_artifact_fetched_at: max(artifact.fetched_at)
     })
     |> Repo.all()
   end
 
   defp latest_runs do
-    "ingestion_runs"
-    |> from(as: :run)
-    |> distinct([run: run], field(run, :source_id))
-    |> order_by([run: run],
-      asc: field(run, :source_id),
-      desc: field(run, :started_at),
-      desc: field(run, :id)
+    ImportRun
+    |> distinct([run], run.source_id)
+    |> order_by([run],
+      asc: run.source_id,
+      desc: run.started_at,
+      desc: run.id
     )
-    |> select([run: run], %{
-      source_id: field(run, :source_id),
-      latest_import_run_status: field(run, :status),
-      latest_import_run_finished_at: field(run, :finished_at)
+    |> select([run], %{
+      source_id: run.source_id,
+      latest_import_run_status: run.status,
+      latest_import_run_finished_at: run.finished_at
     })
     |> Repo.all()
   end
 
   defp recent_failure_counts(recent_failure_since) do
-    "ingestion_runs"
-    |> from(as: :run)
+    ImportRun
     |> where(
-      [run: run],
-      fragment("? = 'failed'::ingestion_run_status", field(run, :status)) and
-        not is_nil(field(run, :finished_at)) and
-        field(run, :finished_at) >= ^recent_failure_since
+      [run],
+      run.status == :failed and not is_nil(run.finished_at) and
+        run.finished_at >= ^recent_failure_since
     )
-    |> group_by([run: run], field(run, :source_id))
-    |> select([run: run], %{
-      source_id: field(run, :source_id),
-      recent_failed_run_count: count(field(run, :id))
+    |> group_by([run], run.source_id)
+    |> select([run], %{
+      source_id: run.source_id,
+      recent_failed_run_count: count(run.id)
     })
     |> Repo.all()
   end
@@ -140,4 +137,8 @@ defmodule ProductCompare.Ingestion.SourceHealth do
   defp utc_datetime(nil), do: nil
   defp utc_datetime(%DateTime{} = datetime), do: datetime
   defp utc_datetime(%NaiveDateTime{} = datetime), do: DateTime.from_naive!(datetime, "Etc/UTC")
+
+  defp status(nil), do: nil
+  defp status(status) when is_atom(status), do: Atom.to_string(status)
+  defp status(status) when is_binary(status), do: status
 end

@@ -55,12 +55,15 @@ defmodule ProductCompare.Ingestion.CJProgramWarnings do
     |> select([feed, _source, country, currency, language], %{
       cj_program_id: feed.cj_program_id,
       missing_advertiser_name:
-        fragment("bool_or(NULLIF(BTRIM(?), '') IS NULL)", feed.advertiser_name),
+        fragment(
+          "bool_or(?)",
+          is_nil(fragment("NULLIF(BTRIM(?), '')", feed.advertiser_name))
+        ),
       missing_product_count:
-        fragment("bool_or(? IS NULL OR ? <= 0)", feed.product_count, feed.product_count),
-      non_us_market: fragment("bool_or(COALESCE(?, '') != 'US')", country.code),
-      non_usd_currency: fragment("bool_or(COALESCE(?, '') != 'USD')", currency.code),
-      non_english_language: fragment("bool_or(COALESCE(?, '') != 'EN')", language.code)
+        fragment("bool_or(?)", is_nil(feed.product_count) or feed.product_count <= 0),
+      non_us_market: fragment("bool_or(?)", coalesce(country.code, "") != "US"),
+      non_usd_currency: fragment("bool_or(?)", coalesce(currency.code, "") != "USD"),
+      non_english_language: fragment("bool_or(?)", coalesce(language.code, "") != "EN")
     })
     |> Repo.all()
   end
