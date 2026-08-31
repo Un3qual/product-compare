@@ -138,7 +138,7 @@ for (const viewport of VIEWPORTS) {
     await expect(details.getByRole("heading", { name: "Commerce" })).toBeVisible();
     await expect(details.getByRole("heading", { name: "Conversion" })).toBeVisible();
     await expect(details.getByText("Product Compare website")).toBeVisible();
-    await expect(details.getByText("OperatorBrowser 1.0")).toBeVisible();
+    await expect(details.getByText("OperatorBrowser/1.0")).toBeVisible();
     await expect(details.getByText("203.0.113.10")).toBeVisible();
     await expect(details.getByText("FIELD-CAMERA-1")).toBeVisible();
     await expect(details.getByText("northwind-impact")).toBeVisible();

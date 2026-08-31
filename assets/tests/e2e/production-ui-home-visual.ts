@@ -144,6 +144,6 @@ export async function expectMobileLedgerDecisionContext(page: Page) {
     "Below the 30-day price",
   );
   await expect(article.locator('[data-slot="product-ledger-market"]')).toContainText(
-    "Last checked Aug 10, 2026",
+    "Last checked 2 days ago",
   );
 }

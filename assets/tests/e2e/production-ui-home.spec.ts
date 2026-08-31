@@ -28,6 +28,8 @@ import {
   expectTabletLedgerGeometry,
 } from "./production-ui-home-visual";
 
+const HOME_REFERENCE_TIME = new Date("2026-08-12T12:00:00Z");
+
 test.afterEach(({ page }) => {
   expectNoUnhandledGraphQLOperations(page);
 });
@@ -252,6 +254,7 @@ for (const viewport of VIEWPORTS) {
   test(`${viewport.name} home workbench is accessible, stable, and visually intentional`, async ({
     page,
   }) => {
+    await page.clock.setFixedTime(HOME_REFERENCE_TIME);
     await page.setViewportSize({ height: viewport.height, width: viewport.width });
     await stubGraphQL(page, homeResponders());
     await page.goto("/?slug=brewmaster-precision-kettle&slug=northstar-barista-scale");
