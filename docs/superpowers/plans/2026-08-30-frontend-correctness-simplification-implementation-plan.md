@@ -40,4 +40,3 @@ Run focused route and primitive tests, Relay validation, strict typecheck, lint,
 format checks, unit tests, client/SSR builds, StyleX and bundle gates, then the
 relevant Playwright flows. Completion evidence and milestone commits live in
 docs/work/frontend-correctness-simplification.md.
-

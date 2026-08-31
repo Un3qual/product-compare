@@ -36,4 +36,3 @@ Run focused concurrency, ingestion, enrichment, and CJ client tests, then
 formatting, type checks, and the complete repository gate. Completion evidence
 and milestone commits live in
 docs/work/ingestion-concurrency-observation-ordering.md.
-

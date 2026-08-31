@@ -37,4 +37,3 @@ Use no-start subprocess tests for invalid input, focused command and adversarial
 diagnostic tests, formatting and type checks, then the complete repository gate.
 Completion evidence and milestone commits live in
 docs/work/operator-command-safety-diagnostics.md.
-
