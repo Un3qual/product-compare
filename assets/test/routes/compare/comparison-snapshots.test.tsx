@@ -576,7 +576,10 @@ test("snapshot pagination preserves accumulated links and pending revoke state",
     </MemoryRouter>,
   );
 
-  expect(loadNext).toHaveBeenCalledWith(20);
+  expect(loadNext).toHaveBeenCalledWith(
+    20,
+    expect.objectContaining({ onComplete: expect.any(Function) }),
+  );
   expect(screen.getByRole("link", { name: "Snapshot 1" })).toBeVisible();
   expect(screen.getByRole("link", { name: "Snapshot 21" })).toBeVisible();
   expect(firstRevoke).toBeDisabled();
@@ -614,6 +617,45 @@ test("snapshot pagination preserves accumulated links and pending revoke state",
 
   expect(screen.queryByRole("button", { name: "Show more links" })).not.toBeInTheDocument();
   expect(firstRevoke).toBeDisabled();
+});
+
+test("snapshot pagination reports failures and retries", async () => {
+  const snapshot = {
+    id: "snapshot-1",
+    sharePath: "/compare/shared/1",
+    title: "Snapshot 1",
+  };
+  const queryData = {
+    viewer: {
+      comparisonSnapshots: {
+        edges: [{ node: snapshot }],
+        pageInfo: { endCursor: "cursor-20", hasNextPage: true },
+      },
+    },
+  };
+  const loadNext = vi.fn();
+
+  mockedUseLazyLoadQuery.mockReturnValue(queryData as never);
+  mockedUsePaginationFragment.mockReturnValue({
+    data: queryData,
+    hasNext: true,
+    isLoadingNext: false,
+    loadNext,
+  } as never);
+
+  render(
+    <MemoryRouter>
+      <ShareComparisonControl products={[]} />
+    </MemoryRouter>,
+  );
+
+  fireEvent.click(screen.getByText("Share this comparison"));
+  fireEvent.click(screen.getByRole("button", { name: "Show more links" }));
+  await act(() => loadNext.mock.calls[0]?.[1]?.onComplete(new Error("Pagination failed")));
+
+  expect(screen.getByRole("alert")).toHaveTextContent("More links unavailable.");
+  fireEvent.click(screen.getByRole("button", { name: "Retry links" }));
+  expect(loadNext).toHaveBeenCalledTimes(2);
 });
 
 test("shared snapshot loader returns an HTTP 404 for invalid or revoked tokens", async () => {

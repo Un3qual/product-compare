@@ -1675,7 +1675,10 @@ test("product picker delegates accumulated and pending pages to Relay", () => {
     </MemoryRouter>,
   );
 
-  expect(loadNext).toHaveBeenCalledWith(24);
+  expect(loadNext).toHaveBeenCalledWith(
+    24,
+    expect.objectContaining({ onComplete: expect.any(Function) }),
+  );
   expect(screen.getByRole("link", { name: "Compare Monitor A" })).toBeVisible();
   expect(screen.getByRole("link", { name: "Compare Monitor C" })).toBeVisible();
   const loadingButton = screen.getByRole("button", { name: "Loading more products…" });
@@ -1694,6 +1697,35 @@ test("product picker delegates accumulated and pending pages to Relay", () => {
   expect(screen.getByRole("link", { name: "Compare Monitor A" })).toBeVisible();
   expect(screen.getByRole("link", { name: "Compare Monitor C" })).toBeVisible();
   expect(screen.queryByRole("button", { name: "Show more products" })).not.toBeInTheDocument();
+});
+
+test("product picker reports pagination failures and retries", async () => {
+  const product = {
+    id: "Product:monitor-a",
+    name: "Monitor A",
+    slug: "monitor-a",
+    brand: { id: "Brand:displayco", name: "DisplayCo" },
+  };
+  const queryData = { products: { edges: [{ node: product }] } };
+  const loadNext = vi.fn();
+
+  mockedUseLoaderData.mockReturnValue({ status: "empty", specMode: "shared", slugs: [] });
+  mockedUseLazyLoadQuery.mockReturnValue(queryData);
+  mockedUsePaginationFragment.mockReturnValue({
+    data: queryData,
+    hasNext: true,
+    isLoadingNext: false,
+    loadNext,
+  } as never);
+
+  renderCompareRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
+  await act(() => loadNext.mock.calls[0]?.[1]?.onComplete(new Error("Pagination failed")));
+
+  expect(screen.getByRole("alert")).toHaveTextContent("More products unavailable.");
+  fireEvent.click(screen.getByRole("button", { name: "Retry products" }));
+  expect(loadNext).toHaveBeenCalledTimes(2);
 });
 
 test("product picker filters loaded product names without hiding pagination", () => {
@@ -1824,7 +1856,10 @@ test("product picker restarts its Relay connection after the selected set change
 
   const { rerender } = renderCompareRoute();
   fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
-  expect(loadNext).toHaveBeenCalledWith(24);
+  expect(loadNext).toHaveBeenCalledWith(
+    24,
+    expect.objectContaining({ onComplete: expect.any(Function) }),
+  );
 
   const callsBeforeSelectionChange = mockedUseLazyLoadQuery.mock.calls.length;
   loaderData = {

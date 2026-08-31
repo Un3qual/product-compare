@@ -353,9 +353,16 @@ function PublishedSnapshots({
     ComparisonSharingSnapshotsPaginationQuery,
     ComparisonSharingOperations_snapshots$key
   >(comparisonSharingSnapshotsFragment, queryData);
+  const [paginationFailed, setPaginationFailed] = useState(false);
   const pageSnapshots =
     data.viewer?.comparisonSnapshots.edges.map(({ node }) => snapshotFromNode(node)) ?? [];
   const snapshots = mergeComparisonSnapshots([localSnapshots, pageSnapshots], revokedSnapshotIds);
+  const loadMore = () => {
+    setPaginationFailed(false);
+    loadNext(SNAPSHOT_PAGE_SIZE, {
+      onComplete: (error) => setPaginationFailed(error !== null),
+    });
+  };
 
   if (snapshots.length === 0 && !hasNext) {
     return null;
@@ -398,10 +405,17 @@ function PublishedSnapshots({
           })}
         </ul>
       ) : null}
-      {hasNext ? (
+      {paginationFailed ? (
+        <div role="alert">
+          <p>More links unavailable.</p>
+          <Button disabled={isLoadingNext} onClick={loadMore} type="button">
+            Retry links
+          </Button>
+        </div>
+      ) : hasNext ? (
         <Button
           disabled={isLoadingNext}
-          onClick={() => loadNext(SNAPSHOT_PAGE_SIZE)}
+          onClick={loadMore}
           type="button"
           variant="link"
         >

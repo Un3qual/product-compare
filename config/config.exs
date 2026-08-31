@@ -34,6 +34,7 @@ config :product_compare, ProductCompare.ReferenceData.Cldr,
   locales: ["en"]
 
 config :ex_cldr, default_backend: ProductCompare.ReferenceData.Cldr
+config :domainatrex, fetch_latest: false
 
 config :product_compare, :public_site_url, "http://localhost:5173"
 

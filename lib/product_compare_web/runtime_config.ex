@@ -106,7 +106,8 @@ defmodule ProductCompareWeb.RuntimeConfig do
     has_parent_label? =
       match?([_label, _suffix], String.split(domain_host, ".", parts: 2, trim: true))
 
-    has_parent_label? and normalize_parsed_host(domain_host) == domain_host and
+    has_parent_label? and not Domainatrex.tld?(domain_host) and
+      normalize_parsed_host(domain_host) == domain_host and
       (endpoint_host == domain_host or String.ends_with?(endpoint_host, "." <> domain_host))
   end
 

@@ -99,4 +99,10 @@ defmodule ProductCompareWeb.RuntimeConfigTest do
       end
     end
   end
+
+  test "session_cookie_domain/2 rejects multi-label public suffixes" do
+    assert_raise ArgumentError, ~r/SESSION_COOKIE_DOMAIN/, fn ->
+      RuntimeConfig.session_cookie_domain("api.example.co.uk", ".co.uk")
+    end
+  end
 end
