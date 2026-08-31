@@ -38,7 +38,7 @@ defmodule ProductCompare.Pricing do
   def get_merchant_by_slug(_slug), do: nil
 
   @spec get_merchants_by_slugs([term()]) :: %{optional(String.t()) => Merchant.t() | nil}
-  def get_merchants_by_slugs(slugs) when is_list(slugs),
+  def get_merchants_by_slugs(slugs),
     do: Merchants.get_merchants_by_slugs(slugs)
 
   @spec merchant_detail(String.t() | Merchant.t(), keyword()) ::
@@ -65,8 +65,7 @@ defmodule ProductCompare.Pricing do
           offset: non_neg_integer(),
           fetch_limit: non_neg_integer()
         }) :: %{optional(pos_integer()) => [MerchantProduct.t()]}
-  def merchant_offer_pages(merchant_ids, %{offset: offset, fetch_limit: fetch_limit})
-      when is_list(merchant_ids) do
+  def merchant_offer_pages(merchant_ids, %{offset: offset, fetch_limit: fetch_limit}) do
     Offers.merchant_offer_pages(merchant_ids, %{offset: offset, fetch_limit: fetch_limit})
   end
 
@@ -81,8 +80,7 @@ defmodule ProductCompare.Pricing do
           offset: non_neg_integer(),
           fetch_limit: non_neg_integer()
         }) :: %{optional(pos_integer()) => [MerchantProduct.t()]}
-  def product_offer_pages(product_ids, filters, %{offset: offset, fetch_limit: fetch_limit})
-      when is_list(product_ids) and is_map(filters) do
+  def product_offer_pages(product_ids, filters, %{offset: offset, fetch_limit: fetch_limit}) do
     Offers.product_offer_pages(product_ids, filters, %{
       offset: offset,
       fetch_limit: fetch_limit
@@ -118,8 +116,7 @@ defmodule ProductCompare.Pricing do
   def latest_price(merchant_product_id), do: PriceHistory.latest_price(merchant_product_id)
 
   @spec latest_prices_query(Ecto.Queryable.t(), [pos_integer()]) :: Ecto.Query.t()
-  def latest_prices_query(queryable \\ PricePoint, merchant_product_ids)
-      when is_list(merchant_product_ids) do
+  def latest_prices_query(queryable \\ PricePoint, merchant_product_ids) do
     PriceHistory.latest_prices_query(queryable, merchant_product_ids)
   end
 
@@ -139,8 +136,7 @@ defmodule ProductCompare.Pricing do
         merchant_product_ids,
         filters,
         %{offset: offset, fetch_limit: fetch_limit}
-      )
-      when is_list(merchant_product_ids) and is_map(filters) do
+      ) do
     PriceHistory.price_history_pages(merchant_product_ids, filters, %{
       offset: offset,
       fetch_limit: fetch_limit
@@ -150,16 +146,16 @@ defmodule ProductCompare.Pricing do
   @spec product_price_trends([pos_integer()], keyword()) :: %{
           optional(pos_integer()) => [map()]
         }
-  def product_price_trends(product_ids, opts \\ []) when is_list(product_ids) do
+  def product_price_trends(product_ids, opts \\ []) do
     ProductPriceTrends.project(product_ids, Keyword.get(opts, :as_of, DateTime.utc_now()))
   end
 
   @spec current_offer_truths([pos_integer()], keyword()) :: %{optional(pos_integer()) => map()}
-  def current_offer_truths(product_ids, opts \\ []) when is_list(product_ids),
+  def current_offer_truths(product_ids, opts \\ []),
     do: CurrentOffers.current_offer_truths(product_ids, opts)
 
   @spec home_offer_summaries([term()], keyword()) :: %{optional(pos_integer()) => map()}
-  def home_offer_summaries(product_ids, opts \\ []) when is_list(product_ids),
+  def home_offer_summaries(product_ids, opts \\ []),
     do: HomeOffers.summaries(product_ids, opts)
 
   @spec home_new_deal_candidates(keyword()) :: [map()]
@@ -168,9 +164,8 @@ defmodule ProductCompare.Pricing do
   @spec home_offer_page_facts([map()], MapSet.t(atom()), keyword()) :: %{
           optional(pos_integer()) => map()
         }
-  def home_offer_page_facts(offers, requested_fields, opts \\ [])
-      when is_list(offers) and is_struct(requested_fields, MapSet),
-      do: HomeOffers.page_facts(offers, requested_fields, opts)
+  def home_offer_page_facts(offers, requested_fields, opts \\ []),
+    do: HomeOffers.page_facts(offers, requested_fields, opts)
 
   @spec home_trending_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
   def home_trending_deal_candidates(activity_query, opts),

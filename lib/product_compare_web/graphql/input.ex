@@ -7,19 +7,19 @@ defmodule ProductCompareWeb.GraphQL.Input do
   @spec fetch_value(map(), atom(), any()) :: any()
   def fetch_value(map, key, default \\ nil)
 
-  def fetch_value(map, key, default) when is_map(map) do
+  def fetch_value(map, key, default) do
     Map.get(map, key, Map.get(map, Atom.to_string(key), default))
   end
 
   @spec drop_key(map(), atom()) :: map()
-  def drop_key(map, key) when is_map(map) and is_atom(key) do
+  def drop_key(map, key) do
     map
     |> Map.delete(key)
     |> Map.delete(Atom.to_string(key))
   end
 
   @spec take_present(map(), [atom()]) :: map()
-  def take_present(map, keys) when is_map(map) and is_list(keys) do
+  def take_present(map, keys) do
     Enum.reduce(keys, %{}, fn key, attrs ->
       case fetch_value(map, key) do
         nil -> attrs
@@ -29,7 +29,7 @@ defmodule ProductCompareWeb.GraphQL.Input do
   end
 
   @spec take(map(), [atom()]) :: map()
-  def take(map, keys) when is_map(map) and is_list(keys) do
+  def take(map, keys) do
     missing = make_ref()
 
     Enum.reduce(keys, %{}, fn key, attrs ->
@@ -80,8 +80,7 @@ defmodule ProductCompareWeb.GraphQL.Input do
 
   @spec decode_optional_integer_id_field(map(), atom(), GlobalId.type(), String.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def decode_optional_integer_id_field(attrs, field, expected_type, field_name)
-      when is_map(attrs) and is_atom(field) do
+  def decode_optional_integer_id_field(attrs, field, expected_type, field_name) do
     missing = make_ref()
 
     case fetch_value(attrs, field, missing) do

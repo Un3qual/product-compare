@@ -12,7 +12,8 @@ defmodule ProductCompare.DatabaseTestHelpers do
   @initial_poll_delay_ms 5
   @maximum_poll_delay_ms 50
 
-  def capture_queries(fun) when is_function(fun, 0) do
+  @spec capture_queries((-> result)) :: {result, [String.t()]} when result: term()
+  def capture_queries(fun) do
     handler_id = {__MODULE__, System.unique_integer([:positive])}
     ref = make_ref()
     test_pid = self()
@@ -37,7 +38,8 @@ defmodule ProductCompare.DatabaseTestHelpers do
     end
   end
 
-  def capture_select_queries(fun) when is_function(fun, 0) do
+  @spec capture_select_queries((-> result)) :: {result, [String.t()]} when result: term()
+  def capture_select_queries(fun) do
     handler_id = {__MODULE__, System.unique_integer([:positive])}
     ref = make_ref()
     test_pid = self()
@@ -62,7 +64,10 @@ defmodule ProductCompare.DatabaseTestHelpers do
     end
   end
 
-  def capture_select_query_events(fun) when is_function(fun, 0) do
+  @spec capture_select_query_events((-> result)) ::
+          {result, [%{query: String.t(), params: term()}]}
+        when result: term()
+  def capture_select_query_events(fun) do
     handler_id = {__MODULE__, System.unique_integer([:positive])}
     ref = make_ref()
     test_pid = self()
@@ -88,7 +93,7 @@ defmodule ProductCompare.DatabaseTestHelpers do
   end
 
   @spec count_select_queries_targeting_table([String.t()], atom()) :: non_neg_integer()
-  def count_select_queries_targeting_table(queries, table) when is_atom(table) do
+  def count_select_queries_targeting_table(queries, table) do
     Enum.count(queries, &String.contains?(&1, ~s(FROM "#{table}")))
   end
 
@@ -181,8 +186,12 @@ defmodule ProductCompare.DatabaseTestHelpers do
   end
 
   @doc false
-  def poll_until(probe, expectation, opts \\ [])
-      when is_function(probe, 0) and is_binary(expectation) and is_list(opts) do
+  @spec poll_until(
+          (-> :ready | {:retry, term()} | {:error, String.t()}),
+          String.t(),
+          keyword()
+        ) :: :ok
+  def poll_until(probe, expectation, opts \\ []) do
     clock = Keyword.get(opts, :clock, fn -> System.monotonic_time(:millisecond) end)
     sleep = Keyword.get(opts, :sleep, &Process.sleep/1)
     timeout_ms = Keyword.get(opts, :timeout_ms, @poll_timeout_ms)
@@ -191,7 +200,8 @@ defmodule ProductCompare.DatabaseTestHelpers do
     poll_until(probe, expectation, deadline, clock, sleep, @initial_poll_delay_ms)
   end
 
-  def hold_row_lock(schema, id, transition) when is_function(transition, 1) do
+  @spec hold_row_lock(module(), term(), (struct() -> term())) :: {Task.t(), pos_integer()}
+  def hold_row_lock(schema, id, transition) do
     parent = self()
 
     task =
@@ -253,7 +263,8 @@ defmodule ProductCompare.DatabaseTestHelpers do
     assert {:ok, %User{is_operator: false}} = Task.await(task)
   end
 
-  def start_unboxed_action(action) when is_function(action, 0) do
+  @spec start_unboxed_action((-> term())) :: {Task.t(), pos_integer()}
+  def start_unboxed_action(action) do
     parent = self()
 
     task =
@@ -284,7 +295,7 @@ defmodule ProductCompare.DatabaseTestHelpers do
     end
   end
 
-  defp select_query?(query) when is_binary(query) do
+  defp select_query?(query) do
     query
     |> String.trim_leading()
     |> String.upcase()

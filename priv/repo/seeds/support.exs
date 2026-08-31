@@ -10,7 +10,7 @@ defmodule ProductCompare.DevSeeds.Support do
 
   @spec serializable_transaction((-> value)) :: {:ok, value} | {:error, term()}
         when value: var
-  def serializable_transaction(fun) when is_function(fun, 0) do
+  def serializable_transaction(fun) do
     case Repo.query!("SHOW transaction_isolation").rows do
       [[level]] when level in ["repeatable read", "serializable"] ->
         if Repo.in_transaction?() do
@@ -31,10 +31,10 @@ defmodule ProductCompare.DevSeeds.Support do
   def unobserved_watch_entropy_id, do: @unobserved_watch_entropy_id
 
   @spec sha256(binary()) :: binary()
-  def sha256(value) when is_binary(value), do: :crypto.hash(:sha256, value)
+  def sha256(value), do: :crypto.hash(:sha256, value)
 
   @spec stable_uuid(String.t(), String.t()) :: Ecto.UUID.t()
-  def stable_uuid(namespace, key) when is_binary(namespace) and is_binary(key) do
+  def stable_uuid(namespace, key) do
     hex =
       "#{namespace}:#{key}"
       |> sha256()
@@ -55,8 +55,7 @@ defmodule ProductCompare.DevSeeds.Support do
   end
 
   @spec validated_row!(Ecto.Changeset.t(), [atom()], keyword()) :: map()
-  def validated_row!(%Ecto.Changeset{} = changeset, persisted_fields, options)
-      when is_list(persisted_fields) and is_list(options) do
+  def validated_row!(%Ecto.Changeset{} = changeset, persisted_fields, options) do
     stage = Keyword.fetch!(options, :stage)
     seed_fields = options |> Keyword.delete(:stage) |> Map.new()
 
@@ -67,8 +66,7 @@ defmodule ProductCompare.DevSeeds.Support do
   end
 
   @spec sync_owned_rows!(module(), [map()], [atom()], keyword()) :: [struct()]
-  def sync_owned_rows!(schema, rows, persisted_fields, options)
-      when is_atom(schema) and is_list(rows) and is_list(persisted_fields) and is_list(options) do
+  def sync_owned_rows!(schema, rows, persisted_fields, options) do
     stage = Keyword.fetch!(options, :stage)
     chunk_size = Keyword.get(options, :chunk_size, 1_000)
     entropy_ids = Enum.map(rows, &Map.fetch!(&1, :entropy_id))
@@ -122,7 +120,7 @@ defmodule ProductCompare.DevSeeds.Support do
   end
 
   @spec capture_token!(((String.t() -> :ok) -> :ok)) :: String.t()
-  def capture_token!(delivery) when is_function(delivery, 1) do
+  def capture_token!(delivery) do
     receiver = self()
     reference = make_ref()
 

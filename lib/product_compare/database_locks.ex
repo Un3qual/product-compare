@@ -4,7 +4,7 @@ defmodule ProductCompare.DatabaseLocks do
   alias ProductCompare.Repo
 
   @spec lock_transaction!(String.t()) :: :ok
-  def lock_transaction!(key) when is_binary(key) do
+  def lock_transaction!(key) do
     unless Repo.in_transaction?() do
       raise ArgumentError, "transaction advisory locks require a database transaction"
     end

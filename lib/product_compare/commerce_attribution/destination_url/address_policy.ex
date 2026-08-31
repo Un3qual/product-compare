@@ -4,7 +4,7 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrl.AddressPolicy do
   @documentation_ipv4_ranges MapSet.new(["192.0.2", "198.51.100", "203.0.113"])
 
   @spec public_hostname?(String.t()) :: boolean()
-  def public_hostname?(hostname) when is_binary(hostname) do
+  def public_hostname?(hostname) do
     valid_hostname?(hostname) and
       not localhost_hostname?(hostname) and
       not reserved_ip_hostname?(hostname)

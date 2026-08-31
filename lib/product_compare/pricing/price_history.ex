@@ -37,8 +37,7 @@ defmodule ProductCompare.Pricing.PriceHistory do
   end
 
   @spec latest_prices_query(Ecto.Queryable.t(), [pos_integer()]) :: Ecto.Query.t()
-  def latest_prices_query(queryable \\ PricePoint, merchant_product_ids)
-      when is_list(merchant_product_ids) do
+  def latest_prices_query(queryable \\ PricePoint, merchant_product_ids) do
     from pp in queryable,
       where: pp.merchant_product_id in ^merchant_product_ids,
       distinct: pp.merchant_product_id,
@@ -110,8 +109,7 @@ defmodule ProductCompare.Pricing.PriceHistory do
         merchant_product_ids,
         filters,
         %{offset: offset, fetch_limit: fetch_limit}
-      )
-      when is_list(merchant_product_ids) and is_map(filters) do
+      ) do
     merchant_product_ids = normalize_merchant_product_ids(merchant_product_ids)
 
     if merchant_product_ids == [] do

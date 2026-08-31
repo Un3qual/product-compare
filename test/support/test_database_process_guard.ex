@@ -1,7 +1,8 @@
 defmodule ProductCompare.TestDatabaseProcessGuard do
   @default_namespace "external-mix-test-process"
 
-  def acquire!(repo, namespace \\ @default_namespace) when is_binary(namespace) do
+  @spec acquire!(module(), String.t()) :: Postgrex.conn()
+  def acquire!(repo, namespace \\ @default_namespace) do
     {:ok, connection} = Postgrex.start_link(connection_config(repo))
 
     try do

@@ -11,7 +11,7 @@ defmodule ProductCompare.CommerceAttribution.AwinAdapter do
   alias ProductCompareSchemas.DecimalInput
 
   @spec ingest_transaction(map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
-  def ingest_transaction(payload) when is_map(payload) do
+  def ingest_transaction(payload) do
     payload
     |> normalize_transaction()
     |> CommerceAttribution.ingest_conversion()

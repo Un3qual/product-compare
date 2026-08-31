@@ -2724,7 +2724,7 @@ defmodule ProductCompare.CommerceAttributionTest do
     )
   end
 
-  defp currency_probe_query?(query) when is_binary(query) do
+  defp currency_probe_query?(query) do
     String.contains?(query, "DISTINCT") and
       String.contains?(query, ~s("currency_id")) and
       String.contains?(query, ~s(FROM "commerce_conversions"))

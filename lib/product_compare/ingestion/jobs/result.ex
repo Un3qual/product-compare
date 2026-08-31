@@ -2,7 +2,7 @@ defmodule ProductCompare.Ingestion.Jobs.Result do
   @moduledoc false
 
   @spec run((-> term())) :: :ok | {:cancel, String.t()} | {:error, String.t()}
-  def run(fun) when is_function(fun, 0) do
+  def run(fun) do
     fun.()
     |> classify()
   rescue

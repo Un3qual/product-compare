@@ -23,7 +23,7 @@ defmodule ProductCompare.Seo do
   def product_metadata(%Product{} = product, opts \\ []), do: Metadata.product(product, opts)
 
   @spec product_metadata_batch([Product.t()], keyword()) :: %{Product.t() => metadata()}
-  def product_metadata_batch(products, opts \\ []) when is_list(products),
+  def product_metadata_batch(products, opts \\ []),
     do: Metadata.product_batch(products, opts)
 
   @spec merchant_metadata(Merchant.t(), keyword()) :: metadata()
@@ -44,7 +44,7 @@ defmodule ProductCompare.Seo do
   def get_category(_slug, _opts), do: nil
 
   @spec get_categories([String.t()], keyword()) :: %{String.t() => map() | nil}
-  def get_categories(slugs, opts \\ []) when is_list(slugs), do: Categories.get_many(slugs, opts)
+  def get_categories(slugs, opts \\ []), do: Categories.get_many(slugs, opts)
 
   @spec home_category_shortcuts(keyword()) :: [map()]
   def home_category_shortcuts(opts), do: Categories.home_shortcuts(opts)

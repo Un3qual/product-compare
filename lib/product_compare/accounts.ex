@@ -26,7 +26,7 @@ defmodule ProductCompare.Accounts do
   @doc "Updates operator access for trusted seed and bootstrap code."
   @spec set_operator_access(User.t(), boolean()) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def set_operator_access(%User{} = user, is_operator) when is_boolean(is_operator),
+  def set_operator_access(%User{} = user, is_operator),
     do: Users.set_operator_access(user, is_operator)
 
   @doc "Locks and returns a current operator inside an existing transaction."
@@ -43,8 +43,7 @@ defmodule ProductCompare.Accounts do
   """
   @spec bootstrap_operator_user(String.t(), String.t(), integer()) ::
           {:ok, User.t()} | {:error, :existing_non_operator | Ecto.Changeset.t()}
-  def bootstrap_operator_user(email, password, reputation_points)
-      when is_binary(email) and is_binary(password) and is_integer(reputation_points) do
+  def bootstrap_operator_user(email, password, reputation_points) do
     Users.bootstrap_operator_user(email, password, reputation_points)
   end
 
@@ -59,7 +58,7 @@ defmodule ProductCompare.Accounts do
   """
   @spec ensure_user_with_password(String.t(), String.t()) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def ensure_user_with_password(email, password) when is_binary(email) and is_binary(password) do
+  def ensure_user_with_password(email, password) do
     Users.ensure_user_with_password(email, password)
   end
 
@@ -135,15 +134,13 @@ defmodule ProductCompare.Accounts do
   Invalid UUID binaries return `nil` instead of raising.
   """
   @spec get_api_token_for_user(User.t(), binary()) :: ApiToken.t() | nil
-  def get_api_token_for_user(%User{} = user, token_entropy_id)
-      when is_binary(token_entropy_id) do
+  def get_api_token_for_user(%User{} = user, token_entropy_id) do
     ApiTokens.get_api_token_for_user(user, token_entropy_id)
   end
 
   @spec get_api_tokens_for_user(User.t(), [binary()]) ::
           %{optional(binary()) => ApiToken.t() | nil}
-  def get_api_tokens_for_user(%User{} = user, token_entropy_ids)
-      when is_list(token_entropy_ids) do
+  def get_api_tokens_for_user(%User{} = user, token_entropy_ids) do
     ApiTokens.get_api_tokens_for_user(user, token_entropy_ids)
   end
 

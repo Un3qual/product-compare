@@ -34,7 +34,8 @@ defmodule ProductCompare.Taxonomy.Hierarchy do
     end
   end
 
-  def update_taxon(%Taxon{} = taxon, attrs) when is_map(attrs) do
+  @spec update_taxon(Taxon.t(), map()) :: {:ok, Taxon.t()} | {:error, Ecto.Changeset.t()}
+  def update_taxon(%Taxon{} = taxon, attrs) do
     taxon
     |> Taxon.changeset(attrs)
     |> Repo.update()

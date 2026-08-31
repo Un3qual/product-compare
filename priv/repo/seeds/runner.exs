@@ -12,7 +12,7 @@ defmodule ProductCompare.DevSeeds do
   alias ProductCompare.DevSeeds.Support
 
   @spec run!([String.t()]) :: map()
-  def run!(argv \\ []) when is_list(argv) do
+  def run!(argv \\ []) do
     password = seed_user_password()
     argv = if match?(["--" | _], argv), do: tl(argv), else: argv
     profile = Profile.parse!(argv)
@@ -22,7 +22,7 @@ defmodule ProductCompare.DevSeeds do
 
   @doc false
   @spec run_profile!(map()) :: map()
-  def run_profile!(profile) when is_map(profile) do
+  def run_profile!(profile) do
     run_profile!(profile, seed_user_password())
   end
 

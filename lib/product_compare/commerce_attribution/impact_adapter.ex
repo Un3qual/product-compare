@@ -10,7 +10,7 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
   alias ProductCompareSchemas.DecimalInput
 
   @spec ingest_action(map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
-  def ingest_action(payload) when is_map(payload) do
+  def ingest_action(payload) do
     payload
     |> normalize_action()
     |> CommerceAttribution.ingest_conversion()

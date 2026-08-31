@@ -215,7 +215,7 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
     program_error_payload(GraphQLErrors.mutation_error(code, message, field))
   end
 
-  defp program_error_payload(error) when is_map(error) do
+  defp program_error_payload(error) do
     %{
       program: nil,
       errors: [error]

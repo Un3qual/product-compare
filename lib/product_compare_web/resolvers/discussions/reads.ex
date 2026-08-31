@@ -11,8 +11,9 @@ defmodule ProductCompareWeb.Resolvers.Discussions.Reads do
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Discussions.ProductThread
 
-  def review_summary(%{id: product_id}, _args, %{context: %{loader: loader}})
-      when is_integer(product_id) do
+  @spec review_summary(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map() | nil} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def review_summary(%{id: product_id}, _args, %{context: %{loader: loader}}) do
     source = Loader.product_evidence_source()
     batch = {:one, Product}
     item = [review_summary: product_id]

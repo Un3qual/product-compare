@@ -177,8 +177,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
          {:products, connection_args, %DateTime{} = now},
          category_ids,
          _repo_opts
-       )
-       when is_map(connection_args) do
+       ) do
     {:ok, window} = Connection.batch_window(connection_args)
     pages = Seo.qualified_product_pages(category_ids, now, window)
     project_prefetched_pages(category_ids, pages, connection_args)

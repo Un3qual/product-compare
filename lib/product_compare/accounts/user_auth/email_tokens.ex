@@ -17,8 +17,7 @@ defmodule ProductCompare.Accounts.UserAuth.EmailTokens do
   @user_auth_config :"Elixir.ProductCompare.Accounts.UserAuth"
 
   @spec deliver_confirmation_instructions(User.t(), (String.t() -> any())) :: :ok
-  def deliver_confirmation_instructions(%User{} = user, delivery_fun)
-      when is_function(delivery_fun, 1) do
+  def deliver_confirmation_instructions(%User{} = user, delivery_fun) do
     deliver_user_email_instructions(
       user,
       @confirm_context,
@@ -56,8 +55,7 @@ defmodule ProductCompare.Accounts.UserAuth.EmailTokens do
   def confirm_user(_token), do: {:error, :invalid_token}
 
   @spec deliver_reset_password_instructions(User.t(), (String.t() -> any())) :: :ok
-  def deliver_reset_password_instructions(%User{} = user, delivery_fun)
-      when is_function(delivery_fun, 1) do
+  def deliver_reset_password_instructions(%User{} = user, delivery_fun) do
     deliver_user_email_instructions(
       user,
       @reset_password_context,

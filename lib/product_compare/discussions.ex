@@ -92,7 +92,7 @@ defmodule ProductCompare.Discussions do
             average_rating: Decimal.t() | nil
           }
         }
-  def review_summaries(product_ids) when is_list(product_ids),
+  def review_summaries(product_ids),
     do: Reads.review_summaries(product_ids)
 
   @spec review_summary(pos_integer()) :: %{
@@ -213,7 +213,7 @@ defmodule ProductCompare.Discussions do
   def get_public_question(entropy_id), do: Reads.get_public_question(entropy_id)
 
   @spec get_public_questions([term()]) :: %{optional(term()) => ProductThread.t() | nil}
-  def get_public_questions(entropy_ids) when is_list(entropy_ids),
+  def get_public_questions(entropy_ids),
     do: Reads.get_public_questions(entropy_ids)
 
   @spec get_visible_nodes(

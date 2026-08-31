@@ -112,7 +112,7 @@ defmodule ProductCompare.Catalog.Products do
   end
 
   @spec get_products_by_slugs([term()]) :: %{optional(String.t()) => Product.t() | nil}
-  def get_products_by_slugs(slugs) when is_list(slugs) do
+  def get_products_by_slugs(slugs) do
     requested_slugs = slugs |> Enum.filter(&is_binary/1) |> Enum.uniq()
     query_slugs = Enum.reject(requested_slugs, &(String.trim(&1) == ""))
 
@@ -147,7 +147,7 @@ defmodule ProductCompare.Catalog.Products do
   end
 
   @spec list_products_by_slugs([String.t()]) :: [Product.t() | nil]
-  def list_products_by_slugs(slugs) when is_list(slugs) do
+  def list_products_by_slugs(slugs) do
     products_by_slug =
       Product
       |> where([product], product.slug in ^slugs)
@@ -158,7 +158,7 @@ defmodule ProductCompare.Catalog.Products do
   end
 
   @spec list_products_by_slug_selections([[term()]]) :: [[Product.t() | nil]]
-  def list_products_by_slug_selections(slug_selections) when is_list(slug_selections) do
+  def list_products_by_slug_selections(slug_selections) do
     products_by_slug =
       slug_selections
       |> List.flatten()
@@ -220,7 +220,7 @@ defmodule ProductCompare.Catalog.Products do
     end
   end
 
-  defp drop_nil_primary_type_taxon(attrs) when is_map(attrs) do
+  defp drop_nil_primary_type_taxon(attrs) do
     attrs
     |> drop_nil_key(:primary_type_taxon_id)
     |> drop_nil_key("primary_type_taxon_id")

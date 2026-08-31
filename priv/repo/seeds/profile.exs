@@ -41,7 +41,7 @@ defmodule ProductCompare.DevSeeds.Profile do
   }
 
   @spec parse!([String.t()]) :: map()
-  def parse!(argv) when is_list(argv) do
+  def parse!(argv) do
     density_option_count =
       Enum.count(argv, &(&1 == "--density" or String.starts_with?(&1, "--density=")))
 

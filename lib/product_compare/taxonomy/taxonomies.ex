@@ -55,7 +55,8 @@ defmodule ProductCompare.Taxonomy.Taxonomies do
     end
   end
 
-  def list_taxons_for_taxonomy(taxonomy_code) when is_binary(taxonomy_code) do
+  @spec list_taxons_for_taxonomy(String.t()) :: [Taxon.t()]
+  def list_taxons_for_taxonomy(taxonomy_code) do
     Repo.all(
       from taxon in Taxon,
         join: taxonomy in Taxonomy,

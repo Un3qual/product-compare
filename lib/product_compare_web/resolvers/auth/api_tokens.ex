@@ -111,7 +111,7 @@ defmodule ProductCompareWeb.Resolvers.Auth.ApiTokens do
     }
   end
 
-  defp create_rotate_error_payload(error) when is_map(error) do
+  defp create_rotate_error_payload(error) do
     %{
       plain_text_token: nil,
       api_token: nil,
@@ -126,7 +126,7 @@ defmodule ProductCompareWeb.Resolvers.Auth.ApiTokens do
     }
   end
 
-  defp revoke_error_payload(error) when is_map(error) do
+  defp revoke_error_payload(error) do
     %{
       api_token: nil,
       errors: [error]

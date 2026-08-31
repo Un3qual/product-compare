@@ -5173,11 +5173,11 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     |> String.trim("-")
   end
 
-  defp relevant_query?(query) when is_binary(query) do
+  defp relevant_query?(query) do
     Enum.any?(@tracked_tables, &query_targets_table?(query, &1))
   end
 
-  defp query_targets_table?(query, table) when is_binary(query) and is_atom(table) do
+  defp query_targets_table?(query, table) do
     String.contains?(query, ~s(FROM "#{table}"))
   end
 

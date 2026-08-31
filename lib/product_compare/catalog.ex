@@ -33,7 +33,7 @@ defmodule ProductCompare.Catalog do
   def home_workspace_product_candidates(opts), do: HomeWorkspace.product_candidates(opts)
 
   @spec home_workspace_selected_products([term()]) :: [Product.t()]
-  def home_workspace_selected_products(selected_slugs) when is_list(selected_slugs),
+  def home_workspace_selected_products(selected_slugs),
     do: HomeWorkspace.selected_products(selected_slugs)
 
   @spec product_filter_metadata(map()) :: map()
@@ -74,19 +74,17 @@ defmodule ProductCompare.Catalog do
   end
 
   @spec get_products_by_slugs([term()]) :: %{optional(String.t()) => Product.t() | nil}
-  def get_products_by_slugs(slugs) when is_list(slugs) do
+  def get_products_by_slugs(slugs) do
     Products.get_products_by_slugs(slugs)
   end
 
   @spec get_product_by_identifier(atom() | String.t(), String.t()) :: Product.t() | nil
-  def get_product_by_identifier(scheme, normalized_value)
-      when (is_atom(scheme) or is_binary(scheme)) and is_binary(normalized_value) do
+  def get_product_by_identifier(scheme, normalized_value) do
     Evidence.get_product_by_identifier(scheme, normalized_value)
   end
 
   @spec list_product_identifiers(pos_integer(), atom() | String.t()) :: [ProductIdentifier.t()]
-  def list_product_identifiers(product_id, scheme)
-      when is_integer(product_id) and (is_atom(scheme) or is_binary(scheme)) do
+  def list_product_identifiers(product_id, scheme) do
     Evidence.list_product_identifiers(product_id, scheme)
   end
 
@@ -100,23 +98,22 @@ defmodule ProductCompare.Catalog do
           persisted: non_neg_integer(),
           rejected: non_neg_integer()
         }
-  def upsert_product_media(%Product{} = product, source_artifact_id, observations, observed_at)
-      when is_list(observations) do
+  def upsert_product_media(%Product{} = product, source_artifact_id, observations, observed_at) do
     Evidence.upsert_product_media(product, source_artifact_id, observations, observed_at)
   end
 
   @spec list_product_media(pos_integer()) :: [ProductMedia.t()]
-  def list_product_media(product_id) when is_integer(product_id) do
+  def list_product_media(product_id) do
     Evidence.list_product_media(product_id)
   end
 
   @spec list_products_by_slugs([String.t()]) :: [Product.t() | nil]
-  def list_products_by_slugs(slugs) when is_list(slugs) do
+  def list_products_by_slugs(slugs) do
     Products.list_products_by_slugs(slugs)
   end
 
   @spec list_products_by_slug_selections([[term()]]) :: [[Product.t() | nil]]
-  def list_products_by_slug_selections(slug_selections) when is_list(slug_selections) do
+  def list_products_by_slug_selections(slug_selections) do
     Products.list_products_by_slug_selections(slug_selections)
   end
 
@@ -132,8 +129,7 @@ defmodule ProductCompare.Catalog do
              | :invalid_product_id
              | :product_not_found
              | :too_many_products}
-  def create_saved_comparison_set(user_id, %{name: name, product_ids: product_ids})
-      when is_integer(user_id) and is_binary(name) and is_list(product_ids) do
+  def create_saved_comparison_set(user_id, %{name: name, product_ids: product_ids}) do
     SavedComparisons.create_saved_comparison_set(user_id, %{
       name: name,
       product_ids: product_ids
@@ -141,7 +137,7 @@ defmodule ProductCompare.Catalog do
   end
 
   @spec list_saved_comparison_sets_query(pos_integer()) :: Ecto.Query.t()
-  def list_saved_comparison_sets_query(user_id) when is_integer(user_id) do
+  def list_saved_comparison_sets_query(user_id) do
     SavedComparisons.list_saved_comparison_sets_query(user_id)
   end
 
@@ -151,22 +147,19 @@ defmodule ProductCompare.Catalog do
   Invalid UUID binaries return `nil` instead of raising.
   """
   @spec get_saved_comparison_set_for_user(User.t(), binary()) :: SavedComparisonSet.t() | nil
-  def get_saved_comparison_set_for_user(%User{id: user_id}, entropy_id)
-      when is_binary(entropy_id) do
+  def get_saved_comparison_set_for_user(%User{id: user_id}, entropy_id) do
     SavedComparisons.get_saved_comparison_set_for_user_id(user_id, entropy_id)
   end
 
   @spec get_saved_comparison_sets_for_user(User.t(), [binary()]) ::
           %{optional(binary()) => SavedComparisonSet.t() | nil}
-  def get_saved_comparison_sets_for_user(%User{id: user_id}, entropy_ids)
-      when is_list(entropy_ids) do
+  def get_saved_comparison_sets_for_user(%User{id: user_id}, entropy_ids) do
     SavedComparisons.get_saved_comparison_sets_for_user_id(user_id, entropy_ids)
   end
 
   @spec delete_saved_comparison_set(pos_integer(), Ecto.UUID.t()) ::
           {:ok, SavedComparisonSet.t()} | {:error, :not_found}
-  def delete_saved_comparison_set(user_id, entropy_id)
-      when is_integer(user_id) and is_binary(entropy_id) do
+  def delete_saved_comparison_set(user_id, entropy_id) do
     SavedComparisons.delete_saved_comparison_set(user_id, entropy_id)
   end
 end

@@ -137,8 +137,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
   @spec decode_typed_local_id(String.t(), [type()], [type()]) ::
           {:ok, {type(), pos_integer() | Ecto.UUID.t()}}
           | {:error, :invalid_id | :unsupported_type}
-  def decode_typed_local_id(global_id, integer_types, uuid_types)
-      when is_list(integer_types) and is_list(uuid_types) do
+  def decode_typed_local_id(global_id, integer_types, uuid_types) do
     case decode(global_id) do
       {:ok, {type, _local_id}} ->
         cond do

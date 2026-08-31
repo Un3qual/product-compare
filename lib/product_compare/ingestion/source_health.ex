@@ -30,12 +30,12 @@ defmodule ProductCompare.Ingestion.SourceHealth do
         }
 
   @spec summary(keyword()) :: [summary_row()]
-  def summary(opts) when is_list(opts) do
+  def summary(opts) do
     summary(opts, DateTime.utc_now())
   end
 
   @spec summary(keyword(), DateTime.t()) :: [summary_row()]
-  def summary(opts, %DateTime{} = now) when is_list(opts) do
+  def summary(opts, %DateTime{} = now) do
     recent_failure_hours = recent_failure_hours(opts)
     recent_failure_since = DateTime.add(now, -recent_failure_hours * 60 * 60, :second)
 

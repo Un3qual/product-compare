@@ -28,7 +28,7 @@ defmodule ProductCompare.Affiliate do
 
   @spec get_affiliate_nodes(node_type(), [pos_integer()]) ::
           %{optional(pos_integer()) => struct() | nil}
-  def get_affiliate_nodes(type, ids) when is_list(ids) do
+  def get_affiliate_nodes(type, ids) do
     schema = affiliate_node_schema(type)
     ids = Enum.uniq(ids)
 
@@ -118,8 +118,7 @@ defmodule ProductCompare.Affiliate do
           offset: non_neg_integer(),
           fetch_limit: non_neg_integer()
         }) :: %{optional(pos_integer()) => [Coupon.t()]}
-  def active_coupon_pages(merchant_ids, now, %{offset: offset, fetch_limit: fetch_limit})
-      when is_list(merchant_ids) do
+  def active_coupon_pages(merchant_ids, now, %{offset: offset, fetch_limit: fetch_limit}) do
     merchant_ids = Enum.uniq(merchant_ids)
 
     if merchant_ids == [] do

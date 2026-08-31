@@ -131,7 +131,7 @@ defmodule ProductCompareWeb.Resolvers.Catalog.SavedComparisons do
     }
   end
 
-  defp saved_comparison_error_payload(error) when is_map(error) do
+  defp saved_comparison_error_payload(error) do
     %{
       saved_comparison_set: nil,
       errors: [error]

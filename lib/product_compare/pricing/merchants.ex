@@ -58,7 +58,7 @@ defmodule ProductCompare.Pricing.Merchants do
   def get_merchant_by_slug(_slug), do: nil
 
   @spec get_merchants_by_slugs([term()]) :: %{optional(String.t()) => Merchant.t() | nil}
-  def get_merchants_by_slugs(slugs) when is_list(slugs) do
+  def get_merchants_by_slugs(slugs) do
     requested_slugs = slugs |> Enum.filter(&is_binary/1) |> Enum.uniq()
     query_slugs = Enum.reject(requested_slugs, &(String.trim(&1) == ""))
 

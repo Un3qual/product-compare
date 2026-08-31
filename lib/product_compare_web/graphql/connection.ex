@@ -12,7 +12,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   @type batch_window :: %{offset: non_neg_integer(), fetch_limit: non_neg_integer()}
 
   @spec batch_window(map()) :: {:ok, batch_window()} | {:error, error_reason()}
-  def batch_window(args) when is_map(args) do
+  def batch_window(args) do
     with {:ok, relay_args} <- relay_args(args),
          {:ok, :forward, first} <- RelayConnection.limit(relay_args, @max_page_size),
          {:ok, offset} <- RelayConnection.offset(relay_args),
@@ -28,14 +28,14 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   end
 
   @spec batch_window_result(map()) :: {:ok, batch_window()} | {:error, String.t()}
-  def batch_window_result(args) when is_map(args) do
+  def batch_window_result(args) do
     args
     |> batch_window()
     |> to_resolver_result()
   end
 
   @spec from_list([term()], map()) :: {:ok, map()} | {:error, error_reason()}
-  def from_list(items, args) when is_list(items) and is_map(args) do
+  def from_list(items, args) do
     with {:ok, relay_args} <- relay_args(args),
          {:ok, connection} <- RelayConnection.from_list(items, relay_args, max: @max_page_size) do
       {:ok, connection}
@@ -46,8 +46,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   end
 
   @spec from_query(Ecto.Query.t(), map(), module()) :: {:ok, map()} | {:error, error_reason()}
-  def from_query(%Ecto.Query{} = query, args, repo)
-      when is_map(args) and is_atom(repo) do
+  def from_query(%Ecto.Query{} = query, args, repo) do
     with {:ok, relay_args} <- relay_args(args),
          {:ok, connection} <-
            RelayConnection.from_query(query, &repo.all/1, relay_args, max: @max_page_size) do
@@ -59,7 +58,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   end
 
   @spec from_prefetched_page([term()], map()) :: {:ok, map()} | {:error, error_reason()}
-  def from_prefetched_page(rows, args) when is_list(rows) and is_map(args) do
+  def from_prefetched_page(rows, args) do
     with {:ok, %{offset: offset, fetch_limit: fetch_limit}} <- batch_window(args) do
       first = fetch_limit - 1
 
@@ -71,8 +70,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   end
 
   @spec from_query_result(Ecto.Query.t(), map(), module()) :: {:ok, map()} | {:error, String.t()}
-  def from_query_result(%Ecto.Query{} = query, args, repo)
-      when is_map(args) and is_atom(repo) do
+  def from_query_result(%Ecto.Query{} = query, args, repo) do
     query
     |> from_query(args, repo)
     |> to_resolver_result()

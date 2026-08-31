@@ -44,7 +44,7 @@ defmodule ProductCompare.Accounts.Users do
 
   @spec set_operator_access(User.t(), boolean()) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def set_operator_access(%User{} = user, is_operator) when is_boolean(is_operator) do
+  def set_operator_access(%User{} = user, is_operator) do
     user
     |> User.operator_access_changeset(is_operator)
     |> Repo.update()
@@ -68,8 +68,7 @@ defmodule ProductCompare.Accounts.Users do
 
   @spec bootstrap_operator_user(String.t(), String.t(), integer()) ::
           {:ok, User.t()} | {:error, :existing_non_operator | Ecto.Changeset.t()}
-  def bootstrap_operator_user(email, password, reputation_points)
-      when is_binary(email) and is_binary(password) and is_integer(reputation_points) do
+  def bootstrap_operator_user(email, password, reputation_points) do
     normalized_email = normalize_email(email)
 
     case Repo.transaction(fn ->
@@ -83,7 +82,7 @@ defmodule ProductCompare.Accounts.Users do
 
   @spec ensure_user_with_password(String.t(), String.t()) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def ensure_user_with_password(email, password) when is_binary(email) and is_binary(password) do
+  def ensure_user_with_password(email, password) do
     normalized_email = normalize_email(email)
 
     if blank_password?(password) do

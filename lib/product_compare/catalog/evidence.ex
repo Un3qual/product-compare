@@ -9,8 +9,7 @@ defmodule ProductCompare.Catalog.Evidence do
   alias ProductCompareSchemas.Catalog.ProductMedia
 
   @spec get_product_by_identifier(atom() | String.t(), String.t()) :: Product.t() | nil
-  def get_product_by_identifier(scheme, normalized_value)
-      when (is_atom(scheme) or is_binary(scheme)) and is_binary(normalized_value) do
+  def get_product_by_identifier(scheme, normalized_value) do
     with {:ok, scheme} <- Ecto.Enum.cast_value(ProductIdentifier, :scheme, scheme) do
       Product
       |> join(:inner, [product], identifier in ProductIdentifier,
@@ -29,8 +28,7 @@ defmodule ProductCompare.Catalog.Evidence do
   end
 
   @spec list_product_identifiers(pos_integer(), atom() | String.t()) :: [ProductIdentifier.t()]
-  def list_product_identifiers(product_id, scheme)
-      when is_integer(product_id) and (is_atom(scheme) or is_binary(scheme)) do
+  def list_product_identifiers(product_id, scheme) do
     with {:ok, scheme} <- Ecto.Enum.cast_value(ProductIdentifier, :scheme, scheme) do
       ProductIdentifier
       |> where(
@@ -56,8 +54,7 @@ defmodule ProductCompare.Catalog.Evidence do
           persisted: non_neg_integer(),
           rejected: non_neg_integer()
         }
-  def upsert_product_media(%Product{} = product, source_artifact_id, observations, observed_at)
-      when is_list(observations) do
+  def upsert_product_media(%Product{} = product, source_artifact_id, observations, observed_at) do
     Enum.reduce(observations, %{persisted: 0, rejected: 0}, fn observation, result ->
       attrs = %{
         product_id: product.id,
@@ -100,7 +97,7 @@ defmodule ProductCompare.Catalog.Evidence do
   end
 
   @spec list_product_media(pos_integer()) :: [ProductMedia.t()]
-  def list_product_media(product_id) when is_integer(product_id) do
+  def list_product_media(product_id) do
     ProductMedia
     |> where([media], media.product_id == ^product_id)
     |> order_by([media], asc: media.position, asc: media.url, asc: media.id)

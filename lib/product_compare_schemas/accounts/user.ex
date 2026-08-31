@@ -23,7 +23,7 @@ defmodule ProductCompareSchemas.Accounts.User do
   end
 
   @spec normalize_email(String.t()) :: String.t()
-  def normalize_email(email) when is_binary(email) do
+  def normalize_email(email) do
     email
     |> String.trim()
     |> String.downcase()
@@ -63,7 +63,7 @@ defmodule ProductCompareSchemas.Accounts.User do
   end
 
   @spec operator_access_changeset(t(), boolean()) :: Ecto.Changeset.t()
-  def operator_access_changeset(user, is_operator) when is_boolean(is_operator) do
+  def operator_access_changeset(user, is_operator) do
     change(user, is_operator: is_operator)
   end
 

@@ -25,7 +25,7 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
           {:ok, ComparisonSnapshot.t()}
           | {:error,
              :invalid_products | :product_not_found | :invalid_profile | Ecto.Changeset.t()}
-  def publish(user_id, attrs, opts \\ []) when is_integer(user_id) and is_map(attrs) do
+  def publish(user_id, attrs, opts \\ []) do
     product_ids = Input.fetch_attr(attrs, :product_ids) || []
     profile = Input.fetch_attr(attrs, :recommendation_profile) || :lowest_current_cost
     now = Keyword.get(opts, :now, DateTime.utc_now()) |> DateTime.truncate(:microsecond)
@@ -63,14 +63,14 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
   end
 
   @spec get_public(String.t()) :: ComparisonSnapshot.t() | nil
-  def get_public(token) when is_binary(token) do
+  def get_public(token) do
     [token]
     |> get_public_many()
     |> Map.get(token)
   end
 
   @spec get_public_many([term()]) :: %{optional(String.t()) => ComparisonSnapshot.t() | nil}
-  def get_public_many(tokens) when is_list(tokens) do
+  def get_public_many(tokens) do
     tokens =
       tokens
       |> Enum.filter(&(is_binary(&1) and Regex.match?(@public_token_pattern, &1)))
@@ -96,7 +96,7 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
   end
 
   @spec active_for_owner_query(pos_integer()) :: Ecto.Query.t()
-  def active_for_owner_query(user_id) when is_integer(user_id) do
+  def active_for_owner_query(user_id) do
     ComparisonSnapshot
     |> where([snapshot], snapshot.user_id == ^user_id and is_nil(snapshot.revoked_at))
     |> order_by([snapshot], desc: snapshot.inserted_at, desc: snapshot.id)
@@ -107,8 +107,7 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
           {:ok, ComparisonSnapshot.t()} | {:error, :not_found | Ecto.Changeset.t()}
   def revoke(user_id, entropy_id, opts \\ [])
 
-  def revoke(user_id, entropy_id, opts)
-      when is_integer(user_id) and is_binary(entropy_id) do
+  def revoke(user_id, entropy_id, opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now()) |> DateTime.truncate(:microsecond)
 
     with {:ok, uuid} <- Ecto.UUID.cast(entropy_id) do

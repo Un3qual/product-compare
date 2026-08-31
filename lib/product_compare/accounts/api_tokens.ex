@@ -31,15 +31,13 @@ defmodule ProductCompare.Accounts.ApiTokens do
   def list_api_tokens(user_id, opts \\ []), do: Queries.list(user_id, opts)
 
   @spec get_api_token_for_user(User.t(), binary()) :: ApiToken.t() | nil
-  def get_api_token_for_user(%User{id: user_id}, token_entropy_id)
-      when is_binary(token_entropy_id) do
+  def get_api_token_for_user(%User{id: user_id}, token_entropy_id) do
     Queries.get_for_user(user_id, token_entropy_id)
   end
 
   @spec get_api_tokens_for_user(User.t(), [binary()]) ::
           %{optional(binary()) => ApiToken.t() | nil}
-  def get_api_tokens_for_user(%User{id: user_id}, token_entropy_ids)
-      when is_list(token_entropy_ids) do
+  def get_api_tokens_for_user(%User{id: user_id}, token_entropy_ids) do
     Queries.get_many_for_user(user_id, token_entropy_ids)
   end
 

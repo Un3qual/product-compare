@@ -168,7 +168,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Resume do
     end
   end
 
-  defp advertiser_country(%ImportRun{query: query}) when is_map(query) do
+  defp advertiser_country(%ImportRun{query: query}) do
     Map.get(query, "advertiserCountry") || "US"
   end
 

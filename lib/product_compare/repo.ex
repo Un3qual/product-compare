@@ -6,8 +6,7 @@ defmodule ProductCompare.Repo do
   @spec repeatable_read_transaction((-> result), String.t()) ::
           {:ok, result} | {:error, term()}
         when result: term()
-  def repeatable_read_transaction(fun, operation)
-      when is_function(fun, 0) and is_binary(operation) do
+  def repeatable_read_transaction(fun, operation) do
     already_in_transaction? = in_transaction?()
 
     transaction(fn ->

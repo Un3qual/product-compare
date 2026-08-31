@@ -28,7 +28,7 @@ defmodule ProductCompare.Seo.Categories do
   def get(_slug, _opts), do: nil
 
   @spec get_many([String.t()], keyword()) :: %{String.t() => map() | nil}
-  def get_many(slugs, opts \\ []) when is_list(slugs) do
+  def get_many(slugs, opts \\ []) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
     requested_slugs = slugs |> Enum.filter(&is_binary/1) |> Enum.uniq()
     query_slugs = Enum.reject(requested_slugs, &(String.trim(&1) == ""))

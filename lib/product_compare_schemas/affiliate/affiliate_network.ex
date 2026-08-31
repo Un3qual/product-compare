@@ -24,7 +24,7 @@ defmodule ProductCompareSchemas.Affiliate.AffiliateNetwork do
   end
 
   @spec normalize_code(String.t()) :: String.t()
-  def normalize_code(value) when is_binary(value) do
+  def normalize_code(value) do
     value
     |> String.trim()
     |> String.downcase()

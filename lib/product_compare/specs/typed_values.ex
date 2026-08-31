@@ -109,7 +109,7 @@ defmodule ProductCompare.Specs.TypedValues do
     end
   end
 
-  defp get_value(map, key) when is_map(map) do
+  defp get_value(map, key) do
     case Map.fetch(map, key) do
       {:ok, value} -> value
       :error -> Map.get(map, Atom.to_string(key))

@@ -27,7 +27,7 @@ defmodule ProductCompare.DevSeeds.Accounts do
         }
 
   @spec seed!(String.t(), DateTime.t()) :: result()
-  def seed!(password, %DateTime{} = anchor) when is_binary(password) do
+  def seed!(password, %DateTime{} = anchor) do
     admin = bootstrap_operator!("admin@example.com", password, 1_000)
     moderator = bootstrap_operator!("moderator@example.com", password, 500)
 

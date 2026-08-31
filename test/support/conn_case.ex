@@ -58,7 +58,11 @@ defmodule ProductCompareWeb.ConnCase do
     Plug.Conn.put_req_header(conn, "origin", request_origin)
   end
 
-  def relay_id(type, local_id) when is_atom(type) do
+  @spec relay_id(
+          ProductCompareWeb.GraphQL.GlobalId.type(),
+          String.t() | integer()
+        ) :: String.t()
+  def relay_id(type, local_id) do
     ProductCompareWeb.GraphQL.GlobalId.encode(type, local_id)
   end
 
