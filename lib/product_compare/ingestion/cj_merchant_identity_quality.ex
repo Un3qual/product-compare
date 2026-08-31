@@ -20,6 +20,12 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQuality do
   @min_duplicate_example_limit 1
   @max_duplicate_example_limit 25
 
+  defmacrop normalized_identity(value) do
+    quote do
+      fragment("NULLIF(LOWER(BTRIM(?)), '')", unquote(value))
+    end
+  end
+
   @type safe_identity :: %{
           id: pos_integer(),
           merchant_name: String.t() | nil,
@@ -89,15 +95,9 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQuality do
         select: %{
           identity_count: count(identity.id),
           missing_merchant_name_count:
-            fragment(
-              "count(*) FILTER (WHERE NULLIF(BTRIM(?), '') IS NULL)",
-              identity.merchant_name
-            ),
+            filter(count(identity.id), is_nil(normalized_identity(identity.merchant_name))),
           missing_merchant_domain_count:
-            fragment(
-              "count(*) FILTER (WHERE NULLIF(BTRIM(?), '') IS NULL)",
-              identity.merchant_domain
-            )
+            filter(count(identity.id), is_nil(normalized_identity(identity.merchant_domain)))
         }
     )
   end
@@ -135,12 +135,12 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQuality do
     query
     |> where(
       [identity],
-      not is_nil(fragment("NULLIF(LOWER(BTRIM(?)), '')", field(identity, ^field)))
+      not is_nil(normalized_identity(field(identity, ^field)))
     )
-    |> group_by([identity], fragment("NULLIF(LOWER(BTRIM(?)), '')", field(identity, ^field)))
+    |> group_by([identity], normalized_identity(field(identity, ^field)))
     |> having([identity], count(identity.id) > 1)
     |> select([identity], %{
-      value: fragment("NULLIF(LOWER(BTRIM(?)), '')", field(identity, ^field)),
+      value: normalized_identity(field(identity, ^field)),
       identity_count: count(identity.id)
     })
   end
@@ -150,19 +150,16 @@ defmodule ProductCompare.Ingestion.CJMerchantIdentityQuality do
   defp duplicate_group_identities(query, field, values, limit) do
     ranked_identities =
       query
-      |> where(
-        [identity],
-        fragment("NULLIF(LOWER(BTRIM(?)), '')", field(identity, ^field)) in ^values
-      )
+      |> where([identity], normalized_identity(field(identity, ^field)) in ^values)
       |> windows(
         [identity],
         duplicate_group: [
-          partition_by: fragment("NULLIF(LOWER(BTRIM(?)), '')", field(identity, ^field)),
+          partition_by: normalized_identity(field(identity, ^field)),
           order_by: identity.id
         ]
       )
       |> select([identity], %{
-        value: fragment("NULLIF(LOWER(BTRIM(?)), '')", field(identity, ^field)),
+        value: normalized_identity(field(identity, ^field)),
         id: identity.id,
         merchant_name: identity.merchant_name,
         merchant_domain: identity.merchant_domain,

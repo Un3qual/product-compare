@@ -20,6 +20,12 @@ defmodule ProductCompare.Ingestion.CJImportPriceQuality do
   @default_stale_price_hours 168
   @min_stale_price_hours 1
 
+  defmacrop normalized_currency(value) do
+    quote do
+      fragment("COALESCE(NULLIF(UPPER(BTRIM(?)), ''), 'unknown')", unquote(value))
+    end
+  end
+
   @type currency_count :: %{currency: String.t(), merchant_product_count: non_neg_integer()}
 
   @type summary :: %{
@@ -128,24 +134,13 @@ defmodule ProductCompare.Ingestion.CJImportPriceQuality do
   defp currency_counts(merchant_products) do
     merchant_products
     |> subquery()
-    |> group_by(
-      [merchant_product],
-      fragment("COALESCE(NULLIF(UPPER(BTRIM(?)), ''), 'unknown')", merchant_product.currency)
-    )
+    |> group_by([merchant_product], normalized_currency(merchant_product.currency))
     |> order_by([merchant_product],
       desc: count(merchant_product.id),
-      asc:
-        fragment(
-          "COALESCE(NULLIF(UPPER(BTRIM(?)), ''), 'unknown')",
-          merchant_product.currency
-        )
+      asc: normalized_currency(merchant_product.currency)
     )
     |> select([merchant_product], %{
-      currency:
-        fragment(
-          "COALESCE(NULLIF(UPPER(BTRIM(?)), ''), 'unknown')",
-          merchant_product.currency
-        ),
+      currency: normalized_currency(merchant_product.currency),
       merchant_product_count: count(merchant_product.id)
     })
     |> Repo.all()

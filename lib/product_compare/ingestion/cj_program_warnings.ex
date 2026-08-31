@@ -57,7 +57,7 @@ defmodule ProductCompare.Ingestion.CJProgramWarnings do
       missing_advertiser_name:
         fragment(
           "bool_or(?)",
-          is_nil(fragment("NULLIF(BTRIM(?), '')", feed.advertiser_name))
+          is_nil(feed.advertiser_name) or fragment("BTRIM(?)", feed.advertiser_name) == ""
         ),
       missing_product_count:
         fragment("bool_or(?)", is_nil(feed.product_count) or feed.product_count <= 0),

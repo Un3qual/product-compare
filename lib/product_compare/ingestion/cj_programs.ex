@@ -145,7 +145,10 @@ defmodule ProductCompare.Ingestion.CJPrograms do
     MerchantFeedCandidate
     |> join(:inner, [feed], source in assoc(feed, :source))
     |> where([feed, source], source.provider == @provider and not is_nil(feed.cj_program_id))
-    |> where([feed], not is_nil(fragment("NULLIF(BTRIM(?), '')", feed.advertiser_name)))
+    |> where(
+      [feed],
+      not is_nil(feed.advertiser_name) and fragment("BTRIM(?)", feed.advertiser_name) != ""
+    )
     |> distinct([feed], feed.cj_program_id)
     |> order_by([feed], asc: feed.cj_program_id, desc: feed.last_seen_at, desc: feed.id)
     |> select([feed], %{
