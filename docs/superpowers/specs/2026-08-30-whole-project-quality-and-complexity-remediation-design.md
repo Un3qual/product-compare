@@ -376,6 +376,53 @@ Unrelated major upgrades, feature adoption, and lockfile churn are excluded.
 If a current compatible line has no fixed release, record that exact blocker
 instead of masking the advisory.
 
+## Outcome 6: Ecto Query Ownership And Native SQL Boundaries
+
+### Prefer Ecto expressions for ordinary query semantics
+
+Application queries will use Ecto's typed values, `coalesce/2`, `exists/1`,
+null-ordering modes, enum-aware schema fields, date casts, filtered aggregates,
+and ordinary boolean expressions wherever those APIs express the contract
+directly. Fragments will not reimplement those built-ins or hide report
+classification rules inside multiline SQL `CASE` expressions.
+
+Read models that currently use schemaless tables solely to work around enum
+typing will use their existing Ecto schemas and normalize presentation values
+in Elixir. Aggregate reports will keep filtering and counting in PostgreSQL,
+while mapping database values to public bucket names remains ordinary Elixir
+code.
+
+### Keep unsupported PostgreSQL behavior narrow and explicit
+
+Fragments remain appropriate for PostgreSQL capabilities Ecto does not model,
+including full-text/trigram operators, `NULLIF` plus trimming/normalization,
+custom `tsvector` builders, conditional conflict access to `EXCLUDED`, and
+database-specific aggregate functions. Those fragments will contain only the
+unsupported expression; surrounding filters, updates, parameters, and result
+handling stay in Ecto.
+
+Hand-built application `UPDATE` strings will move to `Repo.update_all/3` when
+Ecto can own the target set and bind parameters. Transaction-scoped advisory
+locks have no Ecto query API, so their one PostgreSQL statement will be
+centralized behind a focused database-lock boundary and reused by all domain
+callers. Table locks, migration DDL, and direct database-contract tests remain
+explicit SQL because pretending they are portable Ecto would obscure their
+purpose.
+
+### Preserve concurrency and query-shape contracts
+
+Observation-ordering upserts remain one atomic database decision. A conflict
+query may replace repeated `CASE` fragments with an Ecto conflict predicate
+when no arrival counter or other always-updated field requires the rejected row
+to execute. It must not split one atomic invariant into a read followed by an
+unlocked write merely to eliminate SQL text.
+
+This outcome is behavior-preserving. Existing ordering, pagination, aggregate,
+query-budget, stale-write, and concurrency tests are the characterization
+boundary. A refactor that requires loading an unbounded result set into Elixir,
+adds a query waterfall, or produces a less legible emulation of a native
+PostgreSQL primitive is rejected.
+
 ## Delivery And Queue Strategy
 
 The work will be planned and dispatched as independently reviewable outcomes,
@@ -385,13 +432,15 @@ not per-file cleanup tickets:
 2. ingestion concurrency and observation ordering;
 3. operator command safety and diagnostics;
 4. frontend correctness and simplification; and
-5. deterministic tooling and compatible dependency health.
+5. deterministic tooling and compatible dependency health; and
+6. Ecto query ownership and native SQL boundaries.
 
 Each outcome receives its own implementation plan and queue row because its
 rollback boundary, verification focus, and reviewer decision differ. Internal
-path-disjoint slices stay inside the outcome plan. The coordinator will add all
-five validated rows before claiming the highest-ranked one, satisfying the
-ready-work floor without inventing micro-batches.
+path-disjoint slices stay inside the outcome plan. The sixth outcome was added
+as an explicitly approved follow-up while the fifth was active; the coordinator
+records both active outcomes and retains the truthful ready-floor exception
+instead of inventing filler.
 
 Execution follows RED/GREEN/refactor cycles, updates the relevant lane evidence
 with each milestone, and commits code, tests, generated artifacts, migrations,
@@ -422,10 +471,12 @@ destructive cleanup.
 
 ## Completion Criteria
 
-The program is complete when all five outcomes are implemented and reviewed;
+The program is complete when all six outcomes are implemented and reviewed;
 focused RED/GREEN evidence exists for behavioral corrections; frontend state
 and typing are simpler without weakening real boundaries; vulnerable
 dependencies are fixed or have an exact documented incompatible-line blocker;
+ordinary query semantics use Ecto while unavoidable PostgreSQL primitives stay
+narrow and explicit;
 the complete isolated backend and frontend gates pass; advisory scanners have
 no applicable known production vulnerability left unresolved unless the
 compatible dependency line has no fixed release and the exact blocker is
