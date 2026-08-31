@@ -54,22 +54,28 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
     attrs = put_default_attribution_confidence(attrs)
     changeset = CommerceConversion.changeset(%CommerceConversion{}, attrs)
 
-    update_fields =
-      Input.present_upsert_fields(attrs, changeset, @commerce_conversion_upsert_fields)
+    if changeset.valid? do
+      reported_at = Ecto.Changeset.fetch_field!(changeset, :reported_at)
 
-    changeset
-    |> Repo.insert(
-      on_conflict: conversion_conflict_query(update_fields, now),
-      conflict_target: [:affiliate_network_id, :network_conversion_ref],
-      allow_stale: true,
-      returning: true
-    )
-    |> maybe_fetch_unchanged_conversion(changeset)
+      update_fields =
+        Input.present_upsert_fields(attrs, changeset, @commerce_conversion_upsert_fields)
+
+      changeset
+      |> Repo.insert(
+        on_conflict: conversion_conflict_query(update_fields, reported_at, now),
+        conflict_target: [:affiliate_network_id, :network_conversion_ref],
+        allow_stale: true,
+        returning: true
+      )
+      |> maybe_fetch_unchanged_conversion(changeset)
+    else
+      Ecto.Changeset.apply_action(changeset, :insert)
+    end
   end
 
-  defp conversion_conflict_query(update_fields, now) do
+  defp conversion_conflict_query(update_fields, reported_at, now) do
     from conversion in CommerceConversion,
-      where: fragment("EXCLUDED.reported_at >= ?", conversion.reported_at),
+      where: conversion.reported_at <= ^reported_at,
       update: [set: ^(update_fields ++ [updated_at: now])]
   end
 

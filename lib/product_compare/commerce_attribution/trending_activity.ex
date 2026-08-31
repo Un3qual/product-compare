@@ -6,6 +6,18 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivity do
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
+  defmacrop count_distinct_identities(user_id, anonymous_visitor_id) do
+    quote do
+      filter(
+        count(
+          fragment("ROW(?, ?)", unquote(user_id), unquote(anonymous_visitor_id)),
+          :distinct
+        ),
+        not is_nil(unquote(user_id)) or not is_nil(unquote(anonymous_visitor_id))
+      )
+    end
+  end
+
   @spec candidates_query(keyword()) :: Ecto.Query.t()
   def candidates_query(opts) do
     {from, to} = activity_bounds(opts)
@@ -20,24 +32,12 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivity do
     |> group_by([_click, offer], offer.product_id)
     |> having(
       [click, _offer],
-      fragment(
-        "count(DISTINCT ROW(?, ?)) FILTER (WHERE ? IS NOT NULL OR ? IS NOT NULL)",
-        click.user_id,
-        click.anonymous_visitor_id,
-        click.user_id,
-        click.anonymous_visitor_id
-      ) >= ^minimum_identities
+      count_distinct_identities(click.user_id, click.anonymous_visitor_id) >=
+        ^minimum_identities
     )
     |> select([click, offer], %{
       product_id: offer.product_id,
-      identity_count:
-        fragment(
-          "count(DISTINCT ROW(?, ?)) FILTER (WHERE ? IS NOT NULL OR ? IS NOT NULL)",
-          click.user_id,
-          click.anonymous_visitor_id,
-          click.user_id,
-          click.anonymous_visitor_id
-        ),
+      identity_count: count_distinct_identities(click.user_id, click.anonymous_visitor_id),
       activity_at: max(click.inserted_at)
     })
   end

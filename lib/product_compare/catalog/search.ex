@@ -100,7 +100,7 @@ defmodule ProductCompare.Catalog.Search do
 
   defp product_pattern_candidate(field_name, pattern) do
     from product in Product,
-      where: fragment("lower(?) LIKE lower(?)", field(product, ^field_name), ^pattern),
+      where: ilike(field(product, ^field_name), ^pattern),
       select: %{product_id: product.id}
   end
 
@@ -108,7 +108,7 @@ defmodule ProductCompare.Catalog.Search do
     from brand in Brand,
       join: product in Product,
       on: product.brand_id == brand.id,
-      where: fragment("lower(?) LIKE lower(?)", brand.name, ^pattern),
+      where: ilike(brand.name, ^pattern),
       select: %{product_id: product.id}
   end
 

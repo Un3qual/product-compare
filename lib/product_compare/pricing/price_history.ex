@@ -214,12 +214,8 @@ defmodule ProductCompare.Pricing.PriceHistory do
     |> subquery()
     |> where(
       [landed_price],
-      fragment(
-        "? BETWEEN ((? + 1) / 2) AND ((? + 2) / 2)",
-        landed_price.row_number,
-        landed_price.row_count,
-        landed_price.row_count
-      )
+      landed_price.row_number >= (landed_price.row_count + 1) / 2 and
+        landed_price.row_number <= (landed_price.row_count + 2) / 2
     )
     |> group_by([landed_price], [landed_price.product_id, landed_price.currency])
     |> select([landed_price], %{

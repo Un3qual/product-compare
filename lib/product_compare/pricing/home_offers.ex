@@ -325,14 +325,14 @@ defmodule ProductCompare.Pricing.HomeOffers do
     )
     |> where([offer: offer], offer.inserted_at >= ^new_after)
     |> CurrentOffers.with_first_observation(now)
-    |> select_merge([offer: offer, first_observation: first], %{
+    |> select_merge([offer: _offer, first_observation: _first], %{
       median_30d: type(^nil, :decimal),
-      new_offer?: fragment("least(?, ?) >= ?", offer.inserted_at, first.observed_at, ^new_after),
+      new_offer?: true,
       below_30_day_median?: false
     })
     |> where(
-      [offer: offer, first_observation: first],
-      fragment("least(?, ?) >= ?", offer.inserted_at, first.observed_at, ^new_after)
+      [offer: _offer, first_observation: first],
+      first.observed_at >= ^new_after
     )
   end
 
