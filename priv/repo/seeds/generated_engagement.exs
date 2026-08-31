@@ -24,25 +24,6 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.SpecificationCorrection
 
-  @targets %{
-    bounded: %{
-      saved_sets: 24,
-      watches: 48,
-      alerts: 64,
-      reviews: 120,
-      questions: 80,
-      corrections: 24
-    },
-    full: %{
-      saved_sets: 60,
-      watches: 160,
-      alerts: 240,
-      reviews: 300,
-      questions: 180,
-      corrections: 90
-    }
-  }
-
   @watch_evaluation_fields [
     :last_evaluated_price_point_id,
     :last_condition_met,
@@ -53,13 +34,15 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
 
   @spec seed!(map(), map(), map(), DateTime.t(), map(), map()) :: map()
   def seed!(accounts, catalog, marketplace, anchor, profile, named) do
-    targets = Map.fetch!(@targets, profile.density)
+    targets = profile.engagement_targets
+    full_targets = profile.full_engagement_targets
 
     generated_saved_sets =
       seed_saved_sets!(
         accounts.shopper,
         catalog.all_products,
         targets.saved_sets - length(named.saved_sets),
+        full_targets.saved_sets - length(named.saved_sets),
         anchor
       )
 
@@ -69,6 +52,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
         catalog.all_products,
         marketplace,
         targets.watches - length(named.watches),
+        full_targets.watches - length(named.watches),
         anchor
       )
 
@@ -78,7 +62,8 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
         generated_watches,
         watch_fixtures,
         anchor,
-        targets.alerts - length(named.alerts)
+        targets.alerts - length(named.alerts),
+        full_targets.watches - length(named.watches)
       )
 
     generated_reviews =
@@ -86,7 +71,8 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
         accounts,
         catalog.all_products,
         anchor,
-        targets.reviews - length(named.reviews)
+        targets.reviews - length(named.reviews),
+        full_targets.reviews - length(named.reviews)
       )
 
     generated_questions =
@@ -94,14 +80,16 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
         accounts,
         catalog.all_products,
         anchor,
-        targets.questions - length(named.questions)
+        targets.questions - length(named.questions),
+        full_targets.questions - length(named.questions)
       )
 
     generated_corrections =
       seed_corrections!(
         accounts,
         catalog,
-        targets.corrections - length(named.corrections)
+        targets.corrections - length(named.corrections),
+        full_targets.corrections - length(named.corrections)
       )
 
     %{
@@ -114,8 +102,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
     }
   end
 
-  defp seed_saved_sets!(shopper, products, selected_count, anchor) do
-    full_count = @targets.full.saved_sets - 2
+  defp seed_saved_sets!(shopper, products, selected_count, full_count, anchor) do
     reconcile_saved_sets!(shopper, products, selected_count, full_count)
 
     fixtures =
@@ -248,8 +235,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
   defp saved_set_entropy_id(index),
     do: Support.stable_uuid("development-saved-comparison", Integer.to_string(index))
 
-  defp seed_watches!(shopper, products, marketplace, selected_count, anchor) do
-    full_count = @targets.full.watches - 4
+  defp seed_watches!(shopper, products, marketplace, selected_count, full_count, anchor) do
     reconcile_watches!(shopper, selected_count, full_count)
 
     points_by_offer = Enum.group_by(marketplace.all_price_points, & &1.merchant_product_id)
@@ -341,7 +327,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
 
     existing_by_entropy_id = Map.new(existing_watches, &{&1.entropy_id, &1})
     existing_watch_ids = Enum.map(existing_watches, & &1.id)
-    seed_alert_entropy_ids = seed_alert_entropy_ids()
+    seed_alert_entropy_ids = seed_alert_entropy_ids(1..full_count)
 
     locally_evaluated_watch_ids =
       AlertEvent
@@ -490,8 +476,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
   defp watch_entropy_id(index),
     do: Support.stable_uuid("development-generated-watch", Integer.to_string(index))
 
-  defp seed_alerts!(shopper, watches, fixtures, anchor, selected_count) do
-    full_watch_count = @targets.full.watches - 4
+  defp seed_alerts!(shopper, watches, fixtures, anchor, selected_count, full_watch_count) do
     selected_event_keys = event_keys!(fixtures, selected_count)
 
     full_event_keys =
@@ -599,7 +584,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
     Support.stable_uuid("development-generated-alert", "#{watch_index}:#{round}")
   end
 
-  defp seed_alert_entropy_ids(indexes \\ 1..(@targets.full.watches - 4)) do
+  defp seed_alert_entropy_ids(indexes) do
     for index <- indexes, round <- 0..1, do: event_entropy_id(index, round)
   end
 
@@ -633,8 +618,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
     end)
   end
 
-  defp seed_reviews!(accounts, products, anchor, selected_count) do
-    full_count = @targets.full.reviews - 2
+  defp seed_reviews!(accounts, products, anchor, selected_count, full_count) do
     reconcile_reviews!(accounts, products, selected_count, full_count)
 
     fixtures =
@@ -766,8 +750,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
     end
   end
 
-  defp seed_questions!(accounts, products, anchor, selected_count) do
-    full_count = @targets.full.questions - 2
+  defp seed_questions!(accounts, products, anchor, selected_count, full_count) do
     reconcile_questions!(accounts, products, selected_count, full_count)
 
     fixtures =
@@ -1384,8 +1367,7 @@ defmodule ProductCompare.DevSeeds.GeneratedEngagement do
     end
   end
 
-  defp seed_corrections!(accounts, catalog, selected_count) do
-    full_count = @targets.full.corrections - 3
+  defp seed_corrections!(accounts, catalog, selected_count, full_count) do
     fixtures = correction_fixtures(accounts, catalog, full_count)
     reconcile_corrections!(Enum.drop(fixtures, selected_count))
 

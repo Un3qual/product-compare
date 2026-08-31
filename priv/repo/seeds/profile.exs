@@ -1,10 +1,43 @@
 defmodule ProductCompare.DevSeeds.Profile do
   @moduledoc false
 
-  @shared %{product_count: 300, merchant_count: 70}
+  @bounded_engagement %{
+    saved_sets: 24,
+    watches: 48,
+    alerts: 64,
+    reviews: 120,
+    questions: 80,
+    corrections: 24
+  }
+  @full_engagement %{
+    saved_sets: 60,
+    watches: 160,
+    alerts: 240,
+    reviews: 300,
+    questions: 180,
+    corrections: 90
+  }
+  @bounded_operations %{feeds: 70, imports: 40, clicks: 120, conversions: 80}
+  @full_operations %{feeds: 210, imports: 120, clicks: 600, conversions: 400}
+  @shared %{
+    product_count: 300,
+    merchant_count: 70,
+    full_engagement_targets: @full_engagement,
+    full_operations_targets: @full_operations
+  }
   @profiles %{
-    bounded: %{density: :bounded, offer_range: 1_700..1_900},
-    full: %{density: :full, offer_range: 2_900..3_100}
+    bounded: %{
+      density: :bounded,
+      offer_range: 1_700..1_900,
+      engagement_targets: @bounded_engagement,
+      operations_targets: @bounded_operations
+    },
+    full: %{
+      density: :full,
+      offer_range: 2_900..3_100,
+      engagement_targets: @full_engagement,
+      operations_targets: @full_operations
+    }
   }
 
   @spec parse!([String.t()]) :: map()

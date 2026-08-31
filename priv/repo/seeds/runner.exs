@@ -16,6 +16,17 @@ defmodule ProductCompare.DevSeeds do
     password = seed_user_password()
     argv = if match?(["--" | _], argv), do: tl(argv), else: argv
     profile = Profile.parse!(argv)
+
+    run_profile!(profile, password)
+  end
+
+  @doc false
+  @spec run_profile!(map()) :: map()
+  def run_profile!(profile) when is_map(profile) do
+    run_profile!(profile, seed_user_password())
+  end
+
+  defp run_profile!(profile, password) do
     anchor = DateTime.utc_now() |> Profile.utc_hour()
 
     seed_result =

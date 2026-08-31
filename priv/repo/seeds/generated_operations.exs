@@ -17,10 +17,6 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
   alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
 
-  @targets %{
-    bounded: %{feeds: 70, imports: 40, clicks: 120, conversions: 80},
-    full: %{feeds: 210, imports: 120, clicks: 600, conversions: 400}
-  }
   @commerce_offer_skus %{
     "CAD" => "DEV-004-19",
     "EUR" => "DEV-012-17",
@@ -29,13 +25,24 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
 
   @spec seed!(map(), map(), map(), struct(), DateTime.t(), map(), map()) :: map()
   def seed!(accounts, catalog, marketplace, source, anchor, profile, named) do
-    targets = Map.fetch!(@targets, profile.density)
+    targets = profile.operations_targets
+    full_targets = profile.full_operations_targets
 
     feeds =
-      seed_feeds!(source, anchor, targets.feeds - length(named.feeds))
+      seed_feeds!(
+        source,
+        anchor,
+        targets.feeds - length(named.feeds),
+        full_targets.feeds - length(named.feeds)
+      )
 
     imports =
-      seed_imports!(source, anchor, targets.imports - length(named.imports))
+      seed_imports!(
+        source,
+        anchor,
+        targets.imports - length(named.imports),
+        full_targets.imports - length(named.imports)
+      )
 
     commerce =
       seed_commerce!(
@@ -45,7 +52,9 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
         anchor,
         named.commerce,
         targets.clicks - map_size(named.commerce.clicks),
-        targets.conversions - map_size(named.commerce.conversions)
+        targets.conversions - map_size(named.commerce.conversions),
+        full_targets.clicks - map_size(named.commerce.clicks),
+        full_targets.conversions - map_size(named.commerce.conversions)
       )
 
     %{
@@ -57,8 +66,7 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
     }
   end
 
-  defp seed_feeds!(source, anchor, selected_count) do
-    full_count = @targets.full.feeds - 8
+  defp seed_feeds!(source, anchor, selected_count, full_count) do
     reconcile_feeds!(source, selected_count, full_count)
 
     fixtures =
@@ -277,8 +285,7 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
   defp program_entropy_id(index),
     do: Support.stable_uuid("development-generated-cj-program", Integer.to_string(index))
 
-  defp seed_imports!(source, anchor, selected_count) do
-    full_count = @targets.full.imports - 4
+  defp seed_imports!(source, anchor, selected_count, full_count) do
     reconcile_imports!(source, selected_count, full_count)
 
     scenarios = Enum.map(1..selected_count, &import_scenario/1)
@@ -477,9 +484,17 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
          anchor,
          named,
          click_count,
-         conversion_count
+         conversion_count,
+         full_click_count,
+         full_conversion_count
        ) do
-    reconcile_commerce!(marketplace.affiliate, click_count, conversion_count)
+    reconcile_commerce!(
+      marketplace.affiliate,
+      click_count,
+      conversion_count,
+      full_click_count,
+      full_conversion_count
+    )
 
     offers = non_usd_offers!(marketplace.all_offers)
     links = seed_commerce_links!(offers)
@@ -854,14 +869,18 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
     )
   end
 
-  defp reconcile_commerce!(affiliate, selected_clicks, selected_conversions) do
-    reconcile_conversions!(affiliate.network.id, selected_conversions)
-    reconcile_clicks!(selected_clicks)
+  defp reconcile_commerce!(
+         affiliate,
+         selected_clicks,
+         selected_conversions,
+         full_clicks,
+         full_conversions
+       ) do
+    reconcile_conversions!(affiliate.network.id, selected_conversions, full_conversions)
+    reconcile_clicks!(selected_clicks, full_clicks)
   end
 
-  defp reconcile_conversions!(network_id, selected_count) do
-    full_count = @targets.full.conversions - 4
-
+  defp reconcile_conversions!(network_id, selected_count, full_count) do
     if selected_count < full_count do
       Enum.each((selected_count + 1)..full_count, fn index ->
         case Repo.get_by(CommerceConversion,
@@ -894,9 +913,7 @@ defmodule ProductCompare.DevSeeds.GeneratedOperations do
     end
   end
 
-  defp reconcile_clicks!(selected_count) do
-    full_count = @targets.full.clicks - 4
-
+  defp reconcile_clicks!(selected_count, full_count) do
     if selected_count < full_count do
       Enum.each((selected_count + 1)..full_count, fn index ->
         case Repo.get_by(CommerceClickSession, click_id: click_id(index)) do
