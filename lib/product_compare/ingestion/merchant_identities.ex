@@ -5,6 +5,7 @@ defmodule ProductCompare.Ingestion.MerchantIdentities do
 
   import Ecto.Query
 
+  alias ProductCompare.DatabaseLocks
   alias ProductCompare.Ingestion.NormalizedListing
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
@@ -168,11 +169,7 @@ defmodule ProductCompare.Ingestion.MerchantIdentities do
   end
 
   defp lock_identity_key!(source_id, merchant_identifier) do
-    Repo.query!("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
-      "#{source_id}:#{merchant_identifier}"
-    ])
-
-    :ok
+    DatabaseLocks.lock_transaction!("#{source_id}:#{merchant_identifier}")
   end
 
   defp upsert_merchant(listing), do: Pricing.upsert_merchant(merchant_attrs(listing))

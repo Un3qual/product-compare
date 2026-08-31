@@ -3,6 +3,7 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
 
   import Ecto.Query
 
+  alias ProductCompare.DatabaseLocks
   alias ProductCompare.Discussions.Moderation
   alias ProductCompare.Discussions.Submissions.WriteLimits
   alias ProductCompare.Repo
@@ -158,9 +159,7 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
   end
 
   defp lock_idempotency_key!(user_id, mutation_kind, idempotency_key) do
-    Repo.query!("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
-      "#{user_id}:#{mutation_kind}:#{idempotency_key}"
-    ])
+    DatabaseLocks.lock_transaction!("#{user_id}:#{mutation_kind}:#{idempotency_key}")
   end
 
   defp locked_write_receipt(user_id, mutation_kind, idempotency_key) do

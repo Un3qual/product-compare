@@ -1,28 +1,18 @@
 defmodule ProductCompare.Catalog.SearchDocuments do
   @moduledoc false
 
-  alias ProductCompare.Repo
+  import Ecto.Query
 
-  @set_search_document """
-  search_document = catalog_search_document(
-    product.name,
-    product.slug,
-    product.model_number,
-    product.description,
-    (
-      SELECT brand.name
-      FROM brands AS brand
-      WHERE brand.id = product.brand_id
-    )
-  )
-  """
+  alias ProductCompare.Repo
 
   @spec refresh_product(pos_integer()) :: :ok | {:error, term()}
   def refresh_product(product_id) do
-    case Repo.query(refresh_sql("WHERE product.id = $1"), [product_id]) do
-      {:ok, %Postgrex.Result{num_rows: 1}} -> :ok
-      {:ok, %Postgrex.Result{num_rows: 0}} -> {:error, :product_not_found}
-      {:error, reason} -> {:error, reason}
+    case refresh_many(
+           where(search_document_query(), [product], field(product, :id) == ^product_id)
+         ) do
+      {:ok, 1} -> :ok
+      {:ok, 0} -> {:error, :product_not_found}
+      {:error, _reason} = error -> error
     end
   end
 
@@ -30,24 +20,28 @@ defmodule ProductCompare.Catalog.SearchDocuments do
   def refresh_products([]), do: {:ok, 0}
 
   def refresh_products(product_ids) do
-    refresh_many(refresh_sql("WHERE product.id = ANY($1::bigint[])"), [product_ids])
+    search_document_query()
+    |> where([product], field(product, :id) in ^product_ids)
+    |> refresh_many()
   end
 
   @spec refresh_brand(pos_integer()) :: {:ok, non_neg_integer()} | {:error, term()}
   def refresh_brand(brand_id) do
-    refresh_many(refresh_sql("WHERE product.brand_id = $1"), [brand_id])
+    search_document_query()
+    |> where([product], field(product, :brand_id) == ^brand_id)
+    |> refresh_many()
   end
 
   @spec rebuild() :: {:ok, non_neg_integer()} | {:error, term()}
   def rebuild do
-    refresh_many(refresh_sql(), [], timeout: rebuild_timeout())
+    refresh_many(search_document_query(), timeout: rebuild_timeout())
   end
 
-  defp refresh_many(sql, params, opts \\ []) do
-    case Repo.query(sql, params, opts) do
-      {:ok, %Postgrex.Result{num_rows: count}} -> {:ok, count}
-      {:error, reason} -> {:error, reason}
-    end
+  defp refresh_many(query, opts \\ []) do
+    {count, nil} = Repo.update_all(query, [], opts)
+    {:ok, count}
+  rescue
+    error in [DBConnection.ConnectionError, Postgrex.Error] -> {:error, error}
   end
 
   defp rebuild_timeout do
@@ -69,7 +63,20 @@ defmodule ProductCompare.Catalog.SearchDocuments do
     end
   end
 
-  defp refresh_sql(where_clause \\ "") do
-    "UPDATE products AS product SET #{@set_search_document} #{where_clause}"
+  defp search_document_query do
+    from product in "products",
+      update: [
+        set: [
+          search_document:
+            fragment(
+              "catalog_search_document(?, ?, ?, ?, (SELECT name FROM brands WHERE id = ?))",
+              field(product, :name),
+              field(product, :slug),
+              field(product, :model_number),
+              field(product, :description),
+              field(product, :brand_id)
+            )
+        ]
+      ]
   end
 end
