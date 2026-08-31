@@ -1,8 +1,8 @@
 defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.FiniteDecimal
   alias ProductCompareSchemas.Reference.CurrencyCode
-  alias ProductCompareSchemas.Schema
 
   @statuses [:pending, :approved, :reversed, :paid]
   @attribution_confidences [:high, :low, :unmatched]
@@ -17,9 +17,9 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
     field :network_click_ref, :string
     field :status, Ecto.Enum, values: @statuses, default: :pending
     field :currency, CurrencyCode, source: :currency_id
-    field :order_amount, :decimal
-    field :commission_amount, :decimal
-    field :commission_rate, :decimal
+    field :order_amount, FiniteDecimal
+    field :commission_amount, FiniteDecimal
+    field :commission_rate, FiniteDecimal
 
     field :attribution_confidence, Ecto.Enum,
       values: @attribution_confidences,
@@ -42,13 +42,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(conversion, attrs) do
-    attrs =
-      Schema.normalize_non_finite_decimals(attrs, [
-        :order_amount,
-        :commission_amount,
-        :commission_rate
-      ])
-
     conversion
     |> cast(attrs, [
       :source_network,

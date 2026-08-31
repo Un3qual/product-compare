@@ -1,22 +1,22 @@
 defmodule ProductCompareSchemas.CommerceAttribution.PurchasePriceFact do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.FiniteDecimal
   alias ProductCompareSchemas.Reference.CurrencyCode
-  alias ProductCompareSchemas.Schema
 
   @type t :: %__MODULE__{}
 
   schema "purchase_price_facts" do
     field :entropy_id, Ecto.UUID
-    field :listed_price_at_click, :decimal
-    field :reported_paid_price, :decimal
-    field :shipping_amount, :decimal
-    field :tax_amount, :decimal
-    field :discount_amount, :decimal
+    field :listed_price_at_click, FiniteDecimal
+    field :reported_paid_price, FiniteDecimal
+    field :shipping_amount, FiniteDecimal
+    field :tax_amount, FiniteDecimal
+    field :discount_amount, FiniteDecimal
     field :currency, CurrencyCode, source: :currency_id
     field :observed_at, :utc_datetime_usec
-    field :observed_price, :decimal
-    field :price_delta, :decimal
+    field :observed_price, FiniteDecimal
+    field :price_delta, FiniteDecimal
 
     belongs_to :conversion, ProductCompareSchemas.CommerceAttribution.CommerceConversion
     belongs_to :price_observation, ProductCompareSchemas.Pricing.PricePoint
@@ -26,17 +26,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.PurchasePriceFact do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(price_fact, attrs) do
-    attrs =
-      Schema.normalize_non_finite_decimals(attrs, [
-        :listed_price_at_click,
-        :reported_paid_price,
-        :shipping_amount,
-        :tax_amount,
-        :discount_amount,
-        :observed_price,
-        :price_delta
-      ])
-
     price_fact
     |> cast(attrs, [
       :conversion_id,

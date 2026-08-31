@@ -8,6 +8,7 @@ defmodule ProductCompare.Catalog.Filtering do
   alias ProductCompare.Catalog.Search
   alias ProductCompare.Input
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.DecimalInput
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Taxonomy.ProductTaxon
@@ -258,17 +259,5 @@ defmodule ProductCompare.Catalog.Filtering do
   defp maybe_apply_numeric_max(query, max),
     do: where(query, [_pacur, pac], pac.value_num_base <= ^max)
 
-  defp normalize_numeric_bound(nil), do: nil
-  defp normalize_numeric_bound(%Decimal{} = value), do: value
-  defp normalize_numeric_bound(value) when is_integer(value), do: value
-  defp normalize_numeric_bound(value) when is_float(value), do: Decimal.from_float(value)
-
-  defp normalize_numeric_bound(value) when is_binary(value) do
-    case Decimal.parse(value) do
-      {decimal, ""} -> decimal
-      _invalid -> nil
-    end
-  end
-
-  defp normalize_numeric_bound(_value), do: nil
+  defp normalize_numeric_bound(value), do: DecimalInput.to_decimal(value)
 end

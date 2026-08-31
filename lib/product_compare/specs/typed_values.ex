@@ -145,14 +145,18 @@ defmodule ProductCompare.Specs.TypedValues do
     end
   end
 
-  defp to_decimal(%Decimal{} = value), do: {:ok, DecimalInput.to_decimal(value)}
+  defp to_decimal(%Decimal{} = value), do: cast_decimal(value)
 
   defp to_decimal(value) when is_integer(value) or is_float(value) or is_binary(value) do
+    cast_decimal(value)
+  end
+
+  defp to_decimal(_value), do: {:error, :invalid_decimal_type}
+
+  defp cast_decimal(value) do
     case DecimalInput.to_decimal(value) do
       %Decimal{} = decimal -> {:ok, decimal}
       nil -> {:error, :invalid_decimal}
     end
   end
-
-  defp to_decimal(_value), do: {:error, :invalid_decimal_type}
 end

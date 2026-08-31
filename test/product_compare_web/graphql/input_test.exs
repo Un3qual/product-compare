@@ -210,19 +210,26 @@ defmodule ProductCompareWeb.GraphQL.InputTest do
   end
 
   describe "normalize_decimal_value/1" do
-    test "preserves nil, Decimal, integer, and float values" do
+    test "normalizes supported values to Decimals" do
       decimal = Decimal.new("12.34")
 
       assert Input.normalize_decimal_value(nil) == {:ok, nil}
       assert Input.normalize_decimal_value(decimal) == {:ok, decimal}
-      assert Input.normalize_decimal_value(12) == {:ok, 12}
-      assert Input.normalize_decimal_value(12.5) == {:ok, 12.5}
+      assert Input.normalize_decimal_value(12) == {:ok, Decimal.new("12")}
+      assert Input.normalize_decimal_value(12.5) == {:ok, Decimal.from_float(12.5)}
     end
 
     test "parses decimal strings and rejects invalid numeric values" do
       assert Input.normalize_decimal_value("12.34") == {:ok, Decimal.new("12.34")}
       assert Input.normalize_decimal_value("12.34abc") == {:error, "invalid numeric value"}
       assert Input.normalize_decimal_value(%{value: "12.34"}) == {:error, "invalid numeric value"}
+
+      for value <- ["NaN", "Infinity", "-Infinity"] do
+        assert Input.normalize_decimal_value(value) == {:error, "invalid numeric value"}
+
+        assert value |> Decimal.new() |> Input.normalize_decimal_value() ==
+                 {:error, "invalid numeric value"}
+      end
     end
   end
 

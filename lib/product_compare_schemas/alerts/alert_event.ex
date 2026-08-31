@@ -1,8 +1,8 @@
 defmodule ProductCompareSchemas.Alerts.AlertEvent do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.FiniteDecimal
   alias ProductCompareSchemas.Reference.CurrencyCode
-  alias ProductCompareSchemas.Schema
 
   @type t :: %__MODULE__{}
 
@@ -10,13 +10,13 @@ defmodule ProductCompareSchemas.Alerts.AlertEvent do
     field :entropy_id, Ecto.UUID
     field :rule_type, Ecto.Enum, values: ProductCompareSchemas.Alerts.PriceWatchRule.rule_types()
     field :currency, CurrencyCode, source: :currency_id
-    field :item_price, :decimal
-    field :shipping, :decimal
-    field :landed_price, :decimal
+    field :item_price, FiniteDecimal
+    field :shipping, FiniteDecimal
+    field :landed_price, FiniteDecimal
     field :observed_at, :utc_datetime_usec
-    field :baseline_landed_price, :decimal
-    field :target_amount, :decimal
-    field :percentage_drop, :decimal
+    field :baseline_landed_price, FiniteDecimal
+    field :target_amount, FiniteDecimal
+    field :percentage_drop, FiniteDecimal
     field :read_at, :utc_datetime_usec
 
     belongs_to :watch_rule, ProductCompareSchemas.Alerts.PriceWatchRule
@@ -30,16 +30,6 @@ defmodule ProductCompareSchemas.Alerts.AlertEvent do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(event, attrs) do
-    attrs =
-      Schema.normalize_non_finite_decimals(attrs, [
-        :item_price,
-        :shipping,
-        :landed_price,
-        :baseline_landed_price,
-        :target_amount,
-        :percentage_drop
-      ])
-
     event
     |> cast(attrs, [
       :watch_rule_id,

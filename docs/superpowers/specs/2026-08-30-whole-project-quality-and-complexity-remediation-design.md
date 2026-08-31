@@ -152,17 +152,19 @@ host, host-only cookies, and any explicit parent-domain opt-in.
 
 ### Finite commerce values
 
-Every application changeset that can receive commerce monetary or quantity
-decimals will normalize non-finite `Decimal` values before numeric validation.
-PostgreSQL checks will reject `NaN`, positive infinity, and negative infinity
-for the same columns. Existing non-negative checks retain their lower-bound
-policy; signed facts such as `price_delta` gain only a finite-value condition,
-not an invented non-negative rule.
+Decimal schema fields use one Ecto type that preserves normal decimal casting
+while returning cast errors, rather than raising, for non-finite `Decimal`
+values. External decimal parsing shares that same finite-value boundary.
+PostgreSQL checks reject `NaN`, positive infinity, and negative infinity for
+the same columns. Existing non-negative checks retain their lower-bound policy;
+signed facts such as `price_delta` gain only a finite-value condition, not an
+invented non-negative rule.
 
 The migration, owning changesets, `check_constraint/3` mappings, changeset
 tests, and direct SQL tests ship together in accordance with the repository's
-database constraint contract. CJ parsing uses the same finite-value boundary so
-a provider token cannot reach a numeric changeset in a shape that raises.
+database constraint contract. Provider and catalog parsing use the shared
+finite-value boundary so an external token cannot reach comparison or changeset
+logic in a shape that raises.
 
 ### Relationship and GraphQL error contracts
 

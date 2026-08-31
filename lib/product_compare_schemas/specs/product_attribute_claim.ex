@@ -1,7 +1,7 @@
 defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
   use ProductCompareSchemas.Schema, :relational
 
-  alias ProductCompareSchemas.Schema
+  alias ProductCompareSchemas.FiniteDecimal
 
   @source_types [:scrape, :user, :import, :derived]
   @statuses [:proposed, :accepted, :rejected, :superseded]
@@ -22,15 +22,15 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
     field :entropy_id, Ecto.UUID
     field :source_type, Ecto.Enum, values: @source_types
     field :status, Ecto.Enum, values: @statuses
-    field :confidence, :decimal
+    field :confidence, FiniteDecimal
     field :fingerprint, :binary
 
     field :value_bool, :boolean
     field :value_int, :integer
-    field :value_num, :decimal
-    field :value_num_base, :decimal
-    field :value_num_base_min, :decimal
-    field :value_num_base_max, :decimal
+    field :value_num, FiniteDecimal
+    field :value_num_base, FiniteDecimal
+    field :value_num_base_min, FiniteDecimal
+    field :value_num_base_max, FiniteDecimal
     field :value_text, :string
     field :value_date, :date
     field :value_ts, :utc_datetime_usec
@@ -62,8 +62,6 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(claim, attrs) do
-    attrs = Schema.normalize_non_finite_decimals(attrs, [:confidence])
-
     claim
     |> cast(attrs, [
       :product_id,

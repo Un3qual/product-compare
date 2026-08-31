@@ -1,7 +1,7 @@
 defmodule ProductCompareSchemas.Taxonomy.ProductTaxon do
   use ProductCompareSchemas.Schema, :relational
 
-  alias ProductCompareSchemas.Schema
+  alias ProductCompareSchemas.FiniteDecimal
 
   @source_types [:scrape, :user, :derived, :editorial]
 
@@ -11,7 +11,7 @@ defmodule ProductCompareSchemas.Taxonomy.ProductTaxon do
   schema "product_taxons" do
     field :entropy_id, Ecto.UUID
     field :source_type, Ecto.Enum, values: @source_types
-    field :confidence, :decimal
+    field :confidence, FiniteDecimal
 
     belongs_to :product, ProductCompareSchemas.Catalog.Product
     belongs_to :taxon, ProductCompareSchemas.Taxonomy.Taxon
@@ -25,8 +25,6 @@ defmodule ProductCompareSchemas.Taxonomy.ProductTaxon do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(product_taxon, attrs) do
-    attrs = Schema.normalize_non_finite_decimals(attrs, [:confidence])
-
     product_taxon
     |> cast(attrs, [:product_id, :taxon_id, :source_type, :confidence, :created_by])
     |> validate_required([:product_id, :taxon_id, :source_type])

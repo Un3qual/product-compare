@@ -2,8 +2,8 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
   use ProductCompareSchemas.Schema, :relational
 
   alias ProductCompareSchemas.Alerts.Cooldown
+  alias ProductCompareSchemas.FiniteDecimal
   alias ProductCompareSchemas.Reference.CurrencyCode
-  alias ProductCompareSchemas.Schema
 
   @rule_types [:target_price, :percentage_drop, :back_in_stock, :newly_available]
 
@@ -13,9 +13,9 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
     field :entropy_id, Ecto.UUID
     field :rule_type, Ecto.Enum, values: @rule_types
     field :currency, CurrencyCode, source: :currency_id
-    field :target_amount, :decimal
-    field :percentage_drop, :decimal
-    field :baseline_landed_price, :decimal
+    field :target_amount, FiniteDecimal
+    field :percentage_drop, FiniteDecimal
+    field :baseline_landed_price, FiniteDecimal
     field :enabled, :boolean, default: true
     field :last_condition_met, :boolean, default: false
     field :last_evaluated_at, :utc_datetime_usec
@@ -39,13 +39,6 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
 
   @spec create_changeset(t(), map()) :: Ecto.Changeset.t()
   def create_changeset(watch, attrs) do
-    attrs =
-      Schema.normalize_non_finite_decimals(attrs, [
-        :target_amount,
-        :percentage_drop,
-        :baseline_landed_price
-      ])
-
     watch
     |> cast(attrs, [
       :user_id,
@@ -83,8 +76,6 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
 
   @spec update_changeset(t(), map()) :: Ecto.Changeset.t()
   def update_changeset(watch, attrs) do
-    attrs = Schema.normalize_non_finite_decimals(attrs, [:target_amount, :percentage_drop])
-
     watch
     |> cast(attrs, [:target_amount, :percentage_drop, :enabled, :cooldown_seconds])
     |> validate_number(:target_amount, greater_than_or_equal_to: 0)

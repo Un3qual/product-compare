@@ -57,9 +57,11 @@ race-prone preflight query.
 - Production requires a valid explicit `PHX_HOST`. Session cookies are
   host-only by default and accept an explicit cookie domain only when it is the
   configured host or one of its non-public parent domains.
-- Commerce conversion and purchase-price changesets reject `NaN` and both
-  infinities before casting. The finite-aware PostgreSQL checks reject direct
-  bypass writes while preserving nullable values and finite signed deltas.
+- Decimal schema fields use a shared Ecto type that turns `NaN` and both
+  infinities into ordinary cast errors without rewriting input maps. Shared
+  boundary parsing rejects the same values once, while finite-aware PostgreSQL
+  checks reject direct bypass writes and preserve nullable values and finite
+  signed deltas.
 - Product, product-taxon, and community-report changesets map every cast
   foreign key without relationship preflight queries. GraphQL changeset error
   fields now reuse the existing camelCase normalizer.

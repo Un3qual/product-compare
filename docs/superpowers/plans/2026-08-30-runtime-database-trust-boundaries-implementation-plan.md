@@ -79,6 +79,7 @@
 **Files:**
 
 - Create: `priv/repo/migrations/20260830120000_enforce_commerce_numeric_integrity.exs`
+- Create: `lib/product_compare_schemas/finite_decimal.ex`
 - Modify: `lib/product_compare_schemas/commerce_attribution/commerce_conversion.ex`
 - Modify: `lib/product_compare_schemas/commerce_attribution/purchase_price_fact.ex`
 - Create: `test/product_compare/repo/commerce_numeric_integrity_test.exs`
@@ -86,8 +87,9 @@
 
 **Interfaces:**
 
-- `CommerceConversion.changeset/2` normalizes and rejects non-finite `order_amount`, `commission_amount`, and `commission_rate` before SQL.
-- `PurchasePriceFact.changeset/2` normalizes and rejects non-finite price facts, including signed `price_delta`, before SQL.
+- Decimal schema fields return cast errors for non-finite values without rewriting input maps.
+- `CommerceConversion.changeset/2` rejects non-finite `order_amount`, `commission_amount`, and `commission_rate` before SQL.
+- `PurchasePriceFact.changeset/2` rejects non-finite price facts, including signed `price_delta`, before SQL.
 - PostgreSQL constraints reject all three non-finite numeric encodings; signed `price_delta` remains allowed when finite.
 
 - [ ] **Step 1: Add failing changeset examples**
@@ -106,9 +108,9 @@
     test/product_compare/commerce_attribution/commerce_attribution_test.exs
   ```
 
-- [ ] **Step 4: Add normalization, validation, mappings, and migration checks**
+- [ ] **Step 4: Add finite casting, validation, mappings, and migration checks**
 
-  Reuse `ProductCompareSchemas.Schema.normalize_non_finite_decimals/2`. Replace the two lower-bound-only checks with finite-aware named checks and add a separate finite check for `price_delta`; preserve all existing nullability and sign rules.
+  Use `ProductCompareSchemas.FiniteDecimal` for ordinary Ecto cast errors without per-changeset input rewriting. Replace the two lower-bound-only checks with finite-aware named checks and add a separate finite check for `price_delta`; preserve all existing nullability and sign rules.
 
 - [ ] **Step 5: Migrate the isolated partition and run GREEN**
 
@@ -206,4 +208,3 @@
     docs/work/index.md
   git commit -m "fix: harden runtime and database trust boundaries"
   ```
-

@@ -1,14 +1,16 @@
 defmodule ProductCompareSchemas.Specs.Unit do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.FiniteDecimal
+
   @type t :: %__MODULE__{}
 
   schema "units" do
     field :entropy_id, Ecto.UUID
     field :code, :string
     field :symbol, :string
-    field :multiplier_to_base, :decimal
-    field :offset_to_base, :decimal
+    field :multiplier_to_base, FiniteDecimal
+    field :offset_to_base, FiniteDecimal
 
     belongs_to :dimension, ProductCompareSchemas.Specs.Dimension
 
@@ -21,13 +23,7 @@ defmodule ProductCompareSchemas.Specs.Unit do
     |> cast(attrs, [:dimension_id, :code, :symbol, :multiplier_to_base, :offset_to_base])
     |> validate_required([:dimension_id, :code, :multiplier_to_base, :offset_to_base])
     |> unique_constraint([:dimension_id, :code], name: :units_dimension_code_uq)
-    |> validate_change(:multiplier_to_base, fn :multiplier_to_base, multiplier ->
-      if Decimal.equal?(multiplier, Decimal.new(0)) do
-        [multiplier_to_base: {"must not be zero", [validation: :non_zero]}]
-      else
-        []
-      end
-    end)
+    |> validate_number(:multiplier_to_base, not_equal_to: 0, message: "must not be zero")
     |> check_constraint(:multiplier_to_base, name: :units_multiplier_to_base_nonzero)
     |> foreign_key_constraint(:dimension_id)
     |> check_constraint(:base,

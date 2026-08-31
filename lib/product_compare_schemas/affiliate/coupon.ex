@@ -1,7 +1,7 @@
 defmodule ProductCompareSchemas.Affiliate.Coupon do
   use ProductCompareSchemas.Schema, :relational
 
-  alias ProductCompareSchemas.DecimalInput
+  alias ProductCompareSchemas.FiniteDecimal
   alias ProductCompareSchemas.Reference.CurrencyCode
 
   @discount_types [:percent, :amount, :free_shipping, :other]
@@ -13,7 +13,7 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
     field :code, :string
     field :description, :string
     field :discount_type, Ecto.Enum, values: @discount_types
-    field :discount_value, :decimal
+    field :discount_value, FiniteDecimal
     field :currency, CurrencyCode, source: :currency_id
     field :valid_from, :utc_datetime_usec
     field :valid_to, :utc_datetime_usec
@@ -124,8 +124,8 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
   defp validate_discount_value_bounds(changeset, _discount_type, _discount_value), do: changeset
 
   defp decimal_gt?(value, threshold),
-    do: Decimal.compare(DecimalInput.to_decimal(value), Decimal.new(threshold)) == :gt
+    do: Decimal.compare(value, Decimal.new(threshold)) == :gt
 
   defp decimal_lte?(value, threshold),
-    do: Decimal.compare(DecimalInput.to_decimal(value), Decimal.new(threshold)) in [:lt, :eq]
+    do: Decimal.compare(value, Decimal.new(threshold)) in [:lt, :eq]
 end

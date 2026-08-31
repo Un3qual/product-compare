@@ -11,6 +11,7 @@ defmodule ProductCompareSchemas.DecimalInputTest do
       assert Decimal.equal?(DecimalInput.to_decimal(12), Decimal.new("12"))
       assert Decimal.equal?(DecimalInput.to_decimal(12.5), Decimal.from_float(12.5))
       assert Decimal.equal?(DecimalInput.to_decimal("12.34"), Decimal.new("12.34"))
+      assert Decimal.equal?(DecimalInput.to_decimal(" 12.34 "), Decimal.new("12.34"))
       assert Decimal.equal?(DecimalInput.to_decimal("1e2"), Decimal.new("1E+2"))
     end
 
@@ -18,6 +19,13 @@ defmodule ProductCompareSchemas.DecimalInputTest do
       assert DecimalInput.to_decimal("") == nil
       assert DecimalInput.to_decimal("abc") == nil
       assert DecimalInput.to_decimal("12.34abc") == nil
+    end
+
+    test "returns nil for non-finite values" do
+      for value <- ["NaN", "Infinity", "-Infinity"] do
+        assert DecimalInput.to_decimal(value) == nil
+        assert value |> Decimal.new() |> DecimalInput.to_decimal() == nil
+      end
     end
   end
 end

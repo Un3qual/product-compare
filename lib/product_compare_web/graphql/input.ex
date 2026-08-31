@@ -1,6 +1,7 @@
 defmodule ProductCompareWeb.GraphQL.Input do
   @moduledoc false
 
+  alias ProductCompareSchemas.DecimalInput
   alias ProductCompareWeb.GraphQL.GlobalId
 
   @spec fetch_value(map(), atom(), any()) :: any()
@@ -122,20 +123,15 @@ defmodule ProductCompareWeb.GraphQL.Input do
   def decode_integer_id_list(_values, _expected_type, _field_name, invalid_list_message),
     do: {:error, invalid_list_message}
 
-  @spec normalize_decimal_value(any()) ::
-          {:ok, Decimal.t() | number() | nil} | {:error, String.t()}
+  @spec normalize_decimal_value(any()) :: {:ok, Decimal.t() | nil} | {:error, String.t()}
   def normalize_decimal_value(nil), do: {:ok, nil}
-  def normalize_decimal_value(%Decimal{} = value), do: {:ok, value}
-  def normalize_decimal_value(value) when is_integer(value) or is_float(value), do: {:ok, value}
 
-  def normalize_decimal_value(value) when is_binary(value) do
-    case Decimal.parse(value) do
-      {decimal, ""} -> {:ok, decimal}
-      _ -> {:error, "invalid numeric value"}
+  def normalize_decimal_value(value) do
+    case DecimalInput.to_decimal(value) do
+      %Decimal{} = decimal -> {:ok, decimal}
+      nil -> {:error, "invalid numeric value"}
     end
   end
-
-  def normalize_decimal_value(_value), do: {:error, "invalid numeric value"}
 
   @spec normalize_boolean_value(any()) :: {:ok, boolean()}
   def normalize_boolean_value(true), do: {:ok, true}

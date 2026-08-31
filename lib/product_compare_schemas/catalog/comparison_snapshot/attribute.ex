@@ -1,7 +1,7 @@
 defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Attribute do
   use ProductCompareSchemas.Schema, :relational
 
-  alias ProductCompareSchemas.Schema
+  alias ProductCompareSchemas.FiniteDecimal
 
   @source_types [:scrape, :user, :import, :derived]
   @type t :: %__MODULE__{}
@@ -14,7 +14,7 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Attribute do
     field :display_name, :string
     field :value_text, :string
     field :source_type, Ecto.Enum, values: @source_types
-    field :confidence, :decimal
+    field :confidence, FiniteDecimal
 
     belongs_to :snapshot_product, ProductCompareSchemas.Catalog.ComparisonSnapshot.Product
 
@@ -24,8 +24,6 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Attribute do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(attribute, attrs) do
-    attrs = Schema.normalize_non_finite_decimals(attrs, [:confidence])
-
     attribute
     |> cast(attrs, [
       :snapshot_product_id,

@@ -1,15 +1,16 @@
 defmodule ProductCompareSchemas.DecimalInput do
   @moduledoc false
 
-  @spec to_decimal(Decimal.t() | integer() | float() | binary()) :: Decimal.t() | nil
-  def to_decimal(%Decimal{} = value), do: value
-  def to_decimal(value) when is_integer(value), do: Decimal.new(value)
-  def to_decimal(value) when is_float(value), do: Decimal.from_float(value)
+  alias ProductCompareSchemas.FiniteDecimal
 
-  def to_decimal(value) when is_binary(value) do
-    case Decimal.parse(value) do
-      {%Decimal{} = decimal, ""} -> decimal
-      _invalid -> nil
+  @spec to_decimal(term()) :: Decimal.t() | nil
+  def to_decimal(value) when is_binary(value), do: value |> String.trim() |> cast()
+  def to_decimal(value), do: cast(value)
+
+  defp cast(value) do
+    case FiniteDecimal.cast(value) do
+      {:ok, decimal} -> decimal
+      :error -> nil
     end
   end
 end

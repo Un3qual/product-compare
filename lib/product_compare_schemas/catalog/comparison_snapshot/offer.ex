@@ -1,8 +1,8 @@
 defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Offer do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.FiniteDecimal
   alias ProductCompareSchemas.Reference.CurrencyCode
-  alias ProductCompareSchemas.Schema
 
   @freshness_values [:fresh, :aging, :stale, :unobserved]
   @type t :: %__MODULE__{}
@@ -14,9 +14,9 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Offer do
     field :merchant_name, :string
     field :merchant_domain, :string
     field :currency, CurrencyCode, source: :currency_id
-    field :item_price, :decimal
-    field :shipping, :decimal
-    field :landed_price, :decimal
+    field :item_price, FiniteDecimal
+    field :shipping, FiniteDecimal
+    field :landed_price, FiniteDecimal
     field :observed_at, :utc_datetime_usec
     field :freshness, Ecto.Enum, values: @freshness_values
 
@@ -25,8 +25,6 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Offer do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(offer, attrs) do
-    attrs = Schema.normalize_non_finite_decimals(attrs, [:item_price, :shipping, :landed_price])
-
     offer
     |> cast(attrs, [
       :snapshot_product_id,
