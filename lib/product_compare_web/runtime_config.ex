@@ -118,9 +118,10 @@ defmodule ProductCompareWeb.RuntimeConfig do
   defp normalize_parsed_host(_host), do: nil
 
   defp valid_cookie_domain?(endpoint_host, domain_host) do
-    labels = String.split(domain_host, ".", trim: true)
+    has_parent_label? =
+      match?([_label, _suffix], String.split(domain_host, ".", parts: 2, trim: true))
 
-    length(labels) >= 2 and normalize_parsed_host(domain_host) == domain_host and
+    has_parent_label? and normalize_parsed_host(domain_host) == domain_host and
       (endpoint_host == domain_host or String.ends_with?(endpoint_host, "." <> domain_host))
   end
 

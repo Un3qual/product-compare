@@ -294,25 +294,34 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   end
 
   defp list_field(result_set, key, field, category) do
-    case Map.fetch(result_set, key) do
-      {:ok, value} when is_list(value) -> {:ok, value}
-      _missing_or_invalid -> {:error, {:invalid_result_set, field, category}}
-    end
+    validated_field(result_set, key, field, category, &is_list/1)
   end
 
   defp non_negative_integer_field(result_set, key, field, category) do
-    case Map.fetch(result_set, key) do
-      {:ok, value} when is_integer(value) and value >= 0 -> {:ok, value}
+    validated_field(result_set, key, field, category, &non_negative_integer?/1)
+  end
+
+  defp positive_integer_field(result_set, key, field) do
+    validated_field(
+      result_set,
+      key,
+      field,
+      :limit_not_positive_integer,
+      &positive_integer?/1
+    )
+  end
+
+  defp validated_field(result_set, key, field, category, valid?) do
+    with {:ok, value} <- Map.fetch(result_set, key),
+         true <- valid?.(value) do
+      {:ok, value}
+    else
       _missing_or_invalid -> {:error, {:invalid_result_set, field, category}}
     end
   end
 
-  defp positive_integer_field(result_set, key, field) do
-    case Map.fetch(result_set, key) do
-      {:ok, value} when is_integer(value) and value > 0 -> {:ok, value}
-      _missing_or_invalid -> {:error, {:invalid_result_set, field, :limit_not_positive_integer}}
-    end
-  end
+  defp non_negative_integer?(value), do: is_integer(value) and value >= 0
+  defp positive_integer?(value), do: is_integer(value) and value > 0
 
   defp next_cursor(offset, count, total_count, limit)
        when count == limit and offset + count < total_count do

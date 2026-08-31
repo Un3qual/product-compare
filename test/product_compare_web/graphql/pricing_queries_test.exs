@@ -41,6 +41,11 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
           in_stock: true
         })
 
+      query_started_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      response = graphql(conn, product_price_history_query(), %{"slug" => product.slug})
+      query_finished_at = DateTime.utc_now()
+
       assert %{
                "data" => %{
                  "product" => %{
@@ -54,7 +59,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                    ]
                  }
                }
-             } = graphql(conn, product_price_history_query(), %{"slug" => product.slug})
+             } = response
 
       assert eur_merchant == %{
                "id" => relay_id(:merchant, euro.id),
@@ -85,7 +90,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
 
       assert {:ok, latest_date, 0} = DateTime.from_iso8601(latest_observed_at)
       assert DateTime.compare(latest_date, observed_at) in [:eq, :gt]
-      assert DateTime.to_date(latest_date) == DateTime.to_date(observed_at)
+      assert DateTime.compare(latest_date, query_started_at) in [:eq, :gt]
+      assert DateTime.compare(latest_date, query_finished_at) in [:eq, :lt]
 
       assert List.last(usd_points)["lowestPrice"] == "120.50"
       assert Enum.count_until(eur_points, 92) <= 91

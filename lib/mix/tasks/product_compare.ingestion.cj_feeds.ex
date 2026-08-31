@@ -132,6 +132,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjFeeds do
     )
   end
 
+  @spec raise_discovery_failure(term()) :: no_return()
   defp raise_discovery_failure(reason) do
     Mix.raise("CJ feed discovery failed: category=#{CJFailureDiagnostics.category(reason)}")
   end
