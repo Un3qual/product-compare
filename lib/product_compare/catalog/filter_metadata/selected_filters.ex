@@ -88,7 +88,7 @@ defmodule ProductCompare.Catalog.FilterMetadata.SelectedFilters do
   defp merge_numeric_min(value, nil), do: value
 
   defp merge_numeric_min(existing_value, next_value) do
-    case Decimal.compare(decimal_for_compare(existing_value), decimal_for_compare(next_value)) do
+    case Decimal.compare(existing_value, next_value) do
       :lt -> next_value
       _comparison -> existing_value
     end
@@ -98,15 +98,10 @@ defmodule ProductCompare.Catalog.FilterMetadata.SelectedFilters do
   defp merge_numeric_max(value, nil), do: value
 
   defp merge_numeric_max(existing_value, next_value) do
-    case Decimal.compare(decimal_for_compare(existing_value), decimal_for_compare(next_value)) do
+    case Decimal.compare(existing_value, next_value) do
       :gt -> next_value
       _comparison -> existing_value
     end
-  end
-
-  defp decimal_for_compare(value) do
-    {:ok, decimal} = normalize_numeric_bound(value)
-    decimal
   end
 
   defp normalize_numeric_bound(value) do

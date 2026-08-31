@@ -76,7 +76,7 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
     |> validate_discount_value_presence(discount_type, discount_value)
     |> validate_discount_value_absence(discount_type, discount_value)
     |> validate_amount_currency(discount_type, currency)
-    |> validate_discount_value_bounds(discount_type, discount_value)
+    |> validate_discount_value_bounds(discount_type)
   end
 
   defp validate_discount_value_presence(changeset, discount_type, discount_value)
@@ -99,33 +99,20 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
 
   defp validate_amount_currency(changeset, _discount_type, _currency), do: changeset
 
-  defp validate_discount_value_bounds(changeset, _discount_type, nil), do: changeset
+  defp validate_discount_value_bounds(changeset, :percent) do
+    validate_number(changeset, :discount_value,
+      greater_than: 0,
+      less_than_or_equal_to: 100,
+      message: "must be greater than 0 and less than or equal to 100 for percent discounts"
+    )
+  end
 
-  defp validate_discount_value_bounds(changeset, :percent, discount_value) do
-    if decimal_gt?(discount_value, 0) and decimal_lte?(discount_value, 100) do
-      changeset
-    else
-      add_error(
-        changeset,
-        :discount_value,
-        "must be greater than 0 and less than or equal to 100 for percent discounts"
+  defp validate_discount_value_bounds(changeset, :amount),
+    do:
+      validate_number(changeset, :discount_value,
+        greater_than: 0,
+        message: "must be greater than 0 for amount discounts"
       )
-    end
-  end
 
-  defp validate_discount_value_bounds(changeset, :amount, discount_value) do
-    if decimal_gt?(discount_value, 0) do
-      changeset
-    else
-      add_error(changeset, :discount_value, "must be greater than 0 for amount discounts")
-    end
-  end
-
-  defp validate_discount_value_bounds(changeset, _discount_type, _discount_value), do: changeset
-
-  defp decimal_gt?(value, threshold),
-    do: Decimal.compare(value, Decimal.new(threshold)) == :gt
-
-  defp decimal_lte?(value, threshold),
-    do: Decimal.compare(value, Decimal.new(threshold)) in [:lt, :eq]
+  defp validate_discount_value_bounds(changeset, _discount_type), do: changeset
 end

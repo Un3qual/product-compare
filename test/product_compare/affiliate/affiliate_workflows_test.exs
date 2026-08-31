@@ -176,6 +176,30 @@ defmodule ProductCompare.AffiliateWorkflowsTest do
       assert Repo.aggregate(Coupon, :count, :id) == 0
     end
 
+    test "create_coupon/1 validates numeric discount bounds" do
+      merchant = merchant_fixture()
+
+      for {discount_type, discount_value, message} <- [
+            {:amount, "0", "must be greater than 0 for amount discounts"},
+            {:percent, "0",
+             "must be greater than 0 and less than or equal to 100 for percent discounts"},
+            {:percent, "100.01",
+             "must be greater than 0 and less than or equal to 100 for percent discounts"}
+          ] do
+        assert {:error, changeset} =
+                 Affiliate.create_coupon(%{
+                   merchant_id: merchant.id,
+                   code: "SAVE-#{System.unique_integer([:positive])}",
+                   discount_type: discount_type,
+                   discount_value: discount_value
+                 })
+
+        assert message in errors_on(changeset).discount_value
+      end
+
+      assert Repo.aggregate(Coupon, :count, :id) == 0
+    end
+
     test "list_active_coupons/2 applies validity window semantics and deterministic ordering" do
       merchant = merchant_fixture()
       other_merchant = merchant_fixture()
