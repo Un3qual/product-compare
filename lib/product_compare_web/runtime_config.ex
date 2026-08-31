@@ -22,28 +22,6 @@ defmodule ProductCompareWeb.RuntimeConfig do
 
   def default_trusted_origins(_env, _phx_host), do: @dev_trusted_origins
 
-  @spec session_cookie_domain(String.t(), String.t() | nil) :: String.t() | nil
-  def session_cookie_domain(_endpoint_host, nil), do: nil
-
-  def session_cookie_domain(endpoint_host, explicit_domain)
-      when is_binary(endpoint_host) and is_binary(explicit_domain) do
-    endpoint_host = String.downcase(endpoint_host)
-    explicit_domain = explicit_domain |> String.trim() |> String.downcase()
-    domain_host = String.trim_leading(explicit_domain, ".")
-
-    if valid_cookie_domain?(endpoint_host, domain_host) do
-      explicit_domain
-    else
-      raise ArgumentError,
-            "SESSION_COOKIE_DOMAIN must be the configured PHX_HOST or one of its parent domains"
-    end
-  end
-
-  def session_cookie_domain(_endpoint_host, _explicit_domain) do
-    raise ArgumentError,
-          "SESSION_COOKIE_DOMAIN must be the configured PHX_HOST or one of its parent domains"
-  end
-
   @spec public_site_url!(String.t() | nil) :: String.t()
   def public_site_url!(explicit_url) do
     with value when is_binary(value) <- explicit_url,
@@ -101,15 +79,6 @@ defmodule ProductCompareWeb.RuntimeConfig do
   end
 
   defp normalize_parsed_host(_host), do: nil
-
-  defp valid_cookie_domain?(endpoint_host, domain_host) do
-    has_parent_label? =
-      match?([_label, _suffix], String.split(domain_host, ".", parts: 2, trim: true))
-
-    has_parent_label? and not Domainatrex.tld?(domain_host) and
-      normalize_parsed_host(domain_host) == domain_host and
-      (endpoint_host == domain_host or String.ends_with?(endpoint_host, "." <> domain_host))
-  end
 
   defp public_origin?(%URI{
          scheme: scheme,

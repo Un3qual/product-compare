@@ -31,7 +31,7 @@ contracts rather than optimize for line count alone.
 - Same-origin checks derive authority from configured endpoint values, not the
   request Host header.
 - Production requires valid host and public-origin configuration. Session
-  cookies remain host-only unless an explicit compatible domain is configured.
+  cookies remain host-only unless deployment configures an explicit domain.
 - One finite-decimal Ecto type turns special Decimal values into cast errors.
   PostgreSQL remains the final authority for finite and non-negative commerce
   constraints.

@@ -79,30 +79,4 @@ defmodule ProductCompareWeb.RuntimeConfigTest do
       end
     end
   end
-
-  test "session_cookie_domain/2 keeps cookies host-only without an explicit domain" do
-    assert RuntimeConfig.session_cookie_domain("api.example.com", nil) == nil
-  end
-
-  test "session_cookie_domain/2 accepts an explicit configured host or parent domain" do
-    assert RuntimeConfig.session_cookie_domain("api.example.com", "api.example.com") ==
-             "api.example.com"
-
-    assert RuntimeConfig.session_cookie_domain("api.example.com", ".example.com") ==
-             ".example.com"
-  end
-
-  test "session_cookie_domain/2 rejects unrelated and public-suffix-like domains" do
-    for invalid <- ["", ".com", ".example.net", ".api.example.com.evil"] do
-      assert_raise ArgumentError, ~r/SESSION_COOKIE_DOMAIN/, fn ->
-        RuntimeConfig.session_cookie_domain("api.example.com", invalid)
-      end
-    end
-  end
-
-  test "session_cookie_domain/2 rejects multi-label public suffixes" do
-    assert_raise ArgumentError, ~r/SESSION_COOKIE_DOMAIN/, fn ->
-      RuntimeConfig.session_cookie_domain("api.example.co.uk", ".co.uk")
-    end
-  end
 end

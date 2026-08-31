@@ -10,7 +10,7 @@ PostgreSQL behavior.
 
 - Derive browser authority from validated endpoint configuration, never the
   request Host header.
-- Keep cookies host-only unless a compatible domain is explicitly configured.
+- Keep cookies host-only unless deployment explicitly configures a domain.
 - Reject malformed same-row values in changesets and map their named database
   constraints.
 - Keep foreign keys and direct-write constraints database-authoritative; do not

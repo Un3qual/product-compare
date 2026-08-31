@@ -59,7 +59,6 @@ defmodule ProductCompare.MixProject do
       {:saxy, "~> 1.6"},
       {:req, "~> 0.7"},
       {:idna, "~> 7.1"},
-      {:domainatrex, "~> 3.2"},
       {:ex_cldr, "~> 2.47"},
       {:ex_cldr_currencies, "~> 2.17"},
       {:ex_cldr_territories, "~> 2.12"},

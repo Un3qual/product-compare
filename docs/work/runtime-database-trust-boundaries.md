@@ -23,8 +23,8 @@ relationship queries, or generic constraint machinery.
   matching `Origin` is rejected, while exact configured trusted origins remain
   supported.
 - Production requires a valid explicit `PHX_HOST`. Session cookies are
-  host-only by default and accept an explicit cookie domain only when it is the
-  configured host or one of its non-public parent domains.
+  host-only by default and use `SESSION_COOKIE_DOMAIN` only when deployment
+  explicitly configures cross-subdomain sharing.
 - Decimal schema fields use a shared Ecto type that turns `NaN` and both
   infinities into ordinary cast errors without rewriting input maps. Shared
   boundary parsing rejects the same values once, while finite-aware PostgreSQL

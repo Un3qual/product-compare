@@ -124,10 +124,7 @@ if config_env() == :prod do
   host = ProductCompareWeb.RuntimeConfig.endpoint_host!(phx_host)
 
   session_options =
-    case ProductCompareWeb.RuntimeConfig.session_cookie_domain(
-           host,
-           System.get_env("SESSION_COOKIE_DOMAIN")
-         ) do
+    case System.get_env("SESSION_COOKIE_DOMAIN") do
       nil -> [secure: true]
       domain -> [domain: domain, secure: true]
     end
