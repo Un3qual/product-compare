@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { gotoClientRoute } from "./client-navigation";
 import {
   expectNoUnhandledGraphQLOperations,
   homeResponders,
@@ -210,7 +211,7 @@ function comparisonResponders() {
 }
 
 async function openComparisonFromHome(page: Page) {
-  await page.goto(`/?${comparisonPath.split("?")[1]}`);
+  await gotoClientRoute(page, `/?${comparisonPath.split("?")[1]}`);
   await page.getByRole("link", { name: "Open comparison" }).first().click();
   await expect(page).toHaveURL(comparisonPath);
 }

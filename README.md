@@ -24,14 +24,14 @@ Phoenix modular-monolith backend for collaborative, AI-assisted product comparis
    ```bash
    mix setup
    ```
-4. Start Phoenix and its Vite watcher:
+4. Start Phoenix and its React Router Framework Mode watcher:
    ```bash
    mix phx.server
    ```
 
-Phoenix is available at `http://localhost:4000` and Vite at
-`http://localhost:5173`. Stopping Phoenix also stops the Vite watcher. Default
-DB URLs are configured for `localhost:5433`.
+Phoenix is available at `http://localhost:4000` and the React Router development
+server at `http://localhost:5173`. Stopping Phoenix also stops the frontend
+watcher. Default DB URLs are configured for `localhost:5433`.
 
 ## Operator-access upgrade decision
 
@@ -85,9 +85,9 @@ Schema modules live under `ProductCompareSchemas` and remain schema-only.
   runs the complete frontend gate.
 - `mix ci` - checks backend formatting, runs all backend checks and tests, then
   runs the complete frontend gate.
-- `cd assets && pnpm run check` - validates Relay artifacts, type-checks, runs
-  all unit tests, builds the client and SSR bundles, and verifies the client
-  bundle contract.
+- `cd assets && pnpm run check` - validates Relay artifacts, generates route
+  types, type-checks, runs all unit tests, builds the Framework client/server
+  bundles, and verifies the client bundle contract.
 - `cd assets && pnpm run test:e2e` - runs the service-dependent Playwright suite
   separately from the deterministic frontend gate.
 

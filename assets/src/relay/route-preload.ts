@@ -160,10 +160,6 @@ export function setRelayEnvironmentOnRouterContext(
 }
 
 export function getRelayEnvironmentFromRouterContext(context: Readonly<RouterContextProvider>) {
-  if (!(context instanceof RouterContextProvider)) {
-    throw new Error("Relay environment is missing from the route loader context");
-  }
-
   const environment = context.get(relayEnvironmentRouterContext);
 
   if (!environment) {

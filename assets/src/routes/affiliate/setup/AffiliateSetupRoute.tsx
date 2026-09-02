@@ -33,7 +33,6 @@ export {
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return affiliateSetupLoader(args);
 }
-clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

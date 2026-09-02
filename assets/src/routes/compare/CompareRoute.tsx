@@ -1,10 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import {
-  useLoaderData,
-  useLocation,
-  useOutletContext,
-} from "react-router";
+import { useLoaderData, useLocation, useOutletContext } from "react-router";
 import { graphql, useMutation, usePreloadedQuery } from "react-relay";
 import type { CompareRouteCreateSavedComparisonSetMutation } from "$generated/CompareRouteCreateSavedComparisonSetMutation.graphql";
 import type {
@@ -29,7 +25,6 @@ export { CompareRoute as default, compareLoader as loader };
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return compareLoader(args);
 }
-clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({
@@ -72,6 +67,7 @@ import {
 export {
   recommendationProfileFromUrl,
   shouldRevalidateCompareLoader,
+  shouldRevalidateCompareLoader as shouldRevalidate,
   type RecommendationProfile,
 } from "./recommendation-route-data";
 

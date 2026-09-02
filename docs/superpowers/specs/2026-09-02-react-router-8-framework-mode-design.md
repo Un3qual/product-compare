@@ -17,6 +17,8 @@ environment and serialize the Relay record source across SSR hydration.
 The package set is exact and aligned:
 
 - `react-router`, `@react-router/dev`, and `@react-router/serve` 8.3.1
+- `isbot` 5.2.2 for the framework-standard bot streaming decision in the custom
+  Relay server entry
 - `react` and `react-dom` 19.2.7, the minimum supported React version for
   React Router 8
 - no `react-router-dom`, `@unhead/react`, or direct `@react-router/node`
@@ -90,6 +92,10 @@ expose it through both `loader` and `clientLoader`. Server document requests use
 the request-scoped environment and browser navigations use the singleton
 browser environment. Existing descriptor, lease, and preload-cache behavior is
 retained because it is Relay lifecycle policy rather than routing machinery.
+Fully awaited routes reuse serialized server loader data during hydration. The
+revenue and CJ routes alone rerun their client loaders during hydration because
+each intentionally returns an optional deferred Relay preload that can settle
+after the root route serializes the normalized record source.
 
 GraphQL request construction and `JSON.stringify` remain inside the existing
 typed transport `try` boundary. This preserves the guarantee that unsupported
@@ -115,7 +121,9 @@ not-found results, and non-200 statuses. Framework Mode propagates status and
 headers through the server entry. The hand-written response-header aggregator,
 manual static-handler request, status special case, and wildcard status shim
 are removed. The existing user-facing error presentation is retained behind
-route-module error boundaries.
+route-module error boundaries. The Relay-aware server entry follows the
+framework default streaming policy: human requests receive the rendered shell,
+while bots and SPA mode wait for `allReady`.
 
 ## Metadata And Links
 
@@ -139,11 +147,16 @@ constructor failure.
 
 ## Build And Type Generation
 
-The React Router Vite plugin is composed with the existing React/StyleX and
-StyleX-mangling plugins. `react-router.config.ts` enables SSR and uses the
-existing `src` application directory and `dist` build directory. Package
-scripts use `react-router dev`, `react-router typegen`, `react-router build`,
-and `react-router-serve`.
+The React Router Vite plugin owns React transformation and HMR and is composed
+with the existing Relay/StyleX Babel transform. The redundant direct React
+Vite plugin and the post-transform class-name mangler are removed. Framework
+route splitting can compile client and server module graphs independently, so
+the extra mangling layer no longer has a sound cross-graph ownership point;
+StyleX's compiler output remains deterministic without it.
+
+`react-router.config.ts` enables SSR and uses the existing `src` application
+directory and `dist` build directory. Package scripts use `react-router dev`,
+`react-router typegen`, `react-router build`, and `react-router-serve`.
 
 TypeScript includes `.react-router/types` through `rootDirs`; generated files
 are build products and are not hand edited. Bundle and StyleX verification read
@@ -160,6 +173,11 @@ behavior over recreating the old `RouteObject` tree in tests. Do not force
 typed application route modules through `createRoutesStub` when generated
 Framework types and stub types model different route manifests.
 
+Browser tests that stub GraphQL hydrate a static auth route first and then use
+real client navigation to reach data routes, so the browser-owned mock observes
+the same client-loader request path used in production. Direct auth-route tests
+wait for hydration before submitting Framework forms.
+
 Test fixtures use React Router 8 route contracts or call feature-local domain
 loading functions directly. Obsolete React Router 7 argument fields and
 home-grown `LoaderFunctionArgs` substitutes are deleted.
@@ -170,10 +188,19 @@ home-grown `LoaderFunctionArgs` substitutes are deleted.
   does not own Relay's record source.
 - Relay route-preload descriptors, leases, and cache invalidation: these encode
   normalized GraphQL lifecycle and optimistic-update behavior.
+- Relay-aware framework entries: the client installs and hydrates the browser
+  environment, and the server provides the request environment while retaining
+  the framework's human-shell/bot-complete streaming policy.
 - GraphQL transport and typed failure normalization: this preserves endpoint,
   cookie, abort, JSON serialization, and Relay error semantics.
-- StyleX compilation and deterministic class mangling: the React Router Vite
-  plugin does not replace the repository's CSS transform.
+- StyleX and Relay Babel compilation: the React Router Vite plugin does not
+  replace either repository-specific transform. StyleX constants register as
+  the root route's first dependency so route-split modules see the same values
+  in client and server builds.
+- Vite dependency optimization inventory: Framework route discovery loads many
+  dependency subpaths lazily. The explicit Vite 8 inventory prevents optimizer
+  hash invalidation from aborting in-flight route modules; it contains only
+  packages actually imported by the frontend.
 - Phoenix `/api/graphql` and session handling: React Router is the frontend SSR
   runtime, not the application's API or authentication authority.
 
@@ -200,3 +227,16 @@ adoption before publication.
 - [Framework type safety](https://reactrouter.com/explanation/type-safety)
 - [Framework testing](https://reactrouter.com/start/framework/testing)
 - [React Router changelog](https://reactrouter.com/changelog)
+
+## Implementation Self-Review
+
+The implemented diff matches the selected approach. Framework Mode owns the
+route manifest, module discovery and splitting, document metadata/links,
+navigation forms/actions, status and redirect propagation, error boundaries,
+request handling, and client/server build. The final audit removed the old
+Data Mode router, static-handler and response pipeline, Unhead integration,
+lazy route wrapper, class-name mangler, manual loader fixtures, and redundant
+route types. The retained Relay, GraphQL transport, StyleX compiler, Vite
+optimizer, and Phoenix boundaries are limited to the domain and toolchain
+responsibilities listed above; no retained abstraction duplicates a React
+Router Framework Mode guarantee.

@@ -73,16 +73,19 @@
 
 - [ ] **Step 3: Compose the React Router and existing StyleX Vite plugins**
 
-  Keep deterministic StyleX transforms and aliases while letting the Framework
-  plugin own client/server entries, manifests, and route splitting. Add SSR
-  Framework configuration and an explicit route config with every current URL.
+  Keep the Relay/StyleX Babel transforms and aliases while letting the
+  Framework plugin own React transformation, client/server entries, manifests,
+  and route splitting. Remove any extra React or class-mangling plugin whose
+  ownership now conflicts with the Framework compiler. Add SSR Framework
+  configuration and an explicit route config with every current URL.
 
 - [ ] **Step 4: Generate types and prove the toolchain boundary**
 
   ```bash
-  /opt/homebrew/bin/mise exec -- pnpm --dir assets exec react-router typegen
-  /opt/homebrew/bin/mise exec -- pnpm --dir assets exec tsc --noEmit
-  /opt/homebrew/bin/mise exec -- pnpm --dir assets exec react-router build
+  cd assets
+  /opt/homebrew/bin/mise exec -- pnpm exec react-router typegen
+  /opt/homebrew/bin/mise exec -- pnpm exec tsc --noEmit
+  /opt/homebrew/bin/mise exec -- pnpm exec react-router build
   ```
 
   Expected: route types generate under `.react-router/types`; TypeScript and the
@@ -304,3 +307,17 @@
   `codex/project-quality-remediation`, and verify the published head/base and
   checks. The PR body summarizes architecture ownership, retained custom Relay
   boundaries, simplification delta, and exact verification evidence.
+
+## Completion
+
+Tasks 1 through 4 were completed in milestone commits. The final self-review
+found one Framework Mode runtime, no authored import of React Router internals,
+no obsolete router/head dependencies, and no duplicate route, request,
+response, metadata, lazy-loading, or route-type compatibility layer. The
+verified package versions, test counts, build artifacts, HTTP smoke results,
+retained custom boundaries, and simplification measurements are recorded in
+`docs/work/frontend-react-router-framework-mode.md`. Independent review also
+confirmed that the compare revalidation contract is exported under the native
+framework name, fully awaited routes avoid duplicate hydration requests, the
+two deferred Relay routes retain evidence-backed hydration, and the custom
+server entry preserves framework-standard shell streaming.

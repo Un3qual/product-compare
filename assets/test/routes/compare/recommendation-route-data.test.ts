@@ -5,6 +5,7 @@ import {
   recommendationProfileFromUrl,
   shouldRevalidateCompareLoader,
 } from "../../../src/routes/compare/recommendation-route-data";
+import { shouldRevalidate as shouldRevalidateCompareRoute } from "../../../src/routes/compare/CompareRoute";
 
 describe("recommendationProfileFromUrl", () => {
   test.each([
@@ -88,6 +89,16 @@ describe("buildRecommendationQueryInput", () => {
 });
 
 describe("shouldRevalidateCompareLoader", () => {
+  test("is exported through the framework route contract", () => {
+    expect(
+      shouldRevalidateCompareRoute({
+        currentUrl: new URL("https://example.test/compare?slug=one&recommend=best_value"),
+        nextUrl: new URL("https://example.test/compare?slug=one"),
+        defaultShouldRevalidate: true,
+      }),
+    ).toBe(false);
+  });
+
   test.each([
     [
       "https://example.test/compare?slug=one&slug=two",

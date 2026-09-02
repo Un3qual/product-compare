@@ -30,7 +30,6 @@ export {
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return merchantDetailLoader(args);
 }
-clientLoader.hydrate = true as const;
 
 const merchantDetailRouteQuery = graphql`
   query MerchantDetailRouteQuery($slug: String!, $first: Int!, $after: String) {

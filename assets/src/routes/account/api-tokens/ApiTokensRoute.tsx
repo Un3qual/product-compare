@@ -34,7 +34,6 @@ export { ApiTokensRoute as default, apiTokensLoader as loader };
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return apiTokensLoader(args);
 }
-clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

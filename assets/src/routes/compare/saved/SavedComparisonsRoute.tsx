@@ -26,7 +26,6 @@ export {
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return savedComparisonsLoader(args);
 }
-clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

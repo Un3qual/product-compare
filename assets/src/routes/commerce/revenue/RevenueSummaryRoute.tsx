@@ -23,13 +23,11 @@ import { AttributionLedger, attributionLedgerRouteQuery } from "./attribution/At
 import { RevenueControls } from "./summary/RevenueControls";
 import { RevenueMetrics } from "./summary/RevenueMetrics";
 
-export {
-  RevenueSummaryRoute as default,
-  revenueSummaryLoader as loader,
-};
+export { RevenueSummaryRoute as default, revenueSummaryLoader as loader };
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return revenueSummaryLoader(args);
 }
+// The optional ledger query is streamed after the root Relay snapshot.
 clientLoader.hydrate = true as const;
 
 export function meta() {
@@ -40,9 +38,7 @@ export function meta() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  return (
-    <SharedRouteErrorBoundary error={error} resourceName="revenue report" title="Revenue" />
-  );
+  return <SharedRouteErrorBoundary error={error} resourceName="revenue report" title="Revenue" />;
 }
 import {
   buildRevenueSummaryControls,
@@ -216,7 +212,9 @@ export function RevenueSummaryRoute() {
   );
 }
 
-function RevenueSummaryPanel({ query }: {
+function RevenueSummaryPanel({
+  query,
+}: {
   query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["query"];
 }) {
   const queryRef = useRoutePreloadedQuery<RevenueSummaryRouteQuery>(
@@ -235,11 +233,7 @@ function RevenueSummaryPanel({ query }: {
   return <RevenueMetrics metrics={buildRevenueDashboardMetrics(data.revenueSummary, currency)} />;
 }
 
-function DeferredAttributionLedgerBoundary({
-  query,
-}: {
-  query: AttributionLedgerQueryDescriptor;
-}) {
+function DeferredAttributionLedgerBoundary({ query }: { query: AttributionLedgerQueryDescriptor }) {
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -281,9 +275,7 @@ function AttributionLedgerBoundary({
 function AttributionLedgerPanel({
   query,
 }: {
-  query: NonNullable<
-    Awaited<AttributionLedgerQueryDescriptor>
-  >;
+  query: NonNullable<Awaited<AttributionLedgerQueryDescriptor>>;
 }) {
   const queryRef = useRoutePreloadedQuery<AttributionLedgerRouteQuery>(
     attributionLedgerRouteQuery,

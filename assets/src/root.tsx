@@ -24,9 +24,7 @@ import {
 } from "$relay/route-preload";
 import { createRelayEnvironment } from "$relay/environment";
 import { dehydrateRelayEnvironment, serializeRelayRecords } from "$relay/ssr";
-import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { AppShell } from "$ui/components/layout/AppShell";
-import { PageShell } from "$ui/components/layout/PageShell";
 import { AppProviders } from "$ui/providers/AppProviders";
 import { RouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { RootPrimaryNavigation } from "$routes/RootDestinations";
@@ -62,12 +60,8 @@ export function loader(args: Route.LoaderArgs) {
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return loadRoot(args);
 }
-clientLoader.hydrate = true as const;
 
-export function shouldRevalidate({
-  currentUrl,
-  nextUrl,
-}: ShouldRevalidateFunctionArgs) {
+export function shouldRevalidate({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
   return isAuthRoutePath(currentUrl.pathname) || isAuthRoutePath(nextUrl.pathname);
 }
 
@@ -114,25 +108,11 @@ export default function App() {
   return <ReadyRoot viewerQuery={loaderData.viewerQuery} />;
 }
 
-export function HydrateFallback() {
-  return (
-    <AppShell>
-      <PageShell
-        description="Preparing current products, offers, and account details."
-        title="Product Compare"
-        width="reading"
-      >
-        <FeedbackState kind="loading" title="Loading Product Compare..." />
-      </PageShell>
-    </AppShell>
-  );
-}
-
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   return <RouteErrorBoundary error={error} resourceName="page" title="Product Compare" />;
 }
 
-async function loadRoot({ context, request }: Route.LoaderArgs | Route.ClientLoaderArgs) {
+async function loadRoot({ context, request }: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
 
   try {

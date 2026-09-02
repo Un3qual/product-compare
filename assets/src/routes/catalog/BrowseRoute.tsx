@@ -24,7 +24,6 @@ export { BrowseRoute as default, browseLoader as loader };
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return browseLoader(args);
 }
-clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

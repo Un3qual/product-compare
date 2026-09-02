@@ -29,7 +29,6 @@ export {
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return sharedComparisonLoader(args);
 }
-clientLoader.hydrate = true as const;
 
 const sharedComparisonRouteQuery = graphql`
   query SharedComparisonRouteQuery($token: String!) {

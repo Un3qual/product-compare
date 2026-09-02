@@ -32,7 +32,6 @@ export { HomeRoute as default, homeLoader as loader };
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return homeLoader(args);
 }
-clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

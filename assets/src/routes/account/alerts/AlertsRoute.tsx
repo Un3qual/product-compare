@@ -34,7 +34,6 @@ export { AlertsRoute as default, alertsLoader as loader };
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return alertsLoader(args);
 }
-clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

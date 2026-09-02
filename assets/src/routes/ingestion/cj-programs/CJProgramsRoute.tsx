@@ -34,6 +34,7 @@ export { CJProgramsRoute as default, cjProgramsLoader as loader };
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return cjProgramsLoader(args);
 }
+// The optional unmatched-feeds query is streamed after the root Relay snapshot.
 clientLoader.hydrate = true as const;
 
 export function meta() {
@@ -45,9 +46,7 @@ export function meta() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  return (
-    <SharedRouteErrorBoundary error={error} resourceName="CJ programs" title="CJ programs" />
-  );
+  return <SharedRouteErrorBoundary error={error} resourceName="CJ programs" title="CJ programs" />;
 }
 import { ProgramLifecycleTable } from "./programs/ProgramLifecycleTable";
 import { CJ_PROGRAM_SORTS, CJ_PROGRAM_STAGES } from "./programs/lifecycle-policy";

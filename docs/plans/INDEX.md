@@ -27,14 +27,17 @@ of active and candidate plans, not the dispatch queue.
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
 
-The approved React Router 8 Framework Mode migration is active through:
+The approved React Router 8 Framework Mode migration is complete through:
 
 - `docs/superpowers/plans/2026-09-02-react-router-8-framework-mode-implementation-plan.md`
 
-It is one frontend runtime simplification outcome: exact package alignment,
+It completed one frontend runtime simplification outcome: exact package alignment,
 framework route modules and generated types, document/SSR/metadata ownership,
 Relay and Phoenix boundary preservation, route-focused tests, and final
-verification are internal milestones rather than separately shippable rows.
+verification were internal milestones rather than separately shippable rows.
+Exact verification, retained-boundary rationale, and the net-reduction
+measurement are recorded in
+`docs/work/frontend-react-router-framework-mode.md`.
 
 The approved Product Experience And Code Simplification program is planned as
 five immediately executable, path-disjoint outcomes plus one prerequisite-gated
