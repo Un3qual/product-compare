@@ -21,11 +21,9 @@ import { MerchantDirectoryControls, MerchantDirectoryView } from "./MerchantDire
 
 export {
   MerchantDirectoryRoute as default,
+  merchantDirectoryLoader as clientLoader,
   merchantDirectoryLoader as loader,
 };
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return merchantDirectoryLoader(args);
-}
 
 export function meta() {
   return routeMetaDescriptors({

@@ -28,11 +28,9 @@ import { buildAffiliateSetupPaginationData } from "./pagination";
 
 export {
   AffiliateSetupRoute as default,
+  affiliateSetupLoader as clientLoader,
   affiliateSetupLoader as loader,
 };
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return affiliateSetupLoader(args);
-}
 
 export function meta() {
   return routeMetaDescriptors({
@@ -43,7 +41,11 @@ export function meta() {
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   return (
-    <SharedRouteErrorBoundary error={error} resourceName="affiliate setup" title="Affiliate setup" />
+    <SharedRouteErrorBoundary
+      error={error}
+      resourceName="affiliate setup"
+      title="Affiliate setup"
+    />
   );
 }
 

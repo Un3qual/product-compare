@@ -23,12 +23,11 @@ import { AttributionLedger, attributionLedgerRouteQuery } from "./attribution/At
 import { RevenueControls } from "./summary/RevenueControls";
 import { RevenueMetrics } from "./summary/RevenueMetrics";
 
-export { RevenueSummaryRoute as default, revenueSummaryLoader as loader };
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return revenueSummaryLoader(args);
-}
-// The optional ledger query is streamed after the root Relay snapshot.
-clientLoader.hydrate = true as const;
+export {
+  RevenueSummaryRoute as default,
+  revenueSummaryLoader as clientLoader,
+  revenueSummaryLoader as loader,
+};
 
 export function meta() {
   return routeMetaDescriptors({
@@ -151,6 +150,9 @@ export async function revenueSummaryLoader({
     );
   }
 }
+
+// The optional ledger query is streamed after the root Relay snapshot.
+revenueSummaryLoader.hydrate = true as const;
 
 function preloadAttributionLedger(
   environment: Environment,

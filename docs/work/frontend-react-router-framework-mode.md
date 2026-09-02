@@ -90,7 +90,7 @@ non-draft stacked PR targets `codex/project-quality-remediation`.
 - The complete frontend gate passed 106 files and 1,434 tests. Relay validated
   88 reader, 60 normalization, and 89 operation-text artifacts. Vite built
   3,137 client modules and 317 server modules; the server artifact is
-  1,184.94 kB raw/205.65 kB gzip. The client contract is 747,081 bytes raw and
+  1,183.98 kB raw/205.18 kB gzip. The client contract is 747,081 bytes raw and
   233,453 bytes gzip across 28 initial JavaScript and one CSS file, plus two
   initial fonts totaling 44,800 bytes.
 - Full `mix ci` passed against a fresh repository-supported test partition:
@@ -99,6 +99,6 @@ non-draft stacked PR targets `codex/project-quality-remediation`.
   from a later unrelated branch; the clean partition contains exactly this
   branch's migrations.
 - Relative to the approved base, frontend code/config excluding the generated
-  lockfile has 1,979 additions and 4,419 deletions (net -2,440). The focused
+  lockfile has 1,974 additions and 4,433 deletions (net -2,459). The focused
   routing/SSR/head/config boundary has 294 additions and 949 deletions (net
   -655).

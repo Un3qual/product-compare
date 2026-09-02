@@ -30,10 +30,7 @@ import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActi
 import { Button } from "$ui/primitives/Button";
 import { productDetailPath } from "../../products/product-detail-route-data";
 
-export { AlertsRoute as default, alertsLoader as loader };
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return alertsLoader(args);
-}
+export { AlertsRoute as default, alertsLoader as clientLoader, alertsLoader as loader };
 
 export function meta() {
   return routeMetaDescriptors({

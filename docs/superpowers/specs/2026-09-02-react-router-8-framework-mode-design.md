@@ -88,8 +88,8 @@ route loader serialization; the application owns Relay records because React
 Router cannot infer or hydrate Relay's normalized cache.
 
 Relay-backed data routes share one feature-local preload implementation and
-expose it through both `loader` and `clientLoader`. Server document requests use
-the request-scoped environment and browser navigations use the singleton
+directly export it as both `loader` and `clientLoader`. Server document requests
+use the request-scoped environment and browser navigations use the singleton
 browser environment. Existing descriptor, lease, and preload-cache behavior is
 retained because it is Relay lifecycle policy rather than routing machinery.
 Fully awaited routes reuse serialized server loader data during hydration. The

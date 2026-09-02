@@ -1,12 +1,6 @@
 import { Suspense, useId } from "react";
 import { create, props } from "@stylexjs/stylex";
-import {
-  data,
-  redirect,
-  useLoaderData,
-  useLocation,
-  useNavigate,
-} from "react-router";
+import { data, redirect, useLoaderData, useLocation, useNavigate } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { ProductDetailRouteQuery } from "$generated/ProductDetailRouteQuery.graphql";
 import type { Route } from "./+types/ProductDetailRoute";
@@ -29,11 +23,9 @@ import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/
 
 export {
   ProductDetailRoute as default,
+  productDetailLoader as clientLoader,
   productDetailLoader as loader,
 };
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return productDetailLoader(args);
-}
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { DetailTabs } from "$ui/components/layout/DetailTabs";

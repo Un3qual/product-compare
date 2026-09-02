@@ -23,11 +23,9 @@ import { buildCurrentRoutePathWithCompareSlugs } from "../compare/paths";
 
 export {
   OfferDiscoveryRoute as default,
+  offerDiscoveryLoader as clientLoader,
   offerDiscoveryLoader as loader,
 };
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return offerDiscoveryLoader(args);
-}
 
 export function meta() {
   return routeMetaDescriptors({
@@ -37,9 +35,7 @@ export function meta() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  return (
-    <SharedRouteErrorBoundary error={error} resourceName="offer discovery" title="Offers" />
-  );
+  return <SharedRouteErrorBoundary error={error} resourceName="offer discovery" title="Offers" />;
 }
 import {
   MobileOfferDiscoveryFilters,

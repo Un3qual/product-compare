@@ -320,4 +320,6 @@ retained custom boundaries, and simplification measurements are recorded in
 confirmed that the compare revalidation contract is exported under the native
 framework name, fully awaited routes avoid duplicate hydration requests, the
 two deferred Relay routes retain evidence-backed hydration, and the custom
-server entry preserves framework-standard shell streaming.
+server entry preserves framework-standard shell streaming. A final route-module
+audit also replaced pass-through `clientLoader` functions with direct export
+aliases everywhere no Framework-specific client behavior is attached.

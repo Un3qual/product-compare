@@ -30,10 +30,7 @@ import {
   upsertMapValue,
 } from "$frontend/state/immutable-collections";
 
-export { ApiTokensRoute as default, apiTokensLoader as loader };
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return apiTokensLoader(args);
-}
+export { ApiTokensRoute as default, apiTokensLoader as clientLoader, apiTokensLoader as loader };
 
 export function meta() {
   return routeMetaDescriptors({

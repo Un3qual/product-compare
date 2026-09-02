@@ -25,11 +25,9 @@ import { getMerchantDetailViewData } from "./merchant-detail-view-data";
 
 export {
   MerchantDetailRoute as default,
+  merchantDetailLoader as clientLoader,
   merchantDetailLoader as loader,
 };
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return merchantDetailLoader(args);
-}
 
 const merchantDetailRouteQuery = graphql`
   query MerchantDetailRouteQuery($slug: String!, $first: Int!, $after: String) {
@@ -105,7 +103,9 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  return <SharedRouteErrorBoundary error={error} resourceName="merchant" title="Merchant details" />;
+  return (
+    <SharedRouteErrorBoundary error={error} resourceName="merchant" title="Merchant details" />
+  );
 }
 
 const styles = create({

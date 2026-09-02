@@ -24,11 +24,9 @@ import { RouteErrorBoundary as SharedRouteErrorBoundary } from "../RouteErrorBou
 
 export {
   SharedComparisonRoute as default,
+  sharedComparisonLoader as clientLoader,
   sharedComparisonLoader as loader,
 };
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return sharedComparisonLoader(args);
-}
 
 const sharedComparisonRouteQuery = graphql`
   query SharedComparisonRouteQuery($token: String!) {

@@ -1,11 +1,6 @@
 import { Suspense } from "react";
 import { create, props } from "@stylexjs/stylex";
-import {
-  Link,
-  useLoaderData,
-  useOutletContext,
-  useRevalidator,
-} from "react-router";
+import { Link, useLoaderData, useOutletContext, useRevalidator } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { HomeRouteQuery } from "$generated/HomeRouteQuery.graphql";
 import type { Route } from "./+types/HomeRoute";
@@ -28,10 +23,7 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { HomeDeals } from "./HomeDeals";
 import { HomeProductLedger } from "./HomeProductLedger";
 
-export { HomeRoute as default, homeLoader as loader };
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return homeLoader(args);
-}
+export { HomeRoute as default, homeLoader as clientLoader, homeLoader as loader };
 
 export function meta() {
   return routeMetaDescriptors({
@@ -81,10 +73,7 @@ export type HomeLoaderData = {
   workspace: RelayRouteQueryDescriptor<HomeRouteQuery["variables"]> | null;
 };
 
-export async function homeLoader({
-  context,
-  request,
-}: Route.LoaderArgs): Promise<HomeLoaderData> {
+export async function homeLoader({ context, request }: Route.LoaderArgs): Promise<HomeLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const referenceTime = new Date().toISOString();
   const selectedSlugs = selectedHomeCompareSlugs(new URL(request.url).search);

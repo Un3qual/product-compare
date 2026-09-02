@@ -20,16 +20,12 @@ import { Pagination } from "$ui/components/navigation/Pagination";
 import { MAX_COMPARE_PRODUCTS, buildComparePathFromSlugs } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
 
-export { BrowseRoute as default, browseLoader as loader };
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return browseLoader(args);
-}
+export { BrowseRoute as default, browseLoader as clientLoader, browseLoader as loader };
 
 export function meta() {
   return routeMetaDescriptors({
     title: "Browse products | Product Compare",
-    description:
-      "Browse the product catalog and narrow the results by the attributes that matter.",
+    description: "Browse the product catalog and narrow the results by the attributes that matter.",
   });
 }
 import { productOffersPath } from "../offers/paths";
