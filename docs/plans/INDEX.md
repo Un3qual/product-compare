@@ -6,6 +6,7 @@ of active and candidate plans, not the dispatch queue.
 ## Active Architecture Sources
 
 - `ARCHITECTURE.md`
+- `docs/superpowers/specs/2026-09-02-react-router-8-framework-mode-design.md`
 - `docs/plans/2026-03-05-frontend-fullstack-design.md`
 - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
 - `docs/plans/2026-03-19-frontend-relay-route-data-design.md`
@@ -25,6 +26,15 @@ of active and candidate plans, not the dispatch queue.
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
+
+The approved React Router 8 Framework Mode migration is active through:
+
+- `docs/superpowers/plans/2026-09-02-react-router-8-framework-mode-implementation-plan.md`
+
+It is one frontend runtime simplification outcome: exact package alignment,
+framework route modules and generated types, document/SSR/metadata ownership,
+Relay and Phoenix boundary preservation, route-focused tests, and final
+verification are internal milestones rather than separately shippable rows.
 
 The approved Product Experience And Code Simplification program is planned as
 five immediately executable, path-disjoint outcomes plus one prerequisite-gated

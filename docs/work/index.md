@@ -45,7 +45,32 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-None.
+### Frontend React Router Framework Mode
+
+Status: active
+Lane: Frontend architecture
+Owner: `codex/react-router-8-framework-mode`
+Plan:
+`docs/superpowers/plans/2026-09-02-react-router-8-framework-mode-implementation-plan.md`
+Target outcome: React Router 8.3.1 Framework Mode replaces the bespoke Data
+Mode router, SSR, metadata, build, and route-type infrastructure while
+preserving Relay, GraphQL, Phoenix session, navigation, HTTP, SEO, and error UX
+contracts.
+Owned paths:
+
+- `assets/**`
+- `docs/work/frontend-react-router-framework-mode.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/superpowers/specs/2026-09-02-react-router-8-framework-mode-design.md`
+- `docs/superpowers/plans/2026-09-02-react-router-8-framework-mode-implementation-plan.md`
+
+Verification: focused route and SSR checks; complete frontend Relay,
+typecheck/typegen, lint, format, Vitest, Framework build, StyleX, bundle, and
+Playwright gates; `mix work_queue.validate`; `git diff --check`; full `mix ci`.
+Exit condition: one verified Framework Mode architecture remains, retained
+custom Relay/Phoenix boundaries are justified, frontend infrastructure is
+materially reduced, and the stacked non-draft PR is published.
 
 ## Ready Work
 
@@ -53,17 +78,17 @@ None.
 
 ## Ready Floor Exception
 
-Reason: The approved repository-wide quality, frontend complexity, tooling,
-dependency, and Ecto-query remediation outcomes are complete; the final code,
-test, query, and architecture audit found no additional validated,
-independently shippable candidate.
-Rejected split: Remaining PostgreSQL-specific expressions and native database
-boundaries are intentional, while individual style edits, test assertions,
-helpers, or speculative abstractions would be micro-batches rather than
-coherent product outcomes.
-Replenishment action: Before the next dispatch, curate current product
-behavior, code, tests, architecture gaps, and lane evidence, then promote every
-new coherent candidate that is source-backed and executable.
+Reason: The user-directed React Router Framework Mode migration is the only
+currently validated coherent outcome. The preceding repository-wide quality
+program is complete and its final source-backed audit found no independent
+successor.
+Rejected split: Package alignment, route modules, SSR/document ownership,
+metadata, auth/navigation plumbing, route typing, and tests share one runtime
+cutover and acceptance boundary. Treating those internal slices as separate
+ready rows would create incompatible half-migrations or micro-batches.
+Replenishment action: Complete the active migration, then curate current
+product behavior, code, tests, architecture gaps, and lane evidence before the
+next dispatch; promote every new coherent source-backed candidate found.
 
 ## Needs Decision Work
 
