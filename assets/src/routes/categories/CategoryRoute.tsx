@@ -14,7 +14,6 @@ import {
   routeMetadataFromSeo,
   routeMetaDescriptors,
   staticRouteMetaDescriptors,
-  type RouteDocumentMetadata,
 } from "$frontend/seo";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
@@ -70,14 +69,6 @@ const categoryRouteQuery = graphql`
   }
 `;
 
-export type CategoryLoaderData =
-  | {
-      status: "ready";
-      metadata: RouteDocumentMetadata;
-      query: RelayRouteQueryDescriptor<CategoryRouteQueryType["variables"]>;
-    }
-  | { status: "not_found" };
-
 export function meta({ loaderData }: Route.MetaArgs) {
   if (loaderData?.status === "ready") return routeMetaDescriptors(loaderData.metadata);
 
@@ -129,7 +120,7 @@ export function CategoryRoute() {
 function ReadyCategory({
   query,
 }: {
-  query: Extract<CategoryLoaderData, { status: "ready" }>["query"];
+  query: RelayRouteQueryDescriptor<CategoryRouteQueryType["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<CategoryRouteQueryType>(categoryRouteQuery, query);
   const data = usePreloadedQuery<CategoryRouteQueryType>(categoryRouteQuery, queryRef);
@@ -205,5 +196,5 @@ export async function categoryLoader({ context, params, request }: Route.LoaderA
 }
 
 function categoryNotFound() {
-  return data<CategoryLoaderData>({ status: "not_found" }, { status: 404 });
+  return data({ status: "not_found" as const }, { status: 404 });
 }

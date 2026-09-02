@@ -53,13 +53,31 @@ export const middleware: Route.MiddlewareFunction[] = [
   },
 ];
 
-export function loader(args: Route.LoaderArgs) {
-  return loadRoot(args);
+async function loadRoot({ context, request }: Route.LoaderArgs) {
+  const environment = getRelayEnvironmentFromRouterContext(context);
+
+  try {
+    const fetchedViewer = await fetchRouteQuery<RootRouteQuery>(
+      environment,
+      rootRouteQuery,
+      {},
+      { signal: request.signal },
+    );
+
+    return {
+      viewer: fetchedViewer.data.viewer,
+      viewerQuery: fetchedViewer.descriptor,
+    };
+  } catch {
+    throwIfAborted(request.signal);
+    return {
+      viewer: readCachedRootViewer(environment),
+      viewerQuery: null,
+    };
+  }
 }
 
-export function clientLoader(args: Route.ClientLoaderArgs) {
-  return loadRoot(args);
-}
+export { loadRoot as clientLoader, loadRoot as loader };
 
 export function shouldRevalidate({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
   return isAuthRoutePath(currentUrl.pathname) || isAuthRoutePath(nextUrl.pathname);
@@ -96,7 +114,7 @@ export function Layout({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  const loaderData = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loadRoot>();
 
   if (!loaderData.viewerQuery) {
     return <RootShell viewer={loaderData.viewer} />;
@@ -107,30 +125,6 @@ export default function App() {
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   return <RouteErrorBoundary error={error} resourceName="page" title="Product Compare" />;
-}
-
-async function loadRoot({ context, request }: Route.LoaderArgs) {
-  const environment = getRelayEnvironmentFromRouterContext(context);
-
-  try {
-    const fetchedViewer = await fetchRouteQuery<RootRouteQuery>(
-      environment,
-      rootRouteQuery,
-      {},
-      { signal: request.signal },
-    );
-
-    return {
-      viewer: fetchedViewer.data.viewer,
-      viewerQuery: fetchedViewer.descriptor,
-    };
-  } catch {
-    throwIfAborted(request.signal);
-    return {
-      viewer: readCachedRootViewer(environment),
-      viewerQuery: null,
-    };
-  }
 }
 
 function ReadyRoot({

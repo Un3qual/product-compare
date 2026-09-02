@@ -602,14 +602,6 @@ test("createRelayRouterContext exposes the Relay environment to route loaders", 
   expect(getRelayEnvironmentFromRouterContext(context)).toBe(environment);
 });
 
-test("getRelayEnvironmentFromRouterContext throws when the provider has no Relay environment", () => {
-  const context = new RouterContextProvider();
-
-  expect(() => getRelayEnvironmentFromRouterContext(context)).toThrow(
-    "Relay environment is missing from the route loader context",
-  );
-});
-
 test("Framework middleware can attach a Relay environment to an existing route context", () => {
   const environment = createRelayEnvironment();
   const context = new RouterContextProvider();

@@ -1,13 +1,11 @@
 import type { MetaDescriptor } from "react-router";
 
-type StructuredData = Readonly<Record<string, unknown>>;
-
-export type RouteDocumentMetadata = {
+type RouteDocumentMetadata = {
   canonicalUrl?: string;
   description: string;
   imageUrl?: string | null;
   indexable?: boolean;
-  structuredData?: StructuredData | null;
+  structuredData?: Readonly<Record<string, unknown>> | null;
   title: string;
 };
 
@@ -47,7 +45,9 @@ export function routeMetadataFromSeo(
     description: seo.description,
     imageUrl: seo.imageUrl ? new URL(seo.imageUrl, requestUrl).toString() : null,
     indexable: seo.indexable && options.allowIndexing !== false,
-    structuredData: seo.structuredData ? (JSON.parse(seo.structuredData) as StructuredData) : null,
+    structuredData: seo.structuredData
+      ? (JSON.parse(seo.structuredData) as Readonly<Record<string, unknown>>)
+      : null,
     title: seo.title,
   };
 }

@@ -18,7 +18,6 @@ import {
   routeMetadataFromSeo,
   routeMetaDescriptors,
   staticRouteMetaDescriptors,
-  type RouteDocumentMetadata,
 } from "$frontend/seo";
 import { buildSharedComparisonViewData } from "./shared-comparison-view-data";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "../RouteErrorBoundary";
@@ -80,14 +79,6 @@ const sharedComparisonRouteQuery = graphql`
   }
 `;
 
-export type SharedComparisonLoaderData =
-  | {
-      status: "ready";
-      metadata: RouteDocumentMetadata;
-      query: RelayRouteQueryDescriptor<SharedComparisonRouteQueryType["variables"]>;
-    }
-  | { status: "not_found" };
-
 export function meta({ loaderData }: Route.MetaArgs) {
   if (loaderData?.status === "ready") return routeMetaDescriptors(loaderData.metadata);
 
@@ -136,7 +127,7 @@ export async function sharedComparisonLoader({ context, params, request }: Route
 }
 
 function sharedComparisonNotFound() {
-  return data<SharedComparisonLoaderData>({ status: "not_found" }, { status: 404 });
+  return data({ status: "not_found" as const }, { status: 404 });
 }
 
 const styles = create({
@@ -183,7 +174,7 @@ export function SharedComparisonRoute() {
 function ReadySharedComparison({
   query,
 }: {
-  query: Extract<SharedComparisonLoaderData, { status: "ready" }>["query"];
+  query: RelayRouteQueryDescriptor<SharedComparisonRouteQueryType["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<SharedComparisonRouteQueryType>(
     sharedComparisonRouteQuery,

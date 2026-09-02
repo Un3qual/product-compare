@@ -18,7 +18,6 @@ import {
   routeMetadataFromSeo,
   routeMetaDescriptors,
   staticRouteMetaDescriptors,
-  type RouteDocumentMetadata,
 } from "$frontend/seo";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 
@@ -129,14 +128,6 @@ const productDetailRouteQuery = graphql`
 
 const PRODUCT_OFFERS_PAGE_SIZE = 6;
 
-export type ProductDetailLoaderData =
-  | {
-      status: "ready";
-      metadata: RouteDocumentMetadata;
-      productQuery: RelayRouteQueryDescriptor<ProductDetailRouteQuery["variables"]>;
-    }
-  | { status: "not_found" | "error" };
-
 export function meta({ loaderData }: Route.MetaArgs) {
   if (loaderData?.status === "ready") return routeMetaDescriptors(loaderData.metadata);
 
@@ -149,11 +140,6 @@ export function meta({ loaderData }: Route.MetaArgs) {
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   return <SharedRouteErrorBoundary error={error} resourceName="product" title="Product details" />;
 }
-
-export type ProductDetailLoaderResult =
-  | ProductDetailLoaderData
-  | ReturnType<typeof data<ProductDetailLoaderData>>
-  | Response;
 
 type ProductDetailResponseWithProduct = ProductDetailRouteQuery["response"] & {
   product: NonNullable<ProductDetailRouteQuery["response"]["product"]>;
@@ -197,7 +183,7 @@ export function ProductDetailRoute() {
 function ProductDetail({
   productQuery,
 }: {
-  productQuery: Extract<ProductDetailLoaderData, { status: "ready" }>["productQuery"];
+  productQuery: RelayRouteQueryDescriptor<ProductDetailRouteQuery["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<ProductDetailRouteQuery>(
     productDetailRouteQuery,
@@ -340,11 +326,7 @@ function ProductNotFoundFallback() {
   );
 }
 
-export async function productDetailLoader({
-  context,
-  params,
-  request,
-}: Route.LoaderArgs): Promise<ProductDetailLoaderResult> {
+export async function productDetailLoader({ context, params, request }: Route.LoaderArgs) {
   const slug = params.slug?.trim() ?? "";
   const offersAfter = new URL(request.url).searchParams.get("offersAfter");
 
@@ -378,7 +360,7 @@ export async function productDetailLoader({
     }
 
     return {
-      status: "ready",
+      status: "ready" as const,
       metadata: routeMetadataFromSeo(productRouteQuery.data.product.seo, request.url, {
         allowIndexing: new URL(request.url).search === "",
       }),
@@ -389,7 +371,7 @@ export async function productDetailLoader({
 
     if (partialData) {
       return {
-        status: "ready",
+        status: "ready" as const,
         metadata: routeMetadataFromSeo(partialData.product.seo, request.url, {
           allowIndexing: new URL(request.url).search === "",
         }),
@@ -402,16 +384,14 @@ export async function productDetailLoader({
       };
     }
 
-    return recoverRouteLoaderError<ProductDetailLoaderData>(
-      error,
-      "Failed to preload product detail route query.",
-      { status: "error" },
-    );
+    return recoverRouteLoaderError(error, "Failed to preload product detail route query.", {
+      status: "error" as const,
+    });
   }
 }
 
 function productNotFoundResult() {
-  return data<ProductDetailLoaderData>({ status: "not_found" }, { status: 404 });
+  return data({ status: "not_found" as const }, { status: 404 });
 }
 
 function partialProductData(error: unknown): ProductDetailResponseWithProduct | null {

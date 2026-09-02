@@ -3,7 +3,7 @@ import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 
 type RouteErrorBoundaryProps = {
-  error?: unknown;
+  error: unknown;
   resourceName?: string;
   title?: string;
 };
@@ -18,7 +18,10 @@ export function RouteErrorBoundary({
   resourceName = "comparison",
   title = "Compare products",
 }: RouteErrorBoundaryProps) {
-  const { errorMessage, retryGuidance } = routeErrorViewData(normalizeRouteError(error), resourceName);
+  const { errorMessage, retryGuidance } = routeErrorViewData(
+    normalizeRouteError(error),
+    resourceName,
+  );
 
   return (
     <PageShell eyebrow="Page unavailable" title={title}>
@@ -39,10 +42,7 @@ function normalizeRouteError(error: unknown): RouteErrorContext {
   return { kind: "unknown" };
 }
 
-function routeErrorViewData(
-  error: ReturnType<typeof normalizeRouteError>,
-  resourceName: string,
-) {
+function routeErrorViewData(error: ReturnType<typeof normalizeRouteError>, resourceName: string) {
   if (error.kind === "response") {
     return responseErrorViewData(error.status, resourceName);
   }
@@ -96,7 +96,7 @@ function responseErrorViewData(status: number, resourceName: string) {
 }
 
 function isNetworkError(error: Error) {
-  const normalizedMessage = String(error.message).toLowerCase();
+  const normalizedMessage = error.message.toLowerCase();
 
   return (
     normalizedMessage.includes("network") ||

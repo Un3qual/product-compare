@@ -14,7 +14,6 @@ import {
   routeMetadataFromSeo,
   routeMetaDescriptors,
   staticRouteMetaDescriptors,
-  type RouteDocumentMetadata,
 } from "$frontend/seo";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { SummaryStrip } from "$ui/components/data/SummaryStrip";
@@ -84,14 +83,6 @@ const merchantDetailRouteQuery = graphql`
   }
 `;
 
-export type MerchantDetailLoaderData =
-  | {
-      status: "ready";
-      metadata: RouteDocumentMetadata;
-      query: RelayRouteQueryDescriptor<MerchantDetailRouteQueryType["variables"]>;
-    }
-  | { status: "not_found" };
-
 export function meta({ loaderData }: Route.MetaArgs) {
   if (loaderData?.status === "ready") return routeMetaDescriptors(loaderData.metadata);
 
@@ -133,7 +124,7 @@ export function MerchantDetailRoute() {
 function ReadyMerchantDetail({
   query,
 }: {
-  query: Extract<MerchantDetailLoaderData, { status: "ready" }>["query"];
+  query: RelayRouteQueryDescriptor<MerchantDetailRouteQueryType["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<MerchantDetailRouteQueryType>(
     merchantDetailRouteQuery,
@@ -229,5 +220,5 @@ export async function merchantDetailLoader({ context, params, request }: Route.L
 }
 
 function merchantNotFound() {
-  return data<MerchantDetailLoaderData>({ status: "not_found" }, { status: 404 });
+  return data({ status: "not_found" as const }, { status: 404 });
 }
