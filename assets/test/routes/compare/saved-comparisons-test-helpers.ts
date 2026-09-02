@@ -1,8 +1,6 @@
 import type { GraphQLResponse } from "relay-runtime";
 import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../src/relay/environment";
 import { createRelayRouterContext } from "../../../src/relay/route-preload";
-import type { Route as CompareRoute } from "../../../src/routes/compare/+types/CompareRoute";
-import type { Route as SavedComparisonsRoute } from "../../../src/routes/compare/saved/+types/SavedComparisonsRoute";
 
 type TestGraphQLError = {
   message: string;
@@ -49,7 +47,7 @@ export const buildCompareLoaderArgs = ({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): CompareRoute.LoaderArgs => ({
+} = {}) => ({
   request,
   params: {},
   context: createRelayRouterContext(environment ?? createRelayEnvironment()),
@@ -57,7 +55,7 @@ export const buildCompareLoaderArgs = ({
   url: new URL(request.url),
 });
 
-export const buildAbortableRequest = (url: string, signal: AbortSignal): Request =>
+export const buildAbortableRequest = (url: string, signal: AbortSignal) =>
   Object.defineProperty(
     new Request(url, {
       headers: new Headers(),
@@ -74,7 +72,7 @@ export const buildSavedComparisonsLoaderArgs = ({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): SavedComparisonsRoute.LoaderArgs => ({
+} = {}) => ({
   request,
   params: {},
   context: createRelayRouterContext(environment),

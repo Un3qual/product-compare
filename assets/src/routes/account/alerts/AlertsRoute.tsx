@@ -127,13 +127,6 @@ type WatchSummary = Omit<AlertsRoute_watch$data, " $fragmentType">;
 type AlertItemRef = AlertsRoute_alert$key & { readonly id: string };
 type WatchItemRef = AlertsRoute_watch$key & { readonly enabled: boolean; readonly id: string };
 
-export type AlertsRouteLoaderData =
-  | {
-      status: "ready";
-      query: RelayRouteQueryDescriptor<AlertsRouteQuery["variables"]>;
-    }
-  | { status: "unauthorized" };
-
 const AUTH_CODES = new Set(["UNAUTHENTICATED"]);
 
 const styles = create({
@@ -179,7 +172,7 @@ export function AlertsRoute() {
 function ReadyAlerts({
   query,
 }: {
-  query: Extract<AlertsRouteLoaderData, { status: "ready" }>["query"];
+  query: RelayRouteQueryDescriptor<AlertsRouteQuery["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<AlertsRouteQuery>(alertsRouteQuery, query);
   const data = usePreloadedQuery<AlertsRouteQuery>(alertsRouteQuery, queryRef);
@@ -467,7 +460,7 @@ function withoutKey(current: ReadonlyMap<string, string>, id: string) {
 export async function alertsLoader({
   context,
   request,
-}: Route.LoaderArgs): Promise<AlertsRouteLoaderData> {
+}: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
 
   try {
@@ -477,9 +470,9 @@ export async function alertsLoader({
       { first: 50 },
       { signal: request.signal },
     );
-    return { status: "ready", query: fetched.descriptor };
+    return { status: "ready" as const, query: fetched.descriptor };
   } catch (error) {
-    if (isAuthError(error)) return { status: "unauthorized" };
+    if (isAuthError(error)) return { status: "unauthorized" as const };
     throw error;
   }
 }

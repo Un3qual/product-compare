@@ -152,7 +152,7 @@ export async function revenueSummaryLoader({
 }
 
 // The optional ledger query is streamed after the root Relay snapshot.
-revenueSummaryLoader.hydrate = true as const;
+revenueSummaryLoader.hydrate = true;
 
 function preloadAttributionLedger(
   environment: Environment,

@@ -1,4 +1,3 @@
-import type { Route } from "../../../../src/routes/ingestion/cj-programs/+types/CJProgramsRoute";
 import { createRelayEnvironment } from "../../../../src/relay/environment";
 import { createRelayRouterContext, preloadRouteQuery } from "../../../../src/relay/route-preload";
 import { cjProgramsLoader } from "../../../../src/routes/ingestion/cj-programs/CJProgramsRoute";
@@ -265,7 +264,7 @@ function buildCJProgramsLoaderArgs({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): Route.LoaderArgs {
+} = {}) {
   return {
     request,
     params: {},

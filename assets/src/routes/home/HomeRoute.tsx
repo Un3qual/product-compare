@@ -60,13 +60,7 @@ const homeWorkspaceRouteQuery = graphql`
   }
 `;
 
-export type HomeLoaderData = {
-  referenceTime: string;
-  selectedSlugs: string[];
-  workspace: RelayRouteQueryDescriptor<HomeRouteQuery["variables"]> | null;
-};
-
-export async function homeLoader({ context, request }: Route.LoaderArgs): Promise<HomeLoaderData> {
+export async function homeLoader({ context, request }: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const referenceTime = new Date().toISOString();
   const selectedSlugs = selectedHomeCompareSlugs(new URL(request.url).search);
@@ -170,7 +164,7 @@ function HomeWorkspace({
   referenceTime,
 }: {
   hasViewer: boolean;
-  query: NonNullable<HomeLoaderData["workspace"]>;
+  query: RelayRouteQueryDescriptor<HomeRouteQuery["variables"]>;
   referenceTime: string;
 }) {
   const queryRef = useRoutePreloadedQuery<HomeRouteQuery>(homeWorkspaceRouteQuery, query);

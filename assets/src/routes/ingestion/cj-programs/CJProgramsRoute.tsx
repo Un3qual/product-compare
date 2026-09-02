@@ -111,7 +111,7 @@ export type CJProgramsLoaderData =
 export async function cjProgramsLoader({
   context,
   request,
-}: Route.LoaderArgs): Promise<CJProgramsLoaderData> {
+}: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const pagination = cjProgramsPaginationFromUrl(new URL(request.url));
   const query = preloadRouteQuery<CJProgramsRouteQuery>(
@@ -152,7 +152,7 @@ export async function cjProgramsLoader({
 }
 
 // The optional unmatched-feeds query is streamed after the root Relay snapshot.
-cjProgramsLoader.hydrate = true as const;
+cjProgramsLoader.hydrate = true;
 
 function preloadUnmatchedFeeds(
   environment: Environment,

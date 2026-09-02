@@ -1,7 +1,6 @@
 import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../../src/relay/environment";
 import { createRelayRouterContext, fetchRouteQuery } from "../../../../src/relay/route-preload";
 import { apiTokensLoader } from "../../../../src/routes/account/api-tokens/ApiTokensRoute";
-import type { Route } from "../../../../src/routes/account/api-tokens/+types/ApiTokensRoute";
 import type { GraphQLResponse } from "relay-runtime";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
@@ -195,7 +194,7 @@ function buildApiTokensLoaderArgs({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): Route.LoaderArgs {
+} = {}) {
   return {
     request,
     params: {},
@@ -205,7 +204,7 @@ function buildApiTokensLoaderArgs({
   };
 }
 
-function buildAbortableRequest(url: string, signal: AbortSignal): Request {
+function buildAbortableRequest(url: string, signal: AbortSignal) {
   return Object.defineProperty(
     new Request(url, {
       headers: new Headers(),

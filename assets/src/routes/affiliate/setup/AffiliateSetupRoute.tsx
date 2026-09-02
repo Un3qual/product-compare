@@ -71,27 +71,16 @@ const affiliateSetupRouteQuery = graphql`
   }
 `;
 
-export type AffiliateSetupLoaderData =
-  | {
-      status: "ready";
-      merchantPagination: MerchantPagination;
-      merchantQuery: RelayRouteQueryDescriptor<AffiliateSetupRouteQuery["variables"]>;
-    }
-  | {
-      status: "error";
-      merchantPagination: MerchantPagination;
-    };
-
 export async function affiliateSetupLoader({
   context,
   request,
-}: Route.LoaderArgs): Promise<AffiliateSetupLoaderData> {
+}: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const merchantPagination = merchantPaginationFromUrl(new URL(request.url));
 
   try {
     return {
-      status: "ready",
+      status: "ready" as const,
       merchantPagination,
       merchantQuery: await preloadRouteQuery<AffiliateSetupRouteQuery>(
         environment,
@@ -101,14 +90,10 @@ export async function affiliateSetupLoader({
       ),
     };
   } catch (error) {
-    return recoverRouteLoaderError<AffiliateSetupLoaderData>(
-      error,
-      "Failed to preload affiliate setup merchant choices.",
-      {
-        status: "error",
-        merchantPagination,
-      },
-    );
+    return recoverRouteLoaderError(error, "Failed to preload affiliate setup merchant choices.", {
+      status: "error" as const,
+      merchantPagination,
+    });
   }
 }
 
@@ -144,8 +129,8 @@ function AffiliateSetupPanel({
   merchantPagination,
   merchantQuery,
 }: {
-  merchantPagination: Extract<AffiliateSetupLoaderData, { status: "ready" }>["merchantPagination"];
-  merchantQuery: Extract<AffiliateSetupLoaderData, { status: "ready" }>["merchantQuery"];
+  merchantPagination: MerchantPagination;
+  merchantQuery: RelayRouteQueryDescriptor<AffiliateSetupRouteQuery["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<AffiliateSetupRouteQuery>(
     affiliateSetupRouteQuery,

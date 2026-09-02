@@ -8,7 +8,6 @@ import {
   usePreloadedQuery,
 } from "react-relay";
 import type { ProductDetailRouteQuery } from "$generated/ProductDetailRouteQuery.graphql";
-import type { Route } from "../../../src/routes/products/+types/ProductDetailRoute";
 import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../src/relay/environment";
 import {
   createRelayRouterContext,
@@ -220,13 +219,14 @@ const buildProductDetailLoaderArgs = ({
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
   slug?: string;
-} = {}): Route.LoaderArgs => ({
-  request,
-  params: { slug },
-  context: createRelayRouterContext(environment),
-  pattern: "/products/:slug",
-  url: new URL(request.url),
-});
+} = {}) =>
+  ({
+    request,
+    params: { slug },
+    context: createRelayRouterContext(environment),
+    pattern: "/products/:slug",
+    url: new URL(request.url),
+  });
 
 beforeEach(() => {
   fetchRouteQueryMock.mockReset();

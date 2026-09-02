@@ -13,7 +13,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   return <RouteErrorBoundary error={error} resourceName="page" title="Page not found" />;
 }
 
-export function loader(): never {
+export function loader() {
   throw new Response("Not found", {
     status: 404,
     statusText: "Not Found",

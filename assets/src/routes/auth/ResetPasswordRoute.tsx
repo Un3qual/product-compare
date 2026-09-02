@@ -70,7 +70,7 @@ export function ResetPasswordRoute() {
   const token = normalizeResetPasswordToken(searchParams.get("token"));
   const actionData = useActionData<typeof clientAction>();
   const isSubmitting = useNavigation().state === "submitting";
-  const errors: MutationError[] = isSubmitting
+  const errors = isSubmitting
     ? []
     : (actionData?.errors ?? resetPasswordErrorsForToken(token));
   const message = isSubmitting ? null : (actionData?.message ?? null);

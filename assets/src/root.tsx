@@ -43,7 +43,7 @@ const rootRouteQuery = graphql`
 const RELAY_ROOT_ID = "client:root";
 const RELAY_LINKED_RECORD_REF_KEY = "__ref";
 
-export const middleware: Route.MiddlewareFunction[] = [
+export const middleware = [
   async ({ context, request }, next) => {
     setRelayEnvironmentOnRouterContext(
       context,
@@ -51,7 +51,7 @@ export const middleware: Route.MiddlewareFunction[] = [
     );
     return next();
   },
-];
+] satisfies Route.MiddlewareFunction[];
 
 async function loadRoot({ context, request }: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
@@ -148,7 +148,7 @@ function RootShell({ viewer }: { viewer: RootViewer | null }) {
   );
 }
 
-function readCachedRootViewer(environment: Environment): RootViewer | null {
+function readCachedRootViewer(environment: Environment) {
   const source = environment.getStore().getSource();
   const rootRecord = source.get(RELAY_ROOT_ID);
   const viewerRecordId = linkedRecordId(rootRecord?.viewer);

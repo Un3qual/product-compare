@@ -6,11 +6,7 @@ import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { routeFormValue } from "$frontend/forms/route-form";
 import { getRelayEnvironmentFromRouterContext } from "$relay/route-preload";
 import { commitEnvironmentMutationPromise } from "$relay/mutations";
-import {
-  type MutationError,
-  resolveSessionMutationResult,
-  transportMutationErrors,
-} from "./errors";
+import { resolveSessionMutationResult, transportMutationErrors } from "./errors";
 import { CredentialAuthForm } from "./CredentialAuthForm";
 import { authContinuationPath, safeRelativeReturnPath } from "./continuity";
 import { setRootViewer } from "./viewer-store";
@@ -67,7 +63,7 @@ export function RegisterRoute() {
   const navigation = useNavigation();
   const [searchParams] = useSearchParams();
   const isSubmitting = navigation.state === "submitting";
-  const errors: MutationError[] = isSubmitting ? [] : (actionData?.errors ?? []);
+  const errors = isSubmitting ? [] : (actionData?.errors ?? []);
 
   return (
     <CredentialAuthForm

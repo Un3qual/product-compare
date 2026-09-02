@@ -13,7 +13,6 @@ import {
 } from "../../../src/relay/route-preload";
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/compare-route-data";
 import { BrowseRoute, browseLoader } from "../../../src/routes/catalog/BrowseRoute";
-import type { Route } from "../../../src/routes/catalog/+types/BrowseRoute";
 import { CatalogAdvancedFilters } from "../../../src/routes/catalog/filters/CatalogAdvancedFilters";
 import {
   BrowseProductList,
@@ -120,13 +119,14 @@ const buildBrowseLoaderArgs = ({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): Route.LoaderArgs => ({
-  request,
-  params: {},
-  context: createRelayRouterContext(environment),
-  pattern: "/products",
-  url: new URL(request.url),
-});
+} = {}) =>
+  ({
+    request,
+    params: {},
+    context: createRelayRouterContext(environment),
+    pattern: "/products",
+    url: new URL(request.url),
+  });
 
 function browseQueryDescriptorFromVariables(
   variables: BrowseRouteQuery["variables"] = { first: 12 },

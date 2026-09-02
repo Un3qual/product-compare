@@ -57,14 +57,6 @@ const merchantDirectoryRouteQuery = graphql`
   }
 `;
 
-export type MerchantDirectoryLoaderData =
-  | {
-      status: "ready";
-      pagination: MerchantPagination;
-      query: RelayRouteQueryDescriptor<MerchantDirectoryRouteQuery["variables"]>;
-    }
-  | { status: "error"; pagination: MerchantPagination };
-
 export function MerchantDirectoryRoute() {
   const loaderData = useLoaderData<typeof merchantDirectoryLoader>();
 
@@ -79,7 +71,11 @@ export function MerchantDirectoryRoute() {
   );
 }
 
-function MerchantDirectoryContent({ loaderData }: { loaderData: MerchantDirectoryLoaderData }) {
+function MerchantDirectoryContent({
+  loaderData,
+}: {
+  loaderData: Awaited<ReturnType<typeof merchantDirectoryLoader>>;
+}) {
   return (
     <WorkspaceLayout
       context={
@@ -116,7 +112,7 @@ function MerchantDirectoryPanel({
   query,
 }: {
   pagination: MerchantPagination;
-  query: Extract<MerchantDirectoryLoaderData, { status: "ready" }>["query"];
+  query: RelayRouteQueryDescriptor<MerchantDirectoryRouteQuery["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<MerchantDirectoryRouteQuery>(
     merchantDirectoryRouteQuery,
@@ -154,13 +150,13 @@ function MerchantDirectoryUnavailableFallback() {
 export async function merchantDirectoryLoader({
   context,
   request,
-}: Route.LoaderArgs): Promise<MerchantDirectoryLoaderData> {
+}: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const pagination = merchantPaginationFromUrl(new URL(request.url));
 
   try {
     return {
-      status: "ready",
+      status: "ready" as const,
       pagination,
       query: await preloadRouteQuery<MerchantDirectoryRouteQuery>(
         environment,
@@ -170,10 +166,9 @@ export async function merchantDirectoryLoader({
       ),
     };
   } catch (error) {
-    return recoverRouteLoaderError<MerchantDirectoryLoaderData>(
-      error,
-      "Failed to preload merchant directory route query.",
-      { status: "error", pagination },
-    );
+    return recoverRouteLoaderError(error, "Failed to preload merchant directory route query.", {
+      status: "error" as const,
+      pagination,
+    });
   }
 }

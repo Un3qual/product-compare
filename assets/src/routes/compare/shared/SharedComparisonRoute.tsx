@@ -1,7 +1,7 @@
 import { create, props } from "@stylexjs/stylex";
 import { data, Link, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
-import type { SharedComparisonRouteQuery as SharedComparisonRouteQueryType } from "$generated/SharedComparisonRouteQuery.graphql";
+import type { SharedComparisonRouteQuery } from "$generated/SharedComparisonRouteQuery.graphql";
 import type { Route } from "./+types/SharedComparisonRoute";
 import {
   fetchRouteQuery,
@@ -104,7 +104,7 @@ export async function sharedComparisonLoader({ context, params, request }: Route
   const environment = getRelayEnvironmentFromRouterContext(context);
 
   try {
-    const fetched = await fetchRouteQuery<SharedComparisonRouteQueryType>(
+    const fetched = await fetchRouteQuery<SharedComparisonRouteQuery>(
       environment,
       sharedComparisonRouteQuery,
       { token },
@@ -174,13 +174,13 @@ export function SharedComparisonRoute() {
 function ReadySharedComparison({
   query,
 }: {
-  query: RelayRouteQueryDescriptor<SharedComparisonRouteQueryType["variables"]>;
+  query: RelayRouteQueryDescriptor<SharedComparisonRouteQuery["variables"]>;
 }) {
-  const queryRef = useRoutePreloadedQuery<SharedComparisonRouteQueryType>(
+  const queryRef = useRoutePreloadedQuery<SharedComparisonRouteQuery>(
     sharedComparisonRouteQuery,
     query,
   );
-  const data = usePreloadedQuery<SharedComparisonRouteQueryType>(
+  const data = usePreloadedQuery<SharedComparisonRouteQuery>(
     sharedComparisonRouteQuery,
     queryRef,
   );

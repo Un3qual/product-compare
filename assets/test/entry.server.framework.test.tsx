@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { RouterContextProvider, type EntryContext } from "react-router";
 import { createRelayEnvironment } from "../src/relay/environment";
 import { setRelayEnvironmentOnRouterContext } from "../src/relay/route-preload";
@@ -8,22 +7,23 @@ const streamState = vi.hoisted(() => ({ allReady: Promise.resolve() }));
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router");
-
-  return {
-    ...actual,
-    ServerRouter: (props: { context: EntryContext; url: string }) => {
+  const overrides = {
+    ServerRouter(props) {
       serverRouterCalls(props);
       return <main>Product Compare</main>;
     },
+  } satisfies Partial<typeof actual>;
+
+  return {
+    ...actual,
+    ...overrides,
   };
 });
 
 vi.mock("react-dom/server", async () => {
   const actual = await vi.importActual<typeof import("react-dom/server")>("react-dom/server");
-
-  return {
-    ...actual,
-    renderToReadableStream: async (children: ReactNode) => {
+  const overrides = {
+    async renderToReadableStream(children) {
       const html = actual.renderToStaticMarkup(children);
       const stream = new ReadableStream({
         start(controller) {
@@ -34,6 +34,11 @@ vi.mock("react-dom/server", async () => {
       stream.allReady = streamState.allReady;
       return stream;
     },
+  } satisfies Partial<typeof actual>;
+
+  return {
+    ...actual,
+    ...overrides,
   };
 });
 

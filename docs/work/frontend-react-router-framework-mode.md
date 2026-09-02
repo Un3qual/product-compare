@@ -105,6 +105,14 @@ user authorizes publication, the non-draft stacked PR will target
   Remaining named loader-data types describe multi-state domain projections
   consumed beyond a single framework export, while generated `Route` types own
   loader/action arguments and metadata boundaries.
+- A follow-up inference pass removed redundant helper and loader return types,
+  local mutation-error annotations, generated route-type imports from tests,
+  action-argument casts, and generated-query import aliases. Test request
+  builders now infer their shapes directly; production route modules retain
+  generated argument types, and multi-state loader return annotations remain
+  only where removing them widens discriminants such as `"ready"` and
+  `"error"` to `string`. The focused inference matrix passed 18 files and 360
+  tests; the final root/deferred-loader check passed three files and 27 tests.
 - Focused backend SEO verification passed 58 tests, focused frontend SEO
   verification passed 66 tests, and the final route/Relay cleanup matrix passed
   216 tests. Playwright passed 38 tests in one browser project. Production smoke
@@ -122,6 +130,5 @@ user authorizes publication, the non-draft stacked PR will target
   from a later unrelated branch; the clean partition contains exactly this
   branch's migrations.
 - Relative to the approved base, frontend code/config excluding the generated
-  lockfile has 1,963 additions and 4,540 deletions (net -2,577). The focused
-  routing/SSR/head/config boundary has 264 additions and 955 deletions (net
-  -691); the migration adds seven tracked files and removes 23.
+  lockfile has 2,023 additions and 4,689 deletions (net -2,666). The migration
+  adds seven tracked files and removes 23.

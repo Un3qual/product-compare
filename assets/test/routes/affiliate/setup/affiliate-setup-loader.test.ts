@@ -1,4 +1,3 @@
-import type { Route } from "../../../../src/routes/affiliate/setup/+types/AffiliateSetupRoute";
 import { createRelayEnvironment } from "../../../../src/relay/environment";
 import { createRelayRouterContext, preloadRouteQuery } from "../../../../src/relay/route-preload";
 import { affiliateSetupLoader } from "../../../../src/routes/affiliate/setup/AffiliateSetupRoute";
@@ -215,7 +214,7 @@ function buildAffiliateSetupLoaderArgs({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): Route.LoaderArgs {
+} = {}) {
   return {
     request,
     params: {},

@@ -105,7 +105,7 @@ test("login action submits GraphQL credentials, updates Relay, and honors a safe
     buildActionArgs(
       "/auth/login?returnTo=%2Fcompare%3Fslug%3Dlamp%23matrix",
       { email: "person@example.com", password: TEST_PASSWORD },
-    ) as Parameters<typeof loginAction>[0],
+    ),
   );
 
   expect(mockedCommitMutation).toHaveBeenCalledWith(
@@ -132,7 +132,7 @@ test("login action rejects an external return path", async () => {
     buildActionArgs("/auth/login?returnTo=https%3A%2F%2Fevil.example%2Fsteal", {
       email: "person@example.com",
       password: TEST_PASSWORD,
-    }) as Parameters<typeof loginAction>[0],
+    }),
   );
 
   expect((response as Response).headers.get("location")).toBe("/");
@@ -151,7 +151,7 @@ test("login action returns typed field errors without changing the Relay viewer"
       buildActionArgs("/auth/login", {
         email: "person@example.com",
         password: TEST_PASSWORD,
-      }) as Parameters<typeof loginAction>[0],
+      }),
     ),
   ).resolves.toEqual({
     errors: [{ code: "INVALID_CREDENTIALS", field: "email", message: "Invalid credentials" }],
@@ -176,7 +176,7 @@ test("register action updates Relay and redirects after Phoenix establishes the 
     buildActionArgs("/auth/register", {
       email: "new@example.com",
       password: TEST_PASSWORD,
-    }) as Parameters<typeof registerAction>[0],
+    }),
   );
 
   expectViewerUpdated();
@@ -188,7 +188,7 @@ test("logout action clears the Relay viewer only after a successful GraphQL resu
   const expectViewerCleared = expectNextLocalUpdateClearsRootViewer();
 
   const response = await logoutAction(
-    buildActionArgs("/auth/logout") as Parameters<typeof logoutAction>[0],
+    buildActionArgs("/auth/logout"),
   );
 
   expectViewerCleared();
@@ -199,7 +199,7 @@ test("logout action preserves the Relay viewer when GraphQL reports a failure", 
   resolveNextMutation({ logout: { ok: false, errors: [] } });
 
   await expect(
-    logoutAction(buildActionArgs("/auth/logout") as Parameters<typeof logoutAction>[0]),
+    logoutAction(buildActionArgs("/auth/logout")),
   ).resolves.toEqual({
     errors: [
       {
@@ -222,7 +222,7 @@ test("client actions normalize synchronous Relay failures without leaking transp
       buildActionArgs("/auth/login", {
         email: "person@example.com",
         password: TEST_PASSWORD,
-      }) as Parameters<typeof loginAction>[0],
+      }),
     ),
   ).resolves.toEqual({
     errors: [

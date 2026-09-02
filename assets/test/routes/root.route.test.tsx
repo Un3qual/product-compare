@@ -2,7 +2,6 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { usePreloadedQuery } from "react-relay";
 import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router";
 import App, { loader as rootLoader } from "../../src/root";
-import type { Route } from "../../src/+types/root";
 import { createRelayEnvironment } from "../../src/relay/environment";
 import {
   createRelayRouterContext,
@@ -11,8 +10,6 @@ import {
 } from "../../src/relay/route-preload";
 import { setRootViewer } from "../../src/routes/auth/viewer-store";
 import { RootPrimaryNavigation } from "../../src/routes/RootDestinations";
-
-type RootLoaderData = Awaited<ReturnType<typeof rootLoader>>;
 
 const { fetchRouteQueryMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } = vi.hoisted(
   () => ({
@@ -56,12 +53,12 @@ const ROOT_VIEWER_QUERY_DESCRIPTOR = {
   },
 };
 
-const guestLoaderData: RootLoaderData = {
+const guestLoaderData = {
   viewer: null,
   viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR,
 };
 
-const authenticatedLoaderData: RootLoaderData = {
+const authenticatedLoaderData = {
   viewer: {
     id: "viewer-1",
     email: "person@example.com",
@@ -70,12 +67,12 @@ const authenticatedLoaderData: RootLoaderData = {
   viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR,
 };
 
-const loaderDataWithoutSnapshotViewer: RootLoaderData = {
+const loaderDataWithoutSnapshotViewer = {
   viewer: null,
   viewerQuery: authenticatedLoaderData.viewerQuery,
 };
 
-const cachedAuthenticatedLoaderData: RootLoaderData = {
+const cachedAuthenticatedLoaderData = {
   viewer: {
     id: "viewer-1",
     email: "person@example.com",
@@ -103,7 +100,7 @@ beforeEach(() => {
   } as never);
 });
 
-function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
+function renderRootRoute(loaderData: Awaited<ReturnType<typeof rootLoader>>, initialEntry = "/") {
   const router = createMemoryRouter(
     [
       {
@@ -471,7 +468,7 @@ function buildRootLoaderArgs({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): Route.LoaderArgs {
+} = {}) {
   return {
     request,
     params: {},
@@ -481,7 +478,7 @@ function buildRootLoaderArgs({
   };
 }
 
-function buildAbortableRequest(url: string, signal: AbortSignal): Request {
+function buildAbortableRequest(url: string, signal: AbortSignal) {
   return Object.defineProperty(
     new Request(url, {
       headers: new Headers(),

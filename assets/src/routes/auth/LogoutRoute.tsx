@@ -7,7 +7,6 @@ import { getRelayEnvironmentFromRouterContext } from "$relay/route-preload";
 import { commitEnvironmentMutationPromise } from "$relay/mutations";
 import {
   isSuccessfulActionResult,
-  type MutationError,
   resolveActionMutationResult,
   transportMutationErrors,
 } from "./errors";
@@ -56,7 +55,7 @@ export async function clientAction({ context }: Route.ClientActionArgs) {
 export function LogoutRoute() {
   const actionData = useActionData<typeof clientAction>();
   const isSubmitting = useNavigation().state === "submitting";
-  const errors: MutationError[] = isSubmitting ? [] : (actionData?.errors ?? []);
+  const errors = isSubmitting ? [] : (actionData?.errors ?? []);
 
   return (
     <AuthFormShell

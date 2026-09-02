@@ -1,7 +1,7 @@
 import { create, props } from "@stylexjs/stylex";
 import { data, Link, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
-import type { CategoryRouteQuery as CategoryRouteQueryType } from "$generated/CategoryRouteQuery.graphql";
+import type { CategoryRouteQuery } from "$generated/CategoryRouteQuery.graphql";
 import type { Route } from "./+types/CategoryRoute";
 import {
   fetchRouteQuery,
@@ -120,10 +120,10 @@ export function CategoryRoute() {
 function ReadyCategory({
   query,
 }: {
-  query: RelayRouteQueryDescriptor<CategoryRouteQueryType["variables"]>;
+  query: RelayRouteQueryDescriptor<CategoryRouteQuery["variables"]>;
 }) {
-  const queryRef = useRoutePreloadedQuery<CategoryRouteQueryType>(categoryRouteQuery, query);
-  const data = usePreloadedQuery<CategoryRouteQueryType>(categoryRouteQuery, queryRef);
+  const queryRef = useRoutePreloadedQuery<CategoryRouteQuery>(categoryRouteQuery, query);
+  const data = usePreloadedQuery<CategoryRouteQuery>(categoryRouteQuery, queryRef);
   const category = data.category;
   if (!category) return null;
   const viewData = getCategoryViewData(category, query.__relayQuery.variables.after ?? null);
@@ -171,7 +171,7 @@ export async function categoryLoader({ context, params, request }: Route.LoaderA
   const environment = getRelayEnvironmentFromRouterContext(context);
 
   try {
-    const fetched = await fetchRouteQuery<CategoryRouteQueryType>(
+    const fetched = await fetchRouteQuery<CategoryRouteQuery>(
       environment,
       categoryRouteQuery,
       { slug, first: 12, after },

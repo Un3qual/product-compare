@@ -51,14 +51,6 @@ const savedComparisonsRouteQuery = graphql`
   }
 `;
 
-export type SavedComparisonsRouteLoaderData =
-  | {
-      status: "ready";
-      after: string | null;
-      query: RelayRouteQueryDescriptor<SavedComparisonsRouteQuery["variables"]>;
-    }
-  | { status: "unauthorized" };
-
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>();
 
@@ -91,7 +83,7 @@ function SavedComparisonsPage({
   query,
 }: {
   after: string | null;
-  query: Extract<SavedComparisonsRouteLoaderData, { status: "ready" }>["query"];
+  query: RelayRouteQueryDescriptor<SavedComparisonsRouteQuery["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<SavedComparisonsRouteQuery>(
     savedComparisonsRouteQuery,
@@ -120,7 +112,7 @@ function SavedComparisonsPage({
 export async function savedComparisonsLoader({
   context,
   request,
-}: Route.LoaderArgs): Promise<SavedComparisonsRouteLoaderData> {
+}: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const after = nonBlankSearchParam(new URL(request.url).searchParams.get("after"));
   let fetchedPage: Awaited<ReturnType<typeof fetchRouteQuery<SavedComparisonsRouteQuery>>> | null =
@@ -146,12 +138,12 @@ export async function savedComparisonsLoader({
       throw new Error("Invalid pagination cursor");
     }
 
-    return { status: "ready", after, query: fetchedPage.descriptor };
+    return { status: "ready" as const, after, query: fetchedPage.descriptor };
   } catch (error) {
     fetchedPage?.dispose();
 
     if (isUnauthorizedSavedComparisonsError(error)) {
-      return { status: "unauthorized" };
+      return { status: "unauthorized" as const };
     }
 
     throw error;

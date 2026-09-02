@@ -1,4 +1,3 @@
-import type { Route } from "../../../src/routes/offers/+types/OfferDiscoveryRoute";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { createRelayRouterContext, preloadRouteQuery } from "../../../src/relay/route-preload";
 import { offerDiscoveryLoader } from "../../../src/routes/offers/OfferDiscoveryRoute";
@@ -521,7 +520,7 @@ function buildOfferDiscoveryLoaderArgs({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): Route.LoaderArgs {
+} = {}) {
   return {
     request,
     params: {},

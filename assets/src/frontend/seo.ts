@@ -21,11 +21,9 @@ type GraphQLSeoMetadata = {
 const defaultRouteMetadata = {
   description: "Choose products with clearer specifications and current offers.",
   title: "Product Compare",
-} satisfies RouteDocumentMetadata;
+};
 
-export function staticRouteMetaDescriptors(
-  metadata: Partial<RouteDocumentMetadata> = {},
-): MetaDescriptor[] {
+export function staticRouteMetaDescriptors(metadata: Partial<RouteDocumentMetadata> = {}) {
   return routeMetaDescriptors({
     ...defaultRouteMetadata,
     ...metadata,
@@ -39,7 +37,7 @@ export function routeMetadataFromSeo(
   seo: GraphQLSeoMetadata,
   requestUrl: string,
   options: { allowIndexing?: boolean } = {},
-): RouteDocumentMetadata {
+) {
   return {
     canonicalUrl: new URL(seo.canonicalPath, requestUrl).toString(),
     description: seo.description,
@@ -52,7 +50,7 @@ export function routeMetadataFromSeo(
   };
 }
 
-export function routeMetaDescriptors(metadata: RouteDocumentMetadata): MetaDescriptor[] {
+export function routeMetaDescriptors(metadata: RouteDocumentMetadata) {
   const hasImage = Boolean(metadata.imageUrl);
 
   return [
@@ -67,16 +65,16 @@ export function routeMetaDescriptors(metadata: RouteDocumentMetadata): MetaDescr
     { name: "twitter:description", content: metadata.description },
     ...(metadata.canonicalUrl
       ? [
-          { property: "og:url", content: metadata.canonicalUrl } as const,
-          { tagName: "link", rel: "canonical", href: metadata.canonicalUrl } as const,
+          { property: "og:url", content: metadata.canonicalUrl },
+          { tagName: "link", rel: "canonical", href: metadata.canonicalUrl },
         ]
       : []),
     ...(metadata.imageUrl
       ? [
-          { property: "og:image", content: metadata.imageUrl } as const,
-          { name: "twitter:image", content: metadata.imageUrl } as const,
+          { property: "og:image", content: metadata.imageUrl },
+          { name: "twitter:image", content: metadata.imageUrl },
         ]
       : []),
     ...(metadata.structuredData ? [{ "script:ld+json": metadata.structuredData }] : []),
-  ];
+  ] satisfies MetaDescriptor[];
 }

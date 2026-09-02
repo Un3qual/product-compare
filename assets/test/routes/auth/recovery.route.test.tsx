@@ -51,9 +51,7 @@ test("forgot-password action submits GraphQL and returns the privacy-safe succes
 
   await expect(
     forgotPasswordAction(
-      buildActionArgs("/auth/forgot-password", { email: "person@example.com" }) as Parameters<
-        typeof forgotPasswordAction
-      >[0],
+      buildActionArgs("/auth/forgot-password", { email: "person@example.com" }),
     ),
   ).resolves.toEqual({
     errors: [],
@@ -73,9 +71,7 @@ test("forgot-password action hides top-level GraphQL details", async () => {
 
   await expect(
     forgotPasswordAction(
-      buildActionArgs("/auth/forgot-password", { email: "person@example.com" }) as Parameters<
-        typeof forgotPasswordAction
-      >[0],
+      buildActionArgs("/auth/forgot-password", { email: "person@example.com" }),
     ),
   ).resolves.toEqual({
     errors: [
@@ -92,7 +88,7 @@ test("reset-password action reads its single-use token from the route URL", asyn
     resetPasswordAction(
       buildActionArgs(`/auth/reset-password?token=${RESET_TOKEN}`, {
         password: TEST_PASSWORD,
-      }) as Parameters<typeof resetPasswordAction>[0],
+      }),
     ),
   ).resolves.toEqual({ errors: [], message: "Your password has been updated." });
   expect(mockedCommitMutation).toHaveBeenCalledWith(
@@ -104,9 +100,7 @@ test("reset-password action reads its single-use token from the route URL", asyn
 test("reset-password action rejects a missing token without sending GraphQL", async () => {
   await expect(
     resetPasswordAction(
-      buildActionArgs("/auth/reset-password", { password: TEST_PASSWORD }) as Parameters<
-        typeof resetPasswordAction
-      >[0],
+      buildActionArgs("/auth/reset-password", { password: TEST_PASSWORD }),
     ),
   ).resolves.toEqual({
     errors: [
@@ -146,9 +140,7 @@ test("credential actions normalize synchronous Relay errors", async () => {
 
   await expect(
     forgotPasswordAction(
-      buildActionArgs("/auth/forgot-password", { email: "person@example.com" }) as Parameters<
-        typeof forgotPasswordAction
-      >[0],
+      buildActionArgs("/auth/forgot-password", { email: "person@example.com" }),
     ),
   ).resolves.toEqual({
     errors: [

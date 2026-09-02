@@ -116,15 +116,6 @@ const BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE = 12;
 const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
 type BrowseProductsPageSize = (typeof BROWSE_PRODUCTS_PAGE_SIZES)[number];
 
-export type BrowseProductsLoaderData =
-  | {
-      status: "ready";
-      filters: CatalogFilters;
-      pageSize: BrowseProductsPageSize;
-      query: RelayRouteQueryDescriptor<BrowseRouteQuery["variables"]>;
-    }
-  | { status: "error" };
-
 export function BrowseRoute() {
   const loaderData = useLoaderData<typeof browseLoader>();
 
@@ -169,9 +160,9 @@ function BrowseProducts({
   pageSize,
   query,
 }: {
-  filters: Extract<BrowseProductsLoaderData, { status: "ready" }>["filters"];
-  pageSize: Extract<BrowseProductsLoaderData, { status: "ready" }>["pageSize"];
-  query: Extract<BrowseProductsLoaderData, { status: "ready" }>["query"];
+  filters: CatalogFilters;
+  pageSize: BrowseProductsPageSize;
+  query: RelayRouteQueryDescriptor<BrowseRouteQuery["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<BrowseRouteQuery>(browseRouteQuery, query);
   const data = usePreloadedQuery<BrowseRouteQuery>(browseRouteQuery, queryRef);
@@ -281,7 +272,7 @@ function BrowseProducts({
 export async function browseLoader({
   context,
   request,
-}: Route.LoaderArgs): Promise<BrowseProductsLoaderData> {
+}: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const requestUrl = new URL(request.url);
   const filters = catalogFiltersFromUrl(requestUrl);
@@ -303,17 +294,15 @@ export async function browseLoader({
     );
 
     return {
-      status: "ready",
+      status: "ready" as const,
       filters,
       pageSize,
       query: queryResult.descriptor,
     };
   } catch (error) {
-    return recoverRouteLoaderError<BrowseProductsLoaderData>(
-      error,
-      "Failed to preload browse products route query.",
-      { status: "error" },
-    );
+    return recoverRouteLoaderError(error, "Failed to preload browse products route query.", {
+      status: "error" as const,
+    });
   }
 }
 

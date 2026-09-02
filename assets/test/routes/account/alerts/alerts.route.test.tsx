@@ -10,11 +10,7 @@ import {
   useRevalidator,
 } from "react-router";
 import { useFragment, useMutation, usePreloadedQuery } from "react-relay";
-import {
-  AlertsRoute,
-  alertsLoader,
-  type AlertsRouteLoaderData,
-} from "../../../../src/routes/account/alerts/AlertsRoute";
+import { AlertsRoute, alertsLoader } from "../../../../src/routes/account/alerts/AlertsRoute";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
 import { PriceWatchControl } from "../../../../src/routes/products/PriceWatchControl";
 
@@ -575,7 +571,7 @@ function mockReadyAlerts({
       variables: { first: 50 },
     },
   };
-  mockedUseLoaderData.mockReturnValue({ status: "ready", query } satisfies AlertsRouteLoaderData);
+  mockedUseLoaderData.mockReturnValue({ status: "ready", query });
   mockedUsePreloadedQuery.mockReturnValue({
     myAlertEvents: {
       edges: alerts.map((node) => ({ node })),

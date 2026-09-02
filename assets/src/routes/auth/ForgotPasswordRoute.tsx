@@ -9,7 +9,6 @@ import { commitEnvironmentMutationPromise } from "$relay/mutations";
 import {
   findMutationError,
   isSuccessfulActionResult,
-  type MutationError,
   resolveActionMutationResult,
   transportMutationErrors,
 } from "./errors";
@@ -61,7 +60,7 @@ export async function clientAction({ context, request }: Route.ClientActionArgs)
 export function ForgotPasswordRoute() {
   const actionData = useActionData<typeof clientAction>();
   const isSubmitting = useNavigation().state === "submitting";
-  const errors: MutationError[] = isSubmitting ? [] : (actionData?.errors ?? []);
+  const errors = isSubmitting ? [] : (actionData?.errors ?? []);
   const message = isSubmitting ? null : (actionData?.message ?? null);
 
   return (

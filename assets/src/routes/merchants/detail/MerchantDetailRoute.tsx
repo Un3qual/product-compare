@@ -1,7 +1,7 @@
 import { create, props } from "@stylexjs/stylex";
 import { data, Link, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
-import type { MerchantDetailRouteQuery as MerchantDetailRouteQueryType } from "$generated/MerchantDetailRouteQuery.graphql";
+import type { MerchantDetailRouteQuery } from "$generated/MerchantDetailRouteQuery.graphql";
 import type { Route } from "./+types/MerchantDetailRoute";
 import {
   fetchRouteQuery,
@@ -124,13 +124,13 @@ export function MerchantDetailRoute() {
 function ReadyMerchantDetail({
   query,
 }: {
-  query: RelayRouteQueryDescriptor<MerchantDetailRouteQueryType["variables"]>;
+  query: RelayRouteQueryDescriptor<MerchantDetailRouteQuery["variables"]>;
 }) {
-  const queryRef = useRoutePreloadedQuery<MerchantDetailRouteQueryType>(
+  const queryRef = useRoutePreloadedQuery<MerchantDetailRouteQuery>(
     merchantDetailRouteQuery,
     query,
   );
-  const data = usePreloadedQuery<MerchantDetailRouteQueryType>(merchantDetailRouteQuery, queryRef);
+  const data = usePreloadedQuery<MerchantDetailRouteQuery>(merchantDetailRouteQuery, queryRef);
   const merchant = data.merchant;
   if (!merchant) return null;
   const websiteHref = externalWebsiteHref(merchant.domain);
@@ -197,7 +197,7 @@ export async function merchantDetailLoader({ context, params, request }: Route.L
   const environment = getRelayEnvironmentFromRouterContext(context);
 
   try {
-    const fetched = await fetchRouteQuery<MerchantDetailRouteQueryType>(
+    const fetched = await fetchRouteQuery<MerchantDetailRouteQuery>(
       environment,
       merchantDetailRouteQuery,
       { slug, first: 20, after },
