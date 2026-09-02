@@ -113,6 +113,16 @@ user authorizes publication, the non-draft stacked PR will target
   only where removing them widens discriminants such as `"ready"` and
   `"error"` to `string`. The focused inference matrix passed 18 files and 360
   tests; the final root/deferred-loader check passed three files and 27 tests.
+- The final maintainability pass removed the legacy `#root` document wrapper,
+  custom abort-reason normalization in favor of `AbortSignal.throwIfAborted`,
+  a duplicate Relay hydration-script identifier, a redundant async middleware
+  callback, the unused SPA-mode streaming branch, and forced Playwright
+  serialization. Playwright passed all 38 tests with its normal five workers
+  in 43.1 seconds. React Router's `future.unstable_optimizeDeps` was tested as a
+  possible replacement for the explicit Vite optimizer inventory, but a
+  four-worker browser run reproduced missing optimized Base UI chunks; the
+  explicit inventory therefore remains as a verified Vite 8 compatibility
+  boundary.
 - Focused backend SEO verification passed 58 tests, focused frontend SEO
   verification passed 66 tests, and the final route/Relay cleanup matrix passed
   216 tests. Playwright passed 38 tests in one browser project. Production smoke
@@ -121,8 +131,8 @@ user authorizes publication, the non-draft stacked PR will target
 - The complete frontend gate passed 106 files and 1,432 tests. Relay validated
   88 reader, 60 normalization, and 89 operation-text artifacts. Vite built
   3,137 client modules and 317 server modules; the server artifact is
-  1,182.35 kB raw/204.88 kB gzip. The client contract is 746,585 bytes raw and
-  233,276 bytes gzip across 28 initial JavaScript and one CSS file, plus two
+  1,181.99 kB raw/204.79 kB gzip. The client contract is 746,414 bytes raw and
+  233,226 bytes gzip across 28 initial JavaScript and one CSS file, plus two
   initial fonts totaling 44,800 bytes.
 - Full `mix ci` passed against a fresh repository-supported test partition:
   1,574 tests, zero failures, and 87.37% coverage, followed by the complete
@@ -130,5 +140,5 @@ user authorizes publication, the non-draft stacked PR will target
   from a later unrelated branch; the clean partition contains exactly this
   branch's migrations.
 - Relative to the approved base, frontend code/config excluding the generated
-  lockfile has 2,023 additions and 4,689 deletions (net -2,666). The migration
+  lockfile has 2,016 additions and 4,690 deletions (net -2,674). The migration
   adds seven tracked files and removes 23.

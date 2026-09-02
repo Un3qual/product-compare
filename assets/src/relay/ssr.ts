@@ -1,7 +1,7 @@
 import type { Environment } from "relay-runtime";
 import type { RelayRecordMap } from "./environment";
 
-const RELAY_RECORDS_SCRIPT_ID = "__relayRecords";
+export const RELAY_RECORDS_SCRIPT_ID = "__relayRecords";
 const JSON_HTML_ESCAPES: Record<string, string> = {
   "<": "\\u003c",
   ">": "\\u003e",

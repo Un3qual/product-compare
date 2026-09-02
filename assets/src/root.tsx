@@ -23,7 +23,11 @@ import {
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
 import { createRelayEnvironment } from "$relay/environment";
-import { dehydrateRelayEnvironment, serializeRelayRecords } from "$relay/ssr";
+import {
+  dehydrateRelayEnvironment,
+  RELAY_RECORDS_SCRIPT_ID,
+  serializeRelayRecords,
+} from "$relay/ssr";
 import { AppShell } from "$ui/components/layout/AppShell";
 import { AppProviders } from "$ui/providers/AppProviders";
 import { RouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
@@ -44,7 +48,7 @@ const RELAY_ROOT_ID = "client:root";
 const RELAY_LINKED_RECORD_REF_KEY = "__ref";
 
 export const middleware = [
-  async ({ context, request }, next) => {
+  ({ context, request }, next) => {
     setRelayEnvironmentOnRouterContext(
       context,
       createRelayEnvironment({ ssrContext: { request } }),
@@ -69,7 +73,7 @@ async function loadRoot({ context, request }: Route.LoaderArgs) {
       viewerQuery: fetchedViewer.descriptor,
     };
   } catch {
-    throwIfAborted(request.signal);
+    request.signal.throwIfAborted();
     return {
       viewer: readCachedRootViewer(environment),
       viewerQuery: null,
@@ -100,10 +104,10 @@ export function Layout({ children }: { children: ReactNode }) {
         <Links />
       </head>
       <body>
-        <div id="root">{children}</div>
+        {children}
         <script
           dangerouslySetInnerHTML={{ __html: records }}
-          id="__relayRecords"
+          id={RELAY_RECORDS_SCRIPT_ID}
           type="application/json"
         />
         <ScrollRestoration />
@@ -161,16 +165,6 @@ function linkedRecordId(value: unknown) {
 
   const recordId = value[RELAY_LINKED_RECORD_REF_KEY];
   return typeof recordId === "string" ? recordId : null;
-}
-
-function throwIfAborted(signal: AbortSignal) {
-  if (!signal.aborted) return;
-  if (signal.reason !== undefined) throw normalizeAbortReason(signal.reason);
-  throw new Error("Request aborted");
-}
-
-function normalizeAbortReason(reason: unknown) {
-  return reason instanceof Error ? reason : new Error(String(reason));
 }
 
 function isAuthRoutePath(pathname: string) {
