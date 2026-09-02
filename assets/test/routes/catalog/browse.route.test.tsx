@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, RouterContextProvider, useLoaderData } from "react-router";
+import { MemoryRouter, useLoaderData } from "react-router";
 import { useFragment, usePreloadedQuery } from "react-relay";
 import { createOperationDescriptor, type Variables } from "relay-runtime";
 import { createRelayEnvironment } from "../../../src/relay/environment";
@@ -972,24 +972,6 @@ test("browse loader marks the catalog unavailable when Relay preload fails", asy
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload browse products route query.", {
       error: preloadError,
     });
-  } finally {
-    consoleErrorSpy.mockRestore();
-  }
-});
-
-test("browse loader rethrows missing Relay router context configuration errors", async () => {
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-
-  try {
-    await expect(
-      browseLoader({
-        ...buildBrowseLoaderArgs(),
-        context: new RouterContextProvider(),
-      }),
-    ).rejects.toThrow("Relay environment is missing from the route loader context");
-
-    expect(mockedFetchRouteQuery).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).not.toHaveBeenCalled();
   } finally {
     consoleErrorSpy.mockRestore();
   }

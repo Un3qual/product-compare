@@ -241,7 +241,12 @@ request handling, and client/server build. The final audit removed the old
 Data Mode router, static-handler and response pipeline, Unhead integration,
 lazy route wrapper, class-name mangler, manual loader fixtures, and redundant
 route types. The static metadata policy also removes repeated site-title and
-default-document values without rebuilding parent/child metadata merging. The
+default-document values without rebuilding parent/child metadata merging.
+Backend SEO metadata now owns absolute structured-data URLs, leaving the
+frontend with only the GraphQL string-to-object conversion required by the
+framework descriptor. The final anti-slop pass also removed redundant route
+result types, context validation already supplied by React Router, default SSR
+configuration, unused Babel dependencies, and framework-mechanics tests. The
 retained Relay, GraphQL transport, StyleX compiler, Vite optimizer, and Phoenix
 boundaries are limited to the domain and toolchain responsibilities listed
 above; no retained abstraction duplicates a React Router Framework Mode

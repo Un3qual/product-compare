@@ -1,6 +1,6 @@
 # Frontend React Router Framework Mode
 
-Status: complete
+Status: implementation and verification complete; publication deferred by user
 Owner: `codex/react-router-8-framework-mode`
 Base: `codex/project-quality-remediation` at
 `2a76b443f394f07c02fd286a0615093a5e030fde`
@@ -40,7 +40,8 @@ SEO, or user-facing failure behavior.
 3. Route loaders/client loaders/actions, auth/navigation, generated route
    types, and route-focused tests.
 4. Leftover deletion, full verification, simplification measurement, and
-   stacked PR publication.
+   publication readiness. Push and stacked PR publication remain deferred until
+   the user explicitly asks.
 
 ## Verification
 
@@ -52,10 +53,11 @@ SEO, or user-facing failure behavior.
 
 ## Exit Condition
 
-All required contracts pass under the exact pinned toolchain, the final diff
-contains one coherent Framework Mode architecture with documented retained
-Relay/Phoenix boundaries, the simplification delta is recorded, and the
-non-draft stacked PR targets `codex/project-quality-remediation`.
+All required contracts pass under the exact pinned toolchain, and the final
+diff contains one coherent Framework Mode architecture with documented
+retained Relay/Phoenix boundaries and a recorded simplification delta. When the
+user authorizes publication, the non-draft stacked PR will target
+`codex/project-quality-remediation`.
 
 ## Completion Evidence
 
@@ -72,7 +74,9 @@ non-draft stacked PR targets `codex/project-quality-remediation`.
   Site name, default description, robots, Open Graph, and Twitter policy now
   have one owner; static routes declare only page-specific overrides, the home
   route inherits the root default, and backend-provided dynamic SEO remains
-  authoritative.
+  authoritative. The backend SEO producer now emits absolute structured-data
+  URLs; the frontend performs only the GraphQL string-to-object parse required
+  by React Router's JSON-LD meta descriptor.
 - No tracked source imports `react-router/internal`; only ignored output under
   `.react-router/types` does so. Auth remains credentialed GraphQL through
   `/api/graphql`, and Phoenix remains the cookie-backed session authority.
@@ -86,23 +90,38 @@ non-draft stacked PR targets `codex/project-quality-remediation`.
   hydration request. The exact jsdom request test proved Framework Mode no
   longer reconstructs the incoming server request; foreign-realm signal
   bridging remains only in test request builders where jsdom still requires it.
-- The focused routing/SSR/Relay suite passed 38 tests, the focused StyleX/home/
-  offers/compare suite passed 15 tests, and Playwright passed 38 tests in one
-  browser project. Production smoke checks returned 200 for `/`, 404 for an
-  unknown route, and 302 with the expected location for the legacy ingestion
-  redirect.
-- The complete frontend gate passed 106 files and 1,435 tests. Relay validated
+- The final anti-slop pass removed four route-result unions that restated
+  inferred loader data, the redundant nullable Relay route context and its
+  duplicate missing-value guard, an unnecessary not-found loader alias,
+  redundant explicit SSR configuration, two unused Babel development
+  dependencies, and tests for impossible or framework-owned failure shapes.
+  `@babel/runtime` remains because `babel-plugin-relay` imports it at build
+  time. Root retains one private implementation exported as both `loader` and
+  `clientLoader`: the production compiler proved that aliasing the reserved
+  server `loader` binding to `clientLoader` breaks after the client build strips
+  that binding. Generated `Route.ComponentProps` are not forced into route
+  stubs because React Router 8.3.1 documents that those generated props depend
+  on the real manifest; route behavior tests continue to use supported hooks.
+  Remaining named loader-data types describe multi-state domain projections
+  consumed beyond a single framework export, while generated `Route` types own
+  loader/action arguments and metadata boundaries.
+- Focused backend SEO verification passed 58 tests, focused frontend SEO
+  verification passed 66 tests, and the final route/Relay cleanup matrix passed
+  216 tests. Playwright passed 38 tests in one browser project. Production smoke
+  checks returned 200 for `/`, 404 for an unknown route, and 302 with the
+  expected location for the legacy ingestion redirect.
+- The complete frontend gate passed 106 files and 1,432 tests. Relay validated
   88 reader, 60 normalization, and 89 operation-text artifacts. Vite built
   3,137 client modules and 317 server modules; the server artifact is
-  1,183.65 kB raw/205.13 kB gzip. The client contract is 747,182 bytes raw and
-  233,509 bytes gzip across 28 initial JavaScript and one CSS file, plus two
+  1,182.35 kB raw/204.88 kB gzip. The client contract is 746,585 bytes raw and
+  233,276 bytes gzip across 28 initial JavaScript and one CSS file, plus two
   initial fonts totaling 44,800 bytes.
 - Full `mix ci` passed against a fresh repository-supported test partition:
-  1,574 tests, zero failures, and 87.36% coverage, followed by the complete
+  1,574 tests, zero failures, and 87.37% coverage, followed by the complete
   frontend gate above. The default shared test database had retained a table
   from a later unrelated branch; the clean partition contains exactly this
   branch's migrations.
 - Relative to the approved base, frontend code/config excluding the generated
-  lockfile has 2,004 additions and 4,433 deletions (net -2,429). The focused
-  routing/SSR/head/config boundary has 291 additions and 949 deletions (net
-  -658).
+  lockfile has 1,963 additions and 4,540 deletions (net -2,577). The focused
+  routing/SSR/head/config boundary has 264 additions and 955 deletions (net
+  -691); the migration adds seven tracked files and removes 23.

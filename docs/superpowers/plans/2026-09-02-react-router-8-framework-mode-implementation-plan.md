@@ -56,7 +56,7 @@
   and bundle constraints against the client manifest.
 - `pnpm start` serves the built application through the selected 8.3.1 runtime.
 
-- [ ] **Step 1: Replace and align dependencies**
+- [x] **Step 1: Replace and align dependencies**
 
   Patch the manifest to exact React Router 8.3.1 and React 19.2.7 versions,
   remove Data Mode/Unhead dependencies, add the development plugin and standard
@@ -64,14 +64,14 @@
   direct and peer dependency graph; do not retain a compatibility package
   merely because it is transitive.
 
-- [ ] **Step 2: Make type generation and Framework builds the primary scripts**
+- [x] **Step 2: Make type generation and Framework builds the primary scripts**
 
   Replace Vite-only dev/build/SSR scripts with React Router equivalents. Add
   `.react-router/types` to TypeScript `rootDirs` and includes. Update bundle,
   manifest, and StyleX validation paths only for the emitted Framework client
   layout.
 
-- [ ] **Step 3: Compose the React Router and existing StyleX Vite plugins**
+- [x] **Step 3: Compose the React Router and existing StyleX Vite plugins**
 
   Keep the Relay/StyleX Babel transforms and aliases while letting the
   Framework plugin own React transformation, client/server entries, manifests,
@@ -79,7 +79,7 @@
   ownership now conflicts with the Framework compiler. Add SSR Framework
   configuration and an explicit route config with every current URL.
 
-- [ ] **Step 4: Generate types and prove the toolchain boundary**
+- [x] **Step 4: Generate types and prove the toolchain boundary**
 
   ```bash
   cd assets
@@ -92,7 +92,7 @@
   Framework client/server compiler reach route-module failures rather than
   package, peer, or plugin incompatibilities.
 
-- [ ] **Step 5: Commit the package and Framework build boundary**
+- [x] **Step 5: Commit the package and Framework build boundary**
 
   ```bash
   git add assets/package.json assets/pnpm-lock.yaml assets/vite.config.ts \
@@ -133,41 +133,41 @@
   headers, and context; it does not reconstruct the request or aggregate route
   responses itself.
 
-- [ ] **Step 1: Characterize the critical document contracts**
+- [x] **Step 1: Characterize the critical document contracts**
 
   Run the focused SSR, head/SEO, root, status/redirect, and Relay hydration
   suites. Add or migrate only the minimum framework-facing assertions needed to
   cover the same observable output before deleting implementation-coupled
   tests.
 
-- [ ] **Step 2: Build the Framework root and Relay context lifecycle**
+- [x] **Step 2: Build the Framework root and Relay context lifecycle**
 
   Move the full document, shell, root loader, error boundary, metadata
   components, and Relay bootstrap script into framework conventions. Keep
   normalization and escaping helpers only where Relay requires them.
 
-- [ ] **Step 3: Reduce both entries to Relay adapters**
+- [x] **Step 3: Reduce both entries to Relay adapters**
 
   Render `HydratedRouter` on the client and `ServerRouter` on the server. Delete
   manual browser router creation, static handlers, request reconstruction,
   response aggregation, stream-to-string head injection, and hand-built
   hydration data plumbing now supplied by Framework Mode.
 
-- [ ] **Step 4: Migrate SEO and HTTP behavior**
+- [x] **Step 4: Migrate SEO and HTTP behavior**
 
   Replace metadata handles and Unhead adapters with route `meta`/`links`
   exports, including canonical and JSON-LD descriptors. Use native route
   responses for redirects, 404s, and error statuses. Preserve the existing
   markup and status assertions.
 
-- [ ] **Step 5: Decide the signal bridge from evidence**
+- [x] **Step 5: Decide the signal bridge from evidence**
 
   Trace every remaining `new Request` call. If the application no longer
   rebuilds a foreign-realm request, run an exact jsdom/Vitest abort propagation
   test through the framework-facing boundary and delete the bridge. Otherwise
   retain it only at the remaining adapter and document why.
 
-- [ ] **Step 6: Verify and commit the runtime replacement**
+- [x] **Step 6: Verify and commit the runtime replacement**
 
   Run focused SSR/root/SEO/error/Relay tests plus typecheck and a Framework
   build. Confirm no source import of `router.tsx`, Unhead, the deleted SSR
@@ -197,13 +197,13 @@
   replaces local submission/navigation state without losing UX.
 - Route modules consume their generated local `Route` namespace.
 
-- [ ] **Step 1: Convert Relay loaders without duplicating domain behavior**
+- [x] **Step 1: Convert Relay loaders without duplicating domain behavior**
 
   Introduce server/browser adapters for every Relay-preloaded screen, retain
   descriptor/cache leases, and use generated args/data types. Verify SSR and
   client-navigation preload behavior before removing old loader signatures.
 
-- [ ] **Step 2: Convert credential auth and revalidation plumbing**
+- [x] **Step 2: Convert credential auth and revalidation plumbing**
 
   Move login, registration, logout, password, and email-verification route
   orchestration into browser route actions/loaders where it shortens component
@@ -211,14 +211,14 @@
   continuity, field errors, pending states, redirects, and root viewer
   revalidation.
 
-- [ ] **Step 3: Keep Relay-owned domain mutations in Relay**
+- [x] **Step 3: Keep Relay-owned domain mutations in Relay**
 
   Audit every remaining `useRevalidator`, `useNavigation`, form, and mutation.
   Remove routing glue made redundant by native actions, but retain optimistic
   updates and connection maintenance in Relay with a short code-level reason
   only when the ownership is non-obvious.
 
-- [ ] **Step 4: Replace custom route types and fixtures**
+- [x] **Step 4: Replace custom route types and fixtures**
 
   Remove imports from `react-router-dom`, manual `LoaderFunctionArgs` aliases,
   obsolete v7 fields, and home-grown loader fixtures. Test route modules or
@@ -226,7 +226,7 @@
   stubbed manifests rather than forcing generated application route types into
   them.
 
-- [ ] **Step 5: Run the complete focused route/auth matrix and commit**
+- [x] **Step 5: Run the complete focused route/auth matrix and commit**
 
   ```bash
   /opt/homebrew/bin/mise exec -- pnpm --dir assets run relay:check
@@ -256,7 +256,7 @@
 - The lane record reports exact verification counts and retained custom
   abstractions.
 
-- [ ] **Step 1: Audit the whole frontend diff**
+- [x] **Step 1: Audit the whole frontend diff**
 
   Search for `react-router-dom`, `RouterProvider`, `createBrowserRouter`,
   `createStaticHandler`, `StaticRouterProvider`, `RouteObject`, Unhead, route
@@ -265,21 +265,21 @@
   output paths. Remove each leftover or record the concrete behavior that
   requires it.
 
-- [ ] **Step 2: Measure simplification**
+- [x] **Step 2: Measure simplification**
 
   Compare the merge-base and branch counts for frontend infrastructure source
   files and lines covering router, entries, SSR, head, route config, and custom
   route typing. Explain any retained abstraction and require a net reduction in
   that infrastructure boundary unless a contract proves otherwise.
 
-- [ ] **Step 3: Run full frontend verification**
+- [x] **Step 3: Run full frontend verification**
 
   Run the pinned Relay validation, typecheck/typegen, lint, format check,
   complete Vitest suite, Framework production build, StyleX and bundle checks,
   and relevant Playwright auth/navigation/SEO/404 flows. Record exact tests,
   browsers, assets, raw/gzip bundle totals, and server/client build status.
 
-- [ ] **Step 4: Run repository verification**
+- [x] **Step 4: Run repository verification**
 
   ```bash
   /opt/homebrew/bin/mise exec -- mix work_queue.validate
@@ -290,7 +290,7 @@
   Start the repository's existing test database service only if the gate proves
   it is not already available. Do not weaken or skip a failing check.
 
-- [ ] **Step 5: Close the queue and commit verification evidence**
+- [x] **Step 5: Close the queue and commit verification evidence**
 
   Mark the lane `done`, remove it from Active Work, restore a truthful Ready
   Floor Exception, and update the plan catalog. Commit the verified closeout
@@ -303,6 +303,9 @@
 
 - [ ] **Step 6: Publish the stacked pull request**
 
+  Deferred at the user's request. Do not push or open the pull request until
+  the user explicitly asks.
+
   Push `codex/react-router-8-framework-mode`, open a non-draft PR with base
   `codex/project-quality-remediation`, and verify the published head/base and
   checks. The PR body summarizes architecture ownership, retained custom Relay
@@ -310,11 +313,12 @@
 
 ## Completion
 
-Tasks 1 through 4 were completed in milestone commits. The final self-review
-found one Framework Mode runtime, no authored import of React Router internals,
-no obsolete router/head dependencies, and no duplicate route, request,
-response, metadata, lazy-loading, or route-type compatibility layer. The
-verified package versions, test counts, build artifacts, HTTP smoke results,
+Tasks 1 through 3 and Task 4 Steps 1 through 5 were completed in milestone
+commits. Publication remains deferred at the user's request. The final
+self-review found one Framework Mode runtime, no authored import of React
+Router internals, no obsolete router/head dependencies, and no duplicate route,
+request, response, metadata, lazy-loading, or route-type compatibility layer.
+The verified package versions, test counts, build artifacts, HTTP smoke results,
 retained custom boundaries, and simplification measurements are recorded in
 `docs/work/frontend-react-router-framework-mode.md`. Independent review also
 confirmed that the compare revalidation contract is exported under the native
@@ -324,5 +328,5 @@ server entry preserves framework-standard shell streaming. A final route-module
 audit also replaced pass-through `clientLoader` functions with direct export
 aliases everywhere no Framework-specific client behavior is attached. Static
 metadata now has one policy owner; route modules contain only page-specific
-copy, while home inherits the root default and dynamic GraphQL SEO stays
-unchanged.
+copy, while home inherits the root default and dynamic GraphQL SEO remains
+backend-authoritative, including absolute structured-data URLs.

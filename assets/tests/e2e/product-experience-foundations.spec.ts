@@ -164,7 +164,7 @@ async function stubGraphQL(page: Page, viewer: Viewer | null = null) {
       operationName === "RootRouteQuery"
         ? { viewer }
         : operationName === "ProductDetailRouteQuery"
-          ? { product: productFixture() }
+          ? { product: productFixture(new URL(page.url()).origin) }
           : operationName === "AffiliateSetupRouteQuery"
             ? { merchants: emptyConnection() }
             : null;
@@ -177,7 +177,7 @@ async function stubGraphQL(page: Page, viewer: Viewer | null = null) {
   });
 }
 
-function productFixture() {
+function productFixture(origin: string) {
   return {
     id: "product-field-camera",
     name: "Field Camera",
@@ -193,7 +193,7 @@ function productFixture() {
         "@context": "https://schema.org",
         "@type": "Product",
         name: 'Field Camera </script><script>alert("metadata injection")</script>',
-        url: "/products/field-camera",
+        url: `${origin}/products/field-camera`,
       }),
     },
     brand: { id: "brand-acme", name: "Acme" },

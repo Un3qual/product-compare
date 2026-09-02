@@ -359,13 +359,13 @@ test("revenue summary, ledger preload, and pagination failures recover independe
 
   failSummary = false;
   failLedger = true;
-  await page.reload();
+  await gotoClientRoute(page, "/commerce/revenue?currency=USD");
   await expect(page.getByRole("region", { name: "Attribution performance" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Revenue outcome" })).toBeVisible();
   await expect(page.getByText("Attribution ledger unavailable.")).toBeVisible();
 
   failLedger = false;
-  await page.reload();
+  await gotoClientRoute(page, "/commerce/revenue?currency=USD");
   await page.getByRole("button", { name: "Load more attribution clicks" }).click();
   await expect(page.getByRole("alert")).toContainText("Unable to load more attribution clicks.");
   await expect(page.getByText("operator@example.test").first()).toBeVisible();
