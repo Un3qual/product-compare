@@ -4403,7 +4403,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
              "@type" => "Product",
              "name" => reviewed.name,
              "description" => @evidence_description,
-             "url" => "/products/#{reviewed.slug}",
+             "url" => "http://localhost:5173/products/#{reviewed.slug}",
              "brand" => %{"@type" => "Brand", "name" => "#{reviewed.slug} Brand"},
              "offers" => %{
                "@type" => "AggregateOffer",

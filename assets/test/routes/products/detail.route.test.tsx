@@ -168,7 +168,7 @@ const DETAIL_PRODUCT: DetailProduct = {
     indexable: true,
     imageUrl: null,
     structuredData:
-      '{"@context":"https://schema.org","@type":"Product","url":"/products/detail-product"}',
+      '{"@context":"https://schema.org","@type":"Product","url":"https://app.example.com/products/detail-product"}',
   },
   brand: {
     id: "brand-1",

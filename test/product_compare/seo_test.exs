@@ -29,6 +29,10 @@ defmodule ProductCompare.SeoTest do
     assert metadata.indexable
     assert metadata.canonical_path == "/products/qualified-search-product"
     assert metadata.structured_data["@type"] == "Product"
+
+    assert metadata.structured_data["url"] ==
+             "http://localhost:5173/products/qualified-search-product"
+
     assert metadata.structured_data["offers"]["priceCurrency"] == "USD"
 
     thin_product = SpecsFixtures.product_fixture(%{slug: "thin-search-product"})
@@ -154,7 +158,11 @@ defmodule ProductCompare.SeoTest do
     end)
 
     assert %{indexable: true, qualified_product_count: 3} =
+             category =
              Seo.get_category("search-cameras", now: @now)
+
+    assert Seo.category_metadata(category).structured_data["url"] ==
+             "http://localhost:5173/categories/search-cameras"
 
     assert Enum.map(Seo.sitemap_entries(:categories, now: @now), & &1.path) == [
              "/categories/search-cameras"
@@ -521,7 +529,13 @@ defmodule ProductCompare.SeoTest do
                now: @now
              )
 
-    assert Seo.snapshot_metadata(public_snapshot).indexable
+    assert %{indexable: true, structured_data: structured_data} =
+             Seo.snapshot_metadata(public_snapshot)
+
+    assert Enum.map(structured_data["itemListElement"], & &1["item"]["url"]) == [
+             "http://localhost:5173/products/snapshot-search-first",
+             "http://localhost:5173/products/snapshot-search-second"
+           ]
 
     assert Enum.map(Seo.sitemap_entries(:comparisons, now: @now), & &1.path) == [
              "/compare/shared/#{public_snapshot.public_token}"

@@ -41,7 +41,7 @@ test("routeMetadataFromSeo emits an absolute canonical, truthful robots decision
       indexable: true,
       imageUrl: "/images/careful.jpg",
       structuredData:
-        '{"@type":"Product","name":"</script><script>bad()</script>","url":"/products/careful-product"}',
+        '{"@type":"Product","name":"</script><script>bad()</script>","url":"https://app.example.com/products/careful-product"}',
     },
     "https://app.example.com/products/careful-product?offersAfter=cursor",
   );

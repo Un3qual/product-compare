@@ -1,8 +1,6 @@
 import type { MetaDescriptor } from "react-router";
 
-export type StructuredData =
-  | Readonly<Record<string, unknown>>
-  | readonly Readonly<Record<string, unknown>>[];
+type StructuredData = Readonly<Record<string, unknown>>;
 
 export type RouteDocumentMetadata = {
   canonicalUrl?: string;
@@ -49,7 +47,7 @@ export function routeMetadataFromSeo(
     description: seo.description,
     imageUrl: seo.imageUrl ? new URL(seo.imageUrl, requestUrl).toString() : null,
     indexable: seo.indexable && options.allowIndexing !== false,
-    structuredData: absoluteStructuredData(seo.structuredData, requestUrl),
+    structuredData: seo.structuredData ? (JSON.parse(seo.structuredData) as StructuredData) : null,
     title: seo.title,
   };
 }
@@ -81,49 +79,4 @@ export function routeMetaDescriptors(metadata: RouteDocumentMetadata): MetaDescr
       : []),
     ...(metadata.structuredData ? [{ "script:ld+json": metadata.structuredData }] : []),
   ];
-}
-
-function absoluteStructuredData(value: GraphQLSeoMetadata["structuredData"], requestUrl: string) {
-  if (!value) return null;
-
-  try {
-    const parsed: unknown = JSON.parse(value);
-    return structuredDataFromUnknown(absolutizeUrls(parsed, requestUrl));
-  } catch {
-    return null;
-  }
-}
-
-function structuredDataFromUnknown(value: unknown): StructuredData | null {
-  if (typeof value !== "object" || value === null) return null;
-  if (!Array.isArray(value)) return Object.fromEntries(Object.entries(value));
-
-  return value.every((item) => typeof item === "object" && item !== null && !Array.isArray(item))
-    ? value
-    : null;
-}
-
-function absolutizeUrls(value: unknown, requestUrl: string, key?: string): unknown {
-  if (typeof value === "string" && (key === "url" || key === "image")) {
-    try {
-      return new URL(value, requestUrl).toString();
-    } catch {
-      return value;
-    }
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((item) => absolutizeUrls(item, requestUrl));
-  }
-
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([nestedKey, nestedValue]) => [
-        nestedKey,
-        absolutizeUrls(nestedValue, requestUrl, nestedKey),
-      ]),
-    );
-  }
-
-  return value;
 }
