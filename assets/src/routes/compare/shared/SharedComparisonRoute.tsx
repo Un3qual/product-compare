@@ -17,6 +17,7 @@ import { formatProductDateTimeLabel } from "$frontend/formatting";
 import {
   routeMetadataFromSeo,
   routeMetaDescriptors,
+  staticRouteMetaDescriptors,
   type RouteDocumentMetadata,
 } from "$frontend/seo";
 import { buildSharedComparisonViewData } from "./shared-comparison-view-data";
@@ -88,14 +89,12 @@ export type SharedComparisonLoaderData =
   | { status: "not_found" };
 
 export function meta({ loaderData }: Route.MetaArgs) {
-  return routeMetaDescriptors(
-    loaderData?.status === "ready"
-      ? loaderData.metadata
-      : {
-          title: "Shared comparison | Product Compare",
-          description: "Review a fixed, source-backed product comparison snapshot.",
-        },
-  );
+  if (loaderData?.status === "ready") return routeMetaDescriptors(loaderData.metadata);
+
+  return staticRouteMetaDescriptors({
+    title: "Shared comparison",
+    description: "Review a fixed, source-backed product comparison snapshot.",
+  });
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

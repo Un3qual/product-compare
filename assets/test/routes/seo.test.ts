@@ -1,4 +1,36 @@
-import { routeMetadataFromSeo, routeMetaDescriptors } from "../../src/frontend/seo";
+import {
+  routeMetadataFromSeo,
+  routeMetaDescriptors,
+  staticRouteMetaDescriptors,
+} from "../../src/frontend/seo";
+
+test("static route metadata owns the site defaults and title suffix", () => {
+  expect(staticRouteMetaDescriptors()).toEqual(
+    expect.arrayContaining([
+      { title: "Product Compare" },
+      {
+        name: "description",
+        content: "Choose products with clearer specifications and current offers.",
+      },
+      { property: "og:title", content: "Product Compare" },
+      { name: "twitter:title", content: "Product Compare" },
+    ]),
+  );
+
+  expect(
+    staticRouteMetaDescriptors({
+      title: "Browse products",
+      description: "Browse by the attributes that matter.",
+    }),
+  ).toEqual(
+    expect.arrayContaining([
+      { title: "Browse products | Product Compare" },
+      { name: "description", content: "Browse by the attributes that matter." },
+      { property: "og:title", content: "Browse products | Product Compare" },
+      { name: "twitter:title", content: "Browse products | Product Compare" },
+    ]),
+  );
+});
 
 test("routeMetadataFromSeo emits an absolute canonical, truthful robots decision, and structured JSON-LD URLs", () => {
   const metadata = routeMetadataFromSeo(

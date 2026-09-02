@@ -4,7 +4,6 @@ import { Link, useLoaderData, useOutletContext, useRevalidator } from "react-rou
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { HomeRouteQuery } from "$generated/HomeRouteQuery.graphql";
 import type { Route } from "./+types/HomeRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   getRelayEnvironmentFromRouterContext,
@@ -25,12 +24,6 @@ import { HomeProductLedger } from "./HomeProductLedger";
 
 export { HomeRoute as default, homeLoader as clientLoader, homeLoader as loader };
 
-export function meta() {
-  return routeMetaDescriptors({
-    title: "Product Compare",
-    description: "Choose products with clearer specifications and current offers.",
-  });
-}
 import { HomeSearch } from "./HomeSearch";
 import {
   homeCatalogSearchPath,

@@ -4,7 +4,7 @@ import { graphql, usePreloadedQuery } from "react-relay";
 import type { GraphQLResponse } from "relay-runtime";
 import type { SavedComparisonsRouteQuery } from "$generated/SavedComparisonsRouteQuery.graphql";
 import type { Route } from "./+types/SavedComparisonsRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { graphQLResponseHasErrorCode, RouteLoaderGraphQLError } from "$relay/environment";
 import {
   fetchRouteQuery,
@@ -26,8 +26,8 @@ export {
 };
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Saved comparisons | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Saved comparisons",
     description: "Return to product comparisons saved to your account.",
   });
 }

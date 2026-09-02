@@ -15,7 +15,7 @@ import type {
 } from "$generated/AlertsRoute_watch.graphql";
 import type { AlertsRouteQuery } from "$generated/AlertsRouteQuery.graphql";
 import type { Route } from "./+types/AlertsRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { graphQLResponseHasErrorCode, RouteLoaderGraphQLError } from "$relay/environment";
 import {
@@ -33,8 +33,8 @@ import { productDetailPath } from "../../products/product-detail-route-data";
 export { AlertsRoute as default, alertsLoader as clientLoader, alertsLoader as loader };
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Price alerts | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Price alerts",
     description:
       "Manage product price watches and review qualifying price or availability changes.",
   });

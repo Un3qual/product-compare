@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { graphql, useMutation } from "react-relay";
 import { useSearchParams } from "react-router";
 import type { VerifyEmailRouteMutation } from "$generated/VerifyEmailRouteMutation.graphql";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { commitRouteMutationPromise, type RouteMutationCommit } from "$relay/mutations";
 import {
   type AuthActionResult,
@@ -21,8 +21,8 @@ export const VERIFY_EMAIL_MISSING_TOKEN_ERROR = invalidTokenMutationError(
 export const VERIFY_EMAIL_SUCCESS_MESSAGE = "Your email address is verified.";
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Verify email | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Verify email",
     description: "Verify the email address connected to your Product Compare account.",
   });
 }

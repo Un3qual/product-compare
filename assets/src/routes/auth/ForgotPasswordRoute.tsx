@@ -2,7 +2,7 @@ import { graphql } from "react-relay";
 import { Form, useActionData, useNavigation } from "react-router";
 import type { ForgotPasswordRouteMutation } from "$generated/ForgotPasswordRouteMutation.graphql";
 import type { Route } from "./+types/ForgotPasswordRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { routeFormValue } from "$frontend/forms/route-form";
 import { getRelayEnvironmentFromRouterContext } from "$relay/route-preload";
 import { commitEnvironmentMutationPromise } from "$relay/mutations";
@@ -31,8 +31,8 @@ const forgotPasswordMutation = graphql`
 const successMessage = "If an account exists for that email, reset instructions are on the way.";
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Forgot password | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Forgot password",
     description: "Request a secure Product Compare password reset link.",
   });
 }

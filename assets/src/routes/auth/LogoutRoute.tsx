@@ -2,7 +2,7 @@ import { graphql } from "react-relay";
 import { Form, redirect, useActionData, useNavigation } from "react-router";
 import type { LogoutRouteMutation } from "$generated/LogoutRouteMutation.graphql";
 import type { Route } from "./+types/LogoutRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { getRelayEnvironmentFromRouterContext } from "$relay/route-preload";
 import { commitEnvironmentMutationPromise } from "$relay/mutations";
 import {
@@ -28,8 +28,8 @@ const logoutMutation = graphql`
 `;
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Sign out | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Sign out",
     description: "Sign out of your Product Compare account.",
   });
 }

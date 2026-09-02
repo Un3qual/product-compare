@@ -14,7 +14,7 @@ import {
 import type { Environment } from "relay-runtime";
 import type { Route } from "./+types/root";
 import type { RootRouteQuery } from "$generated/RootRouteQuery.graphql";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
@@ -66,10 +66,7 @@ export function shouldRevalidate({ currentUrl, nextUrl }: ShouldRevalidateFuncti
 }
 
 export function meta() {
-  return routeMetaDescriptors({
-    description: "Choose products with clearer specifications and current offers.",
-    title: "Product Compare",
-  });
+  return staticRouteMetaDescriptors();
 }
 
 export function Layout({ children }: { children: ReactNode }) {

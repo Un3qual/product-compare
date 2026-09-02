@@ -322,4 +322,7 @@ framework name, fully awaited routes avoid duplicate hydration requests, the
 two deferred Relay routes retain evidence-backed hydration, and the custom
 server entry preserves framework-standard shell streaming. A final route-module
 audit also replaced pass-through `clientLoader` functions with direct export
-aliases everywhere no Framework-specific client behavior is attached.
+aliases everywhere no Framework-specific client behavior is attached. Static
+metadata now has one policy owner; route modules contain only page-specific
+copy, while home inherits the root default and dynamic GraphQL SEO stays
+unchanged.

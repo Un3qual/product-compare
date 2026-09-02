@@ -2,7 +2,7 @@ import { graphql } from "react-relay";
 import { redirect, useActionData, useNavigation, useSearchParams } from "react-router";
 import type { LoginRouteMutation } from "$generated/LoginRouteMutation.graphql";
 import type { Route } from "./+types/LoginRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { routeFormValue } from "$frontend/forms/route-form";
 import { getRelayEnvironmentFromRouterContext } from "$relay/route-preload";
 import { commitEnvironmentMutationPromise } from "$relay/mutations";
@@ -33,8 +33,8 @@ const loginMutation = graphql`
 `;
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Sign in | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Sign in",
     description: "Sign in to manage saved comparisons and account tools.",
   });
 }

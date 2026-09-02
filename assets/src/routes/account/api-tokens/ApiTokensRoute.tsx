@@ -4,7 +4,7 @@ import { graphql, useMutation, usePreloadedQuery } from "react-relay";
 import type { GraphQLResponse } from "relay-runtime";
 import type { ApiTokensRouteQuery } from "$generated/ApiTokensRouteQuery.graphql";
 import type { Route } from "./+types/ApiTokensRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import type { ApiTokenOperationsCreateApiTokenMutation } from "$generated/ApiTokenOperationsCreateApiTokenMutation.graphql";
 import type { ApiTokenOperationsRevokeApiTokenMutation } from "$generated/ApiTokenOperationsRevokeApiTokenMutation.graphql";
@@ -33,8 +33,8 @@ import {
 export { ApiTokensRoute as default, apiTokensLoader as clientLoader, apiTokensLoader as loader };
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "API tokens | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "API tokens",
     description: "Create and manage API tokens for connected Product Compare tools.",
   });
 }

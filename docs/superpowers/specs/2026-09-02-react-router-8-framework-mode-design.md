@@ -133,7 +133,11 @@ structured data uses its JSON-LD descriptor. The root document renders the
 framework metadata components once. This removes `@unhead/react`,
 `RouteMetadata`, route metadata handles, and the custom SEO-to-head adapter
 without changing titles, descriptions, canonical URLs, Open Graph data, or
-structured data.
+structured data. One static metadata policy owns the site title, default
+description, robots behavior, and social descriptors. Static route modules
+provide only their page-title segment and route-specific description; the home
+route inherits the root default. Loader-backed SEO remains authoritative when
+present and uses the static policy only for its unavailable fallback.
 
 ## Request Compatibility Boundary
 
@@ -236,7 +240,9 @@ navigation forms/actions, status and redirect propagation, error boundaries,
 request handling, and client/server build. The final audit removed the old
 Data Mode router, static-handler and response pipeline, Unhead integration,
 lazy route wrapper, class-name mangler, manual loader fixtures, and redundant
-route types. The retained Relay, GraphQL transport, StyleX compiler, Vite
-optimizer, and Phoenix boundaries are limited to the domain and toolchain
-responsibilities listed above; no retained abstraction duplicates a React
-Router Framework Mode guarantee.
+route types. The static metadata policy also removes repeated site-title and
+default-document values without rebuilding parent/child metadata merging. The
+retained Relay, GraphQL transport, StyleX compiler, Vite optimizer, and Phoenix
+boundaries are limited to the domain and toolchain responsibilities listed
+above; no retained abstraction duplicates a React Router Framework Mode
+guarantee.

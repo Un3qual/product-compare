@@ -13,6 +13,7 @@ import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
 import {
   routeMetadataFromSeo,
   routeMetaDescriptors,
+  staticRouteMetaDescriptors,
   type RouteDocumentMetadata,
 } from "$frontend/seo";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
@@ -92,14 +93,12 @@ export type MerchantDetailLoaderData =
   | { status: "not_found" };
 
 export function meta({ loaderData }: Route.MetaArgs) {
-  return routeMetaDescriptors(
-    loaderData?.status === "ready"
-      ? loaderData.metadata
-      : {
-          title: "Merchant details | Product Compare",
-          description: "Review a merchant's current product and offer details.",
-        },
-  );
+  if (loaderData?.status === "ready") return routeMetaDescriptors(loaderData.metadata);
+
+  return staticRouteMetaDescriptors({
+    title: "Merchant details",
+    description: "Review a merchant's current product and offer details.",
+  });
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

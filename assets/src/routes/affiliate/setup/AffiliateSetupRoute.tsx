@@ -3,7 +3,7 @@ import { useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { AffiliateSetupRouteQuery } from "$generated/AffiliateSetupRouteQuery.graphql";
 import type { Route } from "./+types/AffiliateSetupRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import {
   getRelayEnvironmentFromRouterContext,
@@ -33,8 +33,8 @@ export {
 };
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Affiliate setup | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Affiliate setup",
     description: "Configure merchant affiliate programs used for outbound offer links.",
   });
 }

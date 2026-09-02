@@ -22,6 +22,23 @@ type GraphQLSeoMetadata = {
   readonly title: string;
 };
 
+const defaultRouteMetadata = {
+  description: "Choose products with clearer specifications and current offers.",
+  title: "Product Compare",
+} satisfies RouteDocumentMetadata;
+
+export function staticRouteMetaDescriptors(
+  metadata: Partial<RouteDocumentMetadata> = {},
+): MetaDescriptor[] {
+  return routeMetaDescriptors({
+    ...defaultRouteMetadata,
+    ...metadata,
+    title: metadata.title
+      ? `${metadata.title} | ${defaultRouteMetadata.title}`
+      : defaultRouteMetadata.title,
+  });
+}
+
 export function routeMetadataFromSeo(
   seo: GraphQLSeoMetadata,
   requestUrl: string,

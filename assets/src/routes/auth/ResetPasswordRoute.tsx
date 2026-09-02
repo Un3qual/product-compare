@@ -2,7 +2,7 @@ import { graphql } from "react-relay";
 import { Form, useActionData, useNavigation, useSearchParams } from "react-router";
 import type { ResetPasswordRouteMutation } from "$generated/ResetPasswordRouteMutation.graphql";
 import type { Route } from "./+types/ResetPasswordRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { routeFormValue } from "$frontend/forms/route-form";
 import { getRelayEnvironmentFromRouterContext } from "$relay/route-preload";
 import { commitEnvironmentMutationPromise } from "$relay/mutations";
@@ -22,8 +22,8 @@ const RESET_PASSWORD_MISSING_TOKEN_ERROR = Object.freeze(
 const CREDENTIAL_RESET_COMPLETION_MESSAGE = "Your password has been updated.";
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Reset password | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Reset password",
     description: "Choose a new password for your Product Compare account.",
   });
 }

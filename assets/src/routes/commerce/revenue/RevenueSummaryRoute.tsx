@@ -6,7 +6,7 @@ import type { Environment } from "relay-runtime";
 import type { AttributionLedgerRouteQuery } from "$generated/AttributionLedgerRouteQuery.graphql";
 import type { RevenueSummaryRouteQuery } from "$generated/RevenueSummaryRouteQuery.graphql";
 import type { Route } from "./+types/RevenueSummaryRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import {
   getRelayEnvironmentFromRouterContext,
@@ -30,8 +30,8 @@ export {
 };
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Revenue preview | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Revenue preview",
     description: "Preview attributed commerce revenue and commission summaries.",
   });
 }

@@ -4,7 +4,7 @@ import { Link, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { OfferDiscoveryRouteQuery } from "$generated/OfferDiscoveryRouteQuery.graphql";
 import type { Route } from "./+types/OfferDiscoveryRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
@@ -28,8 +28,8 @@ export {
 };
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Offers | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Offers",
     description: "Discover current product offers, coupons, and merchant availability.",
   });
 }

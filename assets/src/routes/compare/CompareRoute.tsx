@@ -8,7 +8,7 @@ import type {
   CompareRouteQuery$data,
 } from "$generated/CompareRouteQuery.graphql";
 import type { Route } from "./+types/CompareRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   fetchRouteQuery,
@@ -24,8 +24,8 @@ import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 export { CompareRoute as default, compareLoader as clientLoader, compareLoader as loader };
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Compare products | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Compare products",
     description: "Compare loaded products by specifications and current offers.",
   });
 }

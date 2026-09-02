@@ -2,7 +2,7 @@ import { graphql } from "react-relay";
 import { redirect, useActionData, useNavigation, useSearchParams } from "react-router";
 import type { RegisterRouteMutation } from "$generated/RegisterRouteMutation.graphql";
 import type { Route } from "./+types/RegisterRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { routeFormValue } from "$frontend/forms/route-form";
 import { getRelayEnvironmentFromRouterContext } from "$relay/route-preload";
 import { commitEnvironmentMutationPromise } from "$relay/mutations";
@@ -33,8 +33,8 @@ const registerMutation = graphql`
 `;
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Create account | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Create account",
     description: "Create an account to save comparisons and manage connected tools.",
   });
 }

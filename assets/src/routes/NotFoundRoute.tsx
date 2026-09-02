@@ -1,10 +1,10 @@
 import type { Route } from "./+types/NotFoundRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { RouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Page not found | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Page not found",
     description: "The requested Product Compare page could not be found.",
   });
 }

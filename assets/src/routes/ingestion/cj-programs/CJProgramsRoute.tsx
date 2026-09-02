@@ -5,7 +5,7 @@ import { graphql, usePreloadedQuery } from "react-relay";
 import type { Environment } from "relay-runtime";
 import type { CJProgramsRouteQuery } from "$generated/CJProgramsRouteQuery.graphql";
 import type { Route } from "./+types/CJProgramsRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import type { UnmatchedFeedsQuery } from "$generated/UnmatchedFeedsQuery.graphql";
 import {
@@ -33,8 +33,8 @@ import { UnmatchedFeeds, unmatchedFeedsQuery } from "./feeds/UnmatchedFeeds";
 export { CJProgramsRoute as default, cjProgramsLoader as clientLoader, cjProgramsLoader as loader };
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "CJ programs | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "CJ programs",
     description:
       "Manage CJ advertiser programs through their lifecycle and inspect their observed feeds.",
   });

@@ -3,7 +3,7 @@ import { useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { MerchantDirectoryRouteQuery } from "$generated/MerchantDirectoryRouteQuery.graphql";
 import type { Route } from "./+types/MerchantDirectoryRoute";
-import { routeMetaDescriptors } from "$frontend/seo";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
@@ -26,8 +26,8 @@ export {
 };
 
 export function meta() {
-  return routeMetaDescriptors({
-    title: "Merchants | Product Compare",
+  return staticRouteMetaDescriptors({
+    title: "Merchants",
     description: "Browse merchants represented in current Product Compare offers.",
   });
 }
