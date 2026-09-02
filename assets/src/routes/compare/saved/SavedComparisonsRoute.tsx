@@ -21,9 +21,12 @@ import { buildSavedComparisonsPagination } from "./saved-comparisons-route";
 
 export {
   SavedComparisonsRoute as default,
-  savedComparisonsLoader as clientLoader,
   savedComparisonsLoader as loader,
 };
+export function clientLoader(args: Route.ClientLoaderArgs) {
+  return savedComparisonsLoader(args);
+}
+clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

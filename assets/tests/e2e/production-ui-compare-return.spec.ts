@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import {
   expectNoUnhandledGraphQLOperations,
@@ -27,7 +27,7 @@ for (const viewport of VIEWPORTS) {
     const responders = comparisonResponders();
     await stubGraphQL(page, responders);
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto(comparisonPath);
+    await openComparisonFromHome(page);
 
     const workspace = page.getByRole("region", {
       name: "Comparison workspace",
@@ -125,7 +125,7 @@ test("guest comparison intent returns through registration for review before sav
   });
   const requests = await stubGraphQL(page, responders);
 
-  await page.goto(comparisonPath);
+  await openComparisonFromHome(page);
   const saveComparison = page.getByRole("button", { name: "Save comparison" });
   await saveComparison.click();
 
@@ -207,4 +207,10 @@ function comparisonResponders() {
     },
   });
   return responders;
+}
+
+async function openComparisonFromHome(page: Page) {
+  await page.goto(`/?${comparisonPath.split("?")[1]}`);
+  await page.getByRole("link", { name: "Open comparison" }).first().click();
+  await expect(page).toHaveURL(comparisonPath);
 }

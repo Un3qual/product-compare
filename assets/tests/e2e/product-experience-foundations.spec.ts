@@ -86,6 +86,7 @@ for (const viewport of VIEWPORTS) {
               (script) =>
                 script instanceof HTMLScriptElement &&
                 script.type !== "application/ld+json" &&
+                script.type !== "application/json" &&
                 script.textContent?.includes("metadata injection"),
             ).length,
         ),

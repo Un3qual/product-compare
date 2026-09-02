@@ -28,7 +28,11 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { HomeDeals } from "./HomeDeals";
 import { HomeProductLedger } from "./HomeProductLedger";
 
-export { HomeRoute as default, homeLoader as clientLoader, homeLoader as loader };
+export { HomeRoute as default, homeLoader as loader };
+export function clientLoader(args: Route.ClientLoaderArgs) {
+  return homeLoader(args);
+}
+clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

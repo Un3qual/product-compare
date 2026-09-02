@@ -20,7 +20,11 @@ import { Pagination } from "$ui/components/navigation/Pagination";
 import { MAX_COMPARE_PRODUCTS, buildComparePathFromSlugs } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
 
-export { BrowseRoute as default, browseLoader as clientLoader, browseLoader as loader };
+export { BrowseRoute as default, browseLoader as loader };
+export function clientLoader(args: Route.ClientLoaderArgs) {
+  return browseLoader(args);
+}
+clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

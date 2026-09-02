@@ -1,3 +1,5 @@
+// StyleX constants must register before route and component modules inject rules that use them.
+import "./ui/theme/tokens.stylex";
 import type { ReactNode } from "react";
 import { graphql, usePreloadedQuery, useRelayEnvironment } from "react-relay";
 import {
@@ -29,7 +31,6 @@ import { AppProviders } from "$ui/providers/AppProviders";
 import { RouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { RootPrimaryNavigation } from "$routes/RootDestinations";
 import { rootViewerFromRelayRecord, type RootViewer } from "$routes/root/viewer";
-import "./ui/theme/tokens.stylex";
 
 const rootRouteQuery = graphql`
   query RootRouteQuery {
@@ -61,6 +62,7 @@ export function loader(args: Route.LoaderArgs) {
 export function clientLoader(args: Route.ClientLoaderArgs) {
   return loadRoot(args);
 }
+clientLoader.hydrate = true as const;
 
 export function shouldRevalidate({
   currentUrl,

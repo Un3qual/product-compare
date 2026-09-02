@@ -28,9 +28,12 @@ import { buildAffiliateSetupPaginationData } from "./pagination";
 
 export {
   AffiliateSetupRoute as default,
-  affiliateSetupLoader as clientLoader,
   affiliateSetupLoader as loader,
 };
+export function clientLoader(args: Route.ClientLoaderArgs) {
+  return affiliateSetupLoader(args);
+}
+clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

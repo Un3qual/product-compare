@@ -25,9 +25,12 @@ import { getMerchantDetailViewData } from "./merchant-detail-view-data";
 
 export {
   MerchantDetailRoute as default,
-  merchantDetailLoader as clientLoader,
   merchantDetailLoader as loader,
 };
+export function clientLoader(args: Route.ClientLoaderArgs) {
+  return merchantDetailLoader(args);
+}
+clientLoader.hydrate = true as const;
 
 const merchantDetailRouteQuery = graphql`
   query MerchantDetailRouteQuery($slug: String!, $first: Int!, $after: String) {

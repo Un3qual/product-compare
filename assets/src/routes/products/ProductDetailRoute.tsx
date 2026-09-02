@@ -29,9 +29,12 @@ import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/
 
 export {
   ProductDetailRoute as default,
-  productDetailLoader as clientLoader,
   productDetailLoader as loader,
 };
+export function clientLoader(args: Route.ClientLoaderArgs) {
+  return productDetailLoader(args);
+}
+clientLoader.hydrate = true as const;
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { DetailTabs } from "$ui/components/layout/DetailTabs";

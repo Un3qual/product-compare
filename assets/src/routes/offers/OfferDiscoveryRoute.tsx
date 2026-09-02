@@ -23,9 +23,12 @@ import { buildCurrentRoutePathWithCompareSlugs } from "../compare/paths";
 
 export {
   OfferDiscoveryRoute as default,
-  offerDiscoveryLoader as clientLoader,
   offerDiscoveryLoader as loader,
 };
+export function clientLoader(args: Route.ClientLoaderArgs) {
+  return offerDiscoveryLoader(args);
+}
+clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

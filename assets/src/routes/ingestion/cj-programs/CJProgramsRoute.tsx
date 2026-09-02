@@ -30,7 +30,11 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { UnmatchedFeeds, unmatchedFeedsQuery } from "./feeds/UnmatchedFeeds";
 
-export { CJProgramsRoute as default, cjProgramsLoader as clientLoader, cjProgramsLoader as loader };
+export { CJProgramsRoute as default, cjProgramsLoader as loader };
+export function clientLoader(args: Route.ClientLoaderArgs) {
+  return cjProgramsLoader(args);
+}
+clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

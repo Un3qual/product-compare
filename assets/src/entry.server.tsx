@@ -1,7 +1,7 @@
+import "./ui/theme/tokens.stylex";
 import { renderToReadableStream } from "react-dom/server";
 import { RelayEnvironmentProvider } from "react-relay";
 import { ServerRouter, type EntryContext, type RouterContextProvider } from "react-router";
-import "./ui/theme/tokens.stylex";
 import { getRelayEnvironmentFromRouterContext } from "./relay/route-preload";
 
 export const streamTimeout = 10_000;

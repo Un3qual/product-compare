@@ -25,9 +25,12 @@ import { RevenueMetrics } from "./summary/RevenueMetrics";
 
 export {
   RevenueSummaryRoute as default,
-  revenueSummaryLoader as clientLoader,
   revenueSummaryLoader as loader,
 };
+export function clientLoader(args: Route.ClientLoaderArgs) {
+  return revenueSummaryLoader(args);
+}
+clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

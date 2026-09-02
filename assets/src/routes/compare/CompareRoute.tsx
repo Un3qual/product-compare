@@ -25,7 +25,11 @@ import { commitRouteMutation } from "$relay/mutations";
 import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 
-export { CompareRoute as default, compareLoader as clientLoader, compareLoader as loader };
+export { CompareRoute as default, compareLoader as loader };
+export function clientLoader(args: Route.ClientLoaderArgs) {
+  return compareLoader(args);
+}
+clientLoader.hydrate = true as const;
 
 export function meta() {
   return routeMetaDescriptors({

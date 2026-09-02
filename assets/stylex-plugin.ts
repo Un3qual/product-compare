@@ -3,7 +3,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import relayPlugin from "babel-plugin-relay";
 import stylexPlugin from "@stylexjs/babel-plugin";
 import babel from "@rolldown/plugin-babel";
-import react from "@vitejs/plugin-react";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -20,9 +19,8 @@ export const frontendAliases = {
   $ui: path.join(projectRoot, "src/ui"),
 };
 
-export function reactWithStyleX() {
+export function styleXTransform() {
   return [
-    ...react(),
     babel({
       plugins: [
         relayPlugin,

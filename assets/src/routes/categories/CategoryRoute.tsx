@@ -22,7 +22,11 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { productDetailPath } from "../products/product-detail-route-data";
 import { getCategoryViewData } from "./category-view-data";
 
-export { CategoryRoute as default, categoryLoader as clientLoader, categoryLoader as loader };
+export { CategoryRoute as default, categoryLoader as loader };
+export function clientLoader(args: Route.ClientLoaderArgs) {
+  return categoryLoader(args);
+}
+clientLoader.hydrate = true as const;
 
 const categoryRouteQuery = graphql`
   query CategoryRouteQuery($slug: String!, $first: Int!, $after: String) {
