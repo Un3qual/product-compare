@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 import { AuthRequiredDialog } from "../../../../src/routes/auth/continuity/AuthRequiredDialog";
 import {
   PENDING_INTENT_STORAGE_KEY,

@@ -12,6 +12,7 @@ import {
 
 const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
 const distDirectory = resolve(scriptDirectory, "../dist");
+const clientDirectory = resolve(distDirectory, "client");
 const serverDirectory = resolve(distDirectory, "server");
 const textExtensions = new Set([".css", ".html", ".js", ".mjs"]);
 const failures: string[] = [];
@@ -44,7 +45,11 @@ for (const entry of await readdir(distDirectory, {
   const source = await readFile(path, "utf8");
   const output = path.startsWith(`${serverDirectory}${sep}`)
     ? outputContracts.ssr
-    : outputContracts.client;
+    : path.startsWith(`${clientDirectory}${sep}`)
+      ? outputContracts.client
+      : undefined;
+
+  if (!output) continue;
 
   if (findGeneratedStylexClassNames(source, STYLEX_CLASS_NAME_PREFIX).size > 0) {
     failures.push(path.slice(distDirectory.length + 1));

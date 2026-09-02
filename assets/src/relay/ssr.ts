@@ -14,12 +14,8 @@ export function dehydrateRelayEnvironment(environment: Environment): RelayRecord
   return environment.getStore().getSource().toJSON();
 }
 
-export function renderRelayRecordsScript(records: RelayRecordMap) {
-  const payload = { records };
-
-  return `<script id="${RELAY_RECORDS_SCRIPT_ID}" type="application/json">${escapeJsonForHtml(
-    JSON.stringify(payload),
-  )}</script>`;
+export function serializeRelayRecords(records: RelayRecordMap) {
+  return escapeJsonForHtml(JSON.stringify({ records }));
 }
 
 export function readRelayRecordsFromDocument(documentRef: Document = document): RelayRecordMap {

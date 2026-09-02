@@ -1,3 +1,4 @@
+import { reactRouter } from "@react-router/dev/vite";
 import { defineConfig } from "vite";
 import stylexMangle from "stylex-mangle-classnames";
 import { frontendAliases, reactWithStyleX, STYLEX_CLASS_NAME_PREFIX } from "./stylex-plugin.ts";
@@ -7,9 +8,6 @@ const playwrightCacheDir = process.env.PLAYWRIGHT_PORT
   : undefined;
 
 export default defineConfig({
-  build: {
-    manifest: true,
-  },
   cacheDir: playwrightCacheDir,
   optimizeDeps: {
     include: [
@@ -27,7 +25,11 @@ export default defineConfig({
       "@base-ui/react/tabs",
     ],
   },
-  plugins: [...reactWithStyleX(), stylexMangle({ classNamePrefix: STYLEX_CLASS_NAME_PREFIX })],
+  plugins: [
+    reactRouter(),
+    ...reactWithStyleX(),
+    stylexMangle({ classNamePrefix: STYLEX_CLASS_NAME_PREFIX }),
+  ],
   resolve: {
     alias: frontendAliases,
   },

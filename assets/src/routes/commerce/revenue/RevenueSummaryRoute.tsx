@@ -1,10 +1,13 @@
 import { Suspense, useEffect, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Await, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { Await, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { Environment } from "relay-runtime";
 import type { AttributionLedgerRouteQuery } from "$generated/AttributionLedgerRouteQuery.graphql";
 import type { RevenueSummaryRouteQuery } from "$generated/RevenueSummaryRouteQuery.graphql";
+import type { Route } from "./+types/RevenueSummaryRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
@@ -19,6 +22,25 @@ import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { AttributionLedger, attributionLedgerRouteQuery } from "./attribution/AttributionLedger";
 import { RevenueControls } from "./summary/RevenueControls";
 import { RevenueMetrics } from "./summary/RevenueMetrics";
+
+export {
+  RevenueSummaryRoute as default,
+  revenueSummaryLoader as clientLoader,
+  revenueSummaryLoader as loader,
+};
+
+export function meta() {
+  return routeMetaDescriptors({
+    title: "Revenue preview | Product Compare",
+    description: "Preview attributed commerce revenue and commission summaries.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary error={error} resourceName="revenue report" title="Revenue" />
+  );
+}
 import {
   buildRevenueSummaryControls,
   buildRevenueDashboardMetrics,
@@ -92,7 +114,7 @@ export type RevenueSummaryLoaderData =
 export async function revenueSummaryLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<RevenueSummaryLoaderData> {
+}: Route.LoaderArgs): Promise<RevenueSummaryLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const filters = revenueSummaryFiltersFromUrl(new URL(request.url));
 

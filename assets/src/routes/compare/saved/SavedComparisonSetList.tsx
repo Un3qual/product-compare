@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { graphql, useFragment, useMutation } from "react-relay";
 import type { SavedComparisonSetListDeleteSavedComparisonSetMutation } from "$generated/SavedComparisonSetListDeleteSavedComparisonSetMutation.graphql";
 import type {

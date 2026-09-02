@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
-import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
+import { MemoryRouter, useLoaderData, useRevalidator } from "react-router";
 import { useFragment, useMutation, usePreloadedQuery, useQueryLoader } from "react-relay";
 import {
   useRoutePreloadedQuery,
@@ -41,8 +41,8 @@ const {
   useRoutePreloadedQueryMock: vi.fn(),
 }));
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,

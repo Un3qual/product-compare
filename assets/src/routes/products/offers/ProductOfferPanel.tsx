@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { graphql, useFragment } from "react-relay";
 import type { ProductOfferPanel_connection$key } from "$generated/ProductOfferPanel_connection.graphql";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";

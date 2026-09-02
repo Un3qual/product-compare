@@ -1,4 +1,4 @@
-import type { FormEventHandler } from "react";
+import { Form } from "react-router";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 import { findMutationError, type MutationError } from "./errors";
 
@@ -12,7 +12,6 @@ interface CredentialAuthFormProps {
   errors: MutationError[];
   footerLinks: CredentialAuthFooterLink[];
   isSubmitting: boolean;
-  onSubmit: FormEventHandler<HTMLFormElement>;
   credentialAutoComplete: "current-password" | "new-password";
   submitLabel: string;
   title: string;
@@ -23,7 +22,6 @@ export function CredentialAuthForm({
   errors,
   footerLinks,
   isSubmitting,
-  onSubmit,
   credentialAutoComplete,
   submitLabel,
   title,
@@ -37,7 +35,7 @@ export function CredentialAuthForm({
       successMessage={null}
       title={title}
     >
-      <form onSubmit={onSubmit}>
+      <Form method="post">
         <AuthField
           autoComplete="email"
           error={findMutationError(errors, "email")}
@@ -53,7 +51,7 @@ export function CredentialAuthForm({
           type="password"
         />
         <AuthSubmitButton disabled={isSubmitting}>{submitLabel}</AuthSubmitButton>
-      </form>
+      </Form>
     </AuthFormShell>
   );
 }

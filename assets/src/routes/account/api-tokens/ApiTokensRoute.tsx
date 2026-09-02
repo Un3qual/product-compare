@@ -1,8 +1,11 @@
 import { type FormEvent, useMemo, useRef, useState } from "react";
-import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { Link, useLoaderData } from "react-router";
 import { graphql, useMutation, usePreloadedQuery } from "react-relay";
 import type { GraphQLResponse } from "relay-runtime";
 import type { ApiTokensRouteQuery } from "$generated/ApiTokensRouteQuery.graphql";
+import type { Route } from "./+types/ApiTokensRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import type { ApiTokenOperationsCreateApiTokenMutation } from "$generated/ApiTokenOperationsCreateApiTokenMutation.graphql";
 import type { ApiTokenOperationsRevokeApiTokenMutation } from "$generated/ApiTokenOperationsRevokeApiTokenMutation.graphql";
 import type { ApiTokenOperationsRotateApiTokenMutation } from "$generated/ApiTokenOperationsRotateApiTokenMutation.graphql";
@@ -26,6 +29,21 @@ import {
   removeSetValue,
   upsertMapValue,
 } from "$frontend/state/immutable-collections";
+
+export { ApiTokensRoute as default, apiTokensLoader as clientLoader, apiTokensLoader as loader };
+
+export function meta() {
+  return routeMetaDescriptors({
+    title: "API tokens | Product Compare",
+    description: "Create and manage API tokens for connected Product Compare tools.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary error={error} resourceName="API tokens page" title="API tokens" />
+  );
+}
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import { ApiTokenControls, OneTimeApiToken } from "./create/ApiTokenControls";
 import { ApiTokenList, RelayApiTokenList } from "./rows/ApiTokenList";
@@ -104,7 +122,7 @@ const apiTokensRouteQuery = graphql`
 export async function apiTokensLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<ApiTokensRouteLoaderData> {
+}: Route.LoaderArgs): Promise<ApiTokensRouteLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const searchParams = new URL(request.url).searchParams;
   const tokenStatus = parseApiTokenStatus(searchParams.get("status"));

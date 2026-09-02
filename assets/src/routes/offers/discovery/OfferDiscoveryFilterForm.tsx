@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { Button } from "$ui/primitives/Button";
 import { Checkbox } from "$ui/primitives/Checkbox";

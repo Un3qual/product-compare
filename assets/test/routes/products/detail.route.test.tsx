@@ -1,6 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import type { LoaderFunctionArgs } from "react-router-dom";
-import { MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
+import { MemoryRouter, useLoaderData, useLocation } from "react-router";
 import {
   useFragment,
   useLazyLoadQuery,
@@ -9,6 +8,7 @@ import {
   usePreloadedQuery,
 } from "react-relay";
 import type { ProductDetailRouteQuery } from "$generated/ProductDetailRouteQuery.graphql";
+import type { Route } from "../../../src/routes/products/+types/ProductDetailRoute";
 import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../src/relay/environment";
 import {
   createRelayRouterContext,
@@ -88,8 +88,8 @@ vi.mock("react-relay", async () => {
   };
 });
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,
@@ -220,7 +220,7 @@ const buildProductDetailLoaderArgs = ({
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
   slug?: string;
-} = {}): LoaderFunctionArgs => ({
+} = {}): Route.LoaderArgs => ({
   request,
   params: { slug },
   context: createRelayRouterContext(environment),

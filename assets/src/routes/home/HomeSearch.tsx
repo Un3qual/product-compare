@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Button } from "$ui/primitives/Button";
 import { Label } from "$ui/primitives/Label";
 import { Input } from "$ui/primitives/Input";

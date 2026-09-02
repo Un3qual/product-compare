@@ -5,7 +5,7 @@ import {
   type GraphQLTaggedNode,
   type PreloadedQuery,
 } from "react-relay";
-import { createContext, RouterContextProvider } from "react-router-dom";
+import { createContext, RouterContextProvider } from "react-router";
 import {
   createOperationDescriptor,
   getRequest,
@@ -147,12 +147,19 @@ export function useRoutePreloadedQuery<TQuery extends OperationType>(
 
 export function createRelayRouterContext(environment: Environment) {
   const context = new RouterContextProvider();
-  context.set(relayEnvironmentRouterContext, environment);
+  setRelayEnvironmentOnRouterContext(context, environment);
 
   return context;
 }
 
-export function getRelayEnvironmentFromRouterContext(context: unknown) {
+export function setRelayEnvironmentOnRouterContext(
+  context: Readonly<RouterContextProvider>,
+  environment: Environment,
+) {
+  context.set(relayEnvironmentRouterContext, environment);
+}
+
+export function getRelayEnvironmentFromRouterContext(context: Readonly<RouterContextProvider>) {
   if (!(context instanceof RouterContextProvider)) {
     throw new Error("Relay environment is missing from the route loader context");
   }

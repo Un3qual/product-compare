@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { MemoryRouter, useLoaderData } from "react-router";
 import { useFragment, usePaginationFragment, usePreloadedQuery } from "react-relay";
 import type { AttributionLedgerRouteQuery$variables } from "../../../../src/__generated__/AttributionLedgerRouteQuery.graphql";
 import type { RevenueSummaryRouteQuery$variables } from "../../../../src/__generated__/RevenueSummaryRouteQuery.graphql";
@@ -35,8 +35,8 @@ const {
   useRoutePreloadedQueryMock: vi.fn(),
 }));
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,

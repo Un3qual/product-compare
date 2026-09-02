@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { create, props } from "@stylexjs/stylex";
 import { tokens } from "../../theme/tokens.stylex";
 

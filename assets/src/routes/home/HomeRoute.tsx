@@ -5,10 +5,11 @@ import {
   useLoaderData,
   useOutletContext,
   useRevalidator,
-  type LoaderFunctionArgs,
-} from "react-router-dom";
+} from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { HomeRouteQuery } from "$generated/HomeRouteQuery.graphql";
+import type { Route } from "./+types/HomeRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   getRelayEnvironmentFromRouterContext,
@@ -26,6 +27,15 @@ import { Button } from "$ui/primitives/Button";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { HomeDeals } from "./HomeDeals";
 import { HomeProductLedger } from "./HomeProductLedger";
+
+export { HomeRoute as default, homeLoader as clientLoader, homeLoader as loader };
+
+export function meta() {
+  return routeMetaDescriptors({
+    title: "Product Compare",
+    description: "Choose products with clearer specifications and current offers.",
+  });
+}
 import { HomeSearch } from "./HomeSearch";
 import {
   homeCatalogSearchPath,
@@ -71,7 +81,7 @@ export type HomeLoaderData = {
 export async function homeLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<HomeLoaderData> {
+}: Route.LoaderArgs): Promise<HomeLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const referenceTime = new Date().toISOString();
   const selectedSlugs = selectedHomeCompareSlugs(new URL(request.url).search);

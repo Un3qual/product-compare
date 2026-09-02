@@ -1,7 +1,8 @@
 import { create, props } from "@stylexjs/stylex";
-import { data, Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { data, Link, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { CategoryRouteQuery as CategoryRouteQueryType } from "$generated/CategoryRouteQuery.graphql";
+import type { Route } from "./+types/CategoryRoute";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
@@ -9,13 +10,19 @@ import {
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
 import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
-import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
-import { routeMetadataFromSeo } from "$frontend/head";
+import {
+  routeMetadataFromSeo,
+  routeMetaDescriptors,
+  type RouteDocumentMetadata,
+} from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { productDetailPath } from "../products/product-detail-route-data";
 import { getCategoryViewData } from "./category-view-data";
+
+export { CategoryRoute as default, categoryLoader as clientLoader, categoryLoader as loader };
 
 const categoryRouteQuery = graphql`
   query CategoryRouteQuery($slug: String!, $first: Int!, $after: String) {
@@ -69,6 +76,22 @@ export type CategoryLoaderData =
       query: RelayRouteQueryDescriptor<CategoryRouteQueryType["variables"]>;
     }
   | { status: "not_found" };
+
+export function meta({ loaderData }: Route.MetaArgs) {
+  return routeMetaDescriptors(
+    loaderData?.status === "ready"
+      ? loaderData.metadata
+      : {
+          title: "Product category | Product Compare",
+          description:
+            "Compare trusted product specifications and current offer details by category.",
+        },
+  );
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return <SharedRouteErrorBoundary error={error} resourceName="category" title="Product category" />;
+}
 
 const styles = create({
   facts: { color: tokens.textSecondary, margin: 0 },
@@ -149,7 +172,7 @@ function ReadyCategory({
   );
 }
 
-export async function categoryLoader({ context, params, request }: LoaderFunctionArgs) {
+export async function categoryLoader({ context, params, request }: Route.LoaderArgs) {
   const slug = params.slug?.trim() ?? "";
   if (!slug) return categoryNotFound();
 

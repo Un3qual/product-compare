@@ -11,24 +11,30 @@ test("client bundle gate reports and enforces referenced initial WOFF2 transfer"
 
   try {
     await mkdir(join(fixtureRoot, "scripts"), { recursive: true });
-    await mkdir(join(fixtureRoot, "dist", ".vite"), { recursive: true });
-    await mkdir(join(fixtureRoot, "dist", "assets"), { recursive: true });
+    await mkdir(join(fixtureRoot, "dist", "client", "assets"), { recursive: true });
     await writeFile(
       join(fixtureRoot, "scripts", "check-client-bundle.ts"),
       await readFile(join(process.cwd(), "scripts", "check-client-bundle.ts")),
     );
     await writeFile(
-      join(fixtureRoot, "dist", ".vite", "manifest.json"),
-      JSON.stringify(bundleFixtureManifest()),
+      join(fixtureRoot, "dist", "client", "assets", "manifest-fixture.js"),
+      `window.__reactRouterManifest=${JSON.stringify(bundleFixtureManifest())};`,
     );
-    await writeFile(join(fixtureRoot, "dist", "assets", "entry.js"), "console.log('fixture');");
     await writeFile(
-      join(fixtureRoot, "dist", "assets", "entry.css"),
+      join(fixtureRoot, "dist", "client", "assets", "entry.js"),
+      "console.log('fixture');",
+    );
+    await writeFile(join(fixtureRoot, "dist", "client", "assets", "root.js"), "export {};");
+    await writeFile(
+      join(fixtureRoot, "dist", "client", "assets", "entry.css"),
       "@font-face{src:url('./ui-latin.woff2') format('woff2')} body{color:#111}",
     );
-    await writeFile(join(fixtureRoot, "dist", "assets", "ui-latin.woff2"), new Uint8Array(64));
+    await writeFile(
+      join(fixtureRoot, "dist", "client", "assets", "ui-latin.woff2"),
+      new Uint8Array(64),
+    );
     for (const routeFile of ["affiliate.js", "cj.js", "revenue.js", "tokens.js"]) {
-      await writeFile(join(fixtureRoot, "dist", "assets", routeFile), "export {};");
+      await writeFile(join(fixtureRoot, "dist", "client", "assets", routeFile), "export {};");
     }
 
     const { stdout } = await execFileAsync(process.execPath, [
@@ -38,7 +44,10 @@ test("client bundle gate reports and enforces referenced initial WOFF2 transfer"
     expect(stdout).toMatch(/64 raw bytes across 1 initial WOFF2 font file/i);
     expect(stdout).toMatch(/font budget/i);
 
-    await writeFile(join(fixtureRoot, "dist", "assets", "ui-latin.woff2"), new Uint8Array(44_801));
+    await writeFile(
+      join(fixtureRoot, "dist", "client", "assets", "ui-latin.woff2"),
+      new Uint8Array(44_801),
+    );
 
     await expect(
       execFileAsync(process.execPath, [join(fixtureRoot, "scripts", "check-client-bundle.ts")]),
@@ -54,32 +63,29 @@ test("client bundle gate reports and enforces referenced initial WOFF2 transfer"
 
 function bundleFixtureManifest() {
   return {
-    "src/entry.client.tsx": {
+    entry: {
       css: ["assets/entry.css"],
-      dynamicImports: ["affiliate", "cj", "revenue", "tokens"],
-      file: "assets/entry.js",
-      isEntry: true,
-      src: "src/entry.client.tsx",
+      imports: [],
+      module: "/assets/entry.js",
     },
-    affiliate: {
-      file: "assets/affiliate.js",
-      isDynamicEntry: true,
-      src: "src/routes/affiliate/setup/AffiliateSetupRoute.tsx",
+    routes: {
+      root: {
+        css: [],
+        imports: [],
+        module: "/assets/root.js",
+      },
+      "routes/affiliate/setup/AffiliateSetupRoute": route("affiliate"),
+      "routes/ingestion/cj-programs/CJProgramsRoute": route("cj"),
+      "routes/commerce/revenue/RevenueSummaryRoute": route("revenue"),
+      "routes/account/api-tokens/ApiTokensRoute": route("tokens"),
     },
-    cj: {
-      file: "assets/cj.js",
-      isDynamicEntry: true,
-      src: "src/routes/ingestion/cj-programs/CJProgramsRoute.tsx",
-    },
-    revenue: {
-      file: "assets/revenue.js",
-      isDynamicEntry: true,
-      src: "src/routes/commerce/revenue/RevenueSummaryRoute.tsx",
-    },
-    tokens: {
-      file: "assets/tokens.js",
-      isDynamicEntry: true,
-      src: "src/routes/account/api-tokens/ApiTokensRoute.tsx",
-    },
+  };
+}
+
+function route(name: string) {
+  return {
+    css: [],
+    imports: [],
+    module: `/assets/${name}.js`,
   };
 }

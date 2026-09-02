@@ -9,6 +9,7 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "baseUrl": ".",
+    "rootDirs": [".", "./.react-router/types"],
     "paths": {
       "$generated/*": ["src/__generated__/*"],
       "$frontend/*": ["src/frontend/*"],
@@ -26,6 +27,8 @@
     "test",
     "tests/e2e",
     "scripts",
+    ".react-router/types/**/*",
+    "react-router.config.ts",
     "vite.config.ts",
     "vitest.config.ts",
     "playwright.config.ts"

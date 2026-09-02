@@ -1,5 +1,5 @@
 import { create, props } from "@stylexjs/stylex";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "$ui/primitives/Tabs";
 import { tokens } from "$ui/theme/tokens.stylex";
 import type { CompareProductSummary, CompareSpecMode } from "../compare-route-data";

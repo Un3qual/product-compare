@@ -1,7 +1,10 @@
 import { Suspense, useMemo, useState } from "react";
-import { useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { AffiliateSetupRouteQuery } from "$generated/AffiliateSetupRouteQuery.graphql";
+import type { Route } from "./+types/AffiliateSetupRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
@@ -22,6 +25,25 @@ import { NetworkStep } from "./network/NetworkStep";
 import { ProgramStep } from "./program/ProgramStep";
 import { buildMerchantChoices, getAffiliateMerchantContext } from "./merchant-context";
 import { buildAffiliateSetupPaginationData } from "./pagination";
+
+export {
+  AffiliateSetupRoute as default,
+  affiliateSetupLoader as clientLoader,
+  affiliateSetupLoader as loader,
+};
+
+export function meta() {
+  return routeMetaDescriptors({
+    title: "Affiliate setup | Product Compare",
+    description: "Configure merchant affiliate programs used for outbound offer links.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary error={error} resourceName="affiliate setup" title="Affiliate setup" />
+  );
+}
 
 const affiliateSetupRouteQuery = graphql`
   query AffiliateSetupRouteQuery($first: Int!, $after: String) {
@@ -59,7 +81,7 @@ export type AffiliateSetupLoaderData =
 export async function affiliateSetupLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<AffiliateSetupLoaderData> {
+}: Route.LoaderArgs): Promise<AffiliateSetupLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const merchantPagination = merchantPaginationFromUrl(new URL(request.url));
 

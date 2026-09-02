@@ -1,9 +1,11 @@
-import type { FormEvent } from "react";
-import { useState } from "react";
-import { graphql, useMutation } from "react-relay";
+import { graphql } from "react-relay";
+import { Form, useActionData, useNavigation } from "react-router";
 import type { ForgotPasswordRouteMutation } from "$generated/ForgotPasswordRouteMutation.graphql";
+import type { Route } from "./+types/ForgotPasswordRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
 import { routeFormValue } from "$frontend/forms/route-form";
-import { commitRouteMutation } from "$relay/mutations";
+import { getRelayEnvironmentFromRouterContext } from "$relay/route-preload";
+import { commitEnvironmentMutationPromise } from "$relay/mutations";
 import {
   findMutationError,
   isSuccessfulActionResult,
@@ -28,43 +30,39 @@ const forgotPasswordMutation = graphql`
 
 const successMessage = "If an account exists for that email, reset instructions are on the way.";
 
-export function ForgotPasswordRoute() {
-  const [errors, setErrors] = useState<MutationError[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
-  const [commitForgotPassword, isSubmitting] =
-    useMutation<ForgotPasswordRouteMutation>(forgotPasswordMutation);
+export function meta() {
+  return routeMetaDescriptors({
+    title: "Forgot password | Product Compare",
+    description: "Request a secure Product Compare password reset link.",
+  });
+}
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrors([]);
-    setMessage(null);
+export async function clientAction({ context, request }: Route.ClientActionArgs) {
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const formData = await request.formData();
 
-    const formData = new FormData(event.currentTarget);
-    const email = routeFormValue(formData, "email");
+  try {
+    const { response, graphQLErrors } =
+      await commitEnvironmentMutationPromise<ForgotPasswordRouteMutation>(
+        environment,
+        forgotPasswordMutation,
+        { variables: { email: routeFormValue(formData, "email") } },
+      );
+    const result = resolveActionMutationResult(response.forgotPassword, graphQLErrors);
 
-    commitRouteMutation(
-      commitForgotPassword,
-      {
-        variables: { email },
-        onCompleted(response, graphQLErrors) {
-          const result = resolveActionMutationResult(response.forgotPassword, graphQLErrors);
-
-          if (isSuccessfulActionResult(result)) {
-            setMessage(successMessage);
-            return;
-          }
-
-          setErrors(result.errors);
-        },
-        onError(error) {
-          setErrors(transportMutationErrors(error));
-        },
-      },
-      (error) => {
-        setErrors(transportMutationErrors(error));
-      },
-    );
+    return isSuccessfulActionResult(result)
+      ? { errors: [], message: successMessage }
+      : { errors: result.errors, message: null };
+  } catch (error) {
+    return { errors: transportMutationErrors(error), message: null };
   }
+}
+
+export function ForgotPasswordRoute() {
+  const actionData = useActionData<typeof clientAction>();
+  const isSubmitting = useNavigation().state === "submitting";
+  const errors: MutationError[] = isSubmitting ? [] : (actionData?.errors ?? []);
+  const message = isSubmitting ? null : (actionData?.message ?? null);
 
   return (
     <AuthFormShell
@@ -78,7 +76,7 @@ export function ForgotPasswordRoute() {
       successMessage={message}
       title="Reset your password"
     >
-      <form onSubmit={handleSubmit}>
+      <Form method="post">
         <AuthField
           autoComplete="email"
           error={findMutationError(errors, "email")}
@@ -87,7 +85,9 @@ export function ForgotPasswordRoute() {
           type="email"
         />
         <AuthSubmitButton disabled={isSubmitting}>Send reset link</AuthSubmitButton>
-      </form>
+      </Form>
     </AuthFormShell>
   );
 }
+
+export default ForgotPasswordRoute;

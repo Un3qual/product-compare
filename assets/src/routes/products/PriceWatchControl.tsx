@@ -1,6 +1,6 @@
 import { type ChangeEvent, type FormEvent, useEffect, useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLocation, useOutletContext } from "react-router-dom";
+import { Link, useLocation, useOutletContext } from "react-router";
 import { useMutation } from "react-relay";
 import type {
   AlertOperationsCreatePriceWatchMutation,

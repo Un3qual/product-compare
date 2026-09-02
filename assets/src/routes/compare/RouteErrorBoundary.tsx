@@ -1,8 +1,9 @@
-import { isRouteErrorResponse, useRouteError } from "react-router-dom";
+import { isRouteErrorResponse } from "react-router";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 
 type RouteErrorBoundaryProps = {
+  error?: unknown;
   resourceName?: string;
   title?: string;
 };
@@ -13,10 +14,10 @@ type RouteErrorContext =
   | { readonly kind: "unknown" };
 
 export function RouteErrorBoundary({
+  error,
   resourceName = "comparison",
   title = "Compare products",
-}: RouteErrorBoundaryProps = {}) {
-  const error = useRouteError();
+}: RouteErrorBoundaryProps) {
   const { errorMessage, retryGuidance } = routeErrorViewData(normalizeRouteError(error), resourceName);
 
   return (

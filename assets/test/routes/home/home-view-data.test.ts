@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { createElement } from "react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 import { HomeProductLedger } from "../../../src/routes/home/HomeProductLedger";
 
 vi.mock("react-relay", async () => {

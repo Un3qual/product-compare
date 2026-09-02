@@ -1,7 +1,8 @@
 import { create, props } from "@stylexjs/stylex";
-import { data, Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { data, Link, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { MerchantDetailRouteQuery as MerchantDetailRouteQueryType } from "$generated/MerchantDetailRouteQuery.graphql";
+import type { Route } from "./+types/MerchantDetailRoute";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
@@ -9,14 +10,24 @@ import {
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
 import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
-import { routeMetadataFromSeo } from "$frontend/head";
-import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
+import {
+  routeMetadataFromSeo,
+  routeMetaDescriptors,
+  type RouteDocumentMetadata,
+} from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { SummaryStrip } from "$ui/components/data/SummaryStrip";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { externalWebsiteHref } from "$frontend/navigation/external-links";
 import { formatProductDateLabel } from "$frontend/formatting";
 import { getMerchantDetailViewData } from "./merchant-detail-view-data";
+
+export {
+  MerchantDetailRoute as default,
+  merchantDetailLoader as clientLoader,
+  merchantDetailLoader as loader,
+};
 
 const merchantDetailRouteQuery = graphql`
   query MerchantDetailRouteQuery($slug: String!, $first: Int!, $after: String) {
@@ -79,6 +90,21 @@ export type MerchantDetailLoaderData =
       query: RelayRouteQueryDescriptor<MerchantDetailRouteQueryType["variables"]>;
     }
   | { status: "not_found" };
+
+export function meta({ loaderData }: Route.MetaArgs) {
+  return routeMetaDescriptors(
+    loaderData?.status === "ready"
+      ? loaderData.metadata
+      : {
+          title: "Merchant details | Product Compare",
+          description: "Review a merchant's current product and offer details.",
+        },
+  );
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return <SharedRouteErrorBoundary error={error} resourceName="merchant" title="Merchant details" />;
+}
 
 const styles = create({
   list: { display: "grid", gap: "1rem", listStyle: "none", margin: 0, padding: 0 },
@@ -172,7 +198,7 @@ function ReadyMerchantDetail({
   );
 }
 
-export async function merchantDetailLoader({ context, params, request }: LoaderFunctionArgs) {
+export async function merchantDetailLoader({ context, params, request }: Route.LoaderArgs) {
   const slug = params.slug?.trim() ?? "";
   if (!slug) return merchantNotFound();
   const after = new URL(request.url).searchParams.get("after");

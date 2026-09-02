@@ -1,8 +1,11 @@
 import { Suspense } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { Link, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { OfferDiscoveryRouteQuery } from "$generated/OfferDiscoveryRouteQuery.graphql";
+import type { Route } from "./+types/OfferDiscoveryRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   getRelayEnvironmentFromRouterContext,
@@ -17,6 +20,25 @@ import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
 import { buildCurrentRoutePathWithCompareSlugs } from "../compare/paths";
+
+export {
+  OfferDiscoveryRoute as default,
+  offerDiscoveryLoader as clientLoader,
+  offerDiscoveryLoader as loader,
+};
+
+export function meta() {
+  return routeMetaDescriptors({
+    title: "Offers | Product Compare",
+    description: "Discover current product offers, coupons, and merchant availability.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary error={error} resourceName="offer discovery" title="Offers" />
+  );
+}
 import {
   MobileOfferDiscoveryFilters,
   OfferDiscoveryFilterForm,
@@ -182,7 +204,7 @@ function OfferDiscoveryLoadingFallback({ filters }: { filters: OfferDiscoveryFil
 export async function offerDiscoveryLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<OfferDiscoveryLoaderData> {
+}: Route.LoaderArgs): Promise<OfferDiscoveryLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const filters = offerDiscoveryFiltersFromUrl(new URL(request.url));
 

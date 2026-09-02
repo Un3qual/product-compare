@@ -1,10 +1,11 @@
-import type { FormEvent } from "react";
-import { useState } from "react";
-import { graphql, useMutation, useRelayEnvironment } from "react-relay";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { graphql } from "react-relay";
+import { redirect, useActionData, useNavigation, useSearchParams } from "react-router";
 import type { LoginRouteMutation } from "$generated/LoginRouteMutation.graphql";
+import type { Route } from "./+types/LoginRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
 import { routeFormValue } from "$frontend/forms/route-form";
-import { commitRouteMutation } from "$relay/mutations";
+import { getRelayEnvironmentFromRouterContext } from "$relay/route-preload";
+import { commitEnvironmentMutationPromise } from "$relay/mutations";
 import {
   type MutationError,
   resolveSessionMutationResult,
@@ -31,46 +32,42 @@ const loginMutation = graphql`
   }
 `;
 
-export function LoginRoute() {
-  const relayEnvironment = useRelayEnvironment();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const returnTo = safeRelativeReturnPath(searchParams.get("returnTo"));
-  const [errors, setErrors] = useState<MutationError[]>([]);
-  const [commitLogin, isSubmitting] = useMutation<LoginRouteMutation>(loginMutation);
+export function meta() {
+  return routeMetaDescriptors({
+    title: "Sign in | Product Compare",
+    description: "Sign in to manage saved comparisons and account tools.",
+  });
+}
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrors([]);
+export async function clientAction({ context, request }: Route.ClientActionArgs) {
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const formData = await request.formData();
 
-    const formData = new FormData(event.currentTarget);
-    const email = routeFormValue(formData, "email");
-    const password = routeFormValue(formData, "password");
-
-    commitRouteMutation(
-      commitLogin,
-      {
-        variables: { email, password },
-        onCompleted(response, graphQLErrors) {
-          const result = resolveSessionMutationResult(response.login, graphQLErrors);
-
-          if (result.viewer) {
-            setRootViewer(relayEnvironment, result.viewer);
-            navigate(returnTo ?? "/");
-            return;
-          }
-
-          setErrors(result.errors);
+  try {
+    const { response, graphQLErrors } =
+      await commitEnvironmentMutationPromise<LoginRouteMutation>(environment, loginMutation, {
+        variables: {
+          email: routeFormValue(formData, "email"),
+          password: routeFormValue(formData, "password"),
         },
-        onError(error) {
-          setErrors(transportMutationErrors(error));
-        },
-      },
-      (error) => {
-        setErrors(transportMutationErrors(error));
-      },
-    );
+      });
+    const result = resolveSessionMutationResult(response.login, graphQLErrors);
+
+    if (!result.viewer) return { errors: result.errors };
+
+    setRootViewer(environment, result.viewer);
+    return redirect(safeRelativeReturnPath(new URL(request.url).searchParams.get("returnTo")) ?? "/");
+  } catch (error) {
+    return { errors: transportMutationErrors(error) };
   }
+}
+
+export function LoginRoute() {
+  const actionData = useActionData<typeof clientAction>();
+  const navigation = useNavigation();
+  const [searchParams] = useSearchParams();
+  const isSubmitting = navigation.state === "submitting";
+  const errors: MutationError[] = isSubmitting ? [] : (actionData?.errors ?? []);
 
   return (
     <CredentialAuthForm
@@ -82,9 +79,10 @@ export function LoginRoute() {
         { label: "Forgot password?", to: "/auth/forgot-password" },
       ]}
       isSubmitting={isSubmitting}
-      onSubmit={handleSubmit}
       submitLabel="Sign in"
       title="Sign in"
     />
   );
 }
+
+export default LoginRoute;

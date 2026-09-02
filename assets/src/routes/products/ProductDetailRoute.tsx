@@ -6,10 +6,10 @@ import {
   useLoaderData,
   useLocation,
   useNavigate,
-  type LoaderFunctionArgs,
-} from "react-router-dom";
+} from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { ProductDetailRouteQuery } from "$generated/ProductDetailRouteQuery.graphql";
+import type { Route } from "./+types/ProductDetailRoute";
 import { hasGraphQLErrors, RouteLoaderGraphQLError } from "$relay/environment";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
@@ -20,8 +20,18 @@ import {
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
 import { recoverRouteLoaderError } from "$relay/loader-errors";
-import { routeMetadataFromSeo } from "$frontend/head";
-import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
+import {
+  routeMetadataFromSeo,
+  routeMetaDescriptors,
+  type RouteDocumentMetadata,
+} from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
+
+export {
+  ProductDetailRoute as default,
+  productDetailLoader as clientLoader,
+  productDetailLoader as loader,
+};
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { DetailTabs } from "$ui/components/layout/DetailTabs";
@@ -131,6 +141,21 @@ export type ProductDetailLoaderData =
       productQuery: RelayRouteQueryDescriptor<ProductDetailRouteQuery["variables"]>;
     }
   | { status: "not_found" | "error" };
+
+export function meta({ loaderData }: Route.MetaArgs) {
+  return routeMetaDescriptors(
+    loaderData?.status === "ready"
+      ? loaderData.metadata
+      : {
+          title: "Product details | Product Compare",
+          description: "Review product specifications, current offers, and price history.",
+        },
+  );
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return <SharedRouteErrorBoundary error={error} resourceName="product" title="Product details" />;
+}
 
 export type ProductDetailLoaderResult =
   | ProductDetailLoaderData
@@ -326,7 +351,7 @@ export async function productDetailLoader({
   context,
   params,
   request,
-}: LoaderFunctionArgs): Promise<ProductDetailLoaderResult> {
+}: Route.LoaderArgs): Promise<ProductDetailLoaderResult> {
   const slug = params.slug?.trim() ?? "";
   const offersAfter = new URL(request.url).searchParams.get("offersAfter");
 

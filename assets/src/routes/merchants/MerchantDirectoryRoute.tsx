@@ -1,7 +1,10 @@
 import { Suspense } from "react";
-import { useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { MerchantDirectoryRouteQuery } from "$generated/MerchantDirectoryRouteQuery.graphql";
+import type { Route } from "./+types/MerchantDirectoryRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   getRelayEnvironmentFromRouterContext,
@@ -15,6 +18,25 @@ import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { MerchantDirectoryControls, MerchantDirectoryView } from "./MerchantDirectoryView";
+
+export {
+  MerchantDirectoryRoute as default,
+  merchantDirectoryLoader as clientLoader,
+  merchantDirectoryLoader as loader,
+};
+
+export function meta() {
+  return routeMetaDescriptors({
+    title: "Merchants | Product Compare",
+    description: "Browse merchants represented in current Product Compare offers.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary error={error} resourceName="merchant directory" title="Merchants" />
+  );
+}
 import {
   buildMerchantDirectoryPaginationData,
   merchantPaginationFromUrl,
@@ -132,7 +154,7 @@ function MerchantDirectoryUnavailableFallback() {
 export async function merchantDirectoryLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<MerchantDirectoryLoaderData> {
+}: Route.LoaderArgs): Promise<MerchantDirectoryLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const pagination = merchantPaginationFromUrl(new URL(request.url));
 

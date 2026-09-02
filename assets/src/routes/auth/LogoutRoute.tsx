@@ -1,9 +1,10 @@
-import type { FormEvent } from "react";
-import { useState } from "react";
-import { graphql, useMutation, useRelayEnvironment } from "react-relay";
-import { useNavigate } from "react-router-dom";
+import { graphql } from "react-relay";
+import { Form, redirect, useActionData, useNavigation } from "react-router";
 import type { LogoutRouteMutation } from "$generated/LogoutRouteMutation.graphql";
-import { commitRouteMutation } from "$relay/mutations";
+import type { Route } from "./+types/LogoutRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
+import { getRelayEnvironmentFromRouterContext } from "$relay/route-preload";
+import { commitEnvironmentMutationPromise } from "$relay/mutations";
 import {
   isSuccessfulActionResult,
   type MutationError,
@@ -26,40 +27,36 @@ const logoutMutation = graphql`
   }
 `;
 
-export function LogoutRoute() {
-  const relayEnvironment = useRelayEnvironment();
-  const navigate = useNavigate();
-  const [errors, setErrors] = useState<MutationError[]>([]);
-  const [commitLogout, isSubmitting] = useMutation<LogoutRouteMutation>(logoutMutation);
+export function meta() {
+  return routeMetaDescriptors({
+    title: "Sign out | Product Compare",
+    description: "Sign out of your Product Compare account.",
+  });
+}
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrors([]);
+export async function clientAction({ context }: Route.ClientActionArgs) {
+  const environment = getRelayEnvironmentFromRouterContext(context);
 
-    commitRouteMutation(
-      commitLogout,
-      {
+  try {
+    const { response, graphQLErrors } =
+      await commitEnvironmentMutationPromise<LogoutRouteMutation>(environment, logoutMutation, {
         variables: {},
-        onCompleted(response, graphQLErrors) {
-          const result = resolveActionMutationResult(response.logout, graphQLErrors);
+      });
+    const result = resolveActionMutationResult(response.logout, graphQLErrors);
 
-          if (isSuccessfulActionResult(result)) {
-            clearRootViewer(relayEnvironment);
-            navigate("/auth/login");
-            return;
-          }
+    if (!isSuccessfulActionResult(result)) return { errors: result.errors };
 
-          setErrors(result.errors);
-        },
-        onError(error) {
-          setErrors(transportMutationErrors(error));
-        },
-      },
-      (error) => {
-        setErrors(transportMutationErrors(error));
-      },
-    );
+    clearRootViewer(environment);
+    return redirect("/auth/login");
+  } catch (error) {
+    return { errors: transportMutationErrors(error) };
   }
+}
+
+export function LogoutRoute() {
+  const actionData = useActionData<typeof clientAction>();
+  const isSubmitting = useNavigation().state === "submitting";
+  const errors: MutationError[] = isSubmitting ? [] : (actionData?.errors ?? []);
 
   return (
     <AuthFormShell
@@ -72,9 +69,11 @@ export function LogoutRoute() {
       successMessage={null}
       title="Sign out"
     >
-      <form onSubmit={handleSubmit}>
+      <Form method="post">
         <AuthSubmitButton disabled={isSubmitting}>Sign out</AuthSubmitButton>
-      </form>
+      </Form>
     </AuthFormShell>
   );
 }
+
+export default LogoutRoute;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData, useRevalidator, type LoaderFunctionArgs } from "react-router-dom";
+import { Link, useLoaderData, useRevalidator } from "react-router";
 import { graphql, useFragment, useMutation, usePreloadedQuery } from "react-relay";
 import type { AlertOperationsDeletePriceWatchMutation } from "$generated/AlertOperationsDeletePriceWatchMutation.graphql";
 import type { AlertOperationsMarkAlertReadMutation } from "$generated/AlertOperationsMarkAlertReadMutation.graphql";
@@ -14,6 +14,9 @@ import type {
   AlertsRoute_watch$key,
 } from "$generated/AlertsRoute_watch.graphql";
 import type { AlertsRouteQuery } from "$generated/AlertsRouteQuery.graphql";
+import type { Route } from "./+types/AlertsRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { graphQLResponseHasErrorCode, RouteLoaderGraphQLError } from "$relay/environment";
 import {
   fetchRouteQuery,
@@ -26,6 +29,22 @@ import { PageShell } from "$ui/components/layout/PageShell";
 import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
 import { Button } from "$ui/primitives/Button";
 import { productDetailPath } from "../../products/product-detail-route-data";
+
+export { AlertsRoute as default, alertsLoader as clientLoader, alertsLoader as loader };
+
+export function meta() {
+  return routeMetaDescriptors({
+    title: "Price alerts | Product Compare",
+    description:
+      "Manage product price watches and review qualifying price or availability changes.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary error={error} resourceName="price alerts" title="Price alerts" />
+  );
+}
 import { commitRouteMutationPromise } from "$relay/mutations";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import { resolveMarkAlertReadMutationError } from "./alert-rows/alert-event-mutation-result";
@@ -448,7 +467,7 @@ function withoutKey(current: ReadonlyMap<string, string>, id: string) {
 export async function alertsLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<AlertsRouteLoaderData> {
+}: Route.LoaderArgs): Promise<AlertsRouteLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
 
   try {

@@ -1,6 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { LoaderFunctionArgs } from "react-router-dom";
-import { MemoryRouter, RouterContextProvider, useLoaderData } from "react-router-dom";
+import { MemoryRouter, RouterContextProvider, useLoaderData } from "react-router";
 import { useFragment, usePreloadedQuery } from "react-relay";
 import { createOperationDescriptor, type Variables } from "relay-runtime";
 import { createRelayEnvironment } from "../../../src/relay/environment";
@@ -14,6 +13,7 @@ import {
 } from "../../../src/relay/route-preload";
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/compare-route-data";
 import { BrowseRoute, browseLoader } from "../../../src/routes/catalog/BrowseRoute";
+import type { Route } from "../../../src/routes/catalog/+types/BrowseRoute";
 import { CatalogAdvancedFilters } from "../../../src/routes/catalog/filters/CatalogAdvancedFilters";
 import {
   BrowseProductList,
@@ -62,8 +62,8 @@ vi.mock("react-relay", async () => {
   };
 });
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,
@@ -120,7 +120,7 @@ const buildBrowseLoaderArgs = ({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): LoaderFunctionArgs => ({
+} = {}): Route.LoaderArgs => ({
   request,
   params: {},
   context: createRelayRouterContext(environment),

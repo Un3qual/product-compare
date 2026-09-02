@@ -1,7 +1,8 @@
 import { create, props } from "@stylexjs/stylex";
-import { data, Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { data, Link, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { SharedComparisonRouteQuery as SharedComparisonRouteQueryType } from "$generated/SharedComparisonRouteQuery.graphql";
+import type { Route } from "./+types/SharedComparisonRoute";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
@@ -13,9 +14,19 @@ import { PageShell } from "$ui/components/layout/PageShell";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
 import { formatProductDateTimeLabel } from "$frontend/formatting";
-import type { RouteDocumentMetadata } from "../../RouteMetadata";
-import { routeMetadataFromSeo } from "$frontend/head";
+import {
+  routeMetadataFromSeo,
+  routeMetaDescriptors,
+  type RouteDocumentMetadata,
+} from "$frontend/seo";
 import { buildSharedComparisonViewData } from "./shared-comparison-view-data";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "../RouteErrorBoundary";
+
+export {
+  SharedComparisonRoute as default,
+  sharedComparisonLoader as clientLoader,
+  sharedComparisonLoader as loader,
+};
 
 const sharedComparisonRouteQuery = graphql`
   query SharedComparisonRouteQuery($token: String!) {
@@ -76,7 +87,28 @@ export type SharedComparisonLoaderData =
     }
   | { status: "not_found" };
 
-export async function sharedComparisonLoader({ context, params, request }: LoaderFunctionArgs) {
+export function meta({ loaderData }: Route.MetaArgs) {
+  return routeMetaDescriptors(
+    loaderData?.status === "ready"
+      ? loaderData.metadata
+      : {
+          title: "Shared comparison | Product Compare",
+          description: "Review a fixed, source-backed product comparison snapshot.",
+        },
+  );
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary
+      error={error}
+      resourceName="shared comparison"
+      title="Shared comparison"
+    />
+  );
+}
+
+export async function sharedComparisonLoader({ context, params, request }: Route.LoaderArgs) {
   const token = params.token?.trim() ?? "";
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return sharedComparisonNotFound();
   const environment = getRelayEnvironmentFromRouterContext(context);

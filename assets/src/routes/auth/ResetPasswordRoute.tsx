@@ -1,10 +1,11 @@
-import type { FormEvent } from "react";
-import { useEffect, useRef, useState } from "react";
-import { graphql, useMutation } from "react-relay";
-import { useSearchParams } from "react-router-dom";
+import { graphql } from "react-relay";
+import { Form, useActionData, useNavigation, useSearchParams } from "react-router";
 import type { ResetPasswordRouteMutation } from "$generated/ResetPasswordRouteMutation.graphql";
+import type { Route } from "./+types/ResetPasswordRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
 import { routeFormValue } from "$frontend/forms/route-form";
-import { commitRouteMutation } from "$relay/mutations";
+import { getRelayEnvironmentFromRouterContext } from "$relay/route-preload";
+import { commitEnvironmentMutationPromise } from "$relay/mutations";
 import {
   findMutationError,
   invalidTokenMutationError,
@@ -20,6 +21,13 @@ const RESET_PASSWORD_MISSING_TOKEN_ERROR = Object.freeze(
 );
 const CREDENTIAL_RESET_COMPLETION_MESSAGE = "Your password has been updated.";
 
+export function meta() {
+  return routeMetaDescriptors({
+    title: "Reset password | Product Compare",
+    description: "Choose a new password for your Product Compare account.",
+  });
+}
+
 const resetPasswordMutation = graphql`
   mutation ResetPasswordRouteMutation($token: String!, $password: String!) {
     resetPassword(token: $token, password: $password) {
@@ -33,79 +41,39 @@ const resetPasswordMutation = graphql`
   }
 `;
 
+export async function clientAction({ context, request }: Route.ClientActionArgs) {
+  const token = normalizeResetPasswordToken(new URL(request.url).searchParams.get("token"));
+  if (!token) return { errors: [RESET_PASSWORD_MISSING_TOKEN_ERROR], message: null };
+
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const formData = await request.formData();
+
+  try {
+    const { response, graphQLErrors } =
+      await commitEnvironmentMutationPromise<ResetPasswordRouteMutation>(
+        environment,
+        resetPasswordMutation,
+        { variables: { token, password: routeFormValue(formData, "password") } },
+      );
+    const result = resolveActionMutationResult(response.resetPassword, graphQLErrors);
+
+    return isSuccessfulActionResult(result)
+      ? { errors: [], message: CREDENTIAL_RESET_COMPLETION_MESSAGE }
+      : { errors: result.errors, message: null };
+  } catch (error) {
+    return { errors: transportMutationErrors(error), message: null };
+  }
+}
+
 export function ResetPasswordRoute() {
   const [searchParams] = useSearchParams();
   const token = normalizeResetPasswordToken(searchParams.get("token"));
-  const [errors, setErrors] = useState<MutationError[]>(resetPasswordErrorsForToken(token));
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const activeRequestVersion = useRef(0);
-  const [commitResetPassword] = useMutation<ResetPasswordRouteMutation>(resetPasswordMutation);
-
-  useEffect(() => {
-    // Bump the active request marker so late responses from an older token do not
-    // overwrite the UI after navigation or a newer submit.
-    activeRequestVersion.current += 1;
-    setErrors(resetPasswordErrorsForToken(token));
-    setMessage(null);
-    setIsSubmitting(false);
-  }, [token]);
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrors(resetPasswordErrorsForToken(token));
-    setMessage(null);
-
-    if (!token) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    activeRequestVersion.current += 1;
-    const requestVersion = activeRequestVersion.current;
-
-    const formData = new FormData(event.currentTarget);
-    const password = routeFormValue(formData, "password");
-
-    commitRouteMutation(
-      commitResetPassword,
-      {
-        variables: { token, password },
-        onCompleted(response, graphQLErrors) {
-          if (requestVersion !== activeRequestVersion.current) {
-            return;
-          }
-
-          const result = resolveActionMutationResult(response.resetPassword, graphQLErrors);
-
-          if (isSuccessfulActionResult(result)) {
-            setMessage(CREDENTIAL_RESET_COMPLETION_MESSAGE);
-            setIsSubmitting(false);
-            return;
-          }
-
-          setErrors(result.errors);
-          setIsSubmitting(false);
-        },
-        onError(error) {
-          if (requestVersion !== activeRequestVersion.current) {
-            return;
-          }
-
-          setErrors(transportMutationErrors(error));
-          setIsSubmitting(false);
-        },
-      },
-      (error) => {
-        if (requestVersion !== activeRequestVersion.current) {
-          return;
-        }
-
-        setErrors(transportMutationErrors(error));
-        setIsSubmitting(false);
-      },
-    );
-  }
+  const actionData = useActionData<typeof clientAction>();
+  const isSubmitting = useNavigation().state === "submitting";
+  const errors: MutationError[] = isSubmitting
+    ? []
+    : (actionData?.errors ?? resetPasswordErrorsForToken(token));
+  const message = isSubmitting ? null : (actionData?.message ?? null);
 
   return (
     <AuthFormShell
@@ -116,7 +84,7 @@ export function ResetPasswordRoute() {
       successMessage={message}
       title="Set a new password"
     >
-      <form onSubmit={handleSubmit}>
+      <Form method="post">
         <AuthField
           autoComplete="new-password"
           error={findMutationError(errors, "password")}
@@ -125,10 +93,12 @@ export function ResetPasswordRoute() {
           type="password"
         />
         <AuthSubmitButton disabled={isSubmitting || !token}>Update password</AuthSubmitButton>
-      </form>
+      </Form>
     </AuthFormShell>
   );
 }
+
+export default ResetPasswordRoute;
 
 function normalizeResetPasswordToken(token: string | null) {
   return token?.trim() ?? "";

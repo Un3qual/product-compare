@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import {
   Table,
   TableBody,

@@ -1,7 +1,9 @@
 import { Suspense } from "react";
-import { useLoaderData, useLocation, type LoaderFunctionArgs } from "react-router-dom";
+import { useLoaderData, useLocation } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
+import type { Route } from "./+types/BrowseRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   fetchRouteQuery,
@@ -17,6 +19,16 @@ import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Pagination } from "$ui/components/navigation/Pagination";
 import { MAX_COMPARE_PRODUCTS, buildComparePathFromSlugs } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
+
+export { BrowseRoute as default, browseLoader as clientLoader, browseLoader as loader };
+
+export function meta() {
+  return routeMetaDescriptors({
+    title: "Browse products | Product Compare",
+    description:
+      "Browse the product catalog and narrow the results by the attributes that matter.",
+  });
+}
 import { productOffersPath } from "../offers/paths";
 import { createBrowseRouteData } from "./browse-route-data";
 import {
@@ -270,7 +282,7 @@ function BrowseProducts({
 export async function browseLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
+}: Route.LoaderArgs): Promise<BrowseProductsLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const requestUrl = new URL(request.url);
   const filters = catalogFiltersFromUrl(requestUrl);

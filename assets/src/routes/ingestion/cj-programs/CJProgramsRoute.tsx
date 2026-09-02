@@ -1,9 +1,12 @@
 import { Suspense, useEffect, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Await, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { Await, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { Environment } from "relay-runtime";
 import type { CJProgramsRouteQuery } from "$generated/CJProgramsRouteQuery.graphql";
+import type { Route } from "./+types/CJProgramsRoute";
+import { routeMetaDescriptors } from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import type { UnmatchedFeedsQuery } from "$generated/UnmatchedFeedsQuery.graphql";
 import {
   getRelayEnvironmentFromRouterContext,
@@ -26,6 +29,22 @@ import {
 import { tokens } from "$ui/theme/tokens.stylex";
 import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { UnmatchedFeeds, unmatchedFeedsQuery } from "./feeds/UnmatchedFeeds";
+
+export { CJProgramsRoute as default, cjProgramsLoader as clientLoader, cjProgramsLoader as loader };
+
+export function meta() {
+  return routeMetaDescriptors({
+    title: "CJ programs | Product Compare",
+    description:
+      "Manage CJ advertiser programs through their lifecycle and inspect their observed feeds.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary error={error} resourceName="CJ programs" title="CJ programs" />
+  );
+}
 import { ProgramLifecycleTable } from "./programs/ProgramLifecycleTable";
 import { CJ_PROGRAM_SORTS, CJ_PROGRAM_STAGES } from "./programs/lifecycle-policy";
 import {
@@ -94,7 +113,7 @@ export type CJProgramsLoaderData =
 export async function cjProgramsLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<CJProgramsLoaderData> {
+}: Route.LoaderArgs): Promise<CJProgramsLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const pagination = cjProgramsPaginationFromUrl(new URL(request.url));
   const query = preloadRouteQuery<CJProgramsRouteQuery>(

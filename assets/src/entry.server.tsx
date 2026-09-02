@@ -1,68 +1,44 @@
 import { renderToReadableStream } from "react-dom/server";
-import { createHead, UnheadProvider } from "@unhead/react/server";
-import { createStaticHandler, createStaticRouter, StaticRouterProvider } from "react-router-dom";
 import { RelayEnvironmentProvider } from "react-relay";
+import { ServerRouter, type EntryContext, type RouterContextProvider } from "react-router";
 import "./ui/theme/tokens.stylex";
-import {
-  createServerRequest,
-  insertDocumentBootstrap,
-  responseHeadersFromContext,
-  waitForAllReady,
-  type ReactReadableStream,
-} from "./frontend/ssr";
-import { createRelayEnvironment } from "./relay/environment";
-import type { SSRContext } from "./relay/fetch-graphql";
-import { createRelayRouterContext } from "./relay/route-preload";
-import { dehydrateRelayEnvironment, renderRelayRecordsScript } from "./relay/ssr";
-import { routes } from "./router";
+import { getRelayEnvironmentFromRouterContext } from "./relay/route-preload";
 
-export async function render(url: string, ssrContext?: SSRContext): Promise<Response | string> {
-  const relayEnvironment = createRelayEnvironment({ ssrContext });
-  const head = createHead({ disableDefaults: true });
-  const handler = createStaticHandler(routes);
-  const context = await handler.query(createServerRequest(url, ssrContext), {
-    requestContext: createRelayRouterContext(relayEnvironment),
-  });
+export const streamTimeout = 10_000;
 
-  if (context instanceof Response) {
-    return context;
+export default async function handleRequest(
+  request: Request,
+  responseStatusCode: number,
+  responseHeaders: Headers,
+  routerContext: EntryContext,
+  loadContext: RouterContextProvider,
+) {
+  if (request.method.toUpperCase() === "HEAD") {
+    return new Response(null, {
+      status: responseStatusCode,
+      headers: responseHeaders,
+    });
   }
 
-  const router = createStaticRouter(handler.dataRoutes, context);
-
-  const htmlStream: ReactReadableStream = await renderToReadableStream(
-    <UnheadProvider value={head}>
-      <RelayEnvironmentProvider environment={relayEnvironment}>
-        <StaticRouterProvider router={router} context={context} />
-      </RelayEnvironmentProvider>
-    </UnheadProvider>,
+  const relayEnvironment = getRelayEnvironmentFromRouterContext(loadContext);
+  const body = await renderToReadableStream(
+    <RelayEnvironmentProvider environment={relayEnvironment}>
+      <ServerRouter context={routerContext} url={request.url} />
+    </RelayEnvironmentProvider>,
     {
+      signal: AbortSignal.timeout(streamTimeout),
       onError(error) {
+        responseStatusCode = 500;
         console.error(error);
       },
     },
   );
 
-  await waitForAllReady(htmlStream);
+  await body.allReady;
+  responseHeaders.set("Content-Type", "text/html; charset=utf-8");
 
-  const appHtml = await new Response(htmlStream).text();
-  const relayRecordsScript = renderRelayRecordsScript(dehydrateRelayEnvironment(relayEnvironment));
-  const renderedHtml = insertDocumentBootstrap(appHtml, head.render().headTags, relayRecordsScript);
-
-  const statusCode = context.statusCode ?? 200;
-
-  if (statusCode !== 200) {
-    const responseHeaders = responseHeadersFromContext(
-      context.loaderHeaders,
-      context.actionHeaders,
-    );
-    responseHeaders.set("Content-Type", "text/html; charset=utf-8");
-
-    return new Response(renderedHtml, {
-      headers: responseHeaders,
-      status: statusCode,
-    });
-  }
-
-  return renderedHtml;
+  return new Response(body, {
+    status: responseStatusCode,
+    headers: responseHeaders,
+  });
 }

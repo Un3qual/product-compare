@@ -1,0 +1,27 @@
+import { type RouteConfig, index, route } from "@react-router/dev/routes";
+
+export default [
+  index("routes/home/HomeRoute.tsx"),
+  route("products", "routes/catalog/BrowseRoute.tsx"),
+  route("products/:slug", "routes/products/ProductDetailRoute.tsx"),
+  route("merchants", "routes/merchants/MerchantDirectoryRoute.tsx"),
+  route("merchants/:slug", "routes/merchants/detail/MerchantDetailRoute.tsx"),
+  route("categories/:slug", "routes/categories/CategoryRoute.tsx"),
+  route("offers", "routes/offers/OfferDiscoveryRoute.tsx"),
+  route("compare", "routes/compare/CompareRoute.tsx"),
+  route("compare/shared/:token", "routes/compare/shared/SharedComparisonRoute.tsx"),
+  route("compare/saved", "routes/compare/saved/SavedComparisonsRoute.tsx"),
+  route("account/alerts", "routes/account/alerts/AlertsRoute.tsx"),
+  route("account/api-tokens", "routes/account/api-tokens/ApiTokensRoute.tsx"),
+  route("auth/login", "routes/auth/LoginRoute.tsx"),
+  route("auth/logout", "routes/auth/LogoutRoute.tsx"),
+  route("auth/register", "routes/auth/RegisterRoute.tsx"),
+  route("auth/forgot-password", "routes/auth/ForgotPasswordRoute.tsx"),
+  route("auth/reset-password", "routes/auth/ResetPasswordRoute.tsx"),
+  route("auth/verify-email", "routes/auth/VerifyEmailRoute.tsx"),
+  route("affiliate/setup", "routes/affiliate/setup/AffiliateSetupRoute.tsx"),
+  route("commerce/revenue", "routes/commerce/revenue/RevenueSummaryRoute.tsx"),
+  route("ingestion/cj-programs", "routes/ingestion/cj-programs/CJProgramsRoute.tsx"),
+  route("ingestion/feed-candidates", "routes/ingestion/feed-candidates-redirect.ts"),
+  route("*", "routes/NotFoundRoute.tsx"),
+] satisfies RouteConfig;
