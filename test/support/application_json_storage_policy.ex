@@ -3,6 +3,14 @@ defmodule ProductCompare.TestSupport.ApplicationJsonStoragePolicy do
 
   @classifications [
     %{
+      schema: ProductCompareSchemas.CommerceAttribution.CJActionCorrection,
+      field: :raw_payload,
+      source: :raw_payload,
+      table: "commerce_cj_action_corrections",
+      column: "raw_payload",
+      classification: "raw provider evidence"
+    },
+    %{
       schema: ProductCompareSchemas.CommerceAttribution.CommerceConversion,
       field: :raw_payload,
       source: :raw_payload,

@@ -57,6 +57,12 @@ type RootQueryType {
   "Returns the current authenticated user's saved comparison sets."
   mySavedComparisonSets(after: String, first: Int!): SavedComparisonSetConnection
 
+  "Returns the secret-safe CJ commission ingestion state for operators."
+  cjCommissionIngestion: CJCommissionIngestion!
+
+  "Returns CJ commission sync run history for operators."
+  cjCommissionSyncRuns(after: String, first: Int!): CJCommissionSyncRunConnection!
+
   "Returns individual commerce attribution clicks for operators."
   commerceAttributionClicks(after: String, first: Int!, input: RevenueSummaryInput): CommerceAttributionClickConnection!
 
@@ -172,6 +178,12 @@ type RootMutationType {
 
   "Deletes one of the current authenticated user's saved comparison sets."
   deleteSavedComparisonSet(savedComparisonSetId: ID!): SavedComparisonSetPayload!
+
+  "Updates editable CJ commission ingestion settings as an operator."
+  updateCjCommissionIngestionSettings(input: UpdateCJCommissionIngestionSettingsInput!): CJCommissionIngestionPayload!
+
+  "Queues CJ commission ingestion immediately as an operator."
+  runCjCommissionIngestionNow: CJCommissionIngestionPayload!
 
   "Creates a first-party tracked outbound commerce click."
   trackCommerceClick(input: TrackCommerceClickInput!): TrackCommerceClickPayload!
@@ -949,6 +961,26 @@ enum CommerceAttributionConfidence {
   UNMATCHED
 }
 
+enum CJCommissionIngestionActivityState {
+  SUSPENDED
+  AVAILABLE
+  SCHEDULED
+  EXECUTING
+  RETRYABLE
+}
+
+enum CJCommissionSyncRunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum CJCommissionSyncRunTrigger {
+  SCHEDULED
+  OPERATOR
+  CLI
+}
+
 input TrackCommerceClickInput {
   merchantProductId: ID!
 }
@@ -960,6 +992,13 @@ input RevenueSummaryInput {
   currency: String
   from: String
   to: String
+}
+
+input UpdateCJCommissionIngestionSettingsInput {
+  enabled: Boolean
+  intervalMinutes: Int
+  lookbackDays: Int
+  maxPages: Int
 }
 
 type RevenueSummary {
@@ -1028,6 +1067,55 @@ type CommerceAttributionMatchedConversion {
   reportedAt: DateTime!
 }
 
+type CJCommissionIngestion {
+  settings: CJCommissionIngestionSettings!
+  credentials: CJCommissionCredentialStatus!
+  activity: CJCommissionIngestionActivity
+  latestSuccess: CJCommissionSyncRun
+  latestFailure: CJCommissionSyncRun
+}
+
+type CJCommissionIngestionSettings {
+  enabled: Boolean!
+  intervalMinutes: Int!
+  lookbackDays: Int!
+  maxPages: Int!
+  nextRunAt: DateTime
+  updatedAt: DateTime!
+  updatedByEmail: String
+}
+
+type CJCommissionCredentialStatus {
+  apiTokenConfigured: Boolean!
+  publisherIdsConfigured: Boolean!
+  ready: Boolean!
+}
+
+type CJCommissionIngestionActivity {
+  state: CJCommissionIngestionActivityState!
+  windowStart: DateTime
+  windowEnd: DateTime
+  scheduledAt: DateTime
+  attemptedAt: DateTime
+}
+
+type CJCommissionSyncRun {
+  id: ID!
+  status: CJCommissionSyncRunStatus!
+  trigger: CJCommissionSyncRunTrigger!
+  requesterEmail: String
+  windowStart: DateTime!
+  windowEnd: DateTime!
+  cursor: String
+  pagesFetched: Int!
+  recordsFetched: Int!
+  recordsPersisted: Int!
+  recordsFailed: Int!
+  startedAt: DateTime!
+  finishedAt: DateTime
+  errorSummary: String
+}
+
 type CommerceAttributionClickEdge {
   node: CommerceAttributionClick!
   cursor: String!
@@ -1038,8 +1126,24 @@ type CommerceAttributionClickConnection {
   edges: [CommerceAttributionClickEdge!]!
 }
 
+"A CJ commission sync run connection edge."
+type CJCommissionSyncRunEdge {
+  node: CJCommissionSyncRun!
+  cursor: String!
+}
+
+type CJCommissionSyncRunConnection {
+  pageInfo: PageInfo!
+  edges: [CJCommissionSyncRunEdge!]!
+}
+
 type TrackCommerceClickPayload {
   redirectPath: String
+  errors: [MutationError!]!
+}
+
+type CJCommissionIngestionPayload {
+  ingestion: CJCommissionIngestion
   errors: [MutationError!]!
 }
 

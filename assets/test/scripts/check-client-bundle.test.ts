@@ -42,7 +42,13 @@ test("client bundle gate reports and enforces referenced initial WOFF2 transfer"
       join(fixtureRoot, "dist", "client", "assets", "home-latin.woff2"),
       new Uint8Array(44_736),
     );
-    for (const routeFile of ["affiliate.js", "cj.js", "revenue.js", "tokens.js"]) {
+    for (const routeFile of [
+      "affiliate.js",
+      "cj.js",
+      "conversion-ingestion.js",
+      "revenue.js",
+      "tokens.js",
+    ]) {
       await writeFile(join(fixtureRoot, "dist", "client", "assets", routeFile), "export {};");
     }
 
@@ -90,6 +96,7 @@ function bundleFixtureManifest() {
       },
       "routes/affiliate/setup/AffiliateSetupRoute": route("affiliate"),
       "routes/ingestion/cj-programs/CJProgramsRoute": route("cj"),
+      "routes/commerce/revenue/ingestion/ConversionIngestionRoute": route("conversion-ingestion"),
       "routes/commerce/revenue/RevenueSummaryRoute": route("revenue"),
       "routes/account/api-tokens/ApiTokensRoute": route("tokens"),
     },

@@ -13,6 +13,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
     field :entropy_id, Ecto.UUID
     field :source_network, :string, virtual: true
     field :network_conversion_ref, :string
+    field :network_action_ref, :string
     field :public_click_id, Ecto.UUID
     field :network_click_ref, :string
     field :status, Ecto.Enum, values: @statuses, default: :pending
@@ -47,6 +48,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
       :source_network,
       :affiliate_network_id,
       :network_conversion_ref,
+      :network_action_ref,
       :click_session_id,
       :public_click_id,
       :network_click_ref,

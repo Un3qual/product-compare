@@ -21,6 +21,10 @@ export default [
   route("auth/verify-email", "routes/auth/VerifyEmailRoute.tsx"),
   route("affiliate/setup", "routes/affiliate/setup/AffiliateSetupRoute.tsx"),
   route("commerce/revenue", "routes/commerce/revenue/RevenueSummaryRoute.tsx"),
+  route(
+    "commerce/revenue/ingestion",
+    "routes/commerce/revenue/ingestion/ConversionIngestionRoute.tsx",
+  ),
   route("ingestion/cj-programs", "routes/ingestion/cj-programs/CJProgramsRoute.tsx"),
   route("ingestion/feed-candidates", "routes/ingestion/feed-candidates-redirect.ts"),
   route("*", "routes/NotFoundRoute.tsx"),

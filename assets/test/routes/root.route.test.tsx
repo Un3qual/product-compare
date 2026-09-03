@@ -304,6 +304,7 @@ test("root layout renders guest auth links in the primary navigation", async () 
     "Saved comparisons",
     "Affiliate setup",
     "Revenue preview",
+    "Conversion ingestion",
     "CJ programs",
     "API tokens",
   ]) {
@@ -352,6 +353,9 @@ test("root layout renders authenticated auth links in the primary navigation", a
     "href",
     "/commerce/revenue",
   );
+  expect(
+    within(operatorNavigation).getByRole("link", { name: "Conversion ingestion" }),
+  ).toHaveAttribute("href", "/commerce/revenue/ingestion");
   expect(within(operatorNavigation).getByRole("link", { name: "CJ programs" })).toHaveAttribute(
     "href",
     "/ingestion/cj-programs",

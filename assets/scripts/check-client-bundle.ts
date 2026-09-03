@@ -39,7 +39,7 @@ const manifest = JSON.parse(
   manifestSource.slice(manifestPrefix.length).replace(/;\s*$/, ""),
 ) as BrowserManifest;
 
-// The measured initial JS/CSS closure is 287,105 gzip bytes. The 300 KB
+// The measured initial JS/CSS closure is 288,389 gzip bytes. The 300 KB
 // ceiling leaves room for ordinary Vite and dependency patch drift.
 const INITIAL_GZIP_BUDGET_BYTES = 300_000;
 const INITIAL_FONT_BUDGET_BYTES = 44_800;
@@ -47,6 +47,7 @@ const INITIAL_FONT_BUDGET_BYTES = 44_800;
 const requiredDynamicRoutes = [
   ["affiliate setup screen", "routes/affiliate/setup/AffiliateSetupRoute"],
   ["CJ programs screen", "routes/ingestion/cj-programs/CJProgramsRoute"],
+  ["conversion ingestion screen", "routes/commerce/revenue/ingestion/ConversionIngestionRoute"],
   ["revenue screen", "routes/commerce/revenue/RevenueSummaryRoute"],
   ["API tokens screen", "routes/account/api-tokens/ApiTokensRoute"],
 ] as const;

@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Await, useLoaderData } from "react-router";
+import { Await, Link, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { Environment } from "relay-runtime";
 import type { AttributionLedgerRouteQuery } from "$generated/AttributionLedgerRouteQuery.graphql";
@@ -25,7 +25,6 @@ import { RevenueMetrics } from "./summary/RevenueMetrics";
 
 export {
   RevenueSummaryRoute as default,
-  revenueSummaryLoader as clientLoader,
   revenueSummaryLoader as loader,
 };
 
@@ -151,8 +150,8 @@ export async function revenueSummaryLoader({
   }
 }
 
-// The optional ledger query is streamed after the root Relay snapshot.
-revenueSummaryLoader.hydrate = true;
+// The deferred ledger needs hydration; bind the flag here so the client transform preserves it.
+export const clientLoader = Object.assign(revenueSummaryLoader, { hydrate: true });
 
 function preloadAttributionLedger(
   environment: Environment,
@@ -183,7 +182,12 @@ export function RevenueSummaryRoute() {
           filters={loaderData.filters}
         />
       }
-      description="This preview summarizes recorded attribution data. A live conversion provider is not connected for this milestone."
+      description={
+        <>
+          This preview summarizes recorded attribution data. Review operational freshness in{" "}
+          <Link to="/commerce/revenue/ingestion">Ingestion status</Link>.
+        </>
+      }
       eyebrow="Commerce analytics"
       title="Revenue reporting preview"
     >

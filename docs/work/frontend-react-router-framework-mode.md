@@ -1,9 +1,10 @@
 # Frontend React Router Framework Mode
 
-Status: implementation and verification complete; publication deferred by user
+Status: implementation, verification, publication, and base reconciliation complete
 Owner: `codex/react-router-8-framework-mode`
-Base: `codex/project-quality-remediation` at
-`2a76b443f394f07c02fd286a0615093a5e030fde`
+Original base: `codex/project-quality-remediation` at
+`2a76b443f394f07c02fd286a0615093a5e030fde`; after that branch merged through
+PR #131, PR #132 targets `main`.
 
 ## Goal
 
@@ -40,8 +41,7 @@ SEO, or user-facing failure behavior.
 3. Route loaders/client loaders/actions, auth/navigation, generated route
    types, and route-focused tests.
 4. Leftover deletion, full verification, simplification measurement, and
-   publication readiness. Push and stacked PR publication remain deferred until
-   the user explicitly asks.
+   publication through PR #132, followed by reconciliation with the merged base.
 
 ## Verification
 
@@ -55,9 +55,8 @@ SEO, or user-facing failure behavior.
 
 All required contracts pass under the exact pinned toolchain, and the final
 diff contains one coherent Framework Mode architecture with documented
-retained Relay/Phoenix boundaries and a recorded simplification delta. When the
-user authorizes publication, the non-draft stacked PR will target
-`codex/project-quality-remediation`.
+retained Relay/Phoenix boundaries and a recorded simplification delta. PR #132
+remains the non-draft review surface.
 
 ## Completion Evidence
 
@@ -84,11 +83,14 @@ user authorizes publication, the non-draft stacked PR will target
   normalization, StyleX/Relay Babel transforms, the Vite 8 optimizer inventory,
   and Phoenix API/session ownership remain custom for the concrete reasons in
   the design. Human responses stream after the shell while bots wait for all
-  content. Only the revenue and CJ routes hydrate their client loaders because
-  their optional deferred Relay queries can settle after the root record-source
-  snapshot; fully awaited routes reuse their server data without a duplicate
-  hydration request. The exact jsdom request test proved Framework Mode no
-  longer reconstructs the incoming server request; foreign-realm signal
+  content. The revenue, CJ programs, and conversion-ingestion routes hydrate
+  their client loaders because their optional deferred Relay queries can settle
+  after the root record-source snapshot; fully awaited routes reuse their
+  server data without a duplicate hydration request. Those hydration flags live
+  on the exported client bindings because the React Router client transform
+  removes a property attached only to a shared server-named implementation. The
+  exact jsdom request test proved Framework Mode no longer reconstructs the
+  incoming server request; foreign-realm signal
   bridging remains only in test request builders where jsdom still requires it.
 - The final anti-slop pass removed four route-result unions that restated
   inferred loader data, the redundant nullable Relay route context and its
@@ -142,3 +144,14 @@ user authorizes publication, the non-draft stacked PR will target
 - Relative to the approved base, frontend code/config excluding the generated
   lockfile has 2,016 additions and 4,690 deletions (net -2,674). The migration
   adds seven tracked files and removes 23.
+- After PR #131 merged the original stacked base, the September 3 reconciliation
+  merged `main` at `b971f5ff`, kept the Data Router files deleted, and converted
+  the incoming conversion-ingestion screen into a Framework Mode route module.
+  The production build proved that all three deferred route client exports now
+  retain `hydrate: true`; the relevant Playwright matrix passed 10 tests.
+- The reconciled full `mix ci` passed 1,717 backend tests with zero failures and
+  87.29% coverage. Its frontend gate validated 97 reader, 66 normalization, and
+  98 operation-text Relay artifacts; passed 110 files and 1,463 tests; built
+  3,154 client modules and 332 server modules; produced a 1,258.54 kB raw / 216.33
+  kB gzip server artifact; and kept the initial client closure within budget at
+  901,405 raw / 288,389 gzip bytes across 52 JavaScript files and one CSS file.

@@ -30,7 +30,7 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { UnmatchedFeeds, unmatchedFeedsQuery } from "./feeds/UnmatchedFeeds";
 
-export { CJProgramsRoute as default, cjProgramsLoader as clientLoader, cjProgramsLoader as loader };
+export { CJProgramsRoute as default, cjProgramsLoader as loader };
 
 export function meta() {
   return staticRouteMetaDescriptors({
@@ -151,8 +151,8 @@ export async function cjProgramsLoader({
   }
 }
 
-// The optional unmatched-feeds query is streamed after the root Relay snapshot.
-cjProgramsLoader.hydrate = true;
+// The deferred feed query needs hydration; bind the flag here so the client transform preserves it.
+export const clientLoader = Object.assign(cjProgramsLoader, { hydrate: true });
 
 function preloadUnmatchedFeeds(
   environment: Environment,
