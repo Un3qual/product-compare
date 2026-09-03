@@ -60,9 +60,9 @@ export async function clientAction({ context, request }: Route.ClientActionArgs)
 
 export function LoginRoute() {
   const actionData = useActionData<typeof clientAction>();
-  const navigation = useNavigation();
+  const navigationState = useNavigation().state;
   const [searchParams] = useSearchParams();
-  const isSubmitting = navigation.state !== "idle";
+  const isSubmitting = navigationState === "submitting";
   const errors = isSubmitting ? [] : (actionData?.errors ?? []);
 
   return (
@@ -74,7 +74,7 @@ export function LoginRoute() {
         { label: "Create account", to: authContinuationPath("/auth/register", searchParams) },
         { label: "Forgot password?", to: "/auth/forgot-password" },
       ]}
-      isSubmitting={isSubmitting}
+      isPending={navigationState !== "idle"}
       submitLabel="Sign in"
       title="Sign in"
     />

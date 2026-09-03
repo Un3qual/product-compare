@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { commitMutation } from "react-relay";
 import { commitLocalUpdate } from "relay-runtime";
 import { createMemoryRouter, redirect, RouterProvider } from "react-router";
@@ -67,7 +67,7 @@ test.each([
               },
             ]}
             footerLinks={[{ label: "Help", to: "/help" }]}
-            isSubmitting={false}
+            isPending={false}
             submitLabel={variant.submitLabel}
             title={variant.title}
           />
@@ -215,6 +215,47 @@ test.each([
   expect(submit).toBeDisabled();
 
   finishRedirect();
+  await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+});
+
+test.each([
+  { Component: LoginRoute, path: "/auth/login", submitLabel: "Sign in" },
+  { Component: RegisterRoute, path: "/auth/register", submitLabel: "Create account" },
+])("$submitLabel keeps action errors visible during route loading", async (route) => {
+  let finishLoading = () => {};
+  const routeLoader = new Promise<void>((resolve) => {
+    finishLoading = resolve;
+  });
+  const routeId = "credentials";
+  const router = createMemoryRouter(
+    [{ id: routeId, path: route.path, loader: () => routeLoader, Component: route.Component }],
+    {
+      initialEntries: [route.path],
+      hydrationData: {
+        actionData: {
+          [routeId]: {
+            errors: [
+              { code: "INVALID_CREDENTIALS", field: "email", message: "Invalid credentials" },
+            ],
+          },
+        },
+        loaderData: { [routeId]: null },
+      },
+    },
+  );
+
+  render(<RouterProvider router={router} />);
+
+  expect(screen.getByText("Invalid credentials")).toBeVisible();
+  act(() => {
+    void router.navigate(`${route.path}?returnTo=%2Fcompare`);
+  });
+  await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
+
+  expect(screen.getByRole("button", { name: route.submitLabel })).toBeDisabled();
+  expect(screen.getByText("Invalid credentials")).toBeVisible();
+
+  finishLoading();
   await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
 });
 

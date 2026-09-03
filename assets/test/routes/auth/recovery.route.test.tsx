@@ -5,6 +5,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { createRelayRouterContext } from "../../../src/relay/route-preload";
 import {
   clientAction as forgotPasswordAction,
+  ForgotPasswordRoute,
 } from "../../../src/routes/auth/ForgotPasswordRoute";
 import {
   clientAction as resetPasswordAction,
@@ -79,6 +80,46 @@ test("forgot-password action hides top-level GraphQL details", async () => {
     ],
     message: null,
   });
+});
+
+test("forgot-password route stays disabled through revalidation", async () => {
+  let finishRevalidation = () => {};
+  const revalidation = new Promise<void>((resolve) => {
+    finishRevalidation = resolve;
+  });
+  const routeId = "forgot-password";
+  const router = createMemoryRouter(
+    [
+      {
+        id: routeId,
+        path: "/auth/forgot-password",
+        loader: () => revalidation,
+        action: () => ({
+          errors: [],
+          message: "If an account exists for that email, reset instructions are on the way.",
+        }),
+        Component: ForgotPasswordRoute,
+      },
+    ],
+    {
+      initialEntries: ["/auth/forgot-password"],
+      hydrationData: { loaderData: { [routeId]: null } },
+    },
+  );
+
+  render(<RouterProvider router={router} />);
+
+  const submit = await screen.findByRole("button", { name: "Send reset link" });
+  fireEvent.change(screen.getByLabelText("Email"), {
+    target: { value: "person@example.com" },
+  });
+  fireEvent.click(submit);
+  await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
+
+  expect(submit).toBeDisabled();
+
+  finishRevalidation();
+  await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
 });
 
 test("reset-password action reads its single-use token from the route URL", async () => {

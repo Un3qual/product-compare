@@ -59,7 +59,8 @@ export async function clientAction({ context, request }: Route.ClientActionArgs)
 
 export function ForgotPasswordRoute() {
   const actionData = useActionData<typeof clientAction>();
-  const isSubmitting = useNavigation().state === "submitting";
+  const navigationState = useNavigation().state;
+  const isSubmitting = navigationState === "submitting";
   const errors = isSubmitting ? [] : (actionData?.errors ?? []);
   const message = isSubmitting ? null : (actionData?.message ?? null);
 
@@ -83,7 +84,7 @@ export function ForgotPasswordRoute() {
           name="email"
           type="email"
         />
-        <AuthSubmitButton disabled={isSubmitting}>Send reset link</AuthSubmitButton>
+        <AuthSubmitButton disabled={navigationState !== "idle"}>Send reset link</AuthSubmitButton>
       </Form>
     </AuthFormShell>
   );

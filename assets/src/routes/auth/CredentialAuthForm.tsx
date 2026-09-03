@@ -11,7 +11,7 @@ interface CredentialAuthFormProps {
   description: string;
   errors: MutationError[];
   footerLinks: CredentialAuthFooterLink[];
-  isSubmitting: boolean;
+  isPending: boolean;
   credentialAutoComplete: "current-password" | "new-password";
   submitLabel: string;
   title: string;
@@ -21,7 +21,7 @@ export function CredentialAuthForm({
   description,
   errors,
   footerLinks,
-  isSubmitting,
+  isPending,
   credentialAutoComplete,
   submitLabel,
   title,
@@ -50,7 +50,7 @@ export function CredentialAuthForm({
           name="password"
           type="password"
         />
-        <AuthSubmitButton disabled={isSubmitting}>{submitLabel}</AuthSubmitButton>
+        <AuthSubmitButton disabled={isPending}>{submitLabel}</AuthSubmitButton>
       </Form>
     </AuthFormShell>
   );
