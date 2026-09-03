@@ -6,7 +6,6 @@ of active and candidate plans, not the dispatch queue.
 ## Active Architecture Sources
 
 - `ARCHITECTURE.md`
-- `docs/superpowers/specs/2026-09-02-react-router-8-framework-mode-design.md`
 - `docs/plans/2026-03-05-frontend-fullstack-design.md`
 - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
 - `docs/plans/2026-03-19-frontend-relay-route-data-design.md`
@@ -22,6 +21,7 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-11-homepage-query-scaling-and-ownership-design.md`
 - `docs/superpowers/specs/2026-08-11-base-ui-stylex-table-foundation-design.md`
 - `docs/superpowers/specs/2026-08-12-product-experience-and-code-simplification-design.md`
+- `docs/superpowers/specs/2026-09-02-react-router-8-framework-mode-design.md`
 
 ## Active Plan Catalog
 

@@ -69,7 +69,8 @@ export function ResetPasswordRoute() {
   const [searchParams] = useSearchParams();
   const token = normalizeResetPasswordToken(searchParams.get("token"));
   const actionData = useActionData<typeof clientAction>();
-  const isSubmitting = useNavigation().state === "submitting";
+  const navigationState = useNavigation().state;
+  const isSubmitting = navigationState === "submitting";
   const errors = isSubmitting
     ? []
     : (actionData?.errors ?? resetPasswordErrorsForToken(token));
@@ -92,7 +93,9 @@ export function ResetPasswordRoute() {
           name="password"
           type="password"
         />
-        <AuthSubmitButton disabled={isSubmitting || !token}>Update password</AuthSubmitButton>
+        <AuthSubmitButton disabled={navigationState !== "idle" || !token}>
+          Update password
+        </AuthSubmitButton>
       </Form>
     </AuthFormShell>
   );

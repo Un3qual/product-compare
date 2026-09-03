@@ -14,6 +14,8 @@ export default async function handleRequest(
   routerContext: EntryContext,
   loadContext: RouterContextProvider,
 ) {
+  responseHeaders.set("Content-Type", "text/html; charset=utf-8");
+
   if (request.method.toUpperCase() === "HEAD") {
     return new Response(null, {
       status: responseStatusCode,
@@ -28,7 +30,7 @@ export default async function handleRequest(
       <ServerRouter context={routerContext} url={request.url} />
     </RelayEnvironmentProvider>,
     {
-      signal: AbortSignal.timeout(streamTimeout + 1_000),
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(streamTimeout + 1_000)]),
       onError(error) {
         responseStatusCode = 500;
         if (shellRendered) {
@@ -42,8 +44,6 @@ export default async function handleRequest(
   if (isbot(request.headers.get("user-agent") ?? "")) {
     await body.allReady;
   }
-
-  responseHeaders.set("Content-Type", "text/html; charset=utf-8");
 
   return new Response(body, {
     status: responseStatusCode,

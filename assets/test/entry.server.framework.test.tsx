@@ -3,7 +3,10 @@ import { createRelayEnvironment } from "../src/relay/environment";
 import { setRelayEnvironmentOnRouterContext } from "../src/relay/route-preload";
 
 const serverRouterCalls = vi.hoisted(() => vi.fn());
-const streamState = vi.hoisted(() => ({ allReady: Promise.resolve() }));
+const streamState = vi.hoisted(() => ({
+  allReady: Promise.resolve(),
+  renderSignals: [] as AbortSignal[],
+}));
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router");
@@ -23,7 +26,8 @@ vi.mock("react-router", async () => {
 vi.mock("react-dom/server", async () => {
   const actual = await vi.importActual<typeof import("react-dom/server")>("react-dom/server");
   const overrides = {
-    async renderToReadableStream(children) {
+    async renderToReadableStream(children, options) {
+      if (options?.signal) streamState.renderSignals.push(options.signal);
       const html = actual.renderToStaticMarkup(children);
       const stream = new ReadableStream({
         start(controller) {
@@ -45,6 +49,7 @@ vi.mock("react-dom/server", async () => {
 beforeEach(() => {
   serverRouterCalls.mockClear();
   streamState.allReady = Promise.resolve();
+  streamState.renderSignals.length = 0;
 });
 
 test("Framework server entry preserves the supplied status, headers, and request URL", async () => {
@@ -69,27 +74,23 @@ test("Framework server entry preserves the supplied status, headers, and request
 
 test("Framework server entry returns an empty HEAD response without rendering", async () => {
   const request = new Request("https://app.example.com/products", { method: "HEAD" });
+  const headers = new Headers({ "Content-Type": "text/plain" });
   const loadContext = new RouterContextProvider();
   setRelayEnvironmentOnRouterContext(loadContext, createRelayEnvironment());
   const { default: handleRequest } = await import("../src/entry.server");
 
-  const response = await handleRequest(
-    request,
-    200,
-    new Headers(),
-    {} as EntryContext,
-    loadContext,
-  );
+  const response = await handleRequest(request, 200, headers, {} as EntryContext, loadContext);
 
   expect(response.status).toBe(200);
+  expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
   await expect(response.text()).resolves.toBe("");
   expect(serverRouterCalls).not.toHaveBeenCalled();
 });
 
-test("Framework server entry accepts a request with a cross-realm signal without rebuilding it", async () => {
+test("Framework server entry propagates a cross-realm request abort to rendering", async () => {
   const request = new Request("https://app.example.com/products");
-  const foreignSignal = new window.AbortController().signal;
-  Object.defineProperty(request, "signal", { value: foreignSignal });
+  const foreignController = new window.AbortController();
+  Object.defineProperty(request, "signal", { value: foreignController.signal });
   const loadContext = new RouterContextProvider();
   setRelayEnvironmentOnRouterContext(loadContext, createRelayEnvironment());
   const { default: handleRequest } = await import("../src/entry.server");
@@ -103,10 +104,12 @@ test("Framework server entry accepts a request with a cross-realm signal without
   );
 
   expect(response.status).toBe(200);
-  expect(request.signal).toBe(foreignSignal);
-  expect(serverRouterCalls).toHaveBeenCalledWith(
-    expect.objectContaining({ url: "https://app.example.com/products" }),
-  );
+  foreignController.abort("client disconnected");
+  expect(streamState.renderSignals).toHaveLength(1);
+  expect(streamState.renderSignals[0]).toMatchObject({
+    aborted: true,
+    reason: "client disconnected",
+  });
 });
 
 test("Framework server entry streams the shell without waiting for deferred route data", async () => {
@@ -131,6 +134,7 @@ test("Framework server entry streams the shell without waiting for deferred rout
   );
 
   expect(response.status).toBe(200);
+  await expect(response.text()).resolves.toContain("Product Compare");
 });
 
 test("Framework server entry waits for deferred route data for bots", async () => {

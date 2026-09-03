@@ -39,7 +39,7 @@ const manifest = JSON.parse(
   manifestSource.slice(manifestPrefix.length).replace(/;\s*$/, ""),
 ) as BrowserManifest;
 
-// The measured initial JS/CSS closure is 270,072 gzip bytes. The 300 KB
+// The measured initial JS/CSS closure is 287,105 gzip bytes. The 300 KB
 // ceiling leaves room for ordinary Vite and dependency patch drift.
 const INITIAL_GZIP_BUDGET_BYTES = 300_000;
 const INITIAL_FONT_BUDGET_BYTES = 44_800;
@@ -52,9 +52,14 @@ const requiredDynamicRoutes = [
 ] as const;
 
 const rootRoute = manifest.routes.root;
+const indexRoute = manifest.routes["routes/home/HomeRoute"];
 
 if (!rootRoute) {
   throw new Error(`React Router browser manifest ${manifestPath} has no root route.`);
+}
+
+if (!indexRoute) {
+  throw new Error(`React Router browser manifest ${manifestPath} has no home index route.`);
 }
 
 const initialFiles = new Set([
@@ -64,6 +69,9 @@ const initialFiles = new Set([
   rootRoute.module,
   ...rootRoute.imports,
   ...rootRoute.css,
+  indexRoute.module,
+  ...indexRoute.imports,
+  ...indexRoute.css,
 ]);
 const initialBundleFiles = [...initialFiles].filter(
   (file) => file.endsWith(".js") || file.endsWith(".css"),

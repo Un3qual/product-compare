@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { commitMutation, useMutation } from "react-relay";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { createRelayRouterContext } from "../../../src/relay/route-preload";
@@ -131,6 +131,39 @@ test("reset-password route renders its missing-token state in a Framework form",
     "method",
     "post",
   );
+});
+
+test("reset-password route keeps its single-use token disabled through revalidation", async () => {
+  let loaderCalls = 0;
+  let finishRevalidation = () => {};
+  const revalidation = new Promise<void>((resolve) => {
+    finishRevalidation = () => resolve();
+  });
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/auth/reset-password",
+        loader: () => (++loaderCalls === 1 ? null : revalidation),
+        action: () => ({ errors: [], message: "Your password has been updated." }),
+        Component: ResetPasswordRoute,
+      },
+    ],
+    { initialEntries: [`/auth/reset-password?token=${RESET_TOKEN}`] },
+  );
+
+  render(<RouterProvider router={router} />);
+
+  const submit = await screen.findByRole("button", { name: "Update password" });
+  fireEvent.change(screen.getByLabelText("New password"), {
+    target: { value: TEST_PASSWORD },
+  });
+  fireEvent.click(submit);
+  await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
+
+  expect(submit).toBeDisabled();
+
+  finishRevalidation();
+  await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
 });
 
 test("credential actions normalize synchronous Relay errors", async () => {
