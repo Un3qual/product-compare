@@ -730,8 +730,7 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
   end
 
   defp assert_decimal_cast_error(changeset, field) do
-    assert {"is invalid", [type: :decimal, validation: :cast]} =
-             Keyword.fetch!(changeset.errors, field)
+    assert "is invalid" in Map.fetch!(errors_on(changeset), field)
   end
 
   defp assert_invalid_field(changeset, field) do

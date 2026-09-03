@@ -8,9 +8,10 @@ defmodule ProductCompare.CommerceAttribution.AwinAdapter do
 
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.CommerceAttribution.ClickReference
+  alias ProductCompareSchemas.DecimalInput
 
   @spec ingest_transaction(map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
-  def ingest_transaction(payload) when is_map(payload) do
+  def ingest_transaction(payload) do
     payload
     |> normalize_transaction()
     |> CommerceAttribution.ingest_conversion()
@@ -121,19 +122,7 @@ defmodule ProductCompare.CommerceAttribution.AwinAdapter do
 
   defp amount_currency(_value), do: nil
 
-  defp decimal(nil), do: nil
-  defp decimal(%Decimal{} = value), do: value
-
-  defp decimal(value) when is_binary(value) or is_integer(value) or is_float(value) do
-    value = value |> to_string() |> String.trim()
-
-    case Decimal.parse(value) do
-      {%Decimal{} = decimal, ""} -> decimal
-      _invalid -> nil
-    end
-  end
-
-  defp decimal(_value), do: nil
+  defp decimal(value), do: DecimalInput.to_decimal(value)
 
   defp parse_datetime(nil), do: nil
   defp parse_datetime(%DateTime{} = value), do: value

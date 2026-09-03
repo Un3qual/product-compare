@@ -67,6 +67,15 @@ defmodule ProductCompareWeb.GraphQL.ErrorsTest do
                }
              ]
     end
+
+    test "returns camelCase GraphQL field names" do
+      changeset =
+        {%{}, %{cooldown_seconds: :integer}}
+        |> Ecto.Changeset.cast(%{}, [:cooldown_seconds])
+        |> Ecto.Changeset.add_error(:cooldown_seconds, "is invalid")
+
+      assert [%{field: "cooldownSeconds"}] = Errors.changeset_mutation_errors(changeset)
+    end
   end
 
   describe "changeset_first_error/1" do

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<bfc6fb7f7e09668624e72bddd170bb7e>>
+ * @generated SignedSource<<f019fdfce947e24910f35f08cfcc7857>>
  * @lightSyntaxTransform
  */
 
@@ -8,26 +8,13 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
+import { FragmentRefs } from "relay-runtime";
 export type ComparisonSharingOperationsQuery$variables = {
   after?: string | null;
   first: number;
 };
 export type ComparisonSharingOperationsQuery$data = {
-  readonly viewer: {
-    readonly comparisonSnapshots: {
-      readonly edges: ReadonlyArray<{
-        readonly node: {
-          readonly id: string;
-          readonly sharePath: string;
-          readonly title: string | null;
-        };
-      }>;
-      readonly pageInfo: {
-        readonly endCursor: string | null;
-        readonly hasNextPage: boolean;
-      };
-    };
-  } | null;
+  readonly " $fragmentSpreads": FragmentRefs<"ComparisonSharingOperations_snapshots">;
 };
 export type ComparisonSharingOperationsQuery = {
   response: ComparisonSharingOperationsQuery$data;
@@ -45,95 +32,23 @@ v1 = {
   "kind": "LocalArgument",
   "name": "first"
 },
-v2 = {
+v2 = [
+  {
+    "kind": "Variable",
+    "name": "after",
+    "variableName": "after"
+  },
+  {
+    "kind": "Variable",
+    "name": "first",
+    "variableName": "first"
+  }
+],
+v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
-  "storageKey": null
-},
-v3 = {
-  "alias": null,
-  "args": [
-    {
-      "kind": "Variable",
-      "name": "after",
-      "variableName": "after"
-    },
-    {
-      "kind": "Variable",
-      "name": "first",
-      "variableName": "first"
-    }
-  ],
-  "concreteType": "ComparisonSnapshotConnection",
-  "kind": "LinkedField",
-  "name": "comparisonSnapshots",
-  "plural": false,
-  "selections": [
-    {
-      "alias": null,
-      "args": null,
-      "concreteType": "ComparisonSnapshotEdge",
-      "kind": "LinkedField",
-      "name": "edges",
-      "plural": true,
-      "selections": [
-        {
-          "alias": null,
-          "args": null,
-          "concreteType": "ComparisonSnapshot",
-          "kind": "LinkedField",
-          "name": "node",
-          "plural": false,
-          "selections": [
-            (v2/*:: as any*/),
-            {
-              "alias": null,
-              "args": null,
-              "kind": "ScalarField",
-              "name": "title",
-              "storageKey": null
-            },
-            {
-              "alias": null,
-              "args": null,
-              "kind": "ScalarField",
-              "name": "sharePath",
-              "storageKey": null
-            }
-          ],
-          "storageKey": null
-        }
-      ],
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "concreteType": "PageInfo",
-      "kind": "LinkedField",
-      "name": "pageInfo",
-      "plural": false,
-      "selections": [
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "endCursor",
-          "storageKey": null
-        },
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "hasNextPage",
-          "storageKey": null
-        }
-      ],
-      "storageKey": null
-    }
-  ],
   "storageKey": null
 };
 return {
@@ -147,16 +62,9 @@ return {
     "name": "ComparisonSharingOperationsQuery",
     "selections": [
       {
-        "alias": null,
-        "args": null,
-        "concreteType": "User",
-        "kind": "LinkedField",
-        "name": "viewer",
-        "plural": false,
-        "selections": [
-          (v3/*:: as any*/)
-        ],
-        "storageKey": null
+        "args": (v2/*:: as any*/),
+        "kind": "FragmentSpread",
+        "name": "ComparisonSharingOperations_snapshots"
       }
     ],
     "type": "RootQueryType",
@@ -179,24 +87,119 @@ return {
         "name": "viewer",
         "plural": false,
         "selections": [
-          (v3/*:: as any*/),
-          (v2/*:: as any*/)
+          {
+            "alias": null,
+            "args": (v2/*:: as any*/),
+            "concreteType": "ComparisonSnapshotConnection",
+            "kind": "LinkedField",
+            "name": "comparisonSnapshots",
+            "plural": false,
+            "selections": [
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "ComparisonSnapshotEdge",
+                "kind": "LinkedField",
+                "name": "edges",
+                "plural": true,
+                "selections": [
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "ComparisonSnapshot",
+                    "kind": "LinkedField",
+                    "name": "node",
+                    "plural": false,
+                    "selections": [
+                      (v3/*:: as any*/),
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "title",
+                        "storageKey": null
+                      },
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "sharePath",
+                        "storageKey": null
+                      },
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "__typename",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "cursor",
+                    "storageKey": null
+                  }
+                ],
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "PageInfo",
+                "kind": "LinkedField",
+                "name": "pageInfo",
+                "plural": false,
+                "selections": [
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "endCursor",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "hasNextPage",
+                    "storageKey": null
+                  }
+                ],
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": (v2/*:: as any*/),
+            "filters": null,
+            "handle": "connection",
+            "key": "ComparisonSharingOperations_comparisonSnapshots",
+            "kind": "LinkedHandle",
+            "name": "comparisonSnapshots"
+          },
+          (v3/*:: as any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "e50e0b8979ae4fdb12385ac3e27ce311",
+    "cacheID": "581ecde67269bb1a6eea231f13d6aa5d",
     "id": null,
     "metadata": {},
     "name": "ComparisonSharingOperationsQuery",
     "operationKind": "query",
-    "text": "query ComparisonSharingOperationsQuery(\n  $first: Int!\n  $after: String\n) {\n  viewer {\n    comparisonSnapshots(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          title\n          sharePath\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    id\n  }\n}\n"
+    "text": "query ComparisonSharingOperationsQuery(\n  $first: Int!\n  $after: String\n) {\n  ...ComparisonSharingOperations_snapshots_2HEEH6\n}\n\nfragment ComparisonSharingOperations_snapshots_2HEEH6 on RootQueryType {\n  viewer {\n    comparisonSnapshots(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          title\n          sharePath\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    id\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "a1c6dcb36f31789f5b0f624f8546c6e9";
+(node as any).hash = "7aad6d8be01d525960f5fbb8c39a8c44";
 
 export default node;

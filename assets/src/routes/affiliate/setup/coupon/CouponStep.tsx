@@ -1,6 +1,9 @@
-import type { FormEventHandler } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { props } from "@stylexjs/stylex";
+import { useMutation } from "react-relay";
 import type { AffiliateSetupOperationsCreateCouponMutation } from "$generated/AffiliateSetupOperationsCreateCouponMutation.graphql";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
+import { commitRouteMutationPromise } from "$relay/mutations";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
@@ -12,32 +15,65 @@ import {
   SelectValue,
 } from "$ui/primitives/Select";
 import { MerchantChoiceSelect } from "../MerchantChoiceSelect";
+import {
+  createCouponMutation,
+  resolveAffiliateCouponMutationOutcome,
+} from "../AffiliateSetupOperations";
+import { buildCouponVariables, formDataToScalarValues } from "../affiliate-form-values";
 import { affiliateWorkflowStyles as styles } from "../affiliate-workflow.stylex";
 import type { MerchantChoice } from "../merchant-context";
 
-export type CouponResult = NonNullable<
+type CouponResult = NonNullable<
   NonNullable<AffiliateSetupOperationsCreateCouponMutation["response"]["createCoupon"]>["coupon"]
 >;
 
 export function CouponStep({
-  error,
   merchantChoices,
   onSelectedMerchantIdChange,
-  onSubmit,
-  pending,
-  result,
   selectedMerchantCopy,
   selectedMerchantValue,
 }: {
-  error: string | null;
   merchantChoices: readonly MerchantChoice[];
   onSelectedMerchantIdChange: (merchantId: string) => void;
-  onSubmit: FormEventHandler<HTMLFormElement>;
-  pending: boolean;
-  result: CouponResult | null;
   selectedMerchantCopy: string | null;
   selectedMerchantValue: string;
 }) {
+  const [commitCreateCoupon] =
+    useMutation<AffiliateSetupOperationsCreateCouponMutation>(createCouponMutation);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [result, setResult] = useState<CouponResult | null>(null);
+  const inFlightRef = useRef(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (inFlightRef.current) return;
+
+    inFlightRef.current = true;
+    setPending(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitCreateCoupon, {
+        variables: buildCouponVariables(formDataToScalarValues(new FormData(event.currentTarget))),
+      });
+      const outcome = resolveAffiliateCouponMutationOutcome(response.createCoupon, graphQLErrors);
+
+      if (outcome.error === null) {
+        setResult(outcome.result);
+      } else {
+        setError(outcome.error);
+      }
+    } catch {
+      setError(DEFAULT_MUTATION_ERROR_MESSAGE);
+    } finally {
+      inFlightRef.current = false;
+      setPending(false);
+    }
+  }
+
   return (
     <section aria-label="Step 4: Coupon" {...props(styles.step)}>
       <header {...props(styles.stepHeader)}>
@@ -50,7 +86,7 @@ export function CouponStep({
       <form
         aria-label="Create affiliate coupon"
         method="post"
-        onSubmit={onSubmit}
+        onSubmit={handleSubmit}
         {...props(styles.form)}
       >
         {selectedMerchantCopy ? <p>{selectedMerchantCopy}</p> : null}

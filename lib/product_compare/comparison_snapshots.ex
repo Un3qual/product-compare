@@ -11,7 +11,7 @@ defmodule ProductCompare.ComparisonSnapshots do
           {:ok, ComparisonSnapshot.t()}
           | {:error,
              :invalid_products | :product_not_found | :invalid_profile | Ecto.Changeset.t()}
-  def publish(user_id, attrs, opts \\ []) when is_integer(user_id) and is_map(attrs),
+  def publish(user_id, attrs, opts \\ []),
     do: Lifecycle.publish(user_id, attrs, opts)
 
   @spec get_public(String.t()) :: ComparisonSnapshot.t() | nil
@@ -19,10 +19,10 @@ defmodule ProductCompare.ComparisonSnapshots do
   def get_public(_token), do: nil
 
   @spec get_public_many([term()]) :: %{optional(String.t()) => ComparisonSnapshot.t() | nil}
-  def get_public_many(tokens) when is_list(tokens), do: Lifecycle.get_public_many(tokens)
+  def get_public_many(tokens), do: Lifecycle.get_public_many(tokens)
 
   @spec active_for_owner_query(pos_integer()) :: Ecto.Query.t()
-  def active_for_owner_query(user_id) when is_integer(user_id),
+  def active_for_owner_query(user_id),
     do: Lifecycle.active_for_owner_query(user_id)
 
   @spec revoke(pos_integer(), Ecto.UUID.t(), keyword()) ::
@@ -40,5 +40,5 @@ defmodule ProductCompare.ComparisonSnapshots do
   def hydrate(%ComparisonSnapshot{} = snapshot), do: Lifecycle.hydrate(snapshot)
 
   @spec hydrate_many([ComparisonSnapshot.t()]) :: [ComparisonSnapshot.t()]
-  def hydrate_many(snapshots) when is_list(snapshots), do: Lifecycle.hydrate_many(snapshots)
+  def hydrate_many(snapshots), do: Lifecycle.hydrate_many(snapshots)
 end

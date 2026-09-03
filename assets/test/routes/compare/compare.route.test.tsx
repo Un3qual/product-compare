@@ -13,7 +13,13 @@ import {
   useLocation,
   useRouteError,
 } from "react-router-dom";
-import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import {
+  useFragment,
+  useLazyLoadQuery,
+  useMutation,
+  usePaginationFragment,
+  usePreloadedQuery,
+} from "react-relay";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import {
   MAX_COMPARE_PRODUCTS,
@@ -51,6 +57,7 @@ const {
   useLazyLoadQueryMock,
   useLoaderDataMock,
   useMutationMock,
+  usePaginationFragmentMock,
   usePreloadedQueryMock,
   useRouteErrorMock,
   useRouteErrorOriginal,
@@ -62,6 +69,7 @@ const {
   useLazyLoadQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
+  usePaginationFragmentMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRouteErrorMock: vi.fn(),
   useRouteErrorOriginal: { current: null as null | (() => unknown) },
@@ -88,6 +96,7 @@ vi.mock("react-relay", async () => {
     useFragment: useFragmentMock,
     useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
+    usePaginationFragment: usePaginationFragmentMock,
     usePreloadedQuery: usePreloadedQueryMock,
   };
 });
@@ -108,6 +117,7 @@ const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseMutation = vi.mocked(useMutation);
+const mockedUsePaginationFragment = vi.mocked(usePaginationFragment);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRouteError = vi.mocked(useRouteError);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -220,24 +230,24 @@ const THIRD_PRODUCT = {
 
 const DETAIL_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: DETAIL_PRODUCT.slug, offerFirst: 3, offersAfter: null },
   },
 };
 
 const SECOND_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: SECOND_PRODUCT.slug, offerFirst: 3, offersAfter: null },
   },
 };
 
 const THIRD_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: THIRD_PRODUCT.slug, offerFirst: 3, offersAfter: null },
   },
 };
@@ -256,8 +266,8 @@ const THIRD_PRODUCT_QUERY_REF = mockPreloadedQuery(
 
 const COMPARE_ROUTE_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "CompareRouteQuery-cache-id",
     operationName: "CompareRouteQuery",
-    text: "query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!) { comparisonProducts(slugs: $slugs) { id } }",
     variables: {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
       offerFirst: 3,
@@ -271,8 +281,8 @@ const COMPARE_ROUTE_QUERY_REF = mockPreloadedQuery(
 
 const savedComparisonsQueryDescriptor = (variables: { first: number; after?: string }) => ({
   __relayQuery: {
+    cacheID: "SavedComparisonOperationsQuery-cache-id",
     operationName: "SavedComparisonOperationsQuery",
-    text: "query SavedComparisonOperationsQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
     variables,
   },
 });
@@ -526,6 +536,7 @@ beforeEach(() => {
   useLazyLoadQueryMock.mockReset();
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
+  usePaginationFragmentMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRouteErrorMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
@@ -537,6 +548,10 @@ beforeEach(() => {
     },
   });
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
+  mockedUsePaginationFragment.mockImplementation(
+    (_fragment, fragmentRef) =>
+      ({ data: fragmentRef, hasNext: false, isLoadingNext: false, loadNext: vi.fn() }) as never,
+  );
   mockCompareRouteQueries();
 });
 
@@ -1476,6 +1491,7 @@ test("product picker view filters loaded options, clears the filter, and keeps r
     <MemoryRouter>
       <CompareProductPickerView
         heading="Choose products"
+        isLoadingMore={false}
         onShowMore={onShowMore}
         options={[
           {
@@ -1602,7 +1618,6 @@ test("product picker keeps brandless products alongside branded results", () => 
       },
     },
   });
-
   renderCompareRoute();
 
   expect(screen.getByRole("link", { name: "Compare Brandless Product" })).toBeInTheDocument();
@@ -1611,135 +1626,106 @@ test("product picker keeps brandless products alongside branded results", () => 
   expect(screen.getByText("Acme")).toBeInTheDocument();
 });
 
-test("product picker can advance beyond the first picker page", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "empty",
-    specMode: "shared",
-    slugs: [],
-  });
-  mockedUseLazyLoadQuery.mockImplementation((_query, variables) => {
-    if ((variables as { after?: string | null }).after === "next-products") {
-      return {
-        products: {
-          edges: [
-            {
-              node: {
-                id: "Product:monitor-c",
-                name: "Monitor C",
-                slug: "monitor-c",
-                brand: { id: "Brand:panelco", name: "PanelCo" },
-              },
-            },
-          ],
-          pageInfo: {
-            hasNextPage: false,
-            endCursor: null,
-          },
-        },
-      };
-    }
-
-    return {
-      products: {
-        edges: [],
-        pageInfo: {
-          hasNextPage: true,
-          endCursor: "next-products",
-        },
-      },
-    };
-  });
-
-  renderCompareRoute();
-
-  fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
-
-  expect(mockedUseLazyLoadQuery).toHaveBeenLastCalledWith(
-    expect.anything(),
-    { first: 24, after: "next-products" },
-    { fetchPolicy: "store-or-network" },
-  );
-  expect(screen.getByRole("link", { name: "Compare Monitor C" })).toHaveAttribute(
-    "href",
-    "/compare?slug=monitor-c",
-  );
-});
-
-test("product picker stops when the next page repeats the current cursor", async () => {
-  mockedUseLoaderData.mockReturnValue({ status: "empty", specMode: "shared", slugs: [] });
-  mockedUseLazyLoadQuery.mockImplementation(() => ({
+test("product picker delegates accumulated and pending pages to Relay", () => {
+  const monitorA = {
+    id: "Product:monitor-a",
+    name: "Monitor A",
+    slug: "monitor-a",
+    brand: { id: "Brand:displayco", name: "DisplayCo" },
+  };
+  const monitorC = {
+    id: "Product:monitor-c",
+    name: "Monitor C",
+    slug: "monitor-c",
+    brand: { id: "Brand:panelco", name: "PanelCo" },
+  };
+  const queryData = {
     products: {
-      edges: [],
-      pageInfo: {
-        hasNextPage: true,
-        endCursor: "next-products",
-      },
+      edges: [{ node: monitorA }],
+      pageInfo: { endCursor: "next-products", hasNextPage: true },
     },
-  }));
-
-  renderCompareRoute();
-  fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
-
-  await waitFor(() => {
-    expect(screen.queryByRole("button", { name: "Show more products" })).not.toBeInTheDocument();
+  };
+  let productNodes = [monitorA];
+  let hasNext = true;
+  let isLoadingNext = false;
+  const loadNext = vi.fn(() => {
+    productNodes = [monitorA, monitorC];
+    isLoadingNext = true;
   });
+
+  mockedUseLoaderData.mockReturnValue({ status: "empty", specMode: "shared", slugs: [] });
+  mockedUseLazyLoadQuery.mockReturnValue(queryData);
+  mockedUsePaginationFragment.mockImplementation(
+    () =>
+      ({
+        data: { products: { edges: productNodes.map((node) => ({ node })) } },
+        hasNext,
+        isLoadingNext,
+        loadNext,
+      }) as never,
+  );
+
+  const view = renderCompareRoute();
+
+  expect(screen.getByRole("link", { name: "Compare Monitor A" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
+  view.rerender(
+    <MemoryRouter>
+      <AuthenticatedCompareRoute />
+    </MemoryRouter>,
+  );
+
+  expect(loadNext).toHaveBeenCalledWith(
+    24,
+    expect.objectContaining({ onComplete: expect.any(Function) }),
+  );
+  expect(screen.getByRole("link", { name: "Compare Monitor A" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Compare Monitor C" })).toBeVisible();
+  const loadingButton = screen.getByRole("button", { name: "Loading more products…" });
+  expect(loadingButton).toBeDisabled();
+  fireEvent.click(loadingButton);
+  expect(loadNext).toHaveBeenCalledTimes(1);
+
+  hasNext = false;
+  isLoadingNext = false;
+  view.rerender(
+    <MemoryRouter>
+      <AuthenticatedCompareRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole("link", { name: "Compare Monitor A" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Compare Monitor C" })).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Show more products" })).not.toBeInTheDocument();
 });
 
-test("product picker keeps previous products visible when loading another page", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "empty",
-    specMode: "shared",
-    slugs: [],
-  });
-  mockedUseLazyLoadQuery.mockImplementation((_query, variables) => {
-    if ((variables as { after?: string | null }).after === "next-products") {
-      return {
-        products: {
-          edges: [
-            {
-              node: {
-                id: "Product:monitor-c",
-                name: "Monitor C",
-                slug: "monitor-c",
-                brand: { id: "Brand:panelco", name: "PanelCo" },
-              },
-            },
-          ],
-          pageInfo: {
-            hasNextPage: false,
-            endCursor: null,
-          },
-        },
-      };
-    }
+test("product picker reports pagination failures and retries", async () => {
+  const product = {
+    id: "Product:monitor-a",
+    name: "Monitor A",
+    slug: "monitor-a",
+    brand: { id: "Brand:displayco", name: "DisplayCo" },
+  };
+  const queryData = { products: { edges: [{ node: product }] } };
+  const loadNext = vi.fn();
 
-    return {
-      products: {
-        edges: [
-          {
-            node: {
-              id: "Product:monitor-a",
-              name: "Monitor A",
-              slug: "monitor-a",
-              brand: { id: "Brand:displayco", name: "DisplayCo" },
-            },
-          },
-        ],
-        pageInfo: {
-          hasNextPage: true,
-          endCursor: "next-products",
-        },
-      },
-    };
-  });
+  mockedUseLoaderData.mockReturnValue({ status: "empty", specMode: "shared", slugs: [] });
+  mockedUseLazyLoadQuery.mockReturnValue(queryData);
+  mockedUsePaginationFragment.mockReturnValue({
+    data: queryData,
+    hasNext: true,
+    isLoadingNext: false,
+    loadNext,
+  } as never);
 
   renderCompareRoute();
 
-  expect(screen.getByRole("link", { name: "Compare Monitor A" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
+  await act(() => loadNext.mock.calls[0]?.[1]?.onComplete(new Error("Pagination failed")));
 
-  expect(screen.getByRole("link", { name: "Compare Monitor A" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Compare Monitor C" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("More products unavailable.");
+  fireEvent.click(screen.getByRole("button", { name: "Retry products" }));
+  expect(loadNext).toHaveBeenCalledTimes(2);
 });
 
 test("product picker filters loaded product names without hiding pagination", () => {
@@ -1774,6 +1760,10 @@ test("product picker filters loaded product names without hiding pagination", ()
       },
     },
   });
+  mockedUsePaginationFragment.mockImplementation(
+    (_fragment, fragmentRef) =>
+      ({ data: fragmentRef, hasNext: true, isLoadingNext: false, loadNext: vi.fn() }) as never,
+  );
 
   renderCompareRoute();
 
@@ -1845,7 +1835,7 @@ test("product picker filtering is stable when the browser locale has special cas
   }
 });
 
-test("product picker resets pagination before rendering a changed selected set", () => {
+test("product picker restarts its Relay connection after the selected set changes", () => {
   let loaderData: CompareRouteLoaderData = {
     status: "ready",
     specMode: "shared",
@@ -1856,51 +1846,19 @@ test("product picker resets pagination before rendering a changed selected set",
     },
     products: [buildProductSummary(DETAIL_PRODUCT)],
   };
+  const loadNext = vi.fn();
   mockedUseLoaderData.mockImplementation(() => loaderData);
-  mockedUseLazyLoadQuery
-    .mockReturnValueOnce({
-      products: {
-        edges: [],
-        pageInfo: {
-          hasNextPage: true,
-          endCursor: "next-products",
-        },
-      },
-    })
-    .mockReturnValueOnce({
-      products: {
-        edges: [
-          {
-            node: {
-              id: "Product:monitor-c",
-              name: "Monitor C",
-              slug: "monitor-c",
-              brand: { id: "Brand:panelco", name: "PanelCo" },
-            },
-          },
-        ],
-        pageInfo: {
-          hasNextPage: false,
-          endCursor: null,
-        },
-      },
-    })
-    .mockReturnValue({
-      products: {
-        edges: [],
-        pageInfo: {
-          hasNextPage: false,
-          endCursor: null,
-        },
-      },
-    });
+  mockedUseLazyLoadQuery.mockReturnValue({ products: { edges: [] } });
+  mockedUsePaginationFragment.mockImplementation(
+    (_fragment, fragmentRef) =>
+      ({ data: fragmentRef, hasNext: true, isLoadingNext: false, loadNext }) as never,
+  );
 
   const { rerender } = renderCompareRoute();
   fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
-  expect(mockedUseLazyLoadQuery).toHaveBeenLastCalledWith(
-    expect.anything(),
-    { first: 24, after: "next-products" },
-    { fetchPolicy: "store-or-network" },
+  expect(loadNext).toHaveBeenCalledWith(
+    24,
+    expect.objectContaining({ onComplete: expect.any(Function) }),
   );
 
   const callsBeforeSelectionChange = mockedUseLazyLoadQuery.mock.calls.length;
@@ -3319,13 +3277,16 @@ test.each([
     "Please sign in or contact support if you believe this is an error.",
   ],
   [422, "An error occurred while loading the comparison.", "Please try refreshing the page."],
-] as const)("compare route renders response status %s with its customer guidance", async (status, title, guidance) => {
-  renderCompareResponseError(status);
+] as const)(
+  "compare route renders response status %s with its customer guidance",
+  async (status, title, guidance) => {
+    renderCompareResponseError(status);
 
-  expect(await screen.findByRole("heading", { name: "Compare products" })).toBeVisible();
-  expect(screen.getByRole("alert")).toHaveTextContent(title);
-  expect(screen.getByRole("alert")).toHaveTextContent(guidance);
-});
+    expect(await screen.findByRole("heading", { name: "Compare products" })).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent(title);
+    expect(screen.getByRole("alert")).toHaveTextContent(guidance);
+  },
+);
 
 test("compare route renders unknown route failures without treating them as exceptions", () => {
   mockedUseRouteError.mockReturnValue({});

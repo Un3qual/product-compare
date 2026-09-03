@@ -158,6 +158,49 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
              |> Repo.insert()
 
     assert "should be at least 16 character(s)" in errors_on(invalid_key_changeset).idempotency_key
+
+    invalid_shape_changeset =
+      CommunityWriteReceipt.changeset(%CommunityWriteReceipt{}, %{
+        attrs
+        | idempotency_key: "community-key-with\nnewline"
+      })
+
+    refute invalid_shape_changeset.valid?
+    assert "has invalid format" in errors_on(invalid_shape_changeset).idempotency_key
+
+    invalid_digest_changeset =
+      CommunityWriteReceipt.changeset(%CommunityWriteReceipt{}, %{
+        attrs
+        | payload_digest: :binary.copy(<<0>>, 31)
+      })
+
+    refute invalid_digest_changeset.valid?
+    assert "must be a SHA-256 digest" in errors_on(invalid_digest_changeset).payload_digest
+  end
+
+  test "PostgreSQL enforces durable write receipt key and digest shapes" do
+    user = AccountsFixtures.user_fixture()
+
+    assert {:ok, _result} =
+             insert_community_write_receipt(
+               user.id,
+               "community-key-valid-0001",
+               :binary.copy(<<0>>, 32)
+             )
+
+    assert_check_violation(
+      insert_community_write_receipt(user.id, "short", :binary.copy(<<0>>, 32)),
+      "community_write_receipts_key_check"
+    )
+
+    assert_check_violation(
+      insert_community_write_receipt(
+        user.id,
+        "community-key-invalid-digest",
+        :binary.copy(<<0>>, 31)
+      ),
+      "community_write_receipts_digest_check"
+    )
   end
 
   test "durable write windows enforce one counter per action and UTC hour" do
@@ -219,6 +262,11 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
               }
             }} =
              insert_community_write_window(user.id, "report", ~U[2026-07-20 20:01:00Z])
+
+    assert_check_violation(
+      insert_community_write_window(user.id, "answer", ~U[2026-07-20 21:00:00Z], -1),
+      "community_write_windows_count_check"
+    )
   end
 
   test "write limit increments require an outer transaction before mutation" do
@@ -1318,15 +1366,47 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
   end
 
   defp insert_community_write_window(user_id, action_kind, window_started_at) do
+    insert_community_write_window(user_id, action_kind, window_started_at, 1)
+  end
+
+  defp insert_community_write_window(user_id, action_kind, window_started_at, count) do
     Repo.query(
       """
       INSERT INTO community_write_windows (
         user_id, action_kind, window_started_at, count, inserted_at, updated_at
       )
-      VALUES ($1, $2, $3, 1, now(), now())
+      VALUES ($1, $2, $3, $4, now(), now())
       """,
-      [user_id, action_kind, window_started_at]
+      [user_id, action_kind, window_started_at, count]
     )
+  end
+
+  defp insert_community_write_receipt(user_id, idempotency_key, payload_digest) do
+    Repo.query(
+      """
+      INSERT INTO community_write_receipts (
+        user_id,
+        idempotency_key,
+        payload_digest,
+        content_type,
+        content_entropy_id,
+        inserted_at
+      )
+      VALUES ($1, $2, $3, 'review', $4, now())
+      """,
+      [user_id, idempotency_key, payload_digest, Ecto.UUID.dump!(Ecto.UUID.generate())]
+    )
+  end
+
+  defp assert_check_violation(
+         {:error, %Postgrex.Error{postgres: %{code: :check_violation, constraint: constraint}}},
+         expected_constraint
+       ) do
+    assert constraint == expected_constraint
+  end
+
+  defp assert_check_violation({:ok, _result}, expected_constraint) do
+    flunk("expected #{expected_constraint} to reject the direct write")
   end
 
   defp emoji_zwj_text(code_point_count) do

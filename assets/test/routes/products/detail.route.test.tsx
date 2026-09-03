@@ -1,7 +1,13 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
-import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import {
+  useFragment,
+  useLazyLoadQuery,
+  useMutation,
+  usePaginationFragment,
+  usePreloadedQuery,
+} from "react-relay";
 import type { ProductDetailRouteQuery } from "$generated/ProductDetailRouteQuery.graphql";
 import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../src/relay/environment";
 import {
@@ -36,6 +42,7 @@ const {
   useFragmentMock,
   useLazyLoadQueryMock,
   useMutationMock,
+  usePaginationFragmentMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
@@ -48,6 +55,7 @@ const {
   useFragmentMock: vi.fn(),
   useLazyLoadQueryMock: vi.fn(),
   useMutationMock: vi.fn(),
+  usePaginationFragmentMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn(),
 }));
@@ -75,6 +83,7 @@ vi.mock("react-relay", async () => {
     useFragment: useFragmentMock,
     useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
+    usePaginationFragment: usePaginationFragmentMock,
     usePreloadedQuery: usePreloadedQueryMock,
   };
 });
@@ -94,25 +103,24 @@ const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
+const mockedUsePaginationFragment = vi.mocked(usePaginationFragment);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 const API_ORIGIN = "http://localhost:4000";
 
 const PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "ProductDetailRouteQuery-cache-id",
     operationName: "ProductDetailRouteQuery",
-    text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
     variables: { slug: "detail-product" },
   },
 };
 
-const OFFERS_QUERY_TEXT =
-  "query ProductOffersRouteQuery($productId: ID!, $first: Int!) { merchantProducts(input: { productId: $productId, activeOnly: true, first: $first }) { edges { node { id } } } }";
 function makeOffersQueryDescriptor(offersAfter?: string | null) {
   return {
     __relayQuery: {
+      cacheID: "ProductOffersRouteQuery-cache-id",
       operationName: "ProductOffersRouteQuery",
-      text: OFFERS_QUERY_TEXT,
       variables: {
         productId: "UHJvZHVjdDox",
         first: 6,
@@ -230,9 +238,19 @@ beforeEach(() => {
   mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   useLazyLoadQueryMock.mockReset();
   useMutationMock.mockReset();
+  usePaginationFragmentMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   mockedUseMutation.mockReturnValue([commitCommerceClickMock, false] as never);
+  mockedUsePaginationFragment.mockImplementation(
+    (_fragment, fragmentRef) =>
+      ({
+        data: fragmentRef,
+        hasNext: false,
+        isLoadingNext: false,
+        loadNext: vi.fn(),
+      }) as never,
+  );
   loadQueryMock.mockReturnValue({ dispose: vi.fn() });
   productQueryRef.dispose.mockReset();
   offersQueryRef.dispose.mockReset();
@@ -678,6 +696,62 @@ test("product detail loader preserves product data when only nested offers fail"
   });
 
   expect(commitPayloadSpy).toHaveBeenCalledWith(expect.anything(), partialResponse.data);
+});
+
+test.each([
+  {
+    name: "SEO errors",
+    errors: [{ message: "SEO unavailable", path: ["product", "seo", "title"] }],
+  },
+  {
+    name: "specification errors",
+    errors: [
+      {
+        message: "Specifications unavailable",
+        path: ["product", "currentAttributes", 0],
+      },
+    ],
+  },
+  {
+    name: "community errors",
+    errors: [{ message: "Community unavailable", path: ["product", "community"] }],
+  },
+  {
+    name: "errors without a path",
+    errors: [{ message: "Unknown product failure" }],
+  },
+  {
+    name: "mixed offer and unrelated errors",
+    errors: [
+      { message: "Offers unavailable", path: ["product", "merchantProducts"] },
+      { message: "SEO unavailable", path: ["product", "seo"] },
+    ],
+  },
+])("product detail loader rejects partial product data with $name", async ({ errors }) => {
+  const environment = createRelayEnvironment();
+  const commitPayloadSpy = vi.spyOn(environment, "commitPayload");
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  mockedFetchRouteQuery.mockRejectedValue(
+    new RouteLoaderGraphQLError({
+      data: {
+        product: {
+          ...DETAIL_PRODUCT,
+          merchantProducts: null,
+        },
+      },
+      errors,
+    }),
+  );
+
+  try {
+    await expect(
+      productDetailLoader(buildProductDetailLoaderArgs({ environment })),
+    ).resolves.toEqual({ status: "error" });
+    expect(commitPayloadSpy).not.toHaveBeenCalled();
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
 });
 
 test("product detail loader rethrows aborted product preloads", async () => {

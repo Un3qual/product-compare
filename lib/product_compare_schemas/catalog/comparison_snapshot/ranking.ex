@@ -1,8 +1,8 @@
 defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Ranking do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.FiniteDecimal
   alias ProductCompareSchemas.Reference.CurrencyCode
-  alias ProductCompareSchemas.Schema
 
   @type t :: %__MODULE__{}
 
@@ -10,7 +10,7 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Ranking do
     field :rank, :integer
     field :product_id, :integer
     field :product_name, :string
-    field :landed_price, :decimal
+    field :landed_price, FiniteDecimal
     field :currency, CurrencyCode, source: :currency_id
     field :price_point_id, :integer
     field :merchant_product_id, :integer
@@ -23,8 +23,6 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Ranking do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(ranking, attrs) do
-    attrs = Schema.normalize_non_finite_decimals(attrs, [:landed_price])
-
     ranking
     |> cast(attrs, [
       :snapshot_recommendation_id,

@@ -5,7 +5,7 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrl.Parser do
   @maximum_dns_hostname_length 253
 
   @spec canonical_http_hostname(String.t()) :: {:ok, String.t()} | :error
-  def canonical_http_hostname(url) when is_binary(url) do
+  def canonical_http_hostname(url) do
     parsed_url = parse_browser_http_url(url)
 
     with true <- syntactic_destination_url?(url, parsed_url),
@@ -34,7 +34,7 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrl.Parser do
     end
   end
 
-  defp canonical_hostname(hostname) when is_binary(hostname) do
+  defp canonical_hostname(hostname) do
     if String.contains?(hostname, ":") do
       {:ok, String.downcase(hostname)}
     else

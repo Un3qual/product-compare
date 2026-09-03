@@ -12,6 +12,8 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.AnonymousVisitor
 
+  @first_party_referer "http://localhost/offers"
+
   test "router exposes behavior-revealing commerce redirect actions" do
     assert %{plug_opts: :track_merchant_product_click} =
              Phoenix.Router.route_info(
@@ -94,7 +96,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
 
       conn =
         conn
-        |> put_req_header("referer", "http://www.example.com/offers")
+        |> put_req_header("referer", @first_party_referer)
         |> put_req_header("user-agent", "ProductCompareRedirectTest/1.0")
         |> then(&%{&1 | remote_ip: {198, 51, 100, 8}})
         |> get(tracked_merchant_product_path(merchant_product))
@@ -113,7 +115,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
       assert %CommerceClickSession{
                anonymous_visitor_id: anonymous_visitor_id,
                user_id: nil,
-               referrer: "http://www.example.com/offers",
+               referrer: @first_party_referer,
                user_agent: "ProductCompareRedirectTest/1.0",
                ip_address: %Postgrex.INET{address: {198, 51, 100, 8}, netmask: 32}
              } = Repo.one(CommerceClickSession)
@@ -129,7 +131,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
       conn =
         conn
         |> log_in_user(user)
-        |> put_req_header("referer", "http://www.example.com/offers")
+        |> put_req_header("referer", @first_party_referer)
         |> put_req_header("user-agent", "ProductCompareRedirectTest/1.0")
         |> then(&%{&1 | remote_ip: {198, 51, 100, 9}})
         |> get(tracked_merchant_product_path(merchant_product))
@@ -139,7 +141,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
       assert %CommerceClickSession{
                anonymous_visitor_id: nil,
                user_id: user_id,
-               referrer: "http://www.example.com/offers",
+               referrer: @first_party_referer,
                user_agent: "ProductCompareRedirectTest/1.0",
                ip_address: %Postgrex.INET{address: {198, 51, 100, 9}, netmask: 32}
              } = Repo.one(CommerceClickSession)
@@ -169,7 +171,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
 
       conn =
         conn
-        |> put_req_header("referer", "http://www.example.com/offers")
+        |> put_req_header("referer", @first_party_referer)
         |> get(tracked_merchant_product_path(merchant_product))
 
       assert redirect_url = redirected_to(conn, 302)
@@ -253,7 +255,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
 
       conn =
         conn
-        |> put_req_header("referer", "http://www.example.com/offers")
+        |> put_req_header("referer", @first_party_referer)
         |> get(tracked_merchant_product_path(merchant_product))
 
       assert response(conn, 404) == "redirect not found"
@@ -271,7 +273,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
     test "returns 404 for invalid merchant product ids", %{conn: conn} do
       conn =
         conn
-        |> put_req_header("referer", "http://www.example.com/offers")
+        |> put_req_header("referer", @first_party_referer)
         |> get("/r/merchant-product?merchantProductId=not-a-relay-id")
 
       assert response(conn, 404) == "redirect not found"
@@ -291,7 +293,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
 
       conn =
         conn
-        |> put_req_header("referer", "http://www.example.com/offers")
+        |> put_req_header("referer", @first_party_referer)
         |> get(tracked_merchant_product_path(merchant_product))
 
       assert response(conn, 404) == "redirect not found"

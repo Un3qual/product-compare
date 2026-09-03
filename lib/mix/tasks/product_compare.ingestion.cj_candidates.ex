@@ -13,11 +13,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates do
 
   @impl Mix.Task
   def run(argv) do
+    opts = Options.parse_argv(argv)
+    Options.normalize(opts)
+
     RepoOnlyStartup.start!()
 
-    argv
-    |> Options.parse_argv()
-    |> run_report()
+    run_report(opts)
 
     :ok
   end

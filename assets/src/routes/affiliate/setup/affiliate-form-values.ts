@@ -8,6 +8,18 @@ import type { AffiliateSetupOperationsUpsertAffiliateProgramMutation } from "$ge
 
 export type AffiliateSetupFormValues = Readonly<Record<string, string | undefined>>;
 
+export function formDataToScalarValues(formData: FormData) {
+  const values: Record<string, string> = {};
+
+  formData.forEach((value, name) => {
+    if (!(name in values)) {
+      values[name] = typeof value === "string" ? value : "";
+    }
+  });
+
+  return values;
+}
+
 export function buildNetworkVariables(
   formValues: AffiliateSetupFormValues,
 ): AffiliateSetupOperationsUpsertAffiliateNetworkMutation["variables"] {

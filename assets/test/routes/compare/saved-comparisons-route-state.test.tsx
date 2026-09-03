@@ -136,8 +136,8 @@ function renderReadySavedComparisons() {
   );
   const descriptor = {
     __relayQuery: {
+      cacheID: "SavedComparisonsRouteQuery-cache-id",
       operationName: savedComparisonsRouteQueryArtifact.params.name,
-      text: savedComparisonsRouteQueryArtifact.params.text,
       variables,
     },
   };

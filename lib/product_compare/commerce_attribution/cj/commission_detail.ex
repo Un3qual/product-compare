@@ -1,6 +1,8 @@
 defmodule ProductCompare.CommerceAttribution.CJ.CommissionDetail do
   @moduledoc false
 
+  alias ProductCompareSchemas.DecimalInput
+
   @fields ~w(
     commissionId
     original
@@ -70,25 +72,6 @@ defmodule ProductCompare.CommerceAttribution.CJ.CommissionDetail do
 
   def normalize_string(_value), do: nil
 
-  @spec parse_finite_decimal(term()) :: {:ok, Decimal.t()} | :error
-  def parse_finite_decimal(%Decimal{} = decimal) do
-    if finite_decimal?(decimal), do: {:ok, decimal}, else: :error
-  end
-
-  def parse_finite_decimal(value) when is_binary(value) or is_integer(value) or is_float(value) do
-    value = value |> to_string() |> String.trim()
-
-    case Decimal.parse(value) do
-      {%Decimal{} = decimal, ""} ->
-        if finite_decimal?(decimal), do: {:ok, decimal}, else: :error
-
-      _invalid ->
-        :error
-    end
-  end
-
-  def parse_finite_decimal(_value), do: :error
-
   defp nonblank_string?(value), do: not is_nil(normalize_string(value))
   defp nullable_string?(nil), do: true
   defp nullable_string?(value), do: is_binary(value)
@@ -101,12 +84,10 @@ defmodule ProductCompare.CommerceAttribution.CJ.CommissionDetail do
   end
 
   defp decimal_string?(value) when is_binary(value) do
-    match?({:ok, %Decimal{}}, parse_finite_decimal(value))
+    match?(%Decimal{}, DecimalInput.to_decimal(value))
   end
 
   defp decimal_string?(_value), do: false
-
-  defp finite_decimal?(decimal), do: not Decimal.nan?(decimal) and not Decimal.inf?(decimal)
 
   defp utc_datetime_string?(value) when is_binary(value) do
     match?(

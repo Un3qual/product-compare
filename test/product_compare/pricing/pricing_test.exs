@@ -474,7 +474,7 @@ defmodule ProductCompare.PricingTest do
                Pricing.add_price_point(%{
                  merchant_product_id: offer.id,
                  observed_at: from,
-                 price: "1" <> String.duplicate("0", 400),
+                 price: "1E+400",
                  shipping: "0",
                  in_stock: true
                })

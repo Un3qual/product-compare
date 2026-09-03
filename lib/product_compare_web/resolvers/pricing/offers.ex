@@ -27,8 +27,7 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
         %{id: product_id},
         args,
         %{context: %{loader: loader}}
-      )
-      when is_integer(product_id) do
+      ) do
     with {:ok, merchant_id} <-
            Input.decode_optional_integer_id(
              Input.fetch_value(args || %{}, :merchant_id),
@@ -68,8 +67,7 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
 
   @spec product_offer_truth(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def product_offer_truth(%{id: product_id}, _args, %{context: %{loader: loader}})
-      when is_integer(product_id) do
+  def product_offer_truth(%{id: product_id}, _args, %{context: %{loader: loader}}) do
     source = Loader.product_evidence_source()
     batch = {:one, Product}
     item = [offer_truth: product_id]
@@ -83,8 +81,7 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
 
   @spec product_price_history(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, [map()]} | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def product_price_history(%{id: product_id}, _args, %{context: %{loader: loader}})
-      when is_integer(product_id) do
+  def product_price_history(%{id: product_id}, _args, %{context: %{loader: loader}}) do
     source = Loader.product_evidence_source()
     batch = {:one, Product}
     item = [price_history_90d: product_id]
@@ -102,8 +99,7 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
         %{id: merchant_product_id},
         args,
         %{context: %{loader: loader}}
-      )
-      when is_integer(merchant_product_id) do
+      ) do
     connection_args = Input.connection_args(args)
 
     range_filters = %{

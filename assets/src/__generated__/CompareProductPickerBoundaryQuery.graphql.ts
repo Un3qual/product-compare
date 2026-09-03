@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b8afed01c0b0772efbf5e4426a32077b>>
+ * @generated SignedSource<<4a54a51a20d791fb6892ac228195f93f>>
  * @lightSyntaxTransform
  */
 
@@ -8,28 +8,13 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
+import { FragmentRefs } from "relay-runtime";
 export type CompareProductPickerBoundaryQuery$variables = {
   after?: string | null;
   first: number;
 };
 export type CompareProductPickerBoundaryQuery$data = {
-  readonly products: {
-    readonly edges: ReadonlyArray<{
-      readonly node: {
-        readonly brand: {
-          readonly id: string;
-          readonly name: string;
-        } | null;
-        readonly id: string;
-        readonly name: string;
-        readonly slug: string;
-      };
-    }>;
-    readonly pageInfo: {
-      readonly endCursor: string | null;
-      readonly hasNextPage: boolean;
-    };
-  } | null;
+  readonly " $fragmentSpreads": FragmentRefs<"CompareProductPickerBoundary_products">;
 };
 export type CompareProductPickerBoundaryQuery = {
   response: CompareProductPickerBoundaryQuery$data;
@@ -47,113 +32,32 @@ v1 = {
   "kind": "LocalArgument",
   "name": "first"
 },
-v2 = {
+v2 = [
+  {
+    "kind": "Variable",
+    "name": "after",
+    "variableName": "after"
+  },
+  {
+    "kind": "Variable",
+    "name": "first",
+    "variableName": "first"
+  }
+],
+v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
   "storageKey": null
 },
-v3 = {
+v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "name",
   "storageKey": null
-},
-v4 = [
-  {
-    "alias": null,
-    "args": [
-      {
-        "kind": "Variable",
-        "name": "after",
-        "variableName": "after"
-      },
-      {
-        "kind": "Variable",
-        "name": "first",
-        "variableName": "first"
-      }
-    ],
-    "concreteType": "ProductConnection",
-    "kind": "LinkedField",
-    "name": "products",
-    "plural": false,
-    "selections": [
-      {
-        "alias": null,
-        "args": null,
-        "concreteType": "ProductEdge",
-        "kind": "LinkedField",
-        "name": "edges",
-        "plural": true,
-        "selections": [
-          {
-            "alias": null,
-            "args": null,
-            "concreteType": "Product",
-            "kind": "LinkedField",
-            "name": "node",
-            "plural": false,
-            "selections": [
-              (v2/*:: as any*/),
-              (v3/*:: as any*/),
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
-                "name": "slug",
-                "storageKey": null
-              },
-              {
-                "alias": null,
-                "args": null,
-                "concreteType": "Brand",
-                "kind": "LinkedField",
-                "name": "brand",
-                "plural": false,
-                "selections": [
-                  (v2/*:: as any*/),
-                  (v3/*:: as any*/)
-                ],
-                "storageKey": null
-              }
-            ],
-            "storageKey": null
-          }
-        ],
-        "storageKey": null
-      },
-      {
-        "alias": null,
-        "args": null,
-        "concreteType": "PageInfo",
-        "kind": "LinkedField",
-        "name": "pageInfo",
-        "plural": false,
-        "selections": [
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "hasNextPage",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "endCursor",
-            "storageKey": null
-          }
-        ],
-        "storageKey": null
-      }
-    ],
-    "storageKey": null
-  }
-];
+};
 return {
   "fragment": {
     "argumentDefinitions": [
@@ -163,7 +67,13 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "CompareProductPickerBoundaryQuery",
-    "selections": (v4/*:: as any*/),
+    "selections": [
+      {
+        "args": (v2/*:: as any*/),
+        "kind": "FragmentSpread",
+        "name": "CompareProductPickerBoundary_products"
+      }
+    ],
     "type": "RootQueryType",
     "abstractKey": null
   },
@@ -175,19 +85,123 @@ return {
     ],
     "kind": "Operation",
     "name": "CompareProductPickerBoundaryQuery",
-    "selections": (v4/*:: as any*/)
+    "selections": [
+      {
+        "alias": null,
+        "args": (v2/*:: as any*/),
+        "concreteType": "ProductConnection",
+        "kind": "LinkedField",
+        "name": "products",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "ProductEdge",
+            "kind": "LinkedField",
+            "name": "edges",
+            "plural": true,
+            "selections": [
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "Product",
+                "kind": "LinkedField",
+                "name": "node",
+                "plural": false,
+                "selections": [
+                  (v3/*:: as any*/),
+                  (v4/*:: as any*/),
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "slug",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "Brand",
+                    "kind": "LinkedField",
+                    "name": "brand",
+                    "plural": false,
+                    "selections": [
+                      (v3/*:: as any*/),
+                      (v4/*:: as any*/)
+                    ],
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "__typename",
+                    "storageKey": null
+                  }
+                ],
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "cursor",
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "PageInfo",
+            "kind": "LinkedField",
+            "name": "pageInfo",
+            "plural": false,
+            "selections": [
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "endCursor",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "hasNextPage",
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": (v2/*:: as any*/),
+        "filters": null,
+        "handle": "connection",
+        "key": "CompareProductPickerBoundary_products",
+        "kind": "LinkedHandle",
+        "name": "products"
+      }
+    ]
   },
   "params": {
-    "cacheID": "27ede87f01f19b8b7a7a61ff46bcc6ca",
+    "cacheID": "9148c3d6c516b1ce3971309f4c0e8185",
     "id": null,
     "metadata": {},
     "name": "CompareProductPickerBoundaryQuery",
     "operationKind": "query",
-    "text": "query CompareProductPickerBoundaryQuery(\n  $first: Int!\n  $after: String\n) {\n  products(first: $first, after: $after) {\n    edges {\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
+    "text": "query CompareProductPickerBoundaryQuery(\n  $first: Int!\n  $after: String\n) {\n  ...CompareProductPickerBoundary_products_2HEEH6\n}\n\nfragment CompareProductPickerBoundary_products_2HEEH6 on RootQueryType {\n  products(first: $first, after: $after) {\n    edges {\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "a21d2ef4aebea4be2e7b351e1461adca";
+(node as any).hash = "76d76cedff7732ccda22f5cb2b48e772";
 
 export default node;

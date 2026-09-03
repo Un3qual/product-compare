@@ -6,8 +6,9 @@ defmodule ProductCompare.Seo.Sitemaps do
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.Repo
   alias ProductCompare.Seo.{Categories, Metadata, QualificationPolicy}
-  alias ProductCompareSchemas.Catalog.ComparisonSnapshot
-  alias ProductCompareSchemas.Pricing.Merchant
+  alias ProductCompareSchemas.Catalog.{ComparisonSnapshot, Product, ProductMedia}
+  alias ProductCompareSchemas.Pricing.{Merchant, MerchantProduct, PricePoint}
+  alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonClosure}
 
   @maximum_sitemap_entries 10_000
@@ -23,24 +24,32 @@ defmodule ProductCompare.Seo.Sitemaps do
   end
 
   defp sitemap_query(:products, now, limit) do
+    attribute_activity = product_attribute_activity_query()
+    media_activity = product_media_activity_query()
+    price_activity = product_price_activity_query()
+
     now
     |> Categories.qualified_products_query()
     |> order_by([product], asc: product.id)
     |> limit(^limit)
-    |> select([product], {
-      fragment("'/products/' || ?", product.slug),
-      fragment(
-        "GREATEST(?, COALESCE((SELECT max(pac.selected_at) FROM product_attribute_current pac WHERE pac.product_id = ?), ?), COALESCE((SELECT max(pm.observed_at) FROM product_media pm WHERE pm.product_id = ?), ?), COALESCE((SELECT max(pp.observed_at) FROM price_points pp INNER JOIN merchant_products mp ON mp.id = pp.merchant_product_id WHERE mp.product_id = ?), ?))",
-        product.updated_at,
-        product.id,
-        product.updated_at,
-        product.id,
-        product.updated_at,
-        product.id,
-        product.updated_at
-      )
+    |> select([product], %{
+      slug: product.slug,
+      product_updated_at: product.updated_at,
+      attribute_selected_at: subquery(attribute_activity),
+      media_observed_at: subquery(media_activity),
+      price_observed_at: subquery(price_activity)
     })
     |> Repo.all()
+    |> Enum.map(fn row ->
+      timestamps = [
+        row.product_updated_at,
+        row.attribute_selected_at,
+        row.media_observed_at,
+        row.price_observed_at
+      ]
+
+      {"/products/#{row.slug}", latest_datetime(timestamps)}
+    end)
   end
 
   defp sitemap_query(:merchants, now, limit) do
@@ -50,32 +59,38 @@ defmodule ProductCompare.Seo.Sitemaps do
       |> select([offer], %{merchant_id: offer.merchant_id})
       |> distinct(true)
 
+    offer_activity = merchant_offer_activity_query()
+    price_activity = merchant_price_activity_query()
+
     Merchant
+    |> from(as: :merchant)
     |> join(:inner, [merchant], eligible in subquery(eligible_merchants),
       on: eligible.merchant_id == merchant.id
     )
     |> order_by([merchant], asc: merchant.id)
     |> limit(^limit)
-    |> select([merchant], {
-      fragment("'/merchants/' || ?", merchant.slug),
-      fragment(
-        "GREATEST(?, COALESCE((SELECT max(mp.updated_at) FROM merchant_products mp WHERE mp.merchant_id = ?), ?), COALESCE((SELECT max(pp.observed_at) FROM price_points pp INNER JOIN merchant_products mp ON mp.id = pp.merchant_product_id WHERE mp.merchant_id = ?), ?))",
-        merchant.updated_at,
-        merchant.id,
-        merchant.updated_at,
-        merchant.id,
-        merchant.updated_at
-      )
+    |> select([merchant], %{
+      slug: merchant.slug,
+      merchant_updated_at: merchant.updated_at,
+      offer_updated_at: subquery(offer_activity),
+      price_observed_at: subquery(price_activity)
     })
     |> Repo.all()
+    |> Enum.map(fn row ->
+      timestamps = [row.merchant_updated_at, row.offer_updated_at, row.price_observed_at]
+      {"/merchants/#{row.slug}", latest_datetime(timestamps)}
+    end)
   end
 
   defp sitemap_query(:categories, now, limit) do
     qualifying_products = Categories.qualified_products_query(now)
+    attribute_activity = category_attribute_activity_query()
+    price_activity = category_price_activity_query()
     minimum_description_length = QualificationPolicy.minimum_description_length()
     minimum_category_products = QualificationPolicy.minimum_category_products()
 
     Taxon
+    |> from(as: :taxon)
     |> join(:inner, [taxon], closure in TaxonClosure, on: closure.ancestor_id == taxon.id)
     |> join(:inner, [taxon, closure], product in subquery(qualifying_products),
       on: product.primary_type_taxon_id == closure.descendant_id
@@ -96,20 +111,24 @@ defmodule ProductCompare.Seo.Sitemaps do
     )
     |> order_by([taxon], asc: taxon.id)
     |> limit(^limit)
-    |> select([taxon, _closure, product], {
-      fragment("'/categories/' || ?", taxon.seo_slug),
-      fragment(
-        "GREATEST(?, COALESCE(max(?), ?), COALESCE((SELECT max(pac.selected_at) FROM product_attribute_current pac INNER JOIN products p ON p.id = pac.product_id INNER JOIN taxon_closure tc ON tc.descendant_id = p.primary_type_taxon_id WHERE tc.ancestor_id = ?), ?), COALESCE((SELECT max(pp.observed_at) FROM price_points pp INNER JOIN merchant_products mp ON mp.id = pp.merchant_product_id INNER JOIN products p ON p.id = mp.product_id INNER JOIN taxon_closure tc ON tc.descendant_id = p.primary_type_taxon_id WHERE tc.ancestor_id = ?), ?))",
-        taxon.updated_at,
-        product.updated_at,
-        taxon.updated_at,
-        taxon.id,
-        taxon.updated_at,
-        taxon.id,
-        taxon.updated_at
-      )
+    |> select([taxon, _closure, product], %{
+      slug: taxon.seo_slug,
+      taxon_updated_at: taxon.updated_at,
+      product_updated_at: max(product.updated_at),
+      attribute_selected_at: subquery(attribute_activity),
+      price_observed_at: subquery(price_activity)
     })
     |> Repo.all()
+    |> Enum.map(fn row ->
+      timestamps = [
+        row.taxon_updated_at,
+        row.product_updated_at,
+        row.attribute_selected_at,
+        row.price_observed_at
+      ]
+
+      {"/categories/#{row.slug}", latest_datetime(timestamps)}
+    end)
   end
 
   defp sitemap_query(:comparisons, _now, limit) do
@@ -127,5 +146,67 @@ defmodule ProductCompare.Seo.Sitemaps do
     |> Enum.map(fn snapshot ->
       {"/compare/shared/#{snapshot.public_token}", snapshot.inserted_at}
     end)
+  end
+
+  defp product_attribute_activity_query do
+    from current in ProductAttributeCurrent,
+      where: current.product_id == parent_as(:product).id,
+      select: max(current.selected_at)
+  end
+
+  defp product_media_activity_query do
+    from media in ProductMedia,
+      where: media.product_id == parent_as(:product).id,
+      select: max(media.observed_at)
+  end
+
+  defp product_price_activity_query do
+    from price in PricePoint,
+      join: offer in MerchantProduct,
+      on: offer.id == price.merchant_product_id,
+      where: offer.product_id == parent_as(:product).id,
+      select: max(price.observed_at)
+  end
+
+  defp merchant_offer_activity_query do
+    from offer in MerchantProduct,
+      where: offer.merchant_id == parent_as(:merchant).id,
+      select: max(offer.updated_at)
+  end
+
+  defp merchant_price_activity_query do
+    from price in PricePoint,
+      join: offer in MerchantProduct,
+      on: offer.id == price.merchant_product_id,
+      where: offer.merchant_id == parent_as(:merchant).id,
+      select: max(price.observed_at)
+  end
+
+  defp category_attribute_activity_query do
+    from current in ProductAttributeCurrent,
+      join: product in Product,
+      on: product.id == current.product_id,
+      join: closure in TaxonClosure,
+      on: closure.descendant_id == product.primary_type_taxon_id,
+      where: closure.ancestor_id == parent_as(:taxon).id,
+      select: max(current.selected_at)
+  end
+
+  defp category_price_activity_query do
+    from price in PricePoint,
+      join: offer in MerchantProduct,
+      on: offer.id == price.merchant_product_id,
+      join: product in Product,
+      on: product.id == offer.product_id,
+      join: closure in TaxonClosure,
+      on: closure.descendant_id == product.primary_type_taxon_id,
+      where: closure.ancestor_id == parent_as(:taxon).id,
+      select: max(price.observed_at)
+  end
+
+  defp latest_datetime(timestamps) do
+    timestamps
+    |> Enum.reject(&is_nil/1)
+    |> Enum.max_by(&DateTime.to_unix(&1, :microsecond))
   end
 end

@@ -15,12 +15,15 @@ defmodule ProductCompareWeb.Resolvers.SeoResolver do
     {:ok, Seo.get_category(Input.fetch_value(args, :slug), now: now)}
   end
 
+  @spec category_products(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()}
+          | {:error, String.t()}
+          | Absinthe.Resolution.Helpers.dataloader_tuple()
   def category_products(
         %{id: category_id, now: %DateTime{} = now},
         args,
         %{context: %{loader: loader}}
-      )
-      when is_integer(category_id) do
+      ) do
     connection_args = Input.connection_args(args)
 
     with {:ok, _window} <- Connection.batch_window_result(connection_args) do
@@ -37,8 +40,9 @@ defmodule ProductCompareWeb.Resolvers.SeoResolver do
     end
   end
 
-  def product_metadata(%{id: product_id}, _args, %{context: %{loader: loader}})
-      when is_integer(product_id) do
+  @spec product_metadata(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def product_metadata(%{id: product_id}, _args, %{context: %{loader: loader}}) do
     source = Loader.product_evidence_source()
     batch = {:one, Product}
     item = [seo: product_id]

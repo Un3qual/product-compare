@@ -44,8 +44,8 @@ test("saved comparisons renders the Relay page instead of an unmasked loader pro
   );
   const descriptor = {
     __relayQuery: {
+      cacheID: "SavedComparisonsRouteQuery-cache-id",
       operationName: savedComparisonsRouteQueryArtifact.params.name,
-      text: savedComparisonsRouteQueryArtifact.params.text,
       variables,
     },
   };

@@ -45,7 +45,7 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-No work is currently claimed.
+None.
 
 ## Ready Work
 
@@ -53,25 +53,22 @@ No implementation rows are currently ready.
 
 ## Ready Floor Exception
 
-Reason: The CJ live-conversion lifecycle and deterministic development fixtures
-are complete. Closeout curation checked current product behavior, the green
-1,671-test backend and 1,530-test frontend gates, source TODO/FIXME markers,
-architecture gaps, the candidate catalog, and lane evidence. It found no other
-source-backed, independently reviewable outcome that is both coherent and
-executable; the remaining named product and provider possibilities require an
-explicit decision or external evidence and remain deferred.
-Rejected split: Re-dispatching CJ storage, provider transport, scheduling,
-GraphQL, or the operator workspace would relabel completed internal slices as
-path-sized filler. The August 29 development-seed plan reused those operations
-and is recorded as a completed internal outcome slice, not a new queue row.
-Reopening completed historical cleanup, deferred providers, or unrelated
-operator pages would also create false queue depth.
-Replenishment action: At the 2026-08-29 development-seed closeout, the
-coordinator refreshed current behavior, full test/coverage results, source
-markers, architecture, candidate-catalog classifications, and lane evidence.
-No coherent successor was found. Repeat that evidence-backed curation after a new product decision,
-external provider evidence, failing contract, or architecture gap appears, and
-promote every independently shippable validated outcome then.
+Reason: The repository-wide quality remediation, CJ live-conversion lifecycle,
+and deterministic development fixtures are complete. Their closeout curation
+checked current product behavior, full repository gates, source markers,
+architecture gaps, the candidate catalog, and lane evidence without finding
+another coherent, independently reviewable outcome that is ready to execute.
+The remaining product and provider possibilities require a decision or external
+evidence and remain deferred.
+Rejected split: Re-dispatching completed quality cleanup, CJ storage, provider
+transport, scheduling, GraphQL, development seeds, or operator workspace slices
+would manufacture path-sized work. Remaining PostgreSQL-specific expressions
+and native database boundaries are intentional, while isolated style edits,
+test assertions, helpers, and speculative abstractions are not coherent product
+outcomes.
+Replenishment action: Repeat evidence-backed curation after a new product
+decision, external provider evidence, failing contract, or architecture gap
+appears, and promote every independently shippable validated outcome then.
 
 ## Needs Decision Work
 

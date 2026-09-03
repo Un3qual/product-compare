@@ -1,10 +1,6 @@
-import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
-import { graphql, useMutation, usePreloadedQuery } from "react-relay";
-import type { AffiliateSetupOperationsCreateCouponMutation } from "$generated/AffiliateSetupOperationsCreateCouponMutation.graphql";
-import type { AffiliateSetupOperationsUpsertAffiliateLinkMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateLinkMutation.graphql";
-import type { AffiliateSetupOperationsUpsertAffiliateNetworkMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateNetworkMutation.graphql";
-import type { AffiliateSetupOperationsUpsertAffiliateProgramMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateProgramMutation.graphql";
+import { graphql, usePreloadedQuery } from "react-relay";
 import type { AffiliateSetupRouteQuery } from "$generated/AffiliateSetupRouteQuery.graphql";
 import {
   getRelayEnvironmentFromRouterContext,
@@ -19,36 +15,12 @@ import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Pagination } from "$ui/components/navigation/Pagination";
 import { recoverRouteLoaderError } from "$relay/loader-errors";
-import {
-  merchantPaginationFromUrl,
-  type MerchantPagination,
-} from "../../merchants/pagination";
-import { commitRouteMutationPromise } from "$relay/mutations";
-import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
-import { CouponStep, type CouponResult } from "./coupon/CouponStep";
-import { MerchantLinkStep, type LinkResult } from "./merchant-link/MerchantLinkStep";
-import { NetworkStep, type NetworkResult } from "./network/NetworkStep";
-import { ProgramStep, type ProgramResult } from "./program/ProgramStep";
-import {
-  createCouponMutation,
-  resolveAffiliateCouponMutationOutcome,
-  resolveAffiliateLinkMutationOutcome,
-  resolveAffiliateNetworkMutationOutcome,
-  resolveAffiliateProgramMutationOutcome,
-  upsertAffiliateLinkMutation,
-  upsertAffiliateNetworkMutation,
-  upsertAffiliateProgramMutation,
-} from "./AffiliateSetupOperations";
-import {
-  buildCouponVariables,
-  buildLinkVariables,
-  buildNetworkVariables,
-  buildProgramVariables,
-} from "./affiliate-form-values";
-import {
-  buildMerchantChoices,
-  getAffiliateMerchantContext,
-} from "./merchant-context";
+import { merchantPaginationFromUrl, type MerchantPagination } from "../../merchants/pagination";
+import { CouponStep } from "./coupon/CouponStep";
+import { MerchantLinkStep } from "./merchant-link/MerchantLinkStep";
+import { NetworkStep } from "./network/NetworkStep";
+import { ProgramStep } from "./program/ProgramStep";
+import { buildMerchantChoices, getAffiliateMerchantContext } from "./merchant-context";
 import { buildAffiliateSetupPaginationData } from "./pagination";
 
 const affiliateSetupRouteQuery = graphql`
@@ -154,36 +126,8 @@ function AffiliateSetupPanel({
     merchantQuery,
   );
   const data = usePreloadedQuery<AffiliateSetupRouteQuery>(affiliateSetupRouteQuery, queryRef);
-  const [networkResult, setNetworkResult] = useState<NetworkResult | null>(null);
-  const [networkError, setNetworkError] = useState<string | null>(null);
-  const [networkPending, setNetworkPending] = useState(false);
-  const networkInFlightRef = useRef(false);
-  const [programResult, setProgramResult] = useState<ProgramResult | null>(null);
-  const [programError, setProgramError] = useState<string | null>(null);
-  const [programPending, setProgramPending] = useState(false);
-  const programInFlightRef = useRef(false);
-  const [linkResult, setLinkResult] = useState<LinkResult | null>(null);
-  const [linkError, setLinkError] = useState<string | null>(null);
-  const [linkPending, setLinkPending] = useState(false);
-  const linkInFlightRef = useRef(false);
-  const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
-  const [couponError, setCouponError] = useState<string | null>(null);
-  const [couponPending, setCouponPending] = useState(false);
-  const couponInFlightRef = useRef(false);
   const [affiliateNetworkId, setAffiliateNetworkId] = useState("");
   const [selectedMerchantId, setSelectedMerchantId] = useState("");
-  const [commitUpsertAffiliateNetwork] =
-    useMutation<AffiliateSetupOperationsUpsertAffiliateNetworkMutation>(
-      upsertAffiliateNetworkMutation,
-    );
-  const [commitUpsertAffiliateProgram] =
-    useMutation<AffiliateSetupOperationsUpsertAffiliateProgramMutation>(
-      upsertAffiliateProgramMutation,
-    );
-  const [commitUpsertAffiliateLink] =
-    useMutation<AffiliateSetupOperationsUpsertAffiliateLinkMutation>(upsertAffiliateLinkMutation);
-  const [commitCreateCoupon] =
-    useMutation<AffiliateSetupOperationsCreateCouponMutation>(createCouponMutation);
 
   const merchantChoices = useMemo(() => buildMerchantChoices(data.merchants), [data.merchants]);
   const merchantContext = useMemo(
@@ -193,148 +137,6 @@ function AffiliateSetupPanel({
 
   if (!data.merchants) {
     return <AffiliateSetupUnavailableFallback />;
-  }
-
-  async function handleNetworkSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (networkInFlightRef.current) {
-      return;
-    }
-
-    networkInFlightRef.current = true;
-    setNetworkPending(true);
-    setNetworkError(null);
-    setNetworkResult(null);
-
-    try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(
-        commitUpsertAffiliateNetwork,
-        {
-          variables: buildNetworkVariables(
-            formDataToScalarValues(new FormData(event.currentTarget)),
-          ),
-        },
-      );
-      const payload = response.upsertAffiliateNetwork;
-      const outcome = resolveAffiliateNetworkMutationOutcome(payload, graphQLErrors);
-
-      if (outcome.error === null) {
-        setNetworkResult(outcome.result);
-        setAffiliateNetworkId(outcome.result.id);
-      } else {
-        setNetworkError(outcome.error);
-      }
-    } catch {
-      setNetworkError(DEFAULT_MUTATION_ERROR_MESSAGE);
-    } finally {
-      networkInFlightRef.current = false;
-      setNetworkPending(false);
-    }
-  }
-
-  async function handleProgramSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (programInFlightRef.current) {
-      return;
-    }
-
-    programInFlightRef.current = true;
-    setProgramPending(true);
-    setProgramError(null);
-    setProgramResult(null);
-
-    try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(
-        commitUpsertAffiliateProgram,
-        {
-          variables: buildProgramVariables(
-            formDataToScalarValues(new FormData(event.currentTarget)),
-          ),
-        },
-      );
-      const payload = response.upsertAffiliateProgram;
-      const outcome = resolveAffiliateProgramMutationOutcome(payload, graphQLErrors);
-
-      if (outcome.error === null) {
-        setProgramResult(outcome.result);
-      } else {
-        setProgramError(outcome.error);
-      }
-    } catch {
-      setProgramError(DEFAULT_MUTATION_ERROR_MESSAGE);
-    } finally {
-      programInFlightRef.current = false;
-      setProgramPending(false);
-    }
-  }
-
-  async function handleLinkSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (linkInFlightRef.current) {
-      return;
-    }
-
-    linkInFlightRef.current = true;
-    setLinkPending(true);
-    setLinkError(null);
-    setLinkResult(null);
-
-    try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(
-        commitUpsertAffiliateLink,
-        {
-          variables: buildLinkVariables(formDataToScalarValues(new FormData(event.currentTarget))),
-        },
-      );
-      const payload = response.upsertAffiliateLink;
-      const outcome = resolveAffiliateLinkMutationOutcome(payload, graphQLErrors);
-
-      if (outcome.error === null) {
-        setLinkResult(outcome.result);
-      } else {
-        setLinkError(outcome.error);
-      }
-    } catch {
-      setLinkError(DEFAULT_MUTATION_ERROR_MESSAGE);
-    } finally {
-      linkInFlightRef.current = false;
-      setLinkPending(false);
-    }
-  }
-
-  async function handleCouponSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (couponInFlightRef.current) {
-      return;
-    }
-
-    couponInFlightRef.current = true;
-    setCouponPending(true);
-    setCouponError(null);
-    setCouponResult(null);
-
-    try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitCreateCoupon, {
-        variables: buildCouponVariables(formDataToScalarValues(new FormData(event.currentTarget))),
-      });
-      const payload = response.createCoupon;
-      const outcome = resolveAffiliateCouponMutationOutcome(payload, graphQLErrors);
-
-      if (outcome.error === null) {
-        setCouponResult(outcome.result);
-      } else {
-        setCouponError(outcome.error);
-      }
-    } catch {
-      setCouponError(DEFAULT_MUTATION_ERROR_MESSAGE);
-    } finally {
-      couponInFlightRef.current = false;
-      setCouponPending(false);
-    }
   }
 
   const paginationData = buildAffiliateSetupPaginationData({
@@ -364,46 +166,27 @@ function AffiliateSetupPanel({
       }
       label="Affiliate configuration workflow"
     >
-      <NetworkStep
-        error={networkError}
-        onSubmit={handleNetworkSubmit}
-        pending={networkPending}
-        result={networkResult}
-      />
+      <NetworkStep onNetworkIdChange={setAffiliateNetworkId} />
 
       {merchantChoices.length === 0 ? (
         <p role="status">No merchants available for affiliate setup yet.</p>
       ) : (
         <ProgramStep
           affiliateNetworkId={affiliateNetworkId}
-          error={programError}
           merchantChoices={merchantChoices}
           onAffiliateNetworkIdChange={setAffiliateNetworkId}
           onSelectedMerchantIdChange={setSelectedMerchantId}
-          onSubmit={handleProgramSubmit}
-          pending={programPending}
-          result={programResult}
           selectedMerchantCopy={merchantContext.selectedMerchantCopy}
           selectedMerchantValue={merchantContext.selectedMerchantValue}
         />
       )}
 
-      <MerchantLinkStep
-        error={linkError}
-        onSubmit={handleLinkSubmit}
-        pending={linkPending}
-        result={linkResult}
-        selectedMerchantCopy={merchantContext.selectedMerchantCopy}
-      />
+      <MerchantLinkStep selectedMerchantCopy={merchantContext.selectedMerchantCopy} />
 
       {merchantChoices.length === 0 ? null : (
         <CouponStep
-          error={couponError}
           merchantChoices={merchantChoices}
           onSelectedMerchantIdChange={setSelectedMerchantId}
-          onSubmit={handleCouponSubmit}
-          pending={couponPending}
-          result={couponResult}
           selectedMerchantCopy={merchantContext.selectedMerchantCopy}
           selectedMerchantValue={merchantContext.selectedMerchantValue}
         />
@@ -426,16 +209,4 @@ function AffiliateSetupUnavailableFallback() {
       <p>Affiliate setup unavailable.</p>
     </section>
   );
-}
-
-function formDataToScalarValues(formData: FormData) {
-  const values: Record<string, string> = {};
-
-  formData.forEach((value, name) => {
-    if (!(name in values)) {
-      values[name] = typeof value === "string" ? value : "";
-    }
-  });
-
-  return values;
 }

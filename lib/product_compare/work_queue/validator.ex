@@ -100,7 +100,7 @@ defmodule ProductCompare.WorkQueue.Validator do
 
   @spec validate(String.t()) ::
           {:ok, %{ready_count: non_neg_integer()}} | {:error, [String.t()]}
-  def validate(markdown) when is_binary(markdown) do
+  def validate(markdown) do
     validate_ready_section(markdown, &plan_reference_errors/1)
   end
 

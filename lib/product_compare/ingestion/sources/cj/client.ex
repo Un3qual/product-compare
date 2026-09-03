@@ -243,14 +243,12 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
     {:error, {:http_error, status, body}}
   end
 
-  defp decode_response(%{status: _status, body: body}, offset, limit, field) do
+  defp decode_response(%{status: _status, body: body}, offset, _limit, field) do
     with {:ok, decoded} <- Jason.decode(body),
          :ok <- reject_graphql_errors(decoded),
-         {:ok, result_set} <- result_set(decoded, field) do
-      records = Map.get(result_set, "resultList", [])
-      count = Map.get(result_set, "count", length(records))
-      total_count = Map.get(result_set, "totalCount", offset + count)
-      effective_limit = Map.get(result_set, "limit", limit)
+         {:ok, result_set} <- result_set(decoded, field),
+         {:ok, records, count, total_count, effective_limit} <-
+           validate_result_set(result_set, field) do
       next_cursor = next_cursor(offset, count, total_count, effective_limit)
 
       {:ok, records, next_cursor}
@@ -273,6 +271,22 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   end
 
   defp result_set(_decoded, field), do: {:error, {:missing_result_set, field}}
+
+  defp validate_result_set(
+         %{
+           "resultList" => records,
+           "count" => count,
+           "totalCount" => total_count,
+           "limit" => limit
+         },
+         _field
+       )
+       when is_list(records) and is_integer(count) and count >= 0 and
+              is_integer(total_count) and total_count >= 0 and is_integer(limit) and limit > 0 do
+    {:ok, records, count, total_count, limit}
+  end
+
+  defp validate_result_set(_result_set, field), do: {:error, {:invalid_result_set, field}}
 
   defp next_cursor(offset, count, total_count, limit)
        when count == limit and offset + count < total_count do

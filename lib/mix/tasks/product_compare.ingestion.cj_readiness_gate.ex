@@ -27,12 +27,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
 
   @impl Mix.Task
   def run(argv) do
+    opts = parse_argv(argv)
+
     RepoOnlyStartup.start!()
 
-    report =
-      argv
-      |> parse_argv()
-      |> build_report()
+    report = build_report(opts)
 
     report
     |> render_report()

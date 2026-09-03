@@ -132,7 +132,7 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Mutations do
      mutation_error_payload(entity_field, GraphQLErrors.authorization_mutation_error(reason))}
   end
 
-  defp normalize_ids(attrs, id_fields) when is_map(attrs) do
+  defp normalize_ids(attrs, id_fields) do
     Enum.reduce_while(id_fields, {:ok, attrs}, fn field, {:ok, acc} ->
       case Input.decode_optional_integer_id_field(
              acc,
@@ -195,7 +195,7 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Mutations do
     }
   end
 
-  defp mutation_error_payload(entity_field, error) when is_map(error) do
+  defp mutation_error_payload(entity_field, error) do
     %{
       entity_field => nil,
       errors: [error]

@@ -20,9 +20,6 @@ vi.mock("../../../../src/relay/route-preload", async () => {
 
 const preloadRouteQueryMock = vi.mocked(preloadRouteQuery);
 
-const AFFILIATE_SETUP_QUERY_TEXT =
-  "query AffiliateSetupRouteQuery($first: Int, $after: String) { merchants(first: $first, after: $after) { edges { node { id } } } }";
-
 beforeEach(() => {
   preloadRouteQueryMock.mockReset();
 });
@@ -231,8 +228,8 @@ function buildAffiliateSetupLoaderArgs({
 function affiliateSetupQueryDescriptor(variables: { first: number; after: string | null }) {
   return {
     __relayQuery: {
+      cacheID: "AffiliateSetupRouteQuery-cache-id",
       operationName: "AffiliateSetupRouteQuery",
-      text: AFFILIATE_SETUP_QUERY_TEXT,
       variables,
     },
   };

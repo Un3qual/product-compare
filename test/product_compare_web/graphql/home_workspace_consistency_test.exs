@@ -93,7 +93,7 @@ defmodule ProductCompareWeb.GraphQL.HomeWorkspaceConsistencyTest do
     end
   end
 
-  defp workspace_candidate_query?(query) when is_binary(query) do
+  defp workspace_candidate_query?(query) do
     String.contains?(query, ~s(FROM "products"))
   end
 

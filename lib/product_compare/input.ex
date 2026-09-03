@@ -16,7 +16,7 @@ defmodule ProductCompare.Input do
   def attr_key_present?(_attrs, _key), do: false
 
   @spec put_attr(map(), atom(), term()) :: map()
-  def put_attr(attrs, key, value) when is_map(attrs) and is_atom(key) do
+  def put_attr(attrs, key, value) do
     string_key = Atom.to_string(key)
 
     cond do
@@ -28,7 +28,7 @@ defmodule ProductCompare.Input do
   end
 
   @spec present_upsert_fields(map() | term(), Ecto.Changeset.t(), [atom()]) :: keyword()
-  def present_upsert_fields(attrs, changeset, fields) when is_list(fields) do
+  def present_upsert_fields(attrs, changeset, fields) do
     for field <- fields,
         attr_key_present?(attrs, field),
         do: {field, Ecto.Changeset.get_field(changeset, field)}
@@ -67,8 +67,7 @@ defmodule ProductCompare.Input do
 
   @spec uuid_lookup_results([term()], ([Ecto.UUID.t()] -> [map()])) ::
           %{optional(term()) => map() | nil}
-  def uuid_lookup_results(requested_ids, load_records)
-      when is_list(requested_ids) and is_function(load_records, 1) do
+  def uuid_lookup_results(requested_ids, load_records) do
     requested_ids = Enum.uniq(requested_ids)
 
     validated_ids =

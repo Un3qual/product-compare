@@ -1293,18 +1293,20 @@ defmodule ProductCompare.CommerceAttributionTest do
     end
 
     test "does not crash on malformed numeric payload fields" do
-      payload = %{
-        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
-        "Status" => "PENDING",
-        "Currency" => "USD",
-        "SaleAmount" => "N/A",
-        "Payout" => "",
-        "ReportingDate" => "2026-05-20T12:05:00Z"
-      }
+      for {sale_amount, payout} <- [{"N/A", ""}, {"NaN", "Infinity"}] do
+        payload = %{
+          "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+          "Status" => "PENDING",
+          "Currency" => "USD",
+          "SaleAmount" => sale_amount,
+          "Payout" => payout,
+          "ReportingDate" => "2026-05-20T12:05:00Z"
+        }
 
-      assert {:ok, conversion} = ImpactAdapter.ingest_action(payload)
-      assert conversion.order_amount == nil
-      assert conversion.commission_amount == nil
+        assert {:ok, conversion} = ImpactAdapter.ingest_action(payload)
+        assert conversion.order_amount == nil
+        assert conversion.commission_amount == nil
+      end
     end
 
     test "does not crash on unsupported optional payload field types" do
@@ -2861,7 +2863,7 @@ defmodule ProductCompare.CommerceAttributionTest do
     )
   end
 
-  defp currency_probe_query?(query) when is_binary(query) do
+  defp currency_probe_query?(query) do
     String.contains?(query, "DISTINCT") and
       String.contains?(query, ~s("currency_id")) and
       String.contains?(query, ~s(FROM "commerce_conversions"))

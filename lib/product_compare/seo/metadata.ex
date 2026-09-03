@@ -25,7 +25,7 @@ defmodule ProductCompare.Seo.Metadata do
   end
 
   @spec product_batch([Product.t()], keyword()) :: %{Product.t() => metadata()}
-  def product_batch(products, opts \\ []) when is_list(products) do
+  def product_batch(products, opts \\ []) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
     products_by_id = products |> Repo.preload([:brand, :media]) |> Map.new(&{&1.id, &1})
     product_ids = Map.keys(products_by_id)
@@ -264,7 +264,7 @@ defmodule ProductCompare.Seo.Metadata do
   defp put_if(map, _key, nil), do: map
   defp put_if(map, key, value), do: Map.put(map, key, value)
 
-  defp field(map, key) when is_map(map), do: Map.get(map, key, Map.get(map, Atom.to_string(key)))
+  defp field(map, key), do: Map.get(map, key, Map.get(map, Atom.to_string(key)))
 
   defp concise_description(value, fallback) do
     value = if is_binary(value), do: String.trim(value), else: ""

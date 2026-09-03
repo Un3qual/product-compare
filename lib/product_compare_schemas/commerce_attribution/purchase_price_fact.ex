@@ -1,21 +1,22 @@
 defmodule ProductCompareSchemas.CommerceAttribution.PurchasePriceFact do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.FiniteDecimal
   alias ProductCompareSchemas.Reference.CurrencyCode
 
   @type t :: %__MODULE__{}
 
   schema "purchase_price_facts" do
     field :entropy_id, Ecto.UUID
-    field :listed_price_at_click, :decimal
-    field :reported_paid_price, :decimal
-    field :shipping_amount, :decimal
-    field :tax_amount, :decimal
-    field :discount_amount, :decimal
+    field :listed_price_at_click, FiniteDecimal
+    field :reported_paid_price, FiniteDecimal
+    field :shipping_amount, FiniteDecimal
+    field :tax_amount, FiniteDecimal
+    field :discount_amount, FiniteDecimal
     field :currency, CurrencyCode, source: :currency_id
     field :observed_at, :utc_datetime_usec
-    field :observed_price, :decimal
-    field :price_delta, :decimal
+    field :observed_price, FiniteDecimal
+    field :price_delta, FiniteDecimal
 
     belongs_to :conversion, ProductCompareSchemas.CommerceAttribution.CommerceConversion
     belongs_to :price_observation, ProductCompareSchemas.Pricing.PricePoint
@@ -51,5 +52,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.PurchasePriceFact do
     |> foreign_key_constraint(:price_observation_id)
     |> foreign_key_constraint(:currency, name: :purchase_price_facts_currency_id_fkey)
     |> check_constraint(:reported_paid_price, name: :purchase_price_facts_amounts_non_negative)
+    |> check_constraint(:price_delta, name: :purchase_price_facts_price_delta_finite)
   end
 end

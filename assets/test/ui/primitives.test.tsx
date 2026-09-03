@@ -250,6 +250,34 @@ test("uncontrolled Select restores its default label and form value on native fo
   expect(new FormData(form).get("sort")).toBe("price_asc");
 });
 
+test("controlled Select keeps its visible and form value on native form reset", () => {
+  render(
+    <AppProviders>
+      <form aria-label="Controlled resettable select">
+        <ExampleSelect
+          aria-label="Sort"
+          name="sort"
+          options={[
+            { label: "Price", value: "price_asc" },
+            { label: "Name", value: "name_asc" },
+          ]}
+          value="name_asc"
+        />
+      </form>
+    </AppProviders>,
+  );
+
+  const form = screen.getByRole("form", {
+    name: "Controlled resettable select",
+  }) as HTMLFormElement;
+  const select = screen.getByRole("combobox", { name: "Sort" });
+
+  act(() => form.reset());
+
+  expect(select).toHaveTextContent("Name");
+  expect(new FormData(form).get("sort")).toBe("name_asc");
+});
+
 test("uncontrolled Checkbox restores its visible and submitted default on native form reset", () => {
   render(
     <form aria-label="Resettable checkbox">

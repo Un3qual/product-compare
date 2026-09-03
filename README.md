@@ -20,16 +20,18 @@ Phoenix modular-monolith backend for collaborative, AI-assisted product comparis
    ```bash
    docker compose up -d db
    ```
-3. Install dependencies and setup DB:
+3. Install backend and frozen frontend dependencies, then set up the database:
    ```bash
    mix setup
    ```
-4. Run server:
+4. Start Phoenix and its Vite watcher:
    ```bash
    mix phx.server
    ```
 
-Default DB URLs are configured for `localhost:5433`.
+Phoenix is available at `http://localhost:4000` and Vite at
+`http://localhost:5173`. Stopping Phoenix also stops the Vite watcher. Default
+DB URLs are configured for `localhost:5433`.
 
 ## Operator-access upgrade decision
 

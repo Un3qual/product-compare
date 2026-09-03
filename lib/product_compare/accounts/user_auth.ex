@@ -41,18 +41,16 @@ defmodule ProductCompare.Accounts.UserAuth do
   def delete_user_session_token(_token), do: :ok
 
   @spec deliver_user_confirmation_instructions(User.t(), (String.t() -> any())) :: :ok
-  def deliver_user_confirmation_instructions(%User{} = user, delivery_fun)
-      when is_function(delivery_fun, 1),
-      do: EmailTokens.deliver_confirmation_instructions(user, delivery_fun)
+  def deliver_user_confirmation_instructions(%User{} = user, delivery_fun),
+    do: EmailTokens.deliver_confirmation_instructions(user, delivery_fun)
 
   @spec confirm_user(String.t()) :: {:ok, User.t()} | {:error, :invalid_token}
   def confirm_user(token) when is_binary(token), do: EmailTokens.confirm_user(token)
   def confirm_user(_token), do: {:error, :invalid_token}
 
   @spec deliver_user_reset_password_instructions(User.t(), (String.t() -> any())) :: :ok
-  def deliver_user_reset_password_instructions(%User{} = user, delivery_fun)
-      when is_function(delivery_fun, 1),
-      do: EmailTokens.deliver_reset_password_instructions(user, delivery_fun)
+  def deliver_user_reset_password_instructions(%User{} = user, delivery_fun),
+    do: EmailTokens.deliver_reset_password_instructions(user, delivery_fun)
 
   @spec get_user_by_reset_password_token(String.t()) :: User.t() | nil
   def get_user_by_reset_password_token(token) when is_binary(token),

@@ -9,10 +9,11 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.CommerceAttribution.ClickReference
   alias ProductCompare.CommerceAttribution.CJ.CommissionDetail
+  alias ProductCompareSchemas.DecimalInput
 
   @spec ingest_transaction(map()) ::
           {:ok, struct()} | {:error, Ecto.Changeset.t() | {:invalid_response, :record}}
-  def ingest_transaction(payload) when is_map(payload) do
+  def ingest_transaction(payload) do
     if invalid_record?(payload) do
       {:error, {:invalid_response, :record}}
     else
@@ -165,14 +166,7 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
   defp normalize_status(nil), do: :missing
   defp normalize_status(status), do: status
 
-  defp decimal(nil), do: nil
-
-  defp decimal(value) do
-    case CommissionDetail.parse_finite_decimal(value) do
-      {:ok, decimal} -> decimal
-      :error -> nil
-    end
-  end
+  defp decimal(value), do: DecimalInput.to_decimal(value)
 
   defp parse_datetime(nil), do: nil
   defp parse_datetime(%DateTime{} = value), do: value

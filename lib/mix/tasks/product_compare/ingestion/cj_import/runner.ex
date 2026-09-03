@@ -5,6 +5,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Runner do
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport.Options
   alias ProductCompare.Ingestion
+  alias ProductCompare.Ingestion.CJFailureDiagnostics
   alias ProductCompare.Ingestion.CJRunCompletion
   alias ProductCompare.Ingestion.Sources.CJ.ProductParser
   alias ProductCompare.Ingestion.Sources.CJ.SourceResolver
@@ -153,41 +154,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Runner do
   defp log_runner_failure(kind, reason, stacktrace) do
     Logger.error(fn ->
       "CJ product import runner failed " <>
-        "kind=#{kind} reason=#{failure_category(reason)}\n" <>
-        Exception.format_stacktrace(sanitize_stacktrace(stacktrace))
+        "kind=#{kind} reason=#{CJFailureDiagnostics.category(reason)}\n" <>
+        Exception.format_stacktrace(CJFailureDiagnostics.sanitize_stacktrace(stacktrace))
     end)
   end
-
-  defp failure_category(%{__exception__: true, __struct__: module}) when is_atom(module),
-    do: inspect(module)
-
-  defp failure_category({tag, _detail}) when is_atom(tag), do: Atom.to_string(tag)
-  defp failure_category(reason) when is_atom(reason), do: Atom.to_string(reason)
-  defp failure_category(reason) when is_binary(reason), do: "binary"
-  defp failure_category(reason) when is_list(reason), do: "list"
-  defp failure_category(reason) when is_map(reason), do: "map"
-  defp failure_category(reason) when is_tuple(reason), do: "tuple"
-  defp failure_category(_reason), do: "term"
-
-  defp sanitize_stacktrace(stacktrace) do
-    Enum.flat_map(stacktrace, fn
-      {module, function, args, location}
-      when is_atom(module) and is_atom(function) and is_list(args) ->
-        [{module, function, length(args), sanitize_location(location)}]
-
-      {module, function, arity, location}
-      when is_atom(module) and is_atom(function) and is_integer(arity) ->
-        [{module, function, arity, sanitize_location(location)}]
-
-      _entry ->
-        []
-    end)
-  end
-
-  defp sanitize_location(location) when is_list(location),
-    do: Keyword.take(location, [:file, :line])
-
-  defp sanitize_location(_location), do: []
 
   defp initial_aggregate_report do
     %{

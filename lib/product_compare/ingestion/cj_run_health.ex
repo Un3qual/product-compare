@@ -85,7 +85,7 @@ defmodule ProductCompare.Ingestion.CJRunHealth do
       reconciled_at: run.reconciled_at,
       offers_deactivated: run.offers_deactivated,
       has_error_summary:
-        fragment("? IS NOT NULL AND BTRIM(?) <> ''", run.error_summary, run.error_summary)
+        not is_nil(run.error_summary) and fragment("BTRIM(?)", run.error_summary) != ""
     })
     |> Repo.all()
     |> Map.new(&{&1.surface, &1})

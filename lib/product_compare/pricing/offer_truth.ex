@@ -64,7 +64,7 @@ defmodule ProductCompare.Pricing.OfferTruth do
   end
 
   @spec summarize_product([map()], DateTime.t(), keyword()) :: map()
-  def summarize_product(offers, %DateTime{} = now, opts \\ []) when is_list(offers) do
+  def summarize_product(offers, %DateTime{} = now, opts \\ []) do
     policy = policy(opts)
 
     currency_summaries =

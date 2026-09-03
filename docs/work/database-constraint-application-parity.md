@@ -43,7 +43,7 @@
 - Review follow-through closes three post-batch gaps. Post deletion now locks
   the owning thread before deleting an accepted answer, preserving the same
   thread-before-post lock order as creation. Percentage-drop and confidence
-  changesets normalize non-finite decimal inputs before casting. Nine
+  fields now use the shared finite Decimal Ecto type for ordinary cast errors. Nine
   mapping-only checks now have direct PostgreSQL control-and-violation tests,
   including a mutation proof that the closure-depth test fails when its check
   is absent and passes again after restoration.

@@ -1,9 +1,9 @@
 defmodule ProductCompare.MixTasks.CliOptions do
   @moduledoc false
 
-  @spec parse!([String.t()], keyword()) :: keyword()
-  def parse!(argv, switches) do
-    {opts, args, invalid} = OptionParser.parse(argv, strict: switches)
+  @spec parse!([String.t()], keyword(), keyword()) :: keyword()
+  def parse!(argv, switches, aliases \\ []) do
+    {opts, args, invalid} = OptionParser.parse(argv, strict: switches, aliases: aliases)
 
     reject_invalid!(invalid)
     reject_args!(args)

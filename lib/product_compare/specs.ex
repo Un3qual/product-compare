@@ -53,7 +53,7 @@ defmodule ProductCompare.Specs do
   def get_source_artifact(_id), do: nil
 
   @spec get_source_artifacts([term()]) :: %{optional(pos_integer()) => SourceArtifact.t() | nil}
-  def get_source_artifacts(ids) when is_list(ids) do
+  def get_source_artifacts(ids) do
     Reads.get_source_artifacts(ids)
   end
 
@@ -149,14 +149,14 @@ defmodule ProductCompare.Specs do
   @spec list_current_attributes_for_products([pos_integer()]) :: %{
           optional(pos_integer()) => [map()]
         }
-  def list_current_attributes_for_products(product_ids) when is_list(product_ids) do
+  def list_current_attributes_for_products(product_ids) do
     Reads.list_current_attributes_for_products(product_ids)
   end
 
   @spec home_specification_highlights([term()], keyword()) :: %{
           optional(pos_integer()) => [map()]
         }
-  def home_specification_highlights(product_ids, opts \\ []) when is_list(product_ids) do
+  def home_specification_highlights(product_ids, opts \\ []) do
     limit =
       case Keyword.get(opts, :limit, 3) do
         value when is_integer(value) and value > 0 -> min(value, 3)
@@ -176,13 +176,12 @@ defmodule ProductCompare.Specs do
   @spec with_current_attribute_metadata([ProductAttributeCurrent.t()], pos_integer() | nil) :: [
           map()
         ]
-  def with_current_attribute_metadata(current_attributes, taxon_id)
-      when is_list(current_attributes) do
+  def with_current_attribute_metadata(current_attributes, taxon_id) do
     Reads.with_current_attribute_metadata(current_attributes, taxon_id)
   end
 
   @spec list_filterable_attributes([atom()]) :: [Attribute.t()]
-  def list_filterable_attributes(data_types) when is_list(data_types) do
+  def list_filterable_attributes(data_types) do
     Reads.list_filterable_attributes(data_types)
   end
 
@@ -253,8 +252,7 @@ defmodule ProductCompare.Specs do
           [ProductAttributeCurrent.t()],
           [TaxonAttribute.t()] | nil
         ) :: [map()]
-  def with_current_attribute_metadata_from_taxon_attributes(current_attributes, taxon_attributes)
-      when is_list(current_attributes) do
+  def with_current_attribute_metadata_from_taxon_attributes(current_attributes, taxon_attributes) do
     Reads.with_current_attribute_metadata_from_taxon_attributes(
       current_attributes,
       taxon_attributes

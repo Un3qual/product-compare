@@ -1,6 +1,7 @@
 defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.FiniteDecimal
   alias ProductCompareSchemas.Reference.CurrencyCode
 
   @statuses [:pending, :approved, :reversed, :paid]
@@ -17,9 +18,9 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
     field :network_click_ref, :string
     field :status, Ecto.Enum, values: @statuses, default: :pending
     field :currency, CurrencyCode, source: :currency_id
-    field :order_amount, :decimal
-    field :commission_amount, :decimal
-    field :commission_rate, :decimal
+    field :order_amount, FiniteDecimal
+    field :commission_amount, FiniteDecimal
+    field :commission_rate, FiniteDecimal
 
     field :attribution_confidence, Ecto.Enum,
       values: @attribution_confidences,

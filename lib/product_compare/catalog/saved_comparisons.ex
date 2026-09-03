@@ -24,8 +24,7 @@ defmodule ProductCompare.Catalog.SavedComparisons do
              | :invalid_product_id
              | :product_not_found
              | :too_many_products}
-  def create_saved_comparison_set(user_id, %{name: name, product_ids: product_ids})
-      when is_integer(user_id) and is_binary(name) and is_list(product_ids) do
+  def create_saved_comparison_set(user_id, %{name: name, product_ids: product_ids}) do
     with {:ok, normalized_product_ids} <- normalize_saved_comparison_product_ids(product_ids),
          :ok <- ensure_products_exist(normalized_product_ids) do
       Multi.new()
@@ -52,7 +51,7 @@ defmodule ProductCompare.Catalog.SavedComparisons do
   end
 
   @spec list_saved_comparison_sets_query(pos_integer()) :: Ecto.Query.t()
-  def list_saved_comparison_sets_query(user_id) when is_integer(user_id) do
+  def list_saved_comparison_sets_query(user_id) do
     from(saved_comparison_set in SavedComparisonSet,
       where: saved_comparison_set.user_id == ^user_id,
       order_by: [desc: saved_comparison_set.inserted_at, desc: saved_comparison_set.id]
@@ -61,8 +60,7 @@ defmodule ProductCompare.Catalog.SavedComparisons do
 
   @spec get_saved_comparison_set_for_user_id(pos_integer(), binary()) ::
           SavedComparisonSet.t() | nil
-  def get_saved_comparison_set_for_user_id(user_id, entropy_id)
-      when is_integer(user_id) and is_binary(entropy_id) do
+  def get_saved_comparison_set_for_user_id(user_id, entropy_id) do
     user_id
     |> lookup_saved_comparison_sets_for_user_id([entropy_id])
     |> Map.get(entropy_id)
@@ -70,15 +68,13 @@ defmodule ProductCompare.Catalog.SavedComparisons do
 
   @spec get_saved_comparison_sets_for_user_id(pos_integer(), [binary()]) ::
           %{optional(binary()) => SavedComparisonSet.t() | nil}
-  def get_saved_comparison_sets_for_user_id(user_id, entropy_ids)
-      when is_integer(user_id) and is_list(entropy_ids) do
+  def get_saved_comparison_sets_for_user_id(user_id, entropy_ids) do
     lookup_saved_comparison_sets_for_user_id(user_id, entropy_ids)
   end
 
   @spec delete_saved_comparison_set(pos_integer(), Ecto.UUID.t()) ::
           {:ok, SavedComparisonSet.t()} | {:error, :not_found}
-  def delete_saved_comparison_set(user_id, entropy_id)
-      when is_integer(user_id) and is_binary(entropy_id) do
+  def delete_saved_comparison_set(user_id, entropy_id) do
     with {:ok, validated_entropy_id} <- Ecto.UUID.cast(entropy_id),
          %SavedComparisonSet{} = saved_comparison_set <-
            Repo.get_by(SavedComparisonSet,

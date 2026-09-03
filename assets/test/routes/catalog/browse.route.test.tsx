@@ -133,8 +133,8 @@ function browseQueryDescriptorFromVariables(
 ) {
   return {
     __relayQuery: {
+      cacheID: "BrowseRouteQuery-cache-id",
       operationName: "BrowseRouteQuery",
-      text: "query BrowseRouteQuery($first: Int!, $after: String) { products(first: $first, after: $after) { edges { node { id } } } }",
       variables,
     },
   };
@@ -145,8 +145,8 @@ function filterMetadataQueryDescriptorFromVariables(
 ) {
   return {
     __relayQuery: {
+      cacheID: "ProductFilterMetadataQuery-cache-id",
       operationName: "ProductFilterMetadataQuery",
-      text: "",
       variables,
     },
   };

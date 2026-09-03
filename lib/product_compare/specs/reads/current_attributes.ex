@@ -123,8 +123,7 @@ defmodule ProductCompare.Specs.Reads.CurrentAttributes do
         home_highlight: [
           partition_by: current.product_id,
           order_by: [
-            asc: fragment("CASE WHEN ? IS NULL THEN 1 ELSE 0 END", taxon_attribute.sort_order),
-            asc: taxon_attribute.sort_order,
+            asc_nulls_last: taxon_attribute.sort_order,
             asc: fragment("lower(?)", attribute.display_name),
             asc: attribute.code
           ]

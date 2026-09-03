@@ -7,6 +7,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
 
   alias ProductCompare.Ingestion.NormalizedListing
   alias ProductCompare.Ingestion.Sources.CJ.Client
+  alias ProductCompareSchemas.DecimalInput
 
   @impl true
   def fetch_batch(cursor, opts), do: Client.fetch_batch(cursor, opts)
@@ -77,7 +78,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
 
   defp decimal(record, field, keys, paths) do
     with {:ok, value} <- required_string(record, field, keys, paths),
-         {decimal, ""} <- Decimal.parse(value) do
+         %Decimal{} = decimal <- DecimalInput.to_decimal(value) do
       {:ok, decimal}
     else
       {:error, _reason} = error -> error

@@ -10,7 +10,7 @@ import {
 } from "react-router-dom";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { ProductDetailRouteQuery } from "$generated/ProductDetailRouteQuery.graphql";
-import { RouteLoaderGraphQLError } from "$relay/environment";
+import { hasGraphQLErrors, RouteLoaderGraphQLError } from "$relay/environment";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   cacheRouteQueryData,
@@ -399,17 +399,24 @@ function productNotFoundResult() {
 function partialProductData(error: unknown): ProductDetailResponseWithProduct | null {
   if (!(error instanceof RouteLoaderGraphQLError)) return null;
   const response = error.response;
-  if (Array.isArray(response) || !("data" in response)) return null;
+  if (!hasGraphQLErrors(response) || !("data" in response)) return null;
+  if (
+    !response.errors.every(
+      (item) => item.path?.[0] === "product" && item.path[1] === "merchantProducts",
+    )
+  ) {
+    return null;
+  }
 
   return hasProduct(response.data) ? response.data : null;
 }
 
-function hasProduct(productData: unknown): productData is ProductDetailResponseWithProduct {
+function hasProduct(value: unknown): value is ProductDetailResponseWithProduct {
   return Boolean(
-    productData &&
-    typeof productData === "object" &&
-    "product" in productData &&
-    productData.product &&
-    typeof productData.product === "object",
+    value &&
+    typeof value === "object" &&
+    "product" in value &&
+    value.product &&
+    typeof value.product === "object",
   );
 }

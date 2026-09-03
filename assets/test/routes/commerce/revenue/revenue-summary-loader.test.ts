@@ -22,8 +22,8 @@ const preloadRouteQueryMock = vi.mocked(preloadRouteQuery);
 
 const REVENUE_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "RevenueSummaryRouteQuery-cache-id",
     operationName: "RevenueSummaryRouteQuery",
-    text: "query RevenueSummaryRouteQuery($input: RevenueSummaryInput) { revenueSummary(input: $input) { filters { currency } } }",
     variables: {
       input: null,
     },
@@ -348,8 +348,8 @@ function revenueSummaryQueryDescriptor(variables: {
 }) {
   return {
     __relayQuery: {
+      cacheID: "RevenueSummaryRouteQuery-cache-id",
       operationName: "RevenueSummaryRouteQuery",
-      text: REVENUE_QUERY_DESCRIPTOR.__relayQuery.text,
       variables,
     },
   };
@@ -363,8 +363,8 @@ function attributionLedgerQueryDescriptor(input: {
 }) {
   return {
     __relayQuery: {
+      cacheID: "AttributionLedgerRouteQuery-cache-id",
       operationName: "AttributionLedgerRouteQuery",
-      text: "query AttributionLedgerRouteQuery($input: RevenueSummaryInput, $after: String, $first: Int!) { commerceAttributionClicks(input: $input, after: $after, first: $first) { edges { cursor } } }",
       variables: {
         input,
         after: null,

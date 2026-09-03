@@ -21,7 +21,7 @@ defmodule ProductCompare.Taxonomy do
   def create_taxon(attrs), do: Hierarchy.create_taxon(attrs)
 
   @spec update_taxon(Taxon.t(), map()) :: {:ok, Taxon.t()} | {:error, Ecto.Changeset.t()}
-  def update_taxon(%Taxon{} = taxon, attrs) when is_map(attrs),
+  def update_taxon(%Taxon{} = taxon, attrs),
     do: Hierarchy.update_taxon(taxon, attrs)
 
   @spec get_taxon_by_seo_slug(String.t()) :: Taxon.t() | nil
@@ -65,7 +65,7 @@ defmodule ProductCompare.Taxonomy do
     do: Taxonomies.ensure_taxon_in_taxonomy(taxon_id, taxonomy_code)
 
   @spec list_taxons_for_taxonomy(String.t()) :: [Taxon.t()]
-  def list_taxons_for_taxonomy(taxonomy_code) when is_binary(taxonomy_code) do
+  def list_taxons_for_taxonomy(taxonomy_code) do
     Taxonomies.list_taxons_for_taxonomy(taxonomy_code)
   end
 

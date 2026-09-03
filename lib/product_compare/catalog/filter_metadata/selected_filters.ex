@@ -1,6 +1,8 @@
 defmodule ProductCompare.Catalog.FilterMetadata.SelectedFilters do
   @moduledoc false
 
+  alias ProductCompareSchemas.DecimalInput
+
   @spec numeric(map()) :: map()
   def numeric(filters) do
     filters
@@ -86,7 +88,7 @@ defmodule ProductCompare.Catalog.FilterMetadata.SelectedFilters do
   defp merge_numeric_min(value, nil), do: value
 
   defp merge_numeric_min(existing_value, next_value) do
-    case Decimal.compare(decimal_for_compare(existing_value), decimal_for_compare(next_value)) do
+    case Decimal.compare(existing_value, next_value) do
       :lt -> next_value
       _comparison -> existing_value
     end
@@ -96,30 +98,18 @@ defmodule ProductCompare.Catalog.FilterMetadata.SelectedFilters do
   defp merge_numeric_max(value, nil), do: value
 
   defp merge_numeric_max(existing_value, next_value) do
-    case Decimal.compare(decimal_for_compare(existing_value), decimal_for_compare(next_value)) do
+    case Decimal.compare(existing_value, next_value) do
       :gt -> next_value
       _comparison -> existing_value
     end
   end
 
-  defp decimal_for_compare(value) do
-    {:ok, decimal} = normalize_numeric_bound(value)
-    decimal
-  end
-
-  defp normalize_numeric_bound(nil), do: :error
-  defp normalize_numeric_bound(%Decimal{} = value), do: {:ok, value}
-  defp normalize_numeric_bound(value) when is_integer(value), do: {:ok, Decimal.new(value)}
-  defp normalize_numeric_bound(value) when is_float(value), do: {:ok, Decimal.from_float(value)}
-
-  defp normalize_numeric_bound(value) when is_binary(value) do
-    case Decimal.parse(value) do
-      {decimal, ""} -> {:ok, decimal}
-      _invalid -> :error
+  defp normalize_numeric_bound(value) do
+    case DecimalInput.to_decimal(value) do
+      %Decimal{} = decimal -> {:ok, decimal}
+      nil -> :error
     end
   end
-
-  defp normalize_numeric_bound(_value), do: :error
 
   defp merge_boolean_filters(existing_filter, next_filter) do
     existing_value = Map.get(existing_filter, :value)

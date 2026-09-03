@@ -57,8 +57,8 @@ const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const MERCHANT_DIRECTORY_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "MerchantDirectoryRouteQuery-cache-id",
     operationName: "MerchantDirectoryRouteQuery",
-    text: "query MerchantDirectoryRouteQuery($first: Int, $after: String) { merchants(first: $first, after: $after) { edges { node { id } } } }",
     variables: {
       first: 20,
       after: null,

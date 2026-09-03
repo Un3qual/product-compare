@@ -98,8 +98,8 @@ test("CategoryRoute renders curated copy, trusted inventory, and browse links", 
     status: "ready",
     query: {
       __relayQuery: {
+        cacheID: "CategoryRouteQuery-cache-id",
         operationName: "CategoryRouteQuery",
-        text: 'query CategoryRouteQuery { category(slug: "cameras") { id } }',
         variables: { slug: "cameras", first: 12, after: null },
       },
     },
@@ -162,8 +162,8 @@ test("CategoryRoute suppresses a repeated next-page cursor", () => {
     status: "ready",
     query: {
       __relayQuery: {
+        cacheID: "CategoryRouteQuery-cache-id",
         operationName: "CategoryRouteQuery",
-        text: 'query CategoryRouteQuery { category(slug: "cameras") { id } }',
         variables: { slug: "cameras", first: 12, after: "same-cursor" },
       },
     },
@@ -197,8 +197,8 @@ test("CategoryRoute keeps source product and highlight order while encoding its 
     status: "ready",
     query: {
       __relayQuery: {
+        cacheID: "CategoryRouteQuery-cache-id",
         operationName: "CategoryRouteQuery",
-        text: 'query CategoryRouteQuery { category(slug: "cameras") { id } }',
         variables: { slug: "cameras", first: 12, after: null },
       },
     },
@@ -275,8 +275,8 @@ test("CategoryRoute renders its empty result state", () => {
     status: "ready",
     query: {
       __relayQuery: {
+        cacheID: "CategoryRouteQuery-cache-id",
         operationName: "CategoryRouteQuery",
-        text: 'query CategoryRouteQuery { category(slug: "cameras") { id } }',
         variables: { slug: "cameras", first: 12, after: null },
       },
     },

@@ -44,8 +44,7 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Merchants do
         %{id: merchant_id},
         args,
         %{context: %{loader: loader}}
-      )
-      when is_integer(merchant_id) do
+      ) do
     connection_args = Input.connection_args(args)
 
     with {:ok, _window} <- Connection.batch_window_result(connection_args) do

@@ -9,6 +9,7 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
 
   import Ecto.Query
 
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.CJProgram
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
@@ -17,9 +18,7 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
   @default_fresh_hours 48
   @default_stale_hours 168
   @stages Map.values(CJProgram.stage_keys()) ++ [:unmatched]
-  @stage_keys Map.new(@stages, &{Atom.to_string(&1), &1})
   @buckets [:fresh, :aging, :stale]
-  @bucket_keys Map.new(@buckets, &{Atom.to_string(&1), &1})
 
   @type stage_counts :: %{
           new: non_neg_integer(),
@@ -84,48 +83,42 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
   defp positive_integer(_value, default), do: default
 
   defp bucket_counts(now, %{fresh_hours: fresh_hours, stale_hours: stale_hours}) do
+    fresh_after = DateTime.add(now, -fresh_hours * 3_600, :second)
+    stale_before = DateTime.add(now, -stale_hours * 3_600, :second)
+
     MerchantFeedCandidate
     |> join(:left, [feed], program in CJProgram, on: program.id == feed.cj_program_id)
     |> join(:inner, [feed, _program], source in assoc(feed, :source))
     |> where([_feed, _program, source], source.provider == @provider)
+    |> group_by([_feed, program], program.stage)
     |> select([feed, program], %{
-      id: feed.id,
-      bucket:
-        fragment(
-          """
-          CASE
-            WHEN EXTRACT(EPOCH FROM (? - ?)) / 3600 <= ? THEN 'fresh'
-            WHEN EXTRACT(EPOCH FROM (? - ?)) / 3600 >= ? THEN 'stale'
-            ELSE 'aging'
-          END
-          """,
-          ^now,
-          feed.last_seen_at,
-          ^fresh_hours,
-          ^now,
-          feed.last_seen_at,
-          ^stale_hours
-        ),
-      stage: fragment("COALESCE(?::text, 'unmatched')", program.stage)
-    })
-    |> subquery()
-    |> group_by([feed], [feed.bucket, feed.stage])
-    |> select([feed], %{
-      bucket: feed.bucket,
-      stage: feed.stage,
-      candidate_count: count(feed.id)
+      stage: program.stage,
+      candidate_count: count(feed.id),
+      fresh_count: filter(count(feed.id), feed.last_seen_at >= ^fresh_after),
+      stale_count:
+        filter(
+          count(feed.id),
+          feed.last_seen_at < ^fresh_after and feed.last_seen_at <= ^stale_before
+        )
     })
     |> Repo.all()
     |> Enum.reduce(empty_buckets(), fn row, buckets ->
-      bucket = Map.fetch!(@bucket_keys, row.bucket)
-      stage = Map.get(@stage_keys, row.stage, :unmatched)
+      stage = CJPrograms.normalize_report_stage(row.stage)
+      aging_count = row.candidate_count - row.fresh_count - row.stale_count
 
-      update_in(buckets, [bucket], fn summary ->
-        %{
-          candidate_count: summary.candidate_count + row.candidate_count,
-          stage_counts: Map.update!(summary.stage_counts, stage, &(&1 + row.candidate_count))
-        }
-      end)
+      buckets
+      |> add_count(:fresh, stage, row.fresh_count)
+      |> add_count(:aging, stage, aging_count)
+      |> add_count(:stale, stage, row.stale_count)
+    end)
+  end
+
+  defp add_count(buckets, bucket, stage, count) do
+    update_in(buckets, [bucket], fn summary ->
+      %{
+        candidate_count: summary.candidate_count + count,
+        stage_counts: Map.update!(summary.stage_counts, stage, &(&1 + count))
+      }
     end)
   end
 

@@ -1,10 +1,8 @@
 import {
   acceptedAnswerAuthorLabel,
-  appendUniqueCommunityItems,
   buildProductAnswerInput,
   buildProductQuestionInput,
   buildProductReviewInput,
-  nextCommunityPageCursor,
   publishedReviewRowDisplayData,
   publishedReviewSummary,
   resolveCommunityContentRemovalMessage,
@@ -246,37 +244,6 @@ test("acceptedAnswerAuthorLabel marks only the accepted answer", () => {
     "Community member",
   );
   expect(acceptedAnswerAuthorLabel("answer-2", null, "Community member")).toBe("Community member");
-});
-
-test("nextCommunityPageCursor requires a nonblank advancing cursor", () => {
-  expect(nextCommunityPageCursor({ endCursor: "cursor-1", hasNextPage: true })).toBe("cursor-1");
-  expect(nextCommunityPageCursor({ endCursor: null, hasNextPage: true })).toBeNull();
-  expect(nextCommunityPageCursor({ endCursor: " ", hasNextPage: true })).toBeNull();
-  expect(nextCommunityPageCursor({ endCursor: "cursor-1", hasNextPage: false })).toBeNull();
-  expect(
-    nextCommunityPageCursor({ endCursor: "cursor-1", hasNextPage: true }, "cursor-1"),
-  ).toBeNull();
-});
-
-test("appendUniqueCommunityItems keeps first occurrences and stable references", () => {
-  const existing = [{ id: "first", value: "Existing" }];
-
-  expect(
-    appendUniqueCommunityItems(existing, [
-      { id: "first", value: "Duplicate" },
-      { id: "second", value: "Second" },
-      { id: "second", value: "Duplicate second" },
-      { id: "third", value: "Third" },
-    ]),
-  ).toEqual([
-    { id: "first", value: "Existing" },
-    { id: "second", value: "Second" },
-    { id: "third", value: "Third" },
-  ]);
-  expect(appendUniqueCommunityItems(existing, [])).toBe(existing);
-  expect(appendUniqueCommunityItems(existing, [{ id: "first", value: "Duplicate" }])).toBe(
-    existing,
-  );
 });
 
 test("community create completions use generated payload facts and shared errors", () => {

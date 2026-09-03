@@ -47,10 +47,10 @@ defmodule ProductCompare.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.8.3"},
+      {:phoenix, "~> 1.8.13"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},
-      {:postgrex, ">= 0.0.0"},
+      {:postgrex, "~> 0.22.4"},
       {:ecto_network, "~> 1.6"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
@@ -64,10 +64,10 @@ defmodule ProductCompare.MixProject do
       {:ex_cldr_territories, "~> 2.12"},
       {:ex_cldr_languages, "~> 0.3"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"},
+      {:bandit, ">= 1.12.5 and < 2.0.0"},
       {:argon2_elixir, "~> 4.0"},
-      {:absinthe, "~> 1.7"},
-      {:absinthe_plug, "~> 1.5"},
+      {:absinthe, ">= 1.11.0 and < 2.0.0"},
+      {:absinthe_plug, ">= 1.5.10 and < 2.0.0"},
       {:absinthe_relay, "~> 1.5"},
       {:dataloader, "~> 2.0"},
       {:oban, "~> 2.23"},
@@ -89,7 +89,7 @@ defmodule ProductCompare.MixProject do
     ecto_setup = ["ecto.create", "ecto.migrate"] ++ seed_tasks()
 
     [
-      setup: ["deps.get"] ++ ecto_setup,
+      setup: ["deps.get", "cmd --cd assets pnpm install --frozen-lockfile"] ++ ecto_setup,
       "ecto.setup": ecto_setup,
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],

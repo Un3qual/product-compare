@@ -1,24 +1,25 @@
 defmodule ProductCompareWeb.GraphQL.Input do
   @moduledoc false
 
+  alias ProductCompareSchemas.DecimalInput
   alias ProductCompareWeb.GraphQL.GlobalId
 
   @spec fetch_value(map(), atom(), any()) :: any()
   def fetch_value(map, key, default \\ nil)
 
-  def fetch_value(map, key, default) when is_map(map) do
+  def fetch_value(map, key, default) do
     Map.get(map, key, Map.get(map, Atom.to_string(key), default))
   end
 
   @spec drop_key(map(), atom()) :: map()
-  def drop_key(map, key) when is_map(map) and is_atom(key) do
+  def drop_key(map, key) do
     map
     |> Map.delete(key)
     |> Map.delete(Atom.to_string(key))
   end
 
   @spec take_present(map(), [atom()]) :: map()
-  def take_present(map, keys) when is_map(map) and is_list(keys) do
+  def take_present(map, keys) do
     Enum.reduce(keys, %{}, fn key, attrs ->
       case fetch_value(map, key) do
         nil -> attrs
@@ -28,7 +29,7 @@ defmodule ProductCompareWeb.GraphQL.Input do
   end
 
   @spec take(map(), [atom()]) :: map()
-  def take(map, keys) when is_map(map) and is_list(keys) do
+  def take(map, keys) do
     missing = make_ref()
 
     Enum.reduce(keys, %{}, fn key, attrs ->
@@ -79,8 +80,7 @@ defmodule ProductCompareWeb.GraphQL.Input do
 
   @spec decode_optional_integer_id_field(map(), atom(), GlobalId.type(), String.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def decode_optional_integer_id_field(attrs, field, expected_type, field_name)
-      when is_map(attrs) and is_atom(field) do
+  def decode_optional_integer_id_field(attrs, field, expected_type, field_name) do
     missing = make_ref()
 
     case fetch_value(attrs, field, missing) do
@@ -122,20 +122,15 @@ defmodule ProductCompareWeb.GraphQL.Input do
   def decode_integer_id_list(_values, _expected_type, _field_name, invalid_list_message),
     do: {:error, invalid_list_message}
 
-  @spec normalize_decimal_value(any()) ::
-          {:ok, Decimal.t() | number() | nil} | {:error, String.t()}
+  @spec normalize_decimal_value(any()) :: {:ok, Decimal.t() | nil} | {:error, String.t()}
   def normalize_decimal_value(nil), do: {:ok, nil}
-  def normalize_decimal_value(%Decimal{} = value), do: {:ok, value}
-  def normalize_decimal_value(value) when is_integer(value) or is_float(value), do: {:ok, value}
 
-  def normalize_decimal_value(value) when is_binary(value) do
-    case Decimal.parse(value) do
-      {decimal, ""} -> {:ok, decimal}
-      _ -> {:error, "invalid numeric value"}
+  def normalize_decimal_value(value) do
+    case DecimalInput.to_decimal(value) do
+      %Decimal{} = decimal -> {:ok, decimal}
+      nil -> {:error, "invalid numeric value"}
     end
   end
-
-  def normalize_decimal_value(_value), do: {:error, "invalid numeric value"}
 
   @spec normalize_boolean_value(any()) :: {:ok, boolean()}
   def normalize_boolean_value(true), do: {:ok, true}

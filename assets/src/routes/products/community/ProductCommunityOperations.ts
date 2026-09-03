@@ -15,43 +15,14 @@ export const productCommunityOperationsQuery = graphql`
         count
         averageRating
       }
-      reviews(first: $reviewFirst, after: $reviewsAfter) {
-        edges {
-          node {
-            id
-            ...ProductCommunityItems_review
-          }
-        }
-        pageInfo {
-          endCursor
-          hasNextPage
-        }
-      }
-      questions(first: $questionFirst, after: $questionsAfter) {
-        edges {
-          node {
-            id
-            ...ProductCommunityItems_question
-            acceptedAnswerId
-            answers(first: $answerFirst) {
-              edges {
-                node {
-                  id
-                  ...ProductCommunityItems_answer
-                }
-              }
-              pageInfo {
-                endCursor
-                hasNextPage
-              }
-            }
-          }
-        }
-        pageInfo {
-          endCursor
-          hasNextPage
-        }
-      }
+      ...ProductCommunityPanel_reviews
+        @arguments(reviewFirst: $reviewFirst, reviewsAfter: $reviewsAfter)
+      ...ProductCommunityPanel_questions
+        @arguments(
+          answerFirst: $answerFirst
+          questionFirst: $questionFirst
+          questionsAfter: $questionsAfter
+        )
       viewerCommunitySubmissions {
         reviews {
           id
@@ -64,6 +35,43 @@ export const productCommunityOperationsQuery = graphql`
         answers {
           id
           ...ProductCommunityItems_answer
+        }
+      }
+    }
+  }
+`;
+
+export const productCommunityReviewsFragment = graphql`
+  fragment ProductCommunityPanel_reviews on Product
+  @argumentDefinitions(reviewFirst: { type: "Int!" }, reviewsAfter: { type: "String" })
+  @refetchable(queryName: "ProductCommunityReviewsPaginationQuery") {
+    reviews(first: $reviewFirst, after: $reviewsAfter)
+      @connection(key: "ProductCommunityPanel_reviews") {
+      edges {
+        node {
+          id
+          ...ProductCommunityItems_review
+        }
+      }
+    }
+  }
+`;
+
+export const productCommunityQuestionsFragment = graphql`
+  fragment ProductCommunityPanel_questions on Product
+  @argumentDefinitions(
+    answerFirst: { type: "Int!" }
+    questionFirst: { type: "Int!" }
+    questionsAfter: { type: "String" }
+  )
+  @refetchable(queryName: "ProductCommunityQuestionsPaginationQuery") {
+    questions(first: $questionFirst, after: $questionsAfter)
+      @connection(key: "ProductCommunityPanel_questions") {
+      edges {
+        node {
+          id
+          ...ProductCommunityItems_question
+          ...CommunityQuestionAnswers_question @arguments(answerFirst: $answerFirst)
         }
       }
     }

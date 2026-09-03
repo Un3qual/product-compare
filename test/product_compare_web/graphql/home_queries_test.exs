@@ -1576,8 +1576,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
       query
     ) and
       String.contains?(query, ~s(WINDOW "median_rank" AS)) and
-      String.contains?(query, ~s("median_count" AS)) and
-      String.contains?(query, "BETWEEN")
+      String.contains?(query, ~s("median_count" AS))
   end
 
   defp any_page_fact_median_query?(query) do

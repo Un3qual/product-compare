@@ -89,8 +89,8 @@ test("alertsLoader preserves its Relay descriptor for component-owned fragments"
     },
     descriptor: {
       __relayQuery: {
+        cacheID: "AlertsRouteQuery-cache-id",
         operationName: "AlertsRouteQuery",
-        text: "query AlertsRouteQuery { myAlertEvents { edges { node { id } } } }",
         variables: { first: 50 },
       },
     },
@@ -569,8 +569,8 @@ function mockReadyAlerts({
 }) {
   const query = {
     __relayQuery: {
+      cacheID: "AlertsRouteQuery-cache-id",
       operationName: "AlertsRouteQuery",
-      text: "query AlertsRouteQuery($first: Int!) { myAlertEvents(first: $first) { edges { node { id } } } }",
       variables: { first: 50 },
     },
   };

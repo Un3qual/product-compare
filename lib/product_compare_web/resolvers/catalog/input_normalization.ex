@@ -242,14 +242,10 @@ defmodule ProductCompareWeb.Resolvers.Catalog.InputNormalization do
 
   defp numeric_min_greater_than_max?(%{min: min, max: max})
        when not is_nil(min) and not is_nil(max) do
-    Decimal.compare(to_decimal(min), to_decimal(max)) == :gt
+    Decimal.compare(min, max) == :gt
   end
 
   defp numeric_min_greater_than_max?(_filter), do: false
-
-  defp to_decimal(%Decimal{} = value), do: value
-  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
-  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
 
   @spec reverse_ok_list({:ok, list()} | {:error, String.t()}) ::
           {:ok, list()} | {:error, String.t()}

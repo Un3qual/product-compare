@@ -1,2 +1,4 @@
 allowBuilds:
   stylex-mangle-classnames@https://codeload.github.com/Un3qual/stylex-mangle-classnames/tar.gz/168dbc31dbea3543f4c8d1ec3039091fc75d65e9: true
+overrides:
+  nanoid: "3.3.18"

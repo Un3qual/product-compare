@@ -31,7 +31,7 @@ defmodule ProductCompare.Discussions.Reads.PublicContent do
             average_rating: Decimal.t() | nil
           }
         }
-  def review_summaries(product_ids) when is_list(product_ids) do
+  def review_summaries(product_ids) do
     product_ids = product_ids |> Enum.filter(&valid_product_id?/1) |> Enum.uniq()
     summaries = Map.new(product_ids, &{&1, zero_review_summary()})
 
@@ -105,7 +105,7 @@ defmodule ProductCompare.Discussions.Reads.PublicContent do
   end
 
   @spec get_questions([term()]) :: %{optional(term()) => ProductThread.t() | nil}
-  def get_questions(entropy_ids) when is_list(entropy_ids) do
+  def get_questions(entropy_ids) do
     Input.uuid_lookup_results(entropy_ids, fn validated_entropy_ids ->
       ProductThread
       |> where(

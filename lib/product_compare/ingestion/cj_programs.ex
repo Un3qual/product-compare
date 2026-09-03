@@ -9,6 +9,8 @@ defmodule ProductCompare.Ingestion.CJPrograms do
 
   @provider "cj"
   @stage_keys CJProgram.stage_keys()
+  @report_stages Map.values(@stage_keys) ++ [:unmatched]
+  @report_stage_keys Map.new(@report_stages, &{Atom.to_string(&1), &1})
   @safe_feed_fields [
     :id,
     :entropy_id,
@@ -83,9 +85,19 @@ defmodule ProductCompare.Ingestion.CJPrograms do
   @spec pursued_stages() :: [atom()]
   def pursued_stages, do: [:selected, :applied, :accepted]
 
+  @doc false
+  @spec normalize_report_stage(term()) :: atom()
+  def normalize_report_stage(nil), do: :unmatched
+  def normalize_report_stage(stage) when stage in @report_stages, do: stage
+
+  def normalize_report_stage(stage) when is_binary(stage),
+    do: Map.get(@report_stage_keys, stage, :unmatched)
+
+  def normalize_report_stage(_stage), do: :unmatched
+
   @spec ensure_in_transaction(pos_integer(), String.t() | nil) ::
           {:ok, CJProgram.t()} | {:error, :blank_advertiser_id | Ecto.Changeset.t()}
-  def ensure_in_transaction(source_id, raw_advertiser_id) when is_integer(source_id) do
+  def ensure_in_transaction(source_id, raw_advertiser_id) do
     case normalize_advertiser_id(raw_advertiser_id) do
       nil ->
         {:error, :blank_advertiser_id}
@@ -108,7 +120,7 @@ defmodule ProductCompare.Ingestion.CJPrograms do
   end
 
   @spec get_by_entropy_id(Ecto.UUID.t()) :: CJProgram.t() | nil
-  def get_by_entropy_id(entropy_id) when is_binary(entropy_id) do
+  def get_by_entropy_id(entropy_id) do
     Repo.get_by(CJProgram, entropy_id: entropy_id)
   end
 
@@ -127,7 +139,7 @@ defmodule ProductCompare.Ingestion.CJPrograms do
 
   @spec update_lifecycle(Ecto.UUID.t(), map(), DateTime.t()) ::
           {:ok, CJProgram.t()} | {:error, :not_found | :stale | Ecto.Changeset.t()}
-  def update_lifecycle(entropy_id, attrs, now) when is_binary(entropy_id) and is_map(attrs) do
+  def update_lifecycle(entropy_id, attrs, now) do
     case get_by_entropy_id(entropy_id) do
       nil ->
         {:error, :not_found}
@@ -145,7 +157,10 @@ defmodule ProductCompare.Ingestion.CJPrograms do
     MerchantFeedCandidate
     |> join(:inner, [feed], source in assoc(feed, :source))
     |> where([feed, source], source.provider == @provider and not is_nil(feed.cj_program_id))
-    |> where([feed], not is_nil(fragment("NULLIF(BTRIM(?), '')", feed.advertiser_name)))
+    |> where(
+      [feed],
+      not is_nil(feed.advertiser_name) and fragment("BTRIM(?)", feed.advertiser_name) != ""
+    )
     |> distinct([feed], feed.cj_program_id)
     |> order_by([feed], asc: feed.cj_program_id, desc: feed.last_seen_at, desc: feed.id)
     |> select([feed], %{
@@ -278,7 +293,7 @@ defmodule ProductCompare.Ingestion.CJPrograms do
 
   defp attr(attrs, key), do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
 
-  defp blank_to_nil(value) when is_binary(value) do
+  defp blank_to_nil(value) do
     case String.trim(value) do
       "" -> nil
       trimmed -> trimmed

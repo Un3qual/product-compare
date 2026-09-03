@@ -6,7 +6,7 @@ defmodule ProductCompareWeb.GraphQL.SessionMutationBridge do
   @ops_key {__MODULE__, :pending_ops}
 
   @spec renew_session_with_user_token(String.t()) :: :ok
-  def renew_session_with_user_token(user_token) when is_binary(user_token) do
+  def renew_session_with_user_token(user_token) do
     put_pending_op({:renew_session_with_user_token, user_token})
     :ok
   end

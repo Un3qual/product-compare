@@ -1,15 +1,15 @@
 defmodule ProductCompareSchemas.Pricing.PricePoint do
   use ProductCompareSchemas.Schema, :relational
 
-  alias ProductCompareSchemas.Schema
+  alias ProductCompareSchemas.FiniteDecimal
 
   @type t :: %__MODULE__{}
 
   schema "price_points" do
     field :entropy_id, Ecto.UUID
     field :observed_at, :utc_datetime_usec
-    field :price, :decimal
-    field :shipping, :decimal
+    field :price, FiniteDecimal
+    field :shipping, FiniteDecimal
     field :in_stock, :boolean
 
     belongs_to :merchant_product, ProductCompareSchemas.Pricing.MerchantProduct
@@ -20,8 +20,6 @@ defmodule ProductCompareSchemas.Pricing.PricePoint do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(price_point, attrs) do
-    attrs = Schema.normalize_non_finite_decimals(attrs, [:price, :shipping])
-
     price_point
     |> cast(attrs, [
       :merchant_product_id,

@@ -124,8 +124,8 @@ const EXPIRED_TOKEN: ApiTokenRecord = {
 
 const API_TOKENS_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "ApiTokensRouteQuery-cache-id",
     operationName: "ApiTokensRouteQuery",
-    text: "query ApiTokensRouteQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) { myApiTokens(first: $first, after: $after, status: $status) { edges { node { id } } } }",
     variables: {
       first: 20,
       status: "ALL" as const,

@@ -49,20 +49,34 @@ defmodule ProductCompareWeb.RuntimeConfigTest do
              "https://shop.example.net"
   end
 
-  test "endpoint_host/1 falls back to example.com for nil" do
-    assert RuntimeConfig.endpoint_host(nil) == "example.com"
+  test "endpoint_host!/1 requires an explicit production host" do
+    assert_raise ArgumentError, ~r/PHX_HOST/, fn ->
+      RuntimeConfig.endpoint_host!(nil)
+    end
+
+    assert_raise ArgumentError, ~r/PHX_HOST/, fn ->
+      RuntimeConfig.endpoint_host!("  ")
+    end
   end
 
-  test "endpoint_host/1 preserves plain hosts" do
-    assert RuntimeConfig.endpoint_host("example.com") == "example.com"
+  test "endpoint_host!/1 preserves plain hosts" do
+    assert RuntimeConfig.endpoint_host!("example.com") == "example.com"
   end
 
-  test "endpoint_host/1 strips ports from host-only inputs" do
-    assert RuntimeConfig.endpoint_host("api.example.com:4000") == "api.example.com"
+  test "endpoint_host!/1 strips ports from host-only inputs" do
+    assert RuntimeConfig.endpoint_host!("api.example.com:4000") == "api.example.com"
   end
 
-  test "endpoint_host/1 normalizes full PHX_HOST URLs" do
-    assert RuntimeConfig.endpoint_host(" https://api.example.com:4000/path ") == "api.example.com"
-    assert RuntimeConfig.endpoint_host("  ") == "example.com"
+  test "endpoint_host!/1 normalizes full PHX_HOST URLs" do
+    assert RuntimeConfig.endpoint_host!(" https://api.example.com:4000/path ") ==
+             "api.example.com"
+  end
+
+  test "endpoint_host!/1 rejects values without a valid host" do
+    for invalid <- ["https://", "/relative", ".example.com", "example.com/path"] do
+      assert_raise ArgumentError, ~r/PHX_HOST/, fn ->
+        RuntimeConfig.endpoint_host!(invalid)
+      end
+    end
   end
 end

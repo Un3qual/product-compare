@@ -23,6 +23,23 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCredentialsTest do
   end
 
   describe "run/1" do
+    test "accepts only one valid require-ready switch" do
+      System.put_env("CJ_API_TOKEN", "secret-token")
+      System.put_env("CJ_ACCOUNT_ID", "1234567")
+
+      invalid_cases = [
+        {["--bogus"], "unsupported option: --bogus"},
+        {["extra"], "unexpected argument: extra"},
+        {["--require-ready=maybe"], "invalid value for --require-ready: maybe"}
+      ]
+
+      Enum.each(invalid_cases, fn {argv, expected_message} ->
+        assert_raise Mix.Error, expected_message, fn ->
+          capture_io(fn -> CjCredentials.run(argv) end)
+        end
+      end)
+    end
+
     test "reports missing required credentials when no CJ env vars are set" do
       output = capture_io(fn -> CjCredentials.run([]) end)
 

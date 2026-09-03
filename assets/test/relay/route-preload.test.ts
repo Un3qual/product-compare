@@ -33,6 +33,7 @@ vi.mock("react-relay", async () => {
 const routeQuery = {
   kind: "Request",
   params: {
+    cacheID: "browse-products-cache-id",
     name: "BrowseProductsRouteQuery",
     text: "query BrowseProductsRouteQuery($first: Int!) { products(first: $first) { edges { node { id } } } }",
   },
@@ -53,15 +54,15 @@ const flushRouteQueryRefDisposalTimers = () => {
 test("relay route query descriptor identity is stable across variable property order", () => {
   const firstIdentity = relayRouteQueryDescriptorIdentity({
     __relayQuery: {
+      cacheID: "browse-products-cache-id",
       operationName: "BrowseProductsRouteQuery",
-      text: "query BrowseProductsRouteQuery($first: Int!, $after: String) { products(first: $first, after: $after) { edges { node { id } } } }",
       variables: { first: 12, after: "cursor-1" },
     },
   });
   const secondIdentity = relayRouteQueryDescriptorIdentity({
     __relayQuery: {
+      cacheID: "browse-products-cache-id",
       operationName: "BrowseProductsRouteQuery",
-      text: "query BrowseProductsRouteQuery($first: Int!, $after: String) { products(first: $first, after: $after) { edges { node { id } } } }",
       variables: { after: "cursor-1", first: 12 },
     },
   });
@@ -69,28 +70,32 @@ test("relay route query descriptor identity is stable across variable property o
   expect(secondIdentity).toBe(firstIdentity);
 });
 
-test("relay route query descriptor identity includes query text", () => {
-  const descriptor = {
+test("relay route query descriptor identity uses cache ID rather than operation name", () => {
+  const firstDescriptor = {
     __relayQuery: {
+      cacheID: "browse-products-cache-id",
       operationName: "BrowseProductsRouteQuery",
       variables: { first: 12 },
     },
   };
+  const renamedDescriptor = {
+    __relayQuery: {
+      ...firstDescriptor.__relayQuery,
+      operationName: "RenamedBrowseProductsRouteQuery",
+    },
+  };
+  const differentRequestDescriptor = {
+    __relayQuery: {
+      ...firstDescriptor.__relayQuery,
+      cacheID: "different-cache-id",
+    },
+  };
 
-  expect(
-    relayRouteQueryDescriptorIdentity({
-      __relayQuery: {
-        ...descriptor.__relayQuery,
-        text: "query BrowseProductsRouteQuery($first: Int!) { products(first: $first) { edges { node { id } } } }",
-      },
-    }),
-  ).not.toBe(
-    relayRouteQueryDescriptorIdentity({
-      __relayQuery: {
-        ...descriptor.__relayQuery,
-        text: "query BrowseProductsRouteQuery($first: Int!) { products(first: $first) { totalCount } }",
-      },
-    }),
+  expect(relayRouteQueryDescriptorIdentity(renamedDescriptor)).toBe(
+    relayRouteQueryDescriptorIdentity(firstDescriptor),
+  );
+  expect(relayRouteQueryDescriptorIdentity(differentRequestDescriptor)).not.toBe(
+    relayRouteQueryDescriptorIdentity(firstDescriptor),
   );
 });
 
@@ -131,8 +136,8 @@ test("preloadRouteQuery fetches fresh data before retaining a store-only query r
 
   await expect(descriptorPromise).resolves.toEqual({
     __relayQuery: {
+      cacheID: "browse-products-cache-id",
       operationName: "BrowseProductsRouteQuery",
-      text: expect.stringContaining("query BrowseProductsRouteQuery"),
       variables,
     },
   });
@@ -140,6 +145,22 @@ test("preloadRouteQuery fetches fresh data before retaining a store-only query r
   expect(loadQuery).toHaveBeenCalledWith(environment, routeQuery, variables, {
     fetchPolicy: "store-only",
   });
+});
+
+test("preloadRouteQuery rejects generated requests without a stable cache ID", async () => {
+  const environment = createRelayEnvironment();
+  const queryWithoutCacheID = {
+    kind: "Request",
+    params: {
+      name: "MissingCacheIdRouteQuery",
+      text: "query MissingCacheIdRouteQuery { viewer { id } }",
+    },
+  } as unknown as GraphQLTaggedNode;
+
+  await expect(preloadRouteQuery(environment, queryWithoutCacheID, {})).rejects.toThrow(
+    "MissingCacheIdRouteQuery is missing a generated cache ID",
+  );
+  expect(fetchAppQuery).not.toHaveBeenCalled();
 });
 
 test("preloadRouteQuery forwards the route loader abort signal to the network refresh", async () => {
@@ -180,8 +201,8 @@ test("fetchRouteQuery returns fetched data with the serializable descriptor and 
     data,
     descriptor: {
       __relayQuery: {
+        cacheID: "browse-products-cache-id",
         operationName: "BrowseProductsRouteQuery",
-        text: expect.stringContaining("query BrowseProductsRouteQuery"),
         variables,
       },
     },
@@ -262,8 +283,8 @@ test("getRoutePreloadedQuery uses the hydrated store when the route cache is emp
 
   const descriptor = {
     __relayQuery: {
+      cacheID: "BrowseProductsRouteQuery-cache-id",
       operationName: "BrowseProductsRouteQuery",
-      text: "query BrowseProductsRouteQuery($first: Int!) { products(first: $first) { edges { node { id } } } }",
       variables,
     },
   };

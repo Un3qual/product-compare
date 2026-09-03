@@ -3,14 +3,21 @@ defmodule ProductCompareWeb.RuntimeConfig do
 
   @dev_trusted_origins ["http://127.0.0.1:5173", "http://localhost:5173"]
 
-  @spec endpoint_host(String.t() | nil) :: String.t()
-  def endpoint_host(phx_host) do
-    normalize_host(phx_host) || "example.com"
+  @spec endpoint_host!(String.t() | nil) :: String.t()
+  def endpoint_host!(phx_host) do
+    case normalize_host(phx_host) do
+      host when is_binary(host) ->
+        host
+
+      _invalid ->
+        raise ArgumentError,
+              "PHX_HOST must be a non-empty host or absolute HTTP(S) URL with a valid host"
+    end
   end
 
   @spec default_trusted_origins(atom(), String.t() | nil) :: [String.t()]
   def default_trusted_origins(:prod, phx_host) do
-    [frontend_origin(endpoint_host(phx_host))]
+    [frontend_origin(endpoint_host!(phx_host))]
   end
 
   def default_trusted_origins(_env, _phx_host), do: @dev_trusted_origins
@@ -42,34 +49,36 @@ defmodule ProductCompareWeb.RuntimeConfig do
     "https://" <> origin_host(frontend_host)
   end
 
-  defp origin_host("[" <> _rest = host), do: host
-
   defp origin_host(host) do
     if String.contains?(host, ":"), do: "[#{host}]", else: host
   end
 
-  defp normalize_host(nil), do: nil
+  defp normalize_host(value) when is_binary(value) do
+    value = String.trim(value)
+    absolute? = String.contains?(value, "://")
+    uri = URI.parse(if absolute?, do: value, else: "//" <> value)
 
-  defp normalize_host(value) do
-    value
-    |> String.trim()
-    |> case do
-      "" ->
-        nil
-
-      trimmed ->
-        if String.contains?(trimmed, "://") do
-          trimmed
-          |> URI.parse()
-          |> Map.get(:host)
-        else
-          trimmed
-          |> String.trim_trailing("/")
-          |> then(&URI.parse("//" <> &1))
-          |> Map.get(:host)
-        end
+    with true <- value != "" and (absolute? or not String.contains?(value, "/")),
+         true <- not absolute? or uri.scheme in ["http", "https"],
+         nil <- uri.userinfo do
+      normalize_parsed_host(uri.host)
+    else
+      _invalid -> nil
     end
   end
+
+  defp normalize_host(_value), do: nil
+
+  defp normalize_parsed_host(host) when is_binary(host) do
+    host = String.downcase(host)
+
+    if host != "" and not String.starts_with?(host, ".") and
+         not String.ends_with?(host, ".") and not String.contains?(host, "..") do
+      host
+    end
+  end
+
+  defp normalize_parsed_host(_host), do: nil
 
   defp public_origin?(%URI{
          scheme: scheme,

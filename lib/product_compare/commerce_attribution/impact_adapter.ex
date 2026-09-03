@@ -7,9 +7,10 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
 
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.CommerceAttribution.ClickReference
+  alias ProductCompareSchemas.DecimalInput
 
   @spec ingest_action(map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
-  def ingest_action(payload) when is_map(payload) do
+  def ingest_action(payload) do
     payload
     |> normalize_action()
     |> CommerceAttribution.ingest_conversion()
@@ -121,20 +122,7 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
 
   defp normalize_status(status), do: status
 
-  defp decimal(nil), do: nil
-  defp decimal(%Decimal{} = value), do: value
-
-  defp decimal(value) when is_binary(value) or is_integer(value) or is_float(value) do
-    value = value |> to_string() |> String.trim()
-
-    case Decimal.parse(value) do
-      {%Decimal{} = decimal, ""} -> decimal
-      {%Decimal{}, _rest} -> nil
-      :error -> nil
-    end
-  end
-
-  defp decimal(_value), do: nil
+  defp decimal(value), do: DecimalInput.to_decimal(value)
 
   defp integer(nil), do: nil
   defp integer(value) when is_integer(value), do: value

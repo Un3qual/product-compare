@@ -89,14 +89,14 @@ defmodule ProductCompare.Ingestion.CJRunThroughput do
       [run, source],
       source.provider == @provider and run.started_at >= ^start_at and run.started_at <= ^now
     )
-    |> group_by([run, _source, surface], [fragment("?::date", run.started_at), surface.code])
+    |> group_by([run, _source, surface], [type(run.started_at, :date), surface.code])
     |> order_by(
       [run, _source, surface],
-      desc: fragment("?::date", run.started_at),
+      desc: type(run.started_at, :date),
       asc: surface.code
     )
     |> select([run, _source, surface], %{
-      date: fragment("?::date", run.started_at),
+      date: type(run.started_at, :date),
       surface: surface.code,
       run_count: count(run.id),
       succeeded_run_count: filter(count(run.id), run.status == :succeeded),

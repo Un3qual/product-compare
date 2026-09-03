@@ -23,7 +23,14 @@ config :product_compare, ProductCompareWeb.Endpoint,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "HLuoZA/X0e8R43SNWkLoZOcLk12hSOTRxafPw/NYu4K5kHrRCvZuLDbUsAIS1S5Z",
-  watchers: []
+  watchers: [
+    node: [
+      "node_modules/vite/bin/vite.js",
+      "--host",
+      "127.0.0.1",
+      cd: Path.expand("../assets", __DIR__)
+    ]
+  ]
 
 # ## SSL Support
 #

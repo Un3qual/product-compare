@@ -325,14 +325,14 @@ defmodule ProductCompare.Pricing.HomeOffers do
     )
     |> where([offer: offer], offer.inserted_at >= ^new_after)
     |> CurrentOffers.with_first_observation(now)
-    |> select_merge([offer: offer, first_observation: first], %{
-      median_30d: type(fragment("NULL"), :decimal),
-      new_offer?: fragment("least(?, ?) >= ?", offer.inserted_at, first.observed_at, ^new_after),
+    |> select_merge([offer: _offer, first_observation: _first], %{
+      median_30d: type(^nil, :decimal),
+      new_offer?: true,
       below_30_day_median?: false
     })
     |> where(
-      [offer: offer, first_observation: first],
-      fragment("least(?, ?) >= ?", offer.inserted_at, first.observed_at, ^new_after)
+      [offer: _offer, first_observation: first],
+      first.observed_at >= ^new_after
     )
   end
 
@@ -341,7 +341,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
     |> CurrentOffers.eligible_query(current_offer_options(now))
     |> CurrentOffers.with_median(product_ids, median_options(now))
     |> select_merge([offer: _offer], %{
-      first_seen_at: type(fragment("NULL"), :utc_datetime_usec),
+      first_seen_at: type(^nil, :utc_datetime_usec),
       new_offer?: false
     })
   end

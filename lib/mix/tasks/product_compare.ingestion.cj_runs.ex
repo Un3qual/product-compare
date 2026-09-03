@@ -12,9 +12,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
 
   @impl Mix.Task
   def run(argv) do
-    RepoOnlyStartup.start!()
-
     opts = Options.parse_argv(argv)
+    validate_opts!(opts)
+
+    RepoOnlyStartup.start!()
 
     if Keyword.fetch!(opts, :resume) do
       run_resume(opts)
@@ -30,4 +31,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
 
   @spec run_resume(keyword()) :: {:ok, map()} | {:error, :no_resume_cursor} | :ok
   def run_resume(opts), do: Resume.run_resume(opts)
+
+  defp validate_opts!(opts) do
+    if Keyword.fetch!(opts, :resume) do
+      Options.normalize_resume_opts(opts)
+    else
+      Options.normalize_report_opts(opts)
+    end
+
+    :ok
+  end
 end

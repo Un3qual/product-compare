@@ -205,7 +205,7 @@ export function homeResponders({
   deals?: HomeDealsFixture;
   viewer?: ReturnType<typeof memberViewer> | null;
 } = {}): GraphQLResponders {
-  return new Map([
+  return new Map<string, GraphQLResponder>([
     ["BrowseRouteQuery", { data: emptyBrowseData() }],
     ["CompareProductPickerBoundaryQuery", { data: emptyProductPickerData() }],
     [

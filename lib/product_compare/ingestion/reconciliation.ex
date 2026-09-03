@@ -3,6 +3,7 @@ defmodule ProductCompare.Ingestion.Reconciliation do
 
   import Ecto.Query
 
+  alias ProductCompare.DatabaseLocks
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.ImportObservation
   alias ProductCompareSchemas.Ingestion.ImportRun
@@ -100,7 +101,7 @@ defmodule ProductCompare.Ingestion.Reconciliation do
         ":"
       )
 
-    Repo.query!("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [lock_name])
+    DatabaseLocks.lock_transaction!(lock_name)
   end
 
   defp superseded?(run) do

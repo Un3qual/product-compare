@@ -11,7 +11,7 @@ defmodule ProductCompare.Pricing.CurrentOffers do
   @max_bigint_id 9_223_372_036_854_775_807
 
   @spec current_offer_truths([pos_integer()], keyword()) :: %{optional(pos_integer()) => map()}
-  def current_offer_truths(product_ids, opts \\ []) when is_list(product_ids) do
+  def current_offer_truths(product_ids, opts \\ []) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
     product_ids = normalize_product_ids(product_ids)
 
@@ -104,7 +104,7 @@ defmodule ProductCompare.Pricing.CurrentOffers do
     case product_ids do
       [] ->
         select_merge(query, [offer: _offer], %{
-          median_30d: type(fragment("NULL"), :decimal),
+          median_30d: type(^nil, :decimal),
           below_30_day_median?: false
         })
 

@@ -50,8 +50,8 @@ const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 const ROOT_VIEWER_QUERY_REF = { dispose: vi.fn() };
 const ROOT_VIEWER_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "RootRouteQuery-cache-id",
     operationName: "RootRouteQuery",
-    text: null,
     variables: {},
   },
 };

@@ -1,10 +1,12 @@
-import { Suspense, type FormEvent, useEffect, useId, useMemo, useRef, useState } from "react";
+import { Suspense, type FormEvent, useId, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLocation } from "react-router-dom";
-import { useLazyLoadQuery, useMutation } from "react-relay";
+import { useLazyLoadQuery, useMutation, usePaginationFragment } from "react-relay";
 import type { ComparisonSharingOperationsPublishComparisonSnapshotMutation } from "$generated/ComparisonSharingOperationsPublishComparisonSnapshotMutation.graphql";
 import type { ComparisonSharingOperationsQuery } from "$generated/ComparisonSharingOperationsQuery.graphql";
 import type { ComparisonSharingOperationsRevokeComparisonSnapshotMutation } from "$generated/ComparisonSharingOperationsRevokeComparisonSnapshotMutation.graphql";
+import type { ComparisonSharingOperations_snapshots$key } from "$generated/ComparisonSharingOperations_snapshots.graphql";
+import type { ComparisonSharingSnapshotsPaginationQuery } from "$generated/ComparisonSharingSnapshotsPaginationQuery.graphql";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
 import { Button } from "$ui/primitives/Button";
@@ -17,6 +19,7 @@ import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import type { CompareProductSummary } from "../compare-route-data";
 import {
   comparisonSharingOperationsQuery,
+  comparisonSharingSnapshotsFragment,
   publishComparisonSnapshotMutation,
   revokeComparisonSnapshotMutation,
 } from "./ComparisonSharingOperations";
@@ -25,11 +28,9 @@ import {
   type RecommendationProfile,
 } from "../recommendation-route-data";
 import {
-  appendComparisonSnapshotPage,
   buildComparisonSnapshotPublishInput,
   comparisonSnapshotLabel,
   mergeComparisonSnapshots,
-  nextComparisonSnapshotCursor,
   publishComparisonSnapshotState,
   revokeComparisonSnapshotState,
   resolvePublishComparisonSnapshotMutationOutcome,
@@ -110,27 +111,32 @@ export function ShareComparisonControl({
     useSnapshotRevoker(recordRevoked);
 
   return (
-    <SnapshotControlView
-      handlePublish={handlePublish}
-      handleRevoke={handleRevoke}
-      message={snapshotState.message}
-      onOpenChange={setOpen}
-      open={open}
-      products={products}
-      published={snapshotState.published}
-      publishing={publishing}
-      revokedSnapshotIds={snapshotState.revokedSnapshotIds}
-      revocationErrorsBySnapshotId={errorsBySnapshotId}
-      revokingSnapshotIds={pendingSnapshotIds}
-    />
+    <Collapsible onOpenChange={setOpen} open={open} style={styles.control}>
+      <CollapsibleTrigger render={<Button variant="outline" />}>
+        Share this comparison
+      </CollapsibleTrigger>
+      <CollapsibleContent keepMounted style={styles.content}>
+        <SnapshotPublishForm
+          handlePublish={handlePublish}
+          handleRevoke={handleRevoke}
+          message={snapshotState.message}
+          open={open}
+          products={products}
+          published={snapshotState.published}
+          publishing={publishing}
+          revokedSnapshotIds={snapshotState.revokedSnapshotIds}
+          revocationErrorsBySnapshotId={errorsBySnapshotId}
+          revokingSnapshotIds={pendingSnapshotIds}
+        />
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
-interface SnapshotControlViewProps {
+interface SnapshotPublishFormProps {
   handlePublish: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   handleRevoke: (snapshot: PublishedComparisonSnapshot) => Promise<void>;
   message: string | null;
-  onOpenChange: (open: boolean) => void;
   open: boolean;
   products: readonly CompareProductSummary[];
   published: readonly PublishedComparisonSnapshot[];
@@ -138,23 +144,6 @@ interface SnapshotControlViewProps {
   revokedSnapshotIds: ReadonlySet<string>;
   revocationErrorsBySnapshotId: ReadonlyMap<string, string>;
   revokingSnapshotIds: ReadonlySet<string>;
-}
-
-function SnapshotControlView({
-  onOpenChange,
-  open,
-  ...publishFormProps
-}: SnapshotControlViewProps) {
-  return (
-    <Collapsible onOpenChange={onOpenChange} open={open} style={styles.control}>
-      <CollapsibleTrigger render={<Button variant="outline" />}>
-        Share this comparison
-      </CollapsibleTrigger>
-      <CollapsibleContent keepMounted style={styles.content}>
-        <SnapshotPublishForm open={open} {...publishFormProps} />
-      </CollapsibleContent>
-    </Collapsible>
-  );
 }
 
 function SnapshotPublishForm({
@@ -168,7 +157,7 @@ function SnapshotPublishForm({
   revokedSnapshotIds,
   revocationErrorsBySnapshotId,
   revokingSnapshotIds,
-}: Omit<SnapshotControlViewProps, "onOpenChange">) {
+}: SnapshotPublishFormProps) {
   const titleId = useId();
   const searchIndexableId = useId();
 
@@ -355,29 +344,27 @@ function PublishedSnapshots({
   revocationErrorsBySnapshotId: ReadonlyMap<string, string>;
   revokingSnapshotIds: ReadonlySet<string>;
 }) {
-  const [after, setAfter] = useState<string | null>(null);
-  const [loadedSnapshots, setLoadedSnapshots] = useState<PublishedComparisonSnapshot[]>([]);
-  const data = useLazyLoadQuery<ComparisonSharingOperationsQuery>(
+  const queryData = useLazyLoadQuery<ComparisonSharingOperationsQuery>(
     comparisonSharingOperationsQuery,
-    { first: SNAPSHOT_PAGE_SIZE, after },
+    { first: SNAPSHOT_PAGE_SIZE, after: null },
     { fetchPolicy: "store-or-network" },
   );
-  const connection = data.viewer?.comparisonSnapshots;
-  const pageSnapshots = useMemo(
-    () => connection?.edges.map(({ node }) => snapshotFromNode(node)) ?? [],
-    [connection],
-  );
-  const snapshots = mergeComparisonSnapshots(
-    [localSnapshots, loadedSnapshots, pageSnapshots],
-    revokedSnapshotIds,
-  );
-  const next = nextComparisonSnapshotCursor(connection ?? null, after);
+  const { data, hasNext, isLoadingNext, loadNext } = usePaginationFragment<
+    ComparisonSharingSnapshotsPaginationQuery,
+    ComparisonSharingOperations_snapshots$key
+  >(comparisonSharingSnapshotsFragment, queryData);
+  const [paginationFailed, setPaginationFailed] = useState(false);
+  const pageSnapshots =
+    data.viewer?.comparisonSnapshots.edges.map(({ node }) => snapshotFromNode(node)) ?? [];
+  const snapshots = mergeComparisonSnapshots([localSnapshots, pageSnapshots], revokedSnapshotIds);
+  const loadMore = () => {
+    setPaginationFailed(false);
+    loadNext(SNAPSHOT_PAGE_SIZE, {
+      onComplete: (error) => setPaginationFailed(error !== null),
+    });
+  };
 
-  useEffect(() => {
-    setLoadedSnapshots((current) => appendComparisonSnapshotPage(current, pageSnapshots));
-  }, [pageSnapshots]);
-
-  if (snapshots.length === 0 && !next) {
+  if (snapshots.length === 0 && !hasNext) {
     return null;
   }
 
@@ -418,9 +405,21 @@ function PublishedSnapshots({
           })}
         </ul>
       ) : null}
-      {next ? (
-        <Button onClick={() => setAfter(next)} type="button" variant="link">
-          Show more links
+      {paginationFailed ? (
+        <div role="alert">
+          <p>More links unavailable.</p>
+          <Button disabled={isLoadingNext} onClick={loadMore} type="button">
+            Retry links
+          </Button>
+        </div>
+      ) : hasNext ? (
+        <Button
+          disabled={isLoadingNext}
+          onClick={loadMore}
+          type="button"
+          variant="link"
+        >
+          {isLoadingNext ? "Loading more links…" : "Show more links"}
         </Button>
       ) : null}
     </>

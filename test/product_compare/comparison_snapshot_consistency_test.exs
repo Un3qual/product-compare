@@ -112,7 +112,7 @@ defmodule ProductCompare.ComparisonSnapshotConsistencyTest do
     end
   end
 
-  defp product_load_query?(query) when is_binary(query) do
+  defp product_load_query?(query) do
     String.contains?(query, ~s(FROM "products"))
   end
 

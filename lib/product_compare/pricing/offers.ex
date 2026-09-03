@@ -18,8 +18,7 @@ defmodule ProductCompare.Pricing.Offers do
           offset: non_neg_integer(),
           fetch_limit: non_neg_integer()
         }) :: %{optional(pos_integer()) => [MerchantProduct.t()]}
-  def merchant_offer_pages(merchant_ids, %{offset: offset, fetch_limit: fetch_limit})
-      when is_list(merchant_ids) do
+  def merchant_offer_pages(merchant_ids, %{offset: offset, fetch_limit: fetch_limit}) do
     merchant_ids = normalize_merchant_ids(merchant_ids)
 
     if merchant_ids == [] do
@@ -100,8 +99,7 @@ defmodule ProductCompare.Pricing.Offers do
           offset: non_neg_integer(),
           fetch_limit: non_neg_integer()
         }) :: %{optional(pos_integer()) => [MerchantProduct.t()]}
-  def product_offer_pages(product_ids, filters, %{offset: offset, fetch_limit: fetch_limit})
-      when is_list(product_ids) and is_map(filters) do
+  def product_offer_pages(product_ids, filters, %{offset: offset, fetch_limit: fetch_limit}) do
     product_ids = normalize_product_ids(product_ids)
 
     if product_ids == [] do

@@ -77,8 +77,8 @@ const COUPON_ID = "Q291cG9uOjE=";
 
 const AFFILIATE_SETUP_QUERY_DESCRIPTOR = {
   __relayQuery: {
+    cacheID: "AffiliateSetupRouteQuery-cache-id",
     operationName: "AffiliateSetupRouteQuery",
-    text: "query AffiliateSetupRouteQuery($first: Int, $after: String) { merchants(first: $first, after: $after) { edges { node { id } } } }",
     variables: {
       first: 20,
       after: null,
@@ -161,12 +161,15 @@ test("affiliate setup presents four numbered lifecycle steps in dependency order
     "3. Merchant link",
     "4. Coupon",
   ]);
-  expect(within(steps[1]).getByText("Selected merchant: Acme Market (acme.example)"))
-    .toBeInTheDocument();
-  expect(within(steps[2]).getByText("Selected merchant: Acme Market (acme.example)"))
-    .toBeInTheDocument();
-  expect(within(steps[3]).getByText("Selected merchant: Acme Market (acme.example)"))
-    .toBeInTheDocument();
+  expect(
+    within(steps[1]).getByText("Selected merchant: Acme Market (acme.example)"),
+  ).toBeInTheDocument();
+  expect(
+    within(steps[2]).getByText("Selected merchant: Acme Market (acme.example)"),
+  ).toBeInTheDocument();
+  expect(
+    within(steps[3]).getByText("Selected merchant: Acme Market (acme.example)"),
+  ).toBeInTheDocument();
 });
 
 test("affiliate setup route renders merchant-choice pagination from loaded cursors", () => {
@@ -232,11 +235,7 @@ test("affiliate setup route suppresses repeated and blank merchant cursors", () 
   expect(screen.queryByRole("link", { name: "Next merchants" })).not.toBeInTheDocument();
 });
 
-test("affiliate setup forms preserve submission callbacks and controlled merchant selections", () => {
-  const onNetworkSubmit = vi.fn();
-  const onProgramSubmit = vi.fn();
-  const onLinkSubmit = vi.fn();
-  const onCouponSubmit = vi.fn();
+test("affiliate setup forms preserve controlled workflow inputs and submit their own mutations", () => {
   const onAffiliateNetworkIdChange = vi.fn();
   const onSelectedMerchantIdChange = vi.fn();
   const merchantChoices = [
@@ -246,33 +245,19 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
 
   render(
     <>
-      <NetworkStep error={null} onSubmit={onNetworkSubmit} pending={false} result={null} />
+      <NetworkStep onNetworkIdChange={vi.fn()} />
       <ProgramStep
         affiliateNetworkId={NETWORK_ID}
-        error={null}
         merchantChoices={merchantChoices}
         onAffiliateNetworkIdChange={onAffiliateNetworkIdChange}
         onSelectedMerchantIdChange={onSelectedMerchantIdChange}
-        onSubmit={onProgramSubmit}
-        pending={false}
-        result={null}
         selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
         selectedMerchantValue={MERCHANT_ID}
       />
-      <MerchantLinkStep
-        error={null}
-        onSubmit={onLinkSubmit}
-        pending={false}
-        result={null}
-        selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
-      />
+      <MerchantLinkStep selectedMerchantCopy="Selected merchant: Acme Market (acme.example)" />
       <CouponStep
-        error={null}
         merchantChoices={merchantChoices}
         onSelectedMerchantIdChange={onSelectedMerchantIdChange}
-        onSubmit={onCouponSubmit}
-        pending={false}
-        result={null}
         selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
         selectedMerchantValue={MERCHANT_ID}
       />
@@ -292,10 +277,10 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
   expect(onAffiliateNetworkIdChange).toHaveBeenCalledWith("new-network-id");
   expect(onSelectedMerchantIdChange).toHaveBeenNthCalledWith(1, SECOND_MERCHANT_ID);
   expect(onSelectedMerchantIdChange).toHaveBeenNthCalledWith(2, SECOND_MERCHANT_ID);
-  expect(onNetworkSubmit).toHaveBeenCalledOnce();
-  expect(onProgramSubmit).toHaveBeenCalledOnce();
-  expect(onLinkSubmit).toHaveBeenCalledOnce();
-  expect(onCouponSubmit).toHaveBeenCalledOnce();
+  expect(commitNetworkMutationMock).toHaveBeenCalledOnce();
+  expect(commitProgramMutationMock).toHaveBeenCalledOnce();
+  expect(commitLinkMutationMock).toHaveBeenCalledOnce();
+  expect(commitCouponMutationMock).toHaveBeenCalledOnce();
 });
 
 test("affiliate setup datetime controls use the shared text-field presentation", () => {
@@ -443,6 +428,66 @@ test("affiliate setup route commits network upsert and displays the saved networ
   expect(resultRegion).toHaveTextContent("Impact");
   expect(resultRegion).toHaveTextContent(NETWORK_ID);
   expect(screen.getByLabelText("Affiliate network ID")).toHaveValue(NETWORK_ID);
+});
+
+test("affiliate setup shares workflow identity without coupling step-local mutation state", async () => {
+  renderAffiliateSetupRoute();
+
+  fireEvent.change(screen.getByLabelText("Network name"), { target: { value: "Impact" } });
+  fireEvent.submit(screen.getByRole("form", { name: "Save affiliate network" }));
+  await waitFor(() => expect(commitNetworkMutationMock).toHaveBeenCalledTimes(1));
+  completeLatestNetworkMutation({
+    upsertAffiliateNetwork: {
+      network: { id: NETWORK_ID, name: "Impact" },
+      errors: [],
+    },
+  });
+
+  const networkResult = await screen.findByRole("region", { name: "Affiliate network result" });
+  expect(screen.getByLabelText("Affiliate network ID")).toHaveValue(NETWORK_ID);
+
+  const programForm = screen.getByRole("form", { name: "Save affiliate program" });
+  fireEvent.submit(programForm);
+  fireEvent.submit(programForm);
+  await waitFor(() => expect(commitProgramMutationMock).toHaveBeenCalledTimes(1));
+  expect(within(programForm).getByRole("button", { name: "Save program" })).toBeDisabled();
+  completeLatestProgramMutation({
+    upsertAffiliateProgram: {
+      program: null,
+      errors: [
+        {
+          code: "INVALID_ARGUMENT",
+          field: "programCode",
+          message: "Program code is required.",
+        },
+      ],
+    },
+  });
+
+  expect(await within(programForm).findByRole("alert")).toHaveTextContent(
+    "Program code is required.",
+  );
+  expect(networkResult).toBeVisible();
+
+  fireEvent.submit(screen.getByRole("form", { name: "Save affiliate link" }));
+  await waitFor(() => expect(commitLinkMutationMock).toHaveBeenCalledTimes(1));
+  completeLatestLinkMutation({
+    upsertAffiliateLink: {
+      link: {
+        id: LINK_ID,
+        merchantProductId: MERCHANT_PRODUCT_ID,
+        affiliateNetworkId: NETWORK_ID,
+        originalUrl: "https://merchant.example/products/1",
+        affiliateUrl: "https://network.example/track/1",
+        lastVerifiedAt: null,
+      },
+      errors: [],
+    },
+  });
+
+  expect(await screen.findByRole("region", { name: "Affiliate link result" })).toBeVisible();
+  expect(within(programForm).getByRole("alert")).toHaveTextContent("Program code is required.");
+  expect(networkResult).toBeVisible();
 });
 
 test("affiliate setup route renders network payload errors", async () => {

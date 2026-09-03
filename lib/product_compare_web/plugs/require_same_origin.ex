@@ -92,12 +92,15 @@ defmodule ProductCompareWeb.Plugs.RequireSameOrigin do
     |> Enum.reject(&is_nil/1)
   end
 
-  defp expected_origin(conn) do
+  defp expected_origin(_conn) do
     url_config = endpoint_url_config()
-    scheme = Keyword.get(url_config, :scheme, Atom.to_string(conn.scheme))
-    port = Keyword.get(url_config, :port, conn.port)
+    scheme = url_config |> Keyword.get(:scheme, "http") |> to_string()
+    host = Keyword.get(url_config, :host)
+    port = Keyword.get(url_config, :port, URI.default_port(scheme))
 
-    format_origin(scheme, conn.host, port)
+    if is_binary(host) and host != "" do
+      format_origin(scheme, host, port)
+    end
   end
 
   defp normalize_origin(nil), do: nil
