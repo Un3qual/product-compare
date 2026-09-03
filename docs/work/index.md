@@ -49,21 +49,26 @@ None.
 
 ## Ready Work
 
-None.
+No implementation rows are currently ready.
 
 ## Ready Floor Exception
 
-Reason: The approved repository-wide quality, frontend complexity, tooling,
-dependency, and Ecto-query remediation outcomes are complete; the final code,
-test, query, and architecture audit found no additional validated,
-independently shippable candidate.
-Rejected split: Remaining PostgreSQL-specific expressions and native database
-boundaries are intentional, while individual style edits, test assertions,
-helpers, or speculative abstractions would be micro-batches rather than
-coherent product outcomes.
-Replenishment action: Before the next dispatch, curate current product
-behavior, code, tests, architecture gaps, and lane evidence, then promote every
-new coherent candidate that is source-backed and executable.
+Reason: The repository-wide quality remediation, CJ live-conversion lifecycle,
+and deterministic development fixtures are complete. Their closeout curation
+checked current product behavior, full repository gates, source markers,
+architecture gaps, the candidate catalog, and lane evidence without finding
+another coherent, independently reviewable outcome that is ready to execute.
+The remaining product and provider possibilities require a decision or external
+evidence and remain deferred.
+Rejected split: Re-dispatching completed quality cleanup, CJ storage, provider
+transport, scheduling, GraphQL, development seeds, or operator workspace slices
+would manufacture path-sized work. Remaining PostgreSQL-specific expressions
+and native database boundaries are intentional, while isolated style edits,
+test assertions, helpers, and speculative abstractions are not coherent product
+outcomes.
+Replenishment action: Repeat evidence-backed curation after a new product
+decision, external provider evidence, failing contract, or architecture gap
+appears, and promote every independently shippable validated outcome then.
 
 ## Needs Decision Work
 

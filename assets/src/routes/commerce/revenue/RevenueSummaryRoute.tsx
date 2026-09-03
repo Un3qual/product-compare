@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Await, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { Await, Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { Environment } from "relay-runtime";
 import type { AttributionLedgerRouteQuery } from "$generated/AttributionLedgerRouteQuery.graphql";
@@ -160,7 +160,12 @@ export function RevenueSummaryRoute() {
           filters={loaderData.filters}
         />
       }
-      description="This preview summarizes recorded attribution data. A live conversion provider is not connected for this milestone."
+      description={
+        <>
+          This preview summarizes recorded attribution data. Review operational freshness in{" "}
+          <Link to="/commerce/revenue/ingestion">Ingestion status</Link>.
+        </>
+      }
       eyebrow="Commerce analytics"
       title="Revenue reporting preview"
     >
@@ -191,7 +196,9 @@ export function RevenueSummaryRoute() {
   );
 }
 
-function RevenueSummaryPanel({ query }: {
+function RevenueSummaryPanel({
+  query,
+}: {
   query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["query"];
 }) {
   const queryRef = useRoutePreloadedQuery<RevenueSummaryRouteQuery>(
@@ -210,11 +217,7 @@ function RevenueSummaryPanel({ query }: {
   return <RevenueMetrics metrics={buildRevenueDashboardMetrics(data.revenueSummary, currency)} />;
 }
 
-function DeferredAttributionLedgerBoundary({
-  query,
-}: {
-  query: AttributionLedgerQueryDescriptor;
-}) {
+function DeferredAttributionLedgerBoundary({ query }: { query: AttributionLedgerQueryDescriptor }) {
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -256,9 +259,7 @@ function AttributionLedgerBoundary({
 function AttributionLedgerPanel({
   query,
 }: {
-  query: NonNullable<
-    Awaited<AttributionLedgerQueryDescriptor>
-  >;
+  query: NonNullable<Awaited<AttributionLedgerQueryDescriptor>>;
 }) {
   const queryRef = useRoutePreloadedQuery<AttributionLedgerRouteQuery>(
     attributionLedgerRouteQuery,

@@ -18,6 +18,8 @@ defmodule ProductCompare.Ingestion.Jobs.CJFeedDiscoveryWorker do
   alias ProductCompare.Ingestion.Jobs.Arguments
   alias ProductCompare.Ingestion.Jobs.Result
 
+  @max_run_duration :timer.minutes(120)
+
   @spec enqueue(keyword() | map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def enqueue(opts \\ []) do
     opts
@@ -28,6 +30,9 @@ defmodule ProductCompare.Ingestion.Jobs.CJFeedDiscoveryWorker do
 
   @spec args(keyword() | map() | String.t()) :: map()
   defdelegate args(opts), to: Arguments, as: :feed
+
+  @impl Oban.Worker
+  def timeout(_job), do: @max_run_duration
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: args}) do

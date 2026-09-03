@@ -1,7 +1,14 @@
 defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   @moduledoc false
 
+  import Ecto.Query
+  require Logger
+
   alias ProductCompare.CommerceAttribution
+  alias ProductCompare.CommerceAttribution.CJ.Client
+  alias ProductCompare.CommerceAttribution.CJCommissionSyncJobs
+  alias ProductCompare.CommerceAttribution.ConversionSyncRuns
+  alias ProductCompare.CommerceAttribution.ConversionSyncSettings
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Connection
@@ -9,9 +16,84 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareSchemas.Reference.CurrencyCode
+  alias ProductCompareSchemas.CommerceAttribution.ConversionSyncRun
+  alias ProductCompareSchemas.CommerceAttribution.ConversionSyncSetting
 
   @invalid_filters_error "invalid revenue summary filters"
   @invalid_click_filters_error "invalid commerce attribution click filters"
+  @ingestion_unavailable_error "CJ commission ingestion is unavailable"
+
+  @spec cj_commission_ingestion(any(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | {:error, GraphQLErrors.top_level_error()}
+  def cj_commission_ingestion(_parent, _args, resolution) do
+    case Authorization.require_operator(resolution) do
+      {:ok, _operator} ->
+        cj_commission_ingestion_read()
+
+      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
+        {:error, GraphQLErrors.authorization_error(reason)}
+    end
+  end
+
+  @spec cj_commission_sync_runs(any(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
+  def cj_commission_sync_runs(_parent, args, resolution) do
+    case Authorization.require_operator(resolution) do
+      {:ok, _operator} ->
+        cj_commission_sync_runs_read(args)
+
+      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
+        {:error, GraphQLErrors.authorization_error(reason)}
+    end
+  end
+
+  defp cj_commission_ingestion_read do
+    with {:ok, settings} <- cj_settings() do
+      {:ok, project_cj_commission_ingestion(settings)}
+    else
+      {:error, _reason} ->
+        {:error, @ingestion_unavailable_error}
+    end
+  rescue
+    exception -> unavailable_ingestion_read("overview", exception, __STACKTRACE__)
+  end
+
+  defp cj_commission_sync_runs_read(args) do
+    with {:ok, settings} <- cj_settings(),
+         connection_args = Input.connection_args(args || %{}),
+         {:ok, %{fetch_limit: fetch_limit}} <-
+           connection_args
+           |> Map.delete(:after)
+           |> Connection.batch_window(),
+         {:ok, connection} <-
+           ConversionSyncRuns.page_for_affiliate(
+             settings.affiliate_network_id,
+             fetch_limit - 1,
+             Map.get(connection_args, :after)
+           ) do
+      {:ok, project_sync_run_connection(connection)}
+    else
+      {:error, :invalid_first} ->
+        {:error, "invalid first"}
+
+      {:error, :invalid_cursor} ->
+        {:error, "invalid cursor"}
+
+      {:error, _reason} ->
+        {:error, @ingestion_unavailable_error}
+    end
+  rescue
+    exception -> unavailable_ingestion_read("history", exception, __STACKTRACE__)
+  end
+
+  defp unavailable_ingestion_read(surface, exception, stacktrace) do
+    Logger.error(fn ->
+      "CJ commission ingestion #{surface} read failed\n" <>
+        Exception.format(:error, exception, stacktrace)
+    end)
+
+    {:error, @ingestion_unavailable_error}
+  end
 
   @spec commerce_attribution_clicks(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
@@ -92,6 +174,13 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   end
 
   defp normalize_revenue_summary_input(_input), do: {:error, :invalid_input}
+
+  defp cj_settings do
+    case ConversionSyncSettings.get_cj() do
+      %ConversionSyncSetting{} = settings -> {:ok, settings}
+      _ -> {:error, :cj_settings_unavailable}
+    end
+  end
 
   defp normalize_revenue_currency(nil), do: {:ok, nil}
 
@@ -217,4 +306,87 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   defp global_id(type, %{id: id}), do: GlobalId.encode_optional_value(type, id)
 
   defp drop_nil_values(map), do: Map.reject(map, fn {_key, value} -> is_nil(value) end)
+
+  defp project_cj_commission_ingestion(settings) do
+    settings = Repo.preload(settings, :updated_by_user)
+
+    %{
+      settings: project_sync_settings(settings),
+      credentials: Client.credential_status(),
+      activity: project_sync_activity(CJCommissionSyncJobs.active()),
+      latest_success: latest_sync_run(:succeeded, settings.affiliate_network_id),
+      latest_failure: latest_sync_run(:failed, settings.affiliate_network_id)
+    }
+  end
+
+  defp project_sync_settings(settings) do
+    %{
+      enabled: settings.enabled,
+      interval_minutes: settings.interval_minutes,
+      lookback_days: settings.lookback_days,
+      max_pages: settings.max_pages,
+      next_run_at: settings.next_run_at,
+      updated_at: settings.updated_at,
+      updated_by_email: settings.updated_by_user && settings.updated_by_user.email
+    }
+  end
+
+  defp project_sync_activity(nil), do: nil
+
+  defp project_sync_activity(activity) do
+    %{
+      state: activity_state(activity.state),
+      window_start: activity.from,
+      window_end: activity.before,
+      scheduled_at: activity.scheduled_at,
+      attempted_at: activity.attempted_at
+    }
+  end
+
+  defp activity_state("suspended"), do: :suspended
+  defp activity_state("available"), do: :available
+  defp activity_state("scheduled"), do: :scheduled
+  defp activity_state("executing"), do: :executing
+  defp activity_state("retryable"), do: :retryable
+
+  defp latest_sync_run(status, affiliate_network_id) do
+    ConversionSyncRuns.query()
+    |> where(
+      [run],
+      run.affiliate_network_id == ^affiliate_network_id and run.status == ^status
+    )
+    |> exclude(:order_by)
+    |> order_by([run], desc: run.finished_at, desc: run.id)
+    |> preload([:requested_by_user])
+    |> limit(1)
+    |> Repo.one()
+    |> project_sync_run()
+  end
+
+  defp project_sync_run_connection(connection) do
+    Map.update!(connection, :edges, fn edges ->
+      Enum.map(edges, fn edge -> Map.update!(edge, :node, &project_sync_run/1) end)
+    end)
+  end
+
+  defp project_sync_run(nil), do: nil
+
+  defp project_sync_run(%ConversionSyncRun{} = run) do
+    %{
+      id: GlobalId.encode(:cj_commission_sync_run, run.entropy_id),
+      status: run.status,
+      trigger: run.trigger,
+      requester_email: run.requested_by_user && run.requested_by_user.email,
+      window_start: run.window_start,
+      window_end: run.window_end,
+      cursor: run.cursor,
+      pages_fetched: run.pages_fetched,
+      records_fetched: run.records_fetched,
+      records_persisted: run.records_persisted,
+      records_failed: run.records_failed,
+      started_at: run.started_at,
+      finished_at: run.finished_at,
+      error_summary: run.error_summary
+    }
+  end
 end

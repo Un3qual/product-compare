@@ -1,0 +1,34 @@
+{
+  "data": {
+    "publisherCommissions": {
+      "records": [
+        {
+          "commissionId": "2001",
+          "original": true,
+          "originalActionId": "action-1001",
+          "correctionReason": null,
+          "actionStatus": "locked",
+          "shopperId": "00000000-0000-4000-8000-000000000001",
+          "eventDate": "2026-08-01T08:30:00Z",
+          "postingDate": "2026-08-01T09:00:00Z",
+          "saleAmountUsd": "81.25",
+          "pubCommissionAmountUsd": "8.12"
+        },
+        {
+          "commissionId": "2002",
+          "original": false,
+          "originalActionId": "action-1001",
+          "correctionReason": "RETURNED_MERCHANDISE",
+          "actionStatus": "new",
+          "shopperId": "00000000-0000-4000-8000-000000000001",
+          "eventDate": "2026-08-01T08:30:00Z",
+          "postingDate": "2026-08-01T10:00:00Z",
+          "saleAmountUsd": "81.25",
+          "pubCommissionAmountUsd": "-8.12"
+        }
+      ],
+      "payloadComplete": false,
+      "maxCommissionId": "2002"
+    }
+  }
+}

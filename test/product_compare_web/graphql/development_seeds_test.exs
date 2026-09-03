@@ -183,6 +183,28 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
                  }
                },
                "activeCoupons" => %{"edges" => coupon_edges},
+               "cjCommissionIngestion" => %{
+                 "settings" => %{
+                   "enabled" => false,
+                   "intervalMinutes" => 1440,
+                   "lookbackDays" => 90,
+                   "maxPages" => 100,
+                   "nextRunAt" => nil
+                 },
+                 "latestSuccess" => %{
+                   "status" => "SUCCEEDED",
+                   "trigger" => "SCHEDULED",
+                   "finishedAt" => latest_success_finished_at
+                 },
+                 "latestFailure" => %{
+                   "status" => "FAILED",
+                   "trigger" => "OPERATOR",
+                   "requesterEmail" => "admin@example.com",
+                   "errorSummary" =>
+                     "Synthetic development failure; no provider request was made."
+                 }
+               },
+               "cjCommissionSyncRuns" => %{"edges" => sync_run_edges},
                "revenueSummary" => %{
                  "metrics" => %{
                    "clicks" => 120,
@@ -203,6 +225,15 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
     assert Enum.count(cj_program_edges) == 20
     assert Enum.count(unmatched_feed_edges) == 10
     assert Enum.count(attribution_edges) == 20
+    assert Enum.count(sync_run_edges) == 3
+    assert is_binary(latest_success_finished_at)
+
+    assert MapSet.new(sync_run_edges, &get_in(&1, ["node", "trigger"])) ==
+             MapSet.new(["SCHEDULED", "OPERATOR", "CLI"])
+
+    assert Enum.all?(sync_run_edges, fn edge ->
+             get_in(edge, ["node", "status"]) in ["SUCCEEDED", "FAILED"]
+           end)
 
     assert %{
              "data" => %{
@@ -345,6 +376,23 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
       }
       activeCoupons(first: 20, merchantId: $merchantId) {
         edges { node { code description } }
+      }
+      cjCommissionIngestion {
+        settings { enabled intervalMinutes lookbackDays maxPages nextRunAt }
+        latestSuccess { status trigger finishedAt }
+        latestFailure { status trigger requesterEmail errorSummary }
+      }
+      cjCommissionSyncRuns(first: 20) {
+        edges {
+          node {
+            status
+            trigger
+            requesterEmail
+            recordsFetched
+            recordsPersisted
+            errorSummary
+          }
+        }
       }
       revenueSummary(input: {currency: "USD"}) {
         metrics { clicks commissionRevenue conversions currency }

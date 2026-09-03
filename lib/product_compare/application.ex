@@ -12,6 +12,8 @@ defmodule ProductCompare.Application do
         ProductCompareWeb.Telemetry,
         ProductCompare.Repo,
         {Oban, Application.fetch_env!(:product_compare, Oban)},
+        {ProductCompare.CommerceAttribution.CJCommissionSyncDispatcher,
+         cj_commission_sync_dispatcher_opts()},
         {DNSCluster, query: Application.get_env(:product_compare, :dns_cluster_query) || :ignore},
         {Phoenix.PubSub, name: ProductCompare.PubSub},
         # Start a worker by calling: ProductCompare.Worker.start_link(arg)
@@ -55,6 +57,12 @@ defmodule ProductCompare.Application do
     else
       children
     end
+  end
+
+  defp cj_commission_sync_dispatcher_opts do
+    :product_compare
+    |> Application.get_env(:cj_commission_sync_dispatcher, [])
+    |> Keyword.put(:name, ProductCompare.CommerceAttribution.CJCommissionSyncDispatcher)
   end
 
   defp maybe_append_cj_product_import_scheduler(children) do

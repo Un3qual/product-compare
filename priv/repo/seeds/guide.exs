@@ -26,6 +26,7 @@ defmodule ProductCompare.DevSeeds.Guide do
     Watches / alerts: #{length(engagement.all_watches)} / #{length(engagement.all_alerts)}
     Reviews / questions / corrections: #{length(engagement.all_reviews)} / #{length(engagement.all_questions)} / #{length(engagement.all_corrections)}
     CJ feeds / import runs: #{length(operations.all_cj_feeds)} / #{length(operations.all_import_runs)}
+    CJ conversion sync runs: #{length(operations.conversion_ingestion.runs)}
     Clicks / conversions / purchase facts: #{length(operations.all_clicks)} / #{length(operations.all_conversions)} / #{length(operations.all_purchase_facts)}
 
     Accounts
@@ -61,12 +62,14 @@ defmodule ProductCompare.DevSeeds.Guide do
     Affiliate setup: /affiliate/setup
     CJ programs: /ingestion/cj-programs
     Revenue preview: /commerce/revenue
+    Conversion ingestion: /commerce/revenue/ingestion
     CAD revenue filter: /commerce/revenue?currency=CAD
 
     Synthetic data
     --------------
-    CJ programs, feeds, import runs, clicks, conversions, commissions, and purchase-price facts
-    are synthetic local examples. Seeding does not contact CJ or another external provider.
+    CJ programs, feeds, import runs, conversion sync settings and history, correction evidence,
+    clicks, conversions, commissions, and purchase-price facts are synthetic local examples.
+    Seeding does not enable the conversion schedule or contact CJ or another external provider.
     """)
 
     :ok

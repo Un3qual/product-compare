@@ -55,6 +55,13 @@ positive_integer_env = fn name, default ->
   end
 end
 
+bounded_integer_env = fn name, default, range ->
+  case Integer.parse(System.get_env(name, "")) do
+    {value, ""} -> if value in range, do: value, else: default
+    _invalid -> default
+  end
+end
+
 non_negative_integer_env = fn name, default ->
   case Integer.parse(System.get_env(name, "")) do
     {value, ""} when value >= 0 -> value
@@ -90,6 +97,12 @@ config :product_compare, :cj_product_import_scheduler,
   serviceable_areas: string_env.("CJ_PRODUCT_IMPORT_SERVICEABLE_AREAS", "US"),
   limit: positive_integer_env.("CJ_PRODUCT_IMPORT_LIMIT", 25),
   pages: positive_integer_env.("CJ_PRODUCT_IMPORT_PAGES", 1)
+
+config :product_compare, :cj_commission_sync_defaults,
+  interval_minutes:
+    bounded_integer_env.("CJ_COMMISSION_SYNC_DEFAULT_INTERVAL_MINUTES", 1_440, 15..10_080),
+  lookback_days: bounded_integer_env.("CJ_COMMISSION_SYNC_DEFAULT_LOOKBACK_DAYS", 90, 1..90),
+  max_pages: bounded_integer_env.("CJ_COMMISSION_SYNC_DEFAULT_MAX_PAGES", 100, 1..100)
 
 if config_env() == :prod do
   database_url =

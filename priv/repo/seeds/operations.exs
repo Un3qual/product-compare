@@ -4,10 +4,12 @@ defmodule ProductCompare.DevSeeds.Operations do
   import Ecto.Query
 
   alias ProductCompare.CommerceAttribution
+  alias ProductCompare.DevSeeds.ConversionIngestion
   alias ProductCompare.DevSeeds.GeneratedOperations
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
@@ -45,9 +47,18 @@ defmodule ProductCompare.DevSeeds.Operations do
         profile \\ ProductCompare.DevSeeds.Profile.config!(:bounded)
       ) do
     source = seed_cj_source!()
+    cj_network = Repo.get_by!(AffiliateNetwork, code: "cj")
     {programs, feeds} = seed_cj_programs_and_feeds!(source, anchor)
     runs = seed_import_runs!(source, anchor)
-    commerce = seed_commerce!(accounts, catalog, marketplace, anchor)
+    commerce = seed_commerce!(accounts, catalog, marketplace, cj_network, anchor)
+
+    conversion_ingestion =
+      ConversionIngestion.seed!(
+        accounts,
+        cj_network,
+        commerce.conversions.reversed,
+        anchor
+      )
 
     generated =
       GeneratedOperations.seed!(
@@ -68,6 +79,7 @@ defmodule ProductCompare.DevSeeds.Operations do
       import_runs: runs,
       all_import_runs: Map.values(runs) ++ generated.imports,
       commerce: commerce,
+      conversion_ingestion: conversion_ingestion,
       all_clicks: Map.values(commerce.clicks) ++ generated.clicks,
       all_conversions: Map.values(commerce.conversions) ++ generated.conversions,
       all_purchase_facts: Map.values(commerce.purchase_price_facts) ++ generated.purchase_facts
@@ -278,7 +290,7 @@ defmodule ProductCompare.DevSeeds.Operations do
     end
   end
 
-  defp seed_commerce!(accounts, catalog, marketplace, anchor) do
+  defp seed_commerce!(accounts, catalog, marketplace, cj_network, anchor) do
     affiliate = marketplace.affiliate
     merchants = marketplace.merchants
     offers = marketplace.offers
@@ -359,31 +371,23 @@ defmodule ProductCompare.DevSeeds.Operations do
         click = Map.fetch!(clicks, status)
         {link, offer} = Map.fetch!(attribution_dimensions, status)
 
-        attrs = %{
-          source_network: affiliate.network.code,
-          affiliate_network_id: affiliate.network.id,
-          network_conversion_ref: reference,
-          click_session_id: click.id,
-          public_click_id: click.click_id,
-          network_click_ref: "DEV-CLICK-#{status |> Atom.to_string() |> String.upcase()}",
-          merchant_id: link.merchant_id,
-          affiliate_program_id: link.affiliate_program_id,
-          product_id: offer.product_id,
-          merchant_product_id: offer.id,
-          status: status,
-          currency: "USD",
-          order_amount: Decimal.new(order),
-          commission_amount: Decimal.new(commission),
-          commission_rate: Decimal.new("0.10"),
-          attribution_confidence: :high,
-          data_freshness_at: reported_at,
-          purchased_at: DateTime.add(reported_at, -3_600, :second),
-          reported_at: reported_at,
-          raw_payload: %{
-            "synthetic" => true,
-            "seedScenario" => "development-#{status}"
-          }
-        }
+        attribution =
+          conversion_attribution(status, affiliate, cj_network, click, link, offer)
+
+        attrs =
+          Map.merge(attribution, %{
+            network_conversion_ref: reference,
+            status: status,
+            currency: "USD",
+            order_amount: Decimal.new(order),
+            commission_amount: Decimal.new(commission),
+            commission_rate: Decimal.new("0.10"),
+            data_freshness_at: reported_at,
+            purchased_at: DateTime.add(reported_at, -3_600, :second),
+            reported_at: reported_at,
+            network_action_ref: network_action_ref(status),
+            raw_payload: conversion_payload(status, reported_at, order, commission)
+          })
 
         conversion =
           attrs
@@ -453,6 +457,63 @@ defmodule ProductCompare.DevSeeds.Operations do
     |> CommerceConversion.changeset(attrs)
     |> Repo.update()
     |> Support.expect!("restore commerce conversion #{status}")
+  end
+
+  defp network_action_ref(:reversed), do: "DEV-CJ-ACTION-REVERSED"
+  defp network_action_ref(_status), do: nil
+
+  defp conversion_attribution(:reversed, _affiliate, cj_network, _click, _link, _offer) do
+    %{
+      source_network: cj_network.code,
+      affiliate_network_id: cj_network.id,
+      click_session_id: nil,
+      public_click_id: nil,
+      network_click_ref: nil,
+      merchant_id: nil,
+      affiliate_program_id: nil,
+      product_id: nil,
+      merchant_product_id: nil,
+      attribution_confidence: :unmatched
+    }
+  end
+
+  defp conversion_attribution(status, affiliate, _cj_network, click, link, offer) do
+    %{
+      source_network: affiliate.network.code,
+      affiliate_network_id: affiliate.network.id,
+      click_session_id: click.id,
+      public_click_id: click.click_id,
+      network_click_ref: "DEV-CLICK-#{status |> Atom.to_string() |> String.upcase()}",
+      merchant_id: link.merchant_id,
+      affiliate_program_id: link.affiliate_program_id,
+      product_id: offer.product_id,
+      merchant_product_id: offer.id,
+      attribution_confidence: :high
+    }
+  end
+
+  defp conversion_payload(:reversed, reported_at, order, commission) do
+    %{
+      "commissionId" => "DEV-CJ-CORRECTION-REVERSED",
+      "original" => false,
+      "originalActionId" => "DEV-CJ-ACTION-REVERSED",
+      "correctionReason" => "RETURNED_MERCHANDISE",
+      "actionStatus" => "new",
+      "shopperId" => nil,
+      "eventDate" => reported_at |> DateTime.add(-3_600, :second) |> DateTime.to_iso8601(),
+      "postingDate" => DateTime.to_iso8601(reported_at),
+      "saleAmountUsd" => order,
+      "pubCommissionAmountUsd" => "-#{commission}",
+      "synthetic" => true,
+      "seedScenario" => "development-reversed"
+    }
+  end
+
+  defp conversion_payload(status, _reported_at, _order, _commission) do
+    %{
+      "synthetic" => true,
+      "seedScenario" => "development-#{status}"
+    }
   end
 
   defp stage_index(stage), do: Map.fetch!(@cj_stage_indexes, stage)

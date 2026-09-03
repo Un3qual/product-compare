@@ -16,6 +16,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
           | :affiliate_link
           | :coupon
           | :cj_program
+          | :cj_commission_sync_run
           | :merchant_feed_candidate
           | :merchant
           | :merchant_product
@@ -46,6 +47,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
     affiliate_link: "AffiliateLink",
     coupon: "Coupon",
     cj_program: "CJProgram",
+    cj_commission_sync_run: "CJCommissionSyncRun",
     merchant_feed_candidate: "MerchantFeedCandidate",
     merchant: "Merchant",
     merchant_product: "MerchantProduct",
