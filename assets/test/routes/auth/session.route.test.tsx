@@ -1,12 +1,15 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { commitMutation } from "react-relay";
 import { commitLocalUpdate } from "relay-runtime";
-import { createMemoryRouter, RouterProvider } from "react-router";
+import { createMemoryRouter, redirect, RouterProvider } from "react-router";
 import { createRelayRouterContext } from "../../../src/relay/route-preload";
 import { CredentialAuthForm } from "../../../src/routes/auth/CredentialAuthForm";
-import { clientAction as loginAction } from "../../../src/routes/auth/LoginRoute";
+import { clientAction as loginAction, LoginRoute } from "../../../src/routes/auth/LoginRoute";
 import { clientAction as logoutAction } from "../../../src/routes/auth/LogoutRoute";
-import { clientAction as registerAction } from "../../../src/routes/auth/RegisterRoute";
+import {
+  clientAction as registerAction,
+  RegisterRoute,
+} from "../../../src/routes/auth/RegisterRoute";
 
 const { commitLocalUpdateMock, commitMutationMock, relayEnvironment } = vi.hoisted(() => ({
   commitLocalUpdateMock: vi.fn(),
@@ -181,6 +184,38 @@ test("register action updates Relay and redirects after Phoenix establishes the 
 
   expectViewerUpdated();
   expect((response as Response).headers.get("location")).toBe("/");
+});
+
+test.each([
+  { Component: LoginRoute, path: "/auth/login", submitLabel: "Sign in" },
+  { Component: RegisterRoute, path: "/auth/register", submitLabel: "Create account" },
+])("$submitLabel stays disabled while the redirect destination loads", async (route) => {
+  let finishRedirect = () => {};
+  const redirectLoader = new Promise<void>((resolve) => {
+    finishRedirect = resolve;
+  });
+  const router = createMemoryRouter(
+    [
+      { path: "/", loader: () => redirectLoader, element: <p>Home</p> },
+      { path: route.path, action: () => redirect("/"), Component: route.Component },
+    ],
+    { initialEntries: [route.path] },
+  );
+
+  render(<RouterProvider router={router} />);
+
+  fireEvent.change(await screen.findByLabelText("Email"), {
+    target: { value: "person@example.com" },
+  });
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: TEST_PASSWORD } });
+  const submit = screen.getByRole("button", { name: route.submitLabel });
+  fireEvent.click(submit);
+  await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
+
+  expect(submit).toBeDisabled();
+
+  finishRedirect();
+  await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
 });
 
 test("logout action clears the Relay viewer only after a successful GraphQL result", async () => {

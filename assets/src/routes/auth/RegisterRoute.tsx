@@ -62,7 +62,7 @@ export function RegisterRoute() {
   const actionData = useActionData<typeof clientAction>();
   const navigation = useNavigation();
   const [searchParams] = useSearchParams();
-  const isSubmitting = navigation.state === "submitting";
+  const isSubmitting = navigation.state !== "idle";
   const errors = isSubmitting ? [] : (actionData?.errors ?? []);
 
   return (
