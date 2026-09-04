@@ -54,17 +54,18 @@ No implementation rows are currently ready.
 ## Ready Floor Exception
 
 Reason: The repository-wide quality remediation, CJ live-conversion lifecycle,
-and deterministic development fixtures are complete. Their closeout curation
-checked current product behavior, full repository gates, source markers,
-architecture gaps, the candidate catalog, and lane evidence without finding
-another coherent, independently reviewable outcome that is ready to execute.
-The remaining product and provider possibilities require a decision or external
-evidence and remain deferred.
+deterministic development fixtures, and React Router Framework Mode migration
+are complete. Their closeout curation checked current product behavior, full
+repository gates, source markers, architecture gaps, the candidate catalog,
+and lane evidence without finding another coherent, independently reviewable
+outcome that is ready to execute. The remaining product and provider
+possibilities require a decision or external evidence and remain deferred.
 Rejected split: Re-dispatching completed quality cleanup, CJ storage, provider
 transport, scheduling, GraphQL, development seeds, or operator workspace slices
-would manufacture path-sized work. Remaining PostgreSQL-specific expressions
-and native database boundaries are intentional, while isolated style edits,
-test assertions, helpers, and speculative abstractions are not coherent product
+would manufacture path-sized work. The remaining Relay, GraphQL transport,
+StyleX transform, Vite optimizer, Phoenix, PostgreSQL, and native database
+boundaries are intentional; isolated style edits, test assertions, helpers,
+verification details, and speculative abstractions are not coherent product
 outcomes.
 Replenishment action: Repeat evidence-backed curation after a new product
 decision, external provider evidence, failing contract, or architecture gap

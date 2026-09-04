@@ -1,17 +1,14 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import {
-  useLoaderData,
-  useLocation,
-  useOutletContext,
-  type LoaderFunctionArgs,
-} from "react-router-dom";
+import { useLoaderData, useLocation, useOutletContext } from "react-router";
 import { graphql, useMutation, usePreloadedQuery } from "react-relay";
 import type { CompareRouteCreateSavedComparisonSetMutation } from "$generated/CompareRouteCreateSavedComparisonSetMutation.graphql";
 import type {
   CompareRouteQuery,
   CompareRouteQuery$data,
 } from "$generated/CompareRouteQuery.graphql";
+import type { Route } from "./+types/CompareRoute";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   fetchRouteQuery,
@@ -23,6 +20,19 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { commitRouteMutation } from "$relay/mutations";
 import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
+
+export { CompareRoute as default, compareLoader as clientLoader, compareLoader as loader };
+
+export function meta() {
+  return staticRouteMetaDescriptors({
+    title: "Compare products",
+    description: "Compare loaded products by specifications and current offers.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return <RouteErrorBoundary error={error} />;
+}
 import type { RootViewer } from "../root/viewer";
 import {
   consumePendingIntent,
@@ -33,6 +43,7 @@ import {
   type SaveComparisonIntentDraft,
 } from "../auth/continuity";
 import { CompareShell } from "./CompareShell";
+import { RouteErrorBoundary } from "./RouteErrorBoundary";
 import {
   compareQueryViewData,
   compareSpecModeFromUrl,
@@ -53,6 +64,7 @@ import {
 export {
   recommendationProfileFromUrl,
   shouldRevalidateCompareLoader,
+  shouldRevalidateCompareLoader as shouldRevalidate,
   type RecommendationProfile,
 } from "./recommendation-route-data";
 
@@ -169,7 +181,7 @@ interface SaveFeedbackState {
 export async function compareLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<CompareRouteLoaderData> {
+}: Route.LoaderArgs): Promise<CompareRouteLoaderData> {
   const slugs = selectedCompareSlugsFromSearch(new URL(request.url).search);
   const specMode = compareSpecModeFromUrl(request.url);
 

@@ -1,5 +1,5 @@
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { Button } from "../../primitives/Button";
 import { tokens } from "../../theme/tokens.stylex";
 

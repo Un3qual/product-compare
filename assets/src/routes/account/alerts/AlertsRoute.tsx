@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData, useRevalidator, type LoaderFunctionArgs } from "react-router-dom";
+import { Link, useLoaderData, useRevalidator } from "react-router";
 import { graphql, useFragment, useMutation, usePreloadedQuery } from "react-relay";
 import type { AlertOperationsDeletePriceWatchMutation } from "$generated/AlertOperationsDeletePriceWatchMutation.graphql";
 import type { AlertOperationsMarkAlertReadMutation } from "$generated/AlertOperationsMarkAlertReadMutation.graphql";
@@ -14,6 +14,9 @@ import type {
   AlertsRoute_watch$key,
 } from "$generated/AlertsRoute_watch.graphql";
 import type { AlertsRouteQuery } from "$generated/AlertsRouteQuery.graphql";
+import type { Route } from "./+types/AlertsRoute";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { graphQLResponseHasErrorCode, RouteLoaderGraphQLError } from "$relay/environment";
 import {
   fetchRouteQuery,
@@ -26,6 +29,22 @@ import { PageShell } from "$ui/components/layout/PageShell";
 import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
 import { Button } from "$ui/primitives/Button";
 import { productDetailPath } from "../../products/product-detail-route-data";
+
+export { AlertsRoute as default, alertsLoader as clientLoader, alertsLoader as loader };
+
+export function meta() {
+  return staticRouteMetaDescriptors({
+    title: "Price alerts",
+    description:
+      "Manage product price watches and review qualifying price or availability changes.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary error={error} resourceName="price alerts" title="Price alerts" />
+  );
+}
 import { commitRouteMutationPromise } from "$relay/mutations";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import { resolveMarkAlertReadMutationError } from "./alert-rows/alert-event-mutation-result";
@@ -108,13 +127,6 @@ type WatchSummary = Omit<AlertsRoute_watch$data, " $fragmentType">;
 type AlertItemRef = AlertsRoute_alert$key & { readonly id: string };
 type WatchItemRef = AlertsRoute_watch$key & { readonly enabled: boolean; readonly id: string };
 
-export type AlertsRouteLoaderData =
-  | {
-      status: "ready";
-      query: RelayRouteQueryDescriptor<AlertsRouteQuery["variables"]>;
-    }
-  | { status: "unauthorized" };
-
 const AUTH_CODES = new Set(["UNAUTHENTICATED"]);
 
 const styles = create({
@@ -160,7 +172,7 @@ export function AlertsRoute() {
 function ReadyAlerts({
   query,
 }: {
-  query: Extract<AlertsRouteLoaderData, { status: "ready" }>["query"];
+  query: RelayRouteQueryDescriptor<AlertsRouteQuery["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<AlertsRouteQuery>(alertsRouteQuery, query);
   const data = usePreloadedQuery<AlertsRouteQuery>(alertsRouteQuery, queryRef);
@@ -448,7 +460,7 @@ function withoutKey(current: ReadonlyMap<string, string>, id: string) {
 export async function alertsLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<AlertsRouteLoaderData> {
+}: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
 
   try {
@@ -458,9 +470,9 @@ export async function alertsLoader({
       { first: 50 },
       { signal: request.signal },
     );
-    return { status: "ready", query: fetched.descriptor };
+    return { status: "ready" as const, query: fetched.descriptor };
   } catch (error) {
-    if (isAuthError(error)) return { status: "unauthorized" };
+    if (isAuthError(error)) return { status: "unauthorized" as const };
     throw error;
   }
 }

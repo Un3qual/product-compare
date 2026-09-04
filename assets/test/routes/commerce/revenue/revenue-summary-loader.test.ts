@@ -1,4 +1,3 @@
-import type { LoaderFunctionArgs } from "react-router-dom";
 import { createRelayEnvironment } from "../../../../src/relay/environment";
 import { createRelayRouterContext, preloadRouteQuery } from "../../../../src/relay/route-preload";
 import {
@@ -328,7 +327,7 @@ function buildRevenueSummaryLoaderArgs({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): LoaderFunctionArgs {
+} = {}) {
   return {
     request,
     params: {},

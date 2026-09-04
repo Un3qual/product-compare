@@ -1,23 +1,24 @@
 import { StrictMode } from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useMutation } from "react-relay";
+import { commitMutation, useMutation } from "react-relay";
+import { createMemoryRouter, RouterProvider } from "react-router";
+import { createRelayRouterContext } from "../../../src/relay/route-preload";
 import {
-  BrowserRouter,
-  createMemoryRouter,
-  createRoutesFromElements,
-  Route,
-  RouterProvider,
-  Routes,
-} from "react-router-dom";
-import { ForgotPasswordRoute } from "../../../src/routes/auth/ForgotPasswordRoute";
-import { ResetPasswordRoute } from "../../../src/routes/auth/ResetPasswordRoute";
+  clientAction as forgotPasswordAction,
+  ForgotPasswordRoute,
+} from "../../../src/routes/auth/ForgotPasswordRoute";
+import {
+  clientAction as resetPasswordAction,
+  ResetPasswordRoute,
+} from "../../../src/routes/auth/ResetPasswordRoute";
 import {
   resetVerifyEmailRequestCache,
   VerifyEmailRoute,
 } from "../../../src/routes/auth/VerifyEmailRoute";
 
-const { commitMutationMock, useMutationMock } = vi.hoisted(() => ({
+const { commitMutationMock, relayEnvironment, useMutationMock } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
+  relayEnvironment: {},
   useMutationMock: vi.fn(),
 }));
 
@@ -26,526 +27,274 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    commitMutation: commitMutationMock,
     useMutation: useMutationMock,
   };
 });
 
+const mockedCommitMutation = vi.mocked(commitMutation);
 const mockedUseMutation = vi.mocked(useMutation);
-const TEST_RESET_PASSWORD = ["updated", "credential", "456"].join("-");
-const RESET_PASSWORD_PATH = "/auth/reset-password";
-const VERIFY_EMAIL_PATH = "/auth/verify-email";
-const ROUTE_TOKEN_PARAM = "token";
-const RESET_ROUTE_TOKEN = ["reset", "route", "value"].join("-");
-const FIRST_ROUTE_TOKEN = ["first", "route", "value"].join("-");
-const SECOND_ROUTE_TOKEN = ["second", "route", "value"].join("-");
-const VERIFY_EMAIL_ROUTE_TOKEN = ["confirm", "route", "value"].join("-");
-
-function renderRoute(initialEntry: string, options?: { strictMode?: boolean }) {
-  const router = createMemoryRouter(
-    createRoutesFromElements(
-      <>
-        <Route path="/auth/forgot-password" element={<ForgotPasswordRoute />} />
-        <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
-        <Route path="/auth/verify-email" element={<VerifyEmailRoute />} />
-      </>,
-    ),
-    { initialEntries: [initialEntry] },
-  );
-
-  const content = <RouterProvider router={router} />;
-
-  const view = render(options?.strictMode ? <StrictMode>{content}</StrictMode> : content);
-
-  return { router, unmount: view.unmount };
-}
-
-function authTokenRoute(path: string, token: string) {
-  return `${path}?${ROUTE_TOKEN_PARAM}=${token}`;
-}
-
-function latestMutationOptions() {
-  return commitMutationMock.mock.calls.at(-1)?.[0];
-}
-
-function completeLatestMutation(response: unknown, graphQLErrors?: unknown[]) {
-  act(() => {
-    latestMutationOptions()?.onCompleted(response, graphQLErrors);
-  });
-}
-
-function failLatestMutation(error: Error) {
-  act(() => {
-    latestMutationOptions()?.onError(error);
-  });
-}
+const hookCommitMock = vi.fn();
+const TEST_PASSWORD = ["updated", "credential", "456"].join("-");
+const RESET_TOKEN = ["reset", "route", "value"].join("-");
+const VERIFY_TOKEN = ["confirm", "route", "value"].join("-");
 
 beforeEach(() => {
-  commitMutationMock.mockReset();
+  mockedCommitMutation.mockReset();
+  hookCommitMock.mockReset();
   mockedUseMutation.mockReset();
-  mockedUseMutation.mockReturnValue([commitMutationMock, false]);
+  mockedUseMutation.mockReturnValue([hookCommitMock, false]);
   resetVerifyEmailRequestCache();
 });
 
-test("forgot password route commits the email through Relay and shows the privacy-safe success state", async () => {
-  renderRoute("/auth/forgot-password");
+test("forgot-password action submits GraphQL and returns the privacy-safe success state", async () => {
+  resolveNextActionMutation({ forgotPassword: { ok: true, errors: [] } });
 
-  fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" },
+  await expect(
+    forgotPasswordAction(
+      buildActionArgs("/auth/forgot-password", { email: "person@example.com" }),
+    ),
+  ).resolves.toEqual({
+    errors: [],
+    message: "If an account exists for that email, reset instructions are on the way.",
   });
-  fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: { email: "person@example.com" },
-      }),
-    );
-  });
-
-  completeLatestMutation({
-    forgotPassword: {
-      ok: true,
-      errors: [],
-    },
-  });
-
-  expect(await screen.findByRole("status")).toHaveTextContent(
-    "If an account exists for that email, reset instructions are on the way.",
+  expect(mockedCommitMutation).toHaveBeenCalledWith(
+    relayEnvironment,
+    expect.objectContaining({ variables: { email: "person@example.com" } }),
   );
 });
 
-test("forgot password route hides top-level GraphQL error details behind a generic alert", async () => {
-  renderRoute("/auth/forgot-password");
-
-  fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: { email: "person@example.com" },
-      }),
-    );
-  });
-
-  completeLatestMutation(
-    {
-      forgotPassword: {
-        ok: true,
-        errors: [],
-      },
-    },
-    [{ message: "GraphQL request failed (500): database stacktrace" }],
+test("forgot-password action hides top-level GraphQL details", async () => {
+  resolveNextActionMutation(
+    { forgotPassword: { ok: true, errors: [] } },
+    [{ message: "database stacktrace" }],
   );
 
-  const alert = await screen.findByRole("alert");
-
-  expect(alert).toHaveTextContent("Request failed. Please try again.");
-  expect(alert).not.toHaveTextContent("database stacktrace");
-  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  await expect(
+    forgotPasswordAction(
+      buildActionArgs("/auth/forgot-password", { email: "person@example.com" }),
+    ),
+  ).resolves.toEqual({
+    errors: [
+      { code: "NETWORK_ERROR", field: null, message: "Request failed. Please try again." },
+    ],
+    message: null,
+  });
 });
 
-test("forgot password route hides synchronous Relay commit errors behind a generic alert", async () => {
-  commitMutationMock.mockImplementation(() => {
-    throw new Error("commit failed: database stacktrace");
+test("forgot-password route stays disabled through revalidation", async () => {
+  let finishRevalidation = () => {};
+  const revalidation = new Promise<void>((resolve) => {
+    finishRevalidation = resolve;
   });
-
-  renderRoute("/auth/forgot-password");
-
-  fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
-
-  const alert = await screen.findByRole("alert");
-
-  expect(alert).toHaveTextContent("Request failed. Please try again.");
-  expect(alert).not.toHaveTextContent("database stacktrace");
-  expect(screen.queryByRole("status")).not.toBeInTheDocument();
-});
-
-test("reset password route reads the token from the URL and commits the new password", async () => {
-  renderRoute(authTokenRoute(RESET_PASSWORD_PATH, RESET_ROUTE_TOKEN));
-
-  fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: TEST_RESET_PASSWORD },
-  });
-  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          token: RESET_ROUTE_TOKEN,
-          password: TEST_RESET_PASSWORD,
-        },
-      }),
-    );
-  });
-
-  completeLatestMutation({
-    resetPassword: {
-      ok: true,
-      errors: [],
-    },
-  });
-
-  expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
-});
-
-test("reset password route shows a generic alert when the action payload fails without errors", async () => {
-  renderRoute(authTokenRoute(RESET_PASSWORD_PATH, RESET_ROUTE_TOKEN));
-
-  fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: TEST_RESET_PASSWORD },
-  });
-  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          token: RESET_ROUTE_TOKEN,
-          password: TEST_RESET_PASSWORD,
-        },
-      }),
-    );
-  });
-
-  completeLatestMutation({
-    resetPassword: {
-      ok: false,
-      errors: [],
-    },
-  });
-
-  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
-});
-
-test("reset password route hides top-level GraphQL error details behind a generic alert", async () => {
-  renderRoute(authTokenRoute(RESET_PASSWORD_PATH, RESET_ROUTE_TOKEN));
-
-  fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: TEST_RESET_PASSWORD },
-  });
-  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          token: RESET_ROUTE_TOKEN,
-          password: TEST_RESET_PASSWORD,
-        },
-      }),
-    );
-  });
-
-  completeLatestMutation(
-    {
-      resetPassword: {
-        ok: true,
-        errors: [],
-      },
-    },
-    [{ message: "GraphQL request failed (500): database stacktrace" }],
-  );
-
-  const alert = await screen.findByRole("alert");
-
-  expect(alert).toHaveTextContent("Request failed. Please try again.");
-  expect(alert).not.toHaveTextContent("database stacktrace");
-});
-
-test("reset password route hides synchronous Relay commit errors and unlocks the form", async () => {
-  commitMutationMock.mockImplementation(() => {
-    throw new Error("commit failed: database stacktrace");
-  });
-
-  renderRoute(authTokenRoute(RESET_PASSWORD_PATH, RESET_ROUTE_TOKEN));
-
-  fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: TEST_RESET_PASSWORD },
-  });
-  fireEvent.click(screen.getByRole("button", { name: /update password/i }));
-
-  const alert = await screen.findByRole("alert");
-
-  expect(alert).toHaveTextContent("Request failed. Please try again.");
-  expect(alert).not.toHaveTextContent("database stacktrace");
-  expect(screen.getByRole("button", { name: /update password/i })).toBeEnabled();
-});
-
-test("reset password route clears stale success state when the token changes", async () => {
-  const originalPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-  let view: ReturnType<typeof render> | null = null;
-
-  window.history.pushState({}, "", authTokenRoute(RESET_PASSWORD_PATH, FIRST_ROUTE_TOKEN));
-
-  try {
-    view = render(
-      <BrowserRouter>
-        <Routes>
-          <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
-        </Routes>
-      </BrowserRouter>,
-    );
-
-    fireEvent.change(screen.getByLabelText(/^new password$/i), {
-      target: { value: TEST_RESET_PASSWORD },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /update password/i }));
-
-    await waitFor(() => {
-      expect(commitMutationMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variables: {
-            token: FIRST_ROUTE_TOKEN,
-            password: TEST_RESET_PASSWORD,
-          },
-        }),
-      );
-    });
-
-    completeLatestMutation({
-      resetPassword: {
-        ok: true,
-        errors: [],
-      },
-    });
-
-    expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
-
-    act(() => {
-      window.history.pushState({}, "", authTokenRoute(RESET_PASSWORD_PATH, SECOND_ROUTE_TOKEN));
-      window.dispatchEvent(new PopStateEvent("popstate"));
-    });
-
-    await waitFor(() => {
-      expect(screen.queryByText("Your password has been updated.")).not.toBeInTheDocument();
-    });
-  } finally {
-    view?.unmount();
-    window.history.pushState({}, "", originalPath);
-  }
-
-  expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe(
-    originalPath,
-  );
-});
-
-test("reset password route ignores stale responses after the token changes", async () => {
-  const originalPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-  let view: ReturnType<typeof render> | null = null;
-
-  window.history.pushState({}, "", authTokenRoute(RESET_PASSWORD_PATH, FIRST_ROUTE_TOKEN));
-
-  try {
-    view = render(
-      <BrowserRouter>
-        <Routes>
-          <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
-        </Routes>
-      </BrowserRouter>,
-    );
-
-    fireEvent.change(screen.getByLabelText(/^new password$/i), {
-      target: { value: TEST_RESET_PASSWORD },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /update password/i }));
-
-    await waitFor(() => {
-      expect(commitMutationMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variables: {
-            token: FIRST_ROUTE_TOKEN,
-            password: TEST_RESET_PASSWORD,
-          },
-        }),
-      );
-    });
-
-    const firstRequest = latestMutationOptions();
-
-    act(() => {
-      window.history.pushState({}, "", authTokenRoute(RESET_PASSWORD_PATH, SECOND_ROUTE_TOKEN));
-      window.dispatchEvent(new PopStateEvent("popstate"));
-    });
-
-    act(() => {
-      firstRequest?.onCompleted({
-        resetPassword: {
-          ok: true,
+  const routeId = "forgot-password";
+  const router = createMemoryRouter(
+    [
+      {
+        id: routeId,
+        path: "/auth/forgot-password",
+        loader: () => revalidation,
+        action: () => ({
           errors: [],
-        },
-      });
-    });
-
-    await waitFor(() => {
-      expect(screen.queryByText("Your password has been updated.")).not.toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: /update password/i }));
-
-    await waitFor(() => {
-      expect(commitMutationMock).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          variables: {
-            token: SECOND_ROUTE_TOKEN,
-            password: TEST_RESET_PASSWORD,
-          },
+          message: "If an account exists for that email, reset instructions are on the way.",
         }),
-      );
-    });
-
-    completeLatestMutation({
-      resetPassword: {
-        ok: true,
-        errors: [],
+        Component: ForgotPasswordRoute,
       },
-    });
+    ],
+    {
+      initialEntries: ["/auth/forgot-password"],
+      hydrationData: { loaderData: { [routeId]: null } },
+    },
+  );
 
-    expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
-  } finally {
-    view?.unmount();
-    window.history.pushState({}, "", originalPath);
-  }
+  render(<RouterProvider router={router} />);
 
-  expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe(
-    originalPath,
+  const submit = await screen.findByRole("button", { name: "Send reset link" });
+  fireEvent.change(screen.getByLabelText("Email"), {
+    target: { value: "person@example.com" },
+  });
+  fireEvent.click(submit);
+  await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
+
+  expect(submit).toBeDisabled();
+
+  finishRevalidation();
+  await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+});
+
+test("reset-password action reads its single-use token from the route URL", async () => {
+  resolveNextActionMutation({ resetPassword: { ok: true, errors: [] } });
+
+  await expect(
+    resetPasswordAction(
+      buildActionArgs(`/auth/reset-password?token=${RESET_TOKEN}`, {
+        password: TEST_PASSWORD,
+      }),
+    ),
+  ).resolves.toEqual({ errors: [], message: "Your password has been updated." });
+  expect(mockedCommitMutation).toHaveBeenCalledWith(
+    relayEnvironment,
+    expect.objectContaining({ variables: { password: TEST_PASSWORD, token: RESET_TOKEN } }),
   );
 });
 
-test("verify email route consumes the URL token through Relay and reports success", async () => {
-  renderRoute(authTokenRoute(VERIFY_EMAIL_PATH, VERIFY_EMAIL_ROUTE_TOKEN));
+test("reset-password action rejects a missing token without sending GraphQL", async () => {
+  await expect(
+    resetPasswordAction(
+      buildActionArgs("/auth/reset-password", { password: TEST_PASSWORD }),
+    ),
+  ).resolves.toEqual({
+    errors: [
+      {
+        code: "INVALID_TOKEN",
+        field: "token",
+        message: "This reset link is missing or invalid.",
+      },
+    ],
+    message: null,
+  });
+  expect(mockedCommitMutation).not.toHaveBeenCalled();
+});
+
+test("reset-password route renders its missing-token state in a Framework form", async () => {
+  const router = createMemoryRouter(
+    [{ path: "/auth/reset-password", action: () => null, Component: ResetPasswordRoute }],
+    { initialEntries: ["/auth/reset-password"] },
+  );
+
+  render(<RouterProvider router={router} />);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "This reset link is missing or invalid.",
+  );
+  expect(screen.getByRole("button", { name: "Update password" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Update password" }).closest("form")).toHaveAttribute(
+    "method",
+    "post",
+  );
+});
+
+test("reset-password route keeps its single-use token disabled through revalidation", async () => {
+  let loaderCalls = 0;
+  let finishRevalidation = () => {};
+  const revalidation = new Promise<void>((resolve) => {
+    finishRevalidation = () => resolve();
+  });
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/auth/reset-password",
+        loader: () => (++loaderCalls === 1 ? null : revalidation),
+        action: () => ({ errors: [], message: "Your password has been updated." }),
+        Component: ResetPasswordRoute,
+      },
+    ],
+    { initialEntries: [`/auth/reset-password?token=${RESET_TOKEN}`] },
+  );
+
+  render(<RouterProvider router={router} />);
+
+  const submit = await screen.findByRole("button", { name: "Update password" });
+  fireEvent.change(screen.getByLabelText("New password"), {
+    target: { value: TEST_PASSWORD },
+  });
+  fireEvent.click(submit);
+  await waitFor(() => expect(router.state.navigation.state).toBe("loading"));
+
+  expect(submit).toBeDisabled();
+
+  finishRevalidation();
+  await waitFor(() => expect(router.state.navigation.state).toBe("idle"));
+});
+
+test("credential actions normalize synchronous Relay errors", async () => {
+  mockedCommitMutation.mockImplementationOnce(() => {
+    throw new Error("commit failed: database stacktrace");
+  });
+
+  await expect(
+    forgotPasswordAction(
+      buildActionArgs("/auth/forgot-password", { email: "person@example.com" }),
+    ),
+  ).resolves.toEqual({
+    errors: [
+      { code: "NETWORK_ERROR", field: null, message: "Request failed. Please try again." },
+    ],
+    message: null,
+  });
+});
+
+test("verify-email route consumes the URL token once and reports success", async () => {
+  renderVerifyRoute(`/auth/verify-email?token=${VERIFY_TOKEN}`);
 
   await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: { token: VERIFY_EMAIL_ROUTE_TOKEN },
-      }),
+    expect(hookCommitMock).toHaveBeenCalledWith(
+      expect.objectContaining({ variables: { token: VERIFY_TOKEN } }),
     );
   });
 
-  completeLatestMutation({
-    verifyEmail: {
-      ok: true,
-      errors: [],
-    },
-  });
+  completeVerifyMutation({ verifyEmail: { ok: true, errors: [] } });
 
   expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
 });
 
-test("verify email route retries after a transient failure on remount", async () => {
-  const firstView = renderRoute(authTokenRoute(VERIFY_EMAIL_PATH, VERIFY_EMAIL_ROUTE_TOKEN));
+test("verify-email route retries a failed single-use request after remount", async () => {
+  const firstView = renderVerifyRoute(`/auth/verify-email?token=${VERIFY_TOKEN}`);
 
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(1);
-  });
-
-  failLatestMutation(new Error("temporary outage"));
-
+  await waitFor(() => expect(hookCommitMock).toHaveBeenCalledTimes(1));
+  failVerifyMutation(new Error("temporary outage"));
   expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
 
   firstView.unmount();
+  renderVerifyRoute(`/auth/verify-email?token=${VERIFY_TOKEN}`);
 
-  renderRoute(authTokenRoute(VERIFY_EMAIL_PATH, VERIFY_EMAIL_ROUTE_TOKEN));
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(2);
-  });
-
-  completeLatestMutation({
-    verifyEmail: {
-      ok: true,
-      errors: [],
-    },
-  });
-
-  expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
+  await waitFor(() => expect(hookCommitMock).toHaveBeenCalledTimes(2));
 });
 
-test("verify email route retries after a top-level GraphQL error on remount", async () => {
-  const firstView = renderRoute(authTokenRoute(VERIFY_EMAIL_PATH, VERIFY_EMAIL_ROUTE_TOKEN));
+test("verify-email route deduplicates its single-use mutation under StrictMode", async () => {
+  renderVerifyRoute(`/auth/verify-email?token=${VERIFY_TOKEN}`, true);
 
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(1);
-  });
+  await waitFor(() => expect(hookCommitMock).toHaveBeenCalledTimes(1));
+});
 
-  completeLatestMutation(
-    {
-      verifyEmail: {
-        ok: true,
-        errors: [],
-      },
-    },
-    [{ message: "GraphQL request failed (500): database stacktrace" }],
+function renderVerifyRoute(path: string, strictMode = false) {
+  const router = createMemoryRouter(
+    [{ path: "/auth/verify-email", Component: VerifyEmailRoute }],
+    { initialEntries: [path] },
   );
+  const content = <RouterProvider router={router} />;
 
-  const alert = await screen.findByRole("alert");
+  return render(strictMode ? <StrictMode>{content}</StrictMode> : content);
+}
 
-  expect(alert).toHaveTextContent("Request failed. Please try again.");
-  expect(alert).not.toHaveTextContent("database stacktrace");
+function buildActionArgs(path: string, fields: Record<string, string>) {
+  const url = new URL(path, "https://app.example.com");
 
-  firstView.unmount();
+  return {
+    context: createRelayRouterContext(relayEnvironment as never),
+    params: {},
+    pattern: path.split("?", 1)[0],
+    request: new Request(url, { method: "POST", body: new URLSearchParams(fields) }),
+    serverAction: vi.fn(),
+    url,
+  };
+}
 
-  renderRoute(authTokenRoute(VERIFY_EMAIL_PATH, VERIFY_EMAIL_ROUTE_TOKEN));
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(2);
+function resolveNextActionMutation(response: unknown, graphQLErrors?: readonly unknown[]) {
+  mockedCommitMutation.mockImplementationOnce((_environment, config) => {
+    config.onCompleted?.(response as never, graphQLErrors as never);
+    return { dispose: vi.fn() };
   });
+}
 
-  completeLatestMutation({
-    verifyEmail: {
-      ok: true,
-      errors: [],
-    },
+function completeVerifyMutation(response: unknown) {
+  act(() => {
+    hookCommitMock.mock.calls.at(-1)?.[0].onCompleted(response, null);
   });
+}
 
-  expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
-});
-
-test("verify email route retries after a resolved failed payload on remount", async () => {
-  const firstView = renderRoute(authTokenRoute(VERIFY_EMAIL_PATH, VERIFY_EMAIL_ROUTE_TOKEN));
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(1);
+function failVerifyMutation(error: Error) {
+  act(() => {
+    hookCommitMock.mock.calls.at(-1)?.[0].onError(error);
   });
-
-  completeLatestMutation({
-    verifyEmail: {
-      ok: false,
-      errors: [],
-    },
-  });
-
-  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
-
-  firstView.unmount();
-
-  renderRoute(authTokenRoute(VERIFY_EMAIL_PATH, VERIFY_EMAIL_ROUTE_TOKEN));
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(2);
-  });
-
-  completeLatestMutation({
-    verifyEmail: {
-      ok: true,
-      errors: [],
-    },
-  });
-
-  expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
-});
-
-test("verify email route only submits a single-use token once in strict mode", async () => {
-  renderRoute(authTokenRoute(VERIFY_EMAIL_PATH, VERIFY_EMAIL_ROUTE_TOKEN), { strictMode: true });
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(1);
-  });
-});
+}

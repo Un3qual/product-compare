@@ -1,8 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { createHead, UnheadProvider } from "@unhead/react/client";
 import { usePreloadedQuery } from "react-relay";
-import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router-dom";
-import type { LoaderFunctionArgs } from "react-router-dom";
+import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router";
+import App, { loader as rootLoader } from "../../src/root";
 import { createRelayEnvironment } from "../../src/relay/environment";
 import {
   createRelayRouterContext,
@@ -11,8 +10,6 @@ import {
 } from "../../src/relay/route-preload";
 import { setRootViewer } from "../../src/routes/auth/viewer-store";
 import { RootPrimaryNavigation } from "../../src/routes/RootDestinations";
-import { RootLayout } from "../../src/routes/RootRoute";
-import { rootLoader, type RootLoaderData } from "../../src/routes/RootRoute";
 
 const { fetchRouteQueryMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } = vi.hoisted(
   () => ({
@@ -56,12 +53,12 @@ const ROOT_VIEWER_QUERY_DESCRIPTOR = {
   },
 };
 
-const guestLoaderData: RootLoaderData = {
+const guestLoaderData = {
   viewer: null,
   viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR,
 };
 
-const authenticatedLoaderData: RootLoaderData = {
+const authenticatedLoaderData = {
   viewer: {
     id: "viewer-1",
     email: "person@example.com",
@@ -70,12 +67,12 @@ const authenticatedLoaderData: RootLoaderData = {
   viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR,
 };
 
-const loaderDataWithoutSnapshotViewer: RootLoaderData = {
+const loaderDataWithoutSnapshotViewer = {
   viewer: null,
   viewerQuery: authenticatedLoaderData.viewerQuery,
 };
 
-const cachedAuthenticatedLoaderData: RootLoaderData = {
+const cachedAuthenticatedLoaderData = {
   viewer: {
     id: "viewer-1",
     email: "person@example.com",
@@ -103,38 +100,20 @@ beforeEach(() => {
   } as never);
 });
 
-function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
+function renderRootRoute(loaderData: Awaited<ReturnType<typeof rootLoader>>, initialEntry = "/") {
   const router = createMemoryRouter(
     [
       {
         path: "/",
         id: "root",
-        handle: {
-          metadata: {
-            title: "Product Compare",
-            description: "Choose products with clearer specifications and current offers.",
-          },
-        },
-        element: <RootLayout />,
+        Component: App,
         children: [
           {
             index: true,
-            handle: {
-              metadata: {
-                title: "Product Compare",
-                description: "Choose products with clearer specifications and current offers.",
-              },
-            },
             element: <RootTestIndex />,
           },
           {
             path: "*",
-            handle: {
-              metadata: {
-                title: "Nested | Product Compare",
-                description: "Nested route metadata.",
-              },
-            },
             element: <div>Nested route</div>,
           },
         ],
@@ -150,11 +129,7 @@ function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
     },
   );
 
-  return render(
-    <UnheadProvider head={createHead()}>
-      <RouterProvider router={router} />
-    </UnheadProvider>,
-  );
+  return render(<RouterProvider router={router} />);
 }
 
 test("primary navigation preserves the URL-backed comparison across public destinations", () => {
@@ -302,20 +277,6 @@ test("root destinations keep member account actions but hide operator destinatio
   ).toBeInTheDocument();
   expect(within(accountNavigation).getByRole("link", { name: "API tokens" })).toBeInTheDocument();
   expect(within(primary).queryByRole("button", { name: "Operator menu" })).not.toBeInTheDocument();
-});
-
-test("root layout applies the deepest matched document metadata", async () => {
-  mockedUsePreloadedQuery.mockReturnValueOnce({ viewer: null } as never);
-
-  renderRootRoute(guestLoaderData);
-
-  await screen.findByRole("heading", { name: "Test home" });
-
-  expect(document.title).toBe("Product Compare");
-  expect(document.head.querySelector('meta[name="description"]')).toHaveAttribute(
-    "content",
-    "Choose products with clearer specifications and current offers.",
-  );
 });
 
 test("root layout renders guest auth links in the primary navigation", async () => {
@@ -511,7 +472,7 @@ function buildRootLoaderArgs({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): LoaderFunctionArgs {
+} = {}) {
   return {
     request,
     params: {},
@@ -521,7 +482,7 @@ function buildRootLoaderArgs({
   };
 }
 
-function buildAbortableRequest(url: string, signal: AbortSignal): Request {
+function buildAbortableRequest(url: string, signal: AbortSignal) {
   return Object.defineProperty(
     new Request(url, {
       headers: new Headers(),

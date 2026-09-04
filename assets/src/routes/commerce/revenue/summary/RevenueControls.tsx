@@ -1,6 +1,6 @@
 import { create, props } from "@stylexjs/stylex";
 import { useId } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";

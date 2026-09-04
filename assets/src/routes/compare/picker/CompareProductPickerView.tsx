@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";

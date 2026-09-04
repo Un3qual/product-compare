@@ -1,6 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import type { LoaderFunctionArgs } from "react-router-dom";
-import { MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
+import { MemoryRouter, useLoaderData, useLocation } from "react-router";
 import {
   useFragment,
   useLazyLoadQuery,
@@ -88,8 +87,8 @@ vi.mock("react-relay", async () => {
   };
 });
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,
@@ -168,7 +167,7 @@ const DETAIL_PRODUCT: DetailProduct = {
     indexable: true,
     imageUrl: null,
     structuredData:
-      '{"@context":"https://schema.org","@type":"Product","url":"/products/detail-product"}',
+      '{"@context":"https://schema.org","@type":"Product","url":"https://app.example.com/products/detail-product"}',
   },
   brand: {
     id: "brand-1",
@@ -220,13 +219,14 @@ const buildProductDetailLoaderArgs = ({
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
   slug?: string;
-} = {}): LoaderFunctionArgs => ({
-  request,
-  params: { slug },
-  context: createRelayRouterContext(environment),
-  pattern: "/products/:slug",
-  url: new URL(request.url),
-});
+} = {}) =>
+  ({
+    request,
+    params: { slug },
+    context: createRelayRouterContext(environment),
+    pattern: "/products/:slug",
+    url: new URL(request.url),
+  });
 
 beforeEach(() => {
   fetchRouteQueryMock.mockReset();

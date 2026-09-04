@@ -27,6 +27,7 @@ import {
   expectMobileLedgerDecisionContext,
   expectTabletLedgerGeometry,
 } from "./production-ui-home-visual";
+import { gotoClientRoute } from "./client-navigation";
 
 const HOME_REFERENCE_TIME = new Date("2026-08-12T12:00:00Z");
 
@@ -48,7 +49,7 @@ test("guest search and category entry preserve useful catalog navigation", async
   });
   const requests = await stubGraphQL(page, responders);
 
-  await page.goto("/");
+  await gotoClientRoute(page, "/");
   await expect(page.getByRole("heading", { name: "Find the right product" })).toBeVisible();
 
   const search = page.getByLabel("Search products, brands, or model numbers");
@@ -113,7 +114,7 @@ test("guest search and category entry preserve useful catalog navigation", async
 test("guest comparison selection can be added, opened, and removed", async ({ page }) => {
   await stubGraphQL(page, homeResponders());
 
-  await page.goto("/");
+  await gotoClientRoute(page, "/");
   const firstProduct = page.getByRole("article", { name: "BrewMaster Precision Kettle" });
   const addToComparison = firstProduct.getByRole("link", { name: "Add to comparison" });
   await focusByTab(page, addToComparison);
@@ -153,7 +154,7 @@ test("signed-in viewers receive a public For you fallback without a private matc
     homeResponders({ deals: fallbackDeals, viewer: memberViewer("member-fallback") }),
   );
 
-  await page.goto("/");
+  await gotoClientRoute(page, "/");
   await page.getByRole("tab", { name: "For you" }).click();
 
   await expect(page.getByRole("tabpanel", { name: "For you" })).toContainText(
@@ -177,7 +178,7 @@ test("signed-in viewers see explicit For you match reasons", async ({ page }) =>
     homeResponders({ deals: matchedDeals, viewer: memberViewer("member-matched") }),
   );
 
-  await page.goto("/");
+  await gotoClientRoute(page, "/");
   await page.getByRole("tab", { name: "For you" }).click();
 
   await expect(page.getByRole("tabpanel", { name: "For you" })).toContainText(
@@ -196,7 +197,7 @@ test("optional deals failure stays local and retry restores offers", async ({ pa
   });
   await stubGraphQL(page, responders);
 
-  await page.goto("/");
+  await gotoClientRoute(page, "/");
 
   await expect(page.getByRole("heading", { name: "Products to compare" })).toBeVisible();
   await expect(page.getByText("New and trending offers are unavailable right now.")).toBeVisible();
@@ -217,7 +218,7 @@ test("keyboard navigation exposes focus and reduced motion suppresses menu trans
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await stubGraphQL(page, homeResponders());
-  await page.goto("/");
+  await gotoClientRoute(page, "/");
   await expect(page.getByRole("heading", { name: "Find the right product" })).toBeVisible();
 
   await page.keyboard.press("Tab");
@@ -227,7 +228,7 @@ test("keyboard navigation exposes focus and reduced motion suppresses menu trans
   await page.keyboard.press("Enter");
   await expect(page.locator("#main-content")).toBeFocused();
 
-  await page.goto("/");
+  await gotoClientRoute(page, "/");
   await expect(page.getByRole("heading", { name: "Find the right product" })).toBeVisible();
   const search = page.getByLabel("Search products, brands, or model numbers");
   await focusByTab(page, search);
@@ -237,16 +238,18 @@ test("keyboard navigation exposes focus and reduced motion suppresses menu trans
   await expect(page.getByRole("heading", { name: "Browse products" })).toBeVisible();
 
   await page.setViewportSize({ height: 844, width: 390 });
-  await page.goto("/");
+  await gotoClientRoute(page, "/");
   const menu = page.getByRole("button", { name: "Menu" });
   await menu.click();
   const menuPopup = page.locator('[data-slot="popover-content"]');
   await expect(menuPopup).toBeVisible();
-  const transitionDurations = await menuPopup.evaluate(
-    (element) => getComputedStyle(element).transitionDuration,
+  const transitionDurations = await menuPopup.evaluate((element) =>
+    getComputedStyle(element)
+      .transitionDuration.split(",")
+      .map((duration) => Number.parseFloat(duration) || 0),
   );
-  for (const duration of transitionDurations.split(",")) {
-    expect(Number.parseFloat(duration)).toBeLessThanOrEqual(0.00001);
+  for (const duration of transitionDurations) {
+    expect(duration).toBeLessThanOrEqual(0.00001);
   }
 });
 
@@ -257,7 +260,7 @@ for (const viewport of VIEWPORTS) {
     await page.clock.setFixedTime(HOME_REFERENCE_TIME);
     await page.setViewportSize({ height: viewport.height, width: viewport.width });
     await stubGraphQL(page, homeResponders());
-    await page.goto("/?slug=brewmaster-precision-kettle&slug=northstar-barista-scale");
+    await gotoClientRoute(page, "/?slug=brewmaster-precision-kettle&slug=northstar-barista-scale");
     await waitForFonts(page);
 
     const productResults = page.getByRole("list", { name: "Product results" });

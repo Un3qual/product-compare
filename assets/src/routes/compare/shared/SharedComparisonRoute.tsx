@@ -1,7 +1,8 @@
 import { create, props } from "@stylexjs/stylex";
-import { data, Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { data, Link, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
-import type { SharedComparisonRouteQuery as SharedComparisonRouteQueryType } from "$generated/SharedComparisonRouteQuery.graphql";
+import type { SharedComparisonRouteQuery } from "$generated/SharedComparisonRouteQuery.graphql";
+import type { Route } from "./+types/SharedComparisonRoute";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
@@ -13,9 +14,19 @@ import { PageShell } from "$ui/components/layout/PageShell";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
 import { formatProductDateTimeLabel } from "$frontend/formatting";
-import type { RouteDocumentMetadata } from "../../RouteMetadata";
-import { routeMetadataFromSeo } from "$frontend/head";
+import {
+  routeMetadataFromSeo,
+  routeMetaDescriptors,
+  staticRouteMetaDescriptors,
+} from "$frontend/seo";
 import { buildSharedComparisonViewData } from "./shared-comparison-view-data";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "../RouteErrorBoundary";
+
+export {
+  SharedComparisonRoute as default,
+  sharedComparisonLoader as clientLoader,
+  sharedComparisonLoader as loader,
+};
 
 const sharedComparisonRouteQuery = graphql`
   query SharedComparisonRouteQuery($token: String!) {
@@ -68,21 +79,32 @@ const sharedComparisonRouteQuery = graphql`
   }
 `;
 
-export type SharedComparisonLoaderData =
-  | {
-      status: "ready";
-      metadata: RouteDocumentMetadata;
-      query: RelayRouteQueryDescriptor<SharedComparisonRouteQueryType["variables"]>;
-    }
-  | { status: "not_found" };
+export function meta({ loaderData }: Route.MetaArgs) {
+  if (loaderData?.status === "ready") return routeMetaDescriptors(loaderData.metadata);
 
-export async function sharedComparisonLoader({ context, params, request }: LoaderFunctionArgs) {
+  return staticRouteMetaDescriptors({
+    title: "Shared comparison",
+    description: "Review a fixed, source-backed product comparison snapshot.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary
+      error={error}
+      resourceName="shared comparison"
+      title="Shared comparison"
+    />
+  );
+}
+
+export async function sharedComparisonLoader({ context, params, request }: Route.LoaderArgs) {
   const token = params.token?.trim() ?? "";
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return sharedComparisonNotFound();
   const environment = getRelayEnvironmentFromRouterContext(context);
 
   try {
-    const fetched = await fetchRouteQuery<SharedComparisonRouteQueryType>(
+    const fetched = await fetchRouteQuery<SharedComparisonRouteQuery>(
       environment,
       sharedComparisonRouteQuery,
       { token },
@@ -105,7 +127,7 @@ export async function sharedComparisonLoader({ context, params, request }: Loade
 }
 
 function sharedComparisonNotFound() {
-  return data<SharedComparisonLoaderData>({ status: "not_found" }, { status: 404 });
+  return data({ status: "not_found" as const }, { status: 404 });
 }
 
 const styles = create({
@@ -152,13 +174,13 @@ export function SharedComparisonRoute() {
 function ReadySharedComparison({
   query,
 }: {
-  query: Extract<SharedComparisonLoaderData, { status: "ready" }>["query"];
+  query: RelayRouteQueryDescriptor<SharedComparisonRouteQuery["variables"]>;
 }) {
-  const queryRef = useRoutePreloadedQuery<SharedComparisonRouteQueryType>(
+  const queryRef = useRoutePreloadedQuery<SharedComparisonRouteQuery>(
     sharedComparisonRouteQuery,
     query,
   );
-  const data = usePreloadedQuery<SharedComparisonRouteQueryType>(
+  const data = usePreloadedQuery<SharedComparisonRouteQuery>(
     sharedComparisonRouteQuery,
     queryRef,
   );

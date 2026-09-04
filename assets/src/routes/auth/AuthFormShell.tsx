@@ -1,7 +1,7 @@
 import { useId, type ComponentProps, type PropsWithChildren, type ReactElement } from "react";
 import { useRender } from "@base-ui/react";
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { selectGlobalMutationErrors, type MutationError } from "./errors";
 import { Button } from "$ui/primitives/Button";
 import { Alert, AlertDescription } from "$ui/primitives/Alert";

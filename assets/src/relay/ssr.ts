@@ -1,7 +1,7 @@
 import type { Environment } from "relay-runtime";
 import type { RelayRecordMap } from "./environment";
 
-const RELAY_RECORDS_SCRIPT_ID = "__relayRecords";
+export const RELAY_RECORDS_SCRIPT_ID = "__relayRecords";
 const JSON_HTML_ESCAPES: Record<string, string> = {
   "<": "\\u003c",
   ">": "\\u003e",
@@ -14,12 +14,8 @@ export function dehydrateRelayEnvironment(environment: Environment): RelayRecord
   return environment.getStore().getSource().toJSON();
 }
 
-export function renderRelayRecordsScript(records: RelayRecordMap) {
-  const payload = { records };
-
-  return `<script id="${RELAY_RECORDS_SCRIPT_ID}" type="application/json">${escapeJsonForHtml(
-    JSON.stringify(payload),
-  )}</script>`;
+export function serializeRelayRecords(records: RelayRecordMap) {
+  return escapeJsonForHtml(JSON.stringify({ records }));
 }
 
 export function readRelayRecordsFromDocument(documentRef: Document = document): RelayRecordMap {

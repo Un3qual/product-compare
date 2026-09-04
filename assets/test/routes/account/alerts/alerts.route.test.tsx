@@ -4,16 +4,13 @@ import {
   MemoryRouter,
   Outlet,
   Route,
+  RouterContextProvider,
   Routes,
   useLoaderData,
   useRevalidator,
-} from "react-router-dom";
+} from "react-router";
 import { useFragment, useMutation, usePreloadedQuery } from "react-relay";
-import {
-  AlertsRoute,
-  alertsLoader,
-  type AlertsRouteLoaderData,
-} from "../../../../src/routes/account/alerts/AlertsRoute";
+import { AlertsRoute, alertsLoader } from "../../../../src/routes/account/alerts/AlertsRoute";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
 import { PriceWatchControl } from "../../../../src/routes/products/PriceWatchControl";
 
@@ -43,8 +40,8 @@ vi.mock("../../../../src/relay/route-preload", () => ({
   useRoutePreloadedQuery: useRoutePreloadedQueryMock,
 }));
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
   return { ...actual, useLoaderData: useLoaderDataMock, useRevalidator: useRevalidatorMock };
 });
 
@@ -99,7 +96,7 @@ test("alertsLoader preserves its Relay descriptor for component-owned fragments"
 
   const request = new Request("https://product.test/account/alerts");
   const result = await alertsLoader({
-    context: {},
+    context: new RouterContextProvider(),
     params: {},
     pattern: "/account/alerts",
     request,
@@ -574,7 +571,7 @@ function mockReadyAlerts({
       variables: { first: 50 },
     },
   };
-  mockedUseLoaderData.mockReturnValue({ status: "ready", query } satisfies AlertsRouteLoaderData);
+  mockedUseLoaderData.mockReturnValue({ status: "ready", query });
   mockedUsePreloadedQuery.mockReturnValue({
     myAlertEvents: {
       edges: alerts.map((node) => ({ node })),

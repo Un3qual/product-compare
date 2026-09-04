@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router";
 import { graphql, useLazyLoadQuery } from "react-relay";
 import type { RecommendationPanelQuery } from "$generated/RecommendationPanelQuery.graphql";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";

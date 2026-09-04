@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
+import { MemoryRouter, useLoaderData, useRevalidator } from "react-router";
 import { useFragment, usePreloadedQuery } from "react-relay";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import {
@@ -46,8 +46,8 @@ vi.mock("../../../src/relay/route-preload", async () => {
     useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
   return {
     ...actual,
     useLoaderData: useLoaderDataMock,

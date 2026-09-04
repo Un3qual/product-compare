@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { gotoClientRoute, gotoHydratedRoute } from "./client-navigation";
 
 const VIEWPORTS = [
   { height: 1_000, name: "desktop", width: 1_440 },
@@ -13,7 +14,7 @@ for (const viewport of VIEWPORTS) {
   }, testInfo) => {
     await page.setViewportSize({ height: viewport.height, width: viewport.width });
     await stubGraphQL(page);
-    await page.goto("/products/field-camera");
+    await gotoClientRoute(page, "/products/field-camera");
 
     await expect(page.getByRole("heading", { name: "Field Camera" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Specifications" })).toHaveAttribute(
@@ -86,6 +87,7 @@ for (const viewport of VIEWPORTS) {
               (script) =>
                 script instanceof HTMLScriptElement &&
                 script.type !== "application/ld+json" &&
+                script.type !== "application/json" &&
                 script.textContent?.includes("metadata injection"),
             ).length,
         ),
@@ -123,7 +125,7 @@ for (const viewport of VIEWPORTS) {
 
 test("auth navigation replaces noindex metadata instead of duplicating it", async ({ page }) => {
   await stubGraphQL(page);
-  await page.goto("/auth/login");
+  await gotoHydratedRoute(page, "/auth/login");
 
   await expect(page).toHaveTitle("Sign in | Product Compare");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex,follow");
@@ -140,7 +142,7 @@ test("operator route remains reachable through the split registry", async ({ pag
     id: "operator-1",
     isOperator: true,
   });
-  await page.goto("/affiliate/setup");
+  await gotoClientRoute(page, "/affiliate/setup");
 
   await expect(page.getByRole("heading", { name: "Affiliate setup" })).toBeVisible();
   await expect(page).toHaveTitle("Affiliate setup | Product Compare");
@@ -162,7 +164,7 @@ async function stubGraphQL(page: Page, viewer: Viewer | null = null) {
       operationName === "RootRouteQuery"
         ? { viewer }
         : operationName === "ProductDetailRouteQuery"
-          ? { product: productFixture() }
+          ? { product: productFixture(new URL(page.url()).origin) }
           : operationName === "AffiliateSetupRouteQuery"
             ? { merchants: emptyConnection() }
             : null;
@@ -175,7 +177,7 @@ async function stubGraphQL(page: Page, viewer: Viewer | null = null) {
   });
 }
 
-function productFixture() {
+function productFixture(origin: string) {
   return {
     id: "product-field-camera",
     name: "Field Camera",
@@ -191,7 +193,7 @@ function productFixture() {
         "@context": "https://schema.org",
         "@type": "Product",
         name: 'Field Camera </script><script>alert("metadata injection")</script>',
-        url: "/products/field-camera",
+        url: `${origin}/products/field-camera`,
       }),
     },
     brand: { id: "brand-acme", name: "Acme" },

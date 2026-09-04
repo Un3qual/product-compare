@@ -1,15 +1,13 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { MemoryRouter, useLoaderData } from "react-router";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
 import { CouponStep } from "../../../../src/routes/affiliate/setup/coupon/CouponStep";
 import { MerchantLinkStep } from "../../../../src/routes/affiliate/setup/merchant-link/MerchantLinkStep";
 import { NetworkStep } from "../../../../src/routes/affiliate/setup/network/NetworkStep";
 import { ProgramStep } from "../../../../src/routes/affiliate/setup/program/ProgramStep";
-import {
-  AffiliateSetupRoute,
-  type AffiliateSetupLoaderData,
-} from "../../../../src/routes/affiliate/setup/AffiliateSetupRoute";
+import { AffiliateSetupRoute } from "../../../../src/routes/affiliate/setup/AffiliateSetupRoute";
+import type { MerchantPagination } from "../../../../src/routes/merchants/pagination";
 import { chooseSelectOption, openSelect } from "../../../helpers/base-select";
 
 const {
@@ -32,8 +30,8 @@ const {
   useRoutePreloadedQueryMock: vi.fn(),
 }));
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,
@@ -356,7 +354,7 @@ test("affiliate setup route renders loader error fallback", () => {
       first: 20,
       after: null,
     },
-  } satisfies AffiliateSetupLoaderData);
+  });
 
   renderAffiliateSetupRoute();
 
@@ -940,11 +938,8 @@ function renderAffiliateSetupRoute() {
 
 function buildReadyLoaderData(
   merchantQuery = AFFILIATE_SETUP_QUERY_DESCRIPTOR,
-  merchantPagination: Extract<
-    AffiliateSetupLoaderData,
-    { status: "ready" }
-  >["merchantPagination"] = { first: 20, after: null },
-): AffiliateSetupLoaderData {
+  merchantPagination: MerchantPagination = { first: 20, after: null },
+) {
   return {
     status: "ready",
     merchantPagination,

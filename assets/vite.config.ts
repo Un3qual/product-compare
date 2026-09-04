@@ -1,15 +1,12 @@
+import { reactRouter } from "@react-router/dev/vite";
 import { defineConfig } from "vite";
-import stylexMangle from "stylex-mangle-classnames";
-import { frontendAliases, reactWithStyleX, STYLEX_CLASS_NAME_PREFIX } from "./stylex-plugin.ts";
+import { frontendAliases, styleXTransform } from "./stylex-plugin.ts";
 
 const playwrightCacheDir = process.env.PLAYWRIGHT_PORT
   ? `node_modules/.vite-playwright-${process.env.PLAYWRIGHT_PORT}`
   : undefined;
 
 export default defineConfig({
-  build: {
-    manifest: true,
-  },
   cacheDir: playwrightCacheDir,
   optimizeDeps: {
     include: [
@@ -25,9 +22,26 @@ export default defineConfig({
       "@base-ui/react/select",
       "@base-ui/react/separator",
       "@base-ui/react/tabs",
+      "@stylexjs/stylex",
+      "@tanstack/charts/dot",
+      "@tanstack/charts/line",
+      "@tanstack/charts/react",
+      "@tanstack/charts/scales/linear",
+      "@tanstack/charts/scene",
+      "@tanstack/charts/tooltip",
+      "@tanstack/react-table",
+      "lucide-react",
+      "react",
+      "react-dom",
+      "react-dom/client",
+      "react-relay",
+      "react-router",
+      "react-router/dom",
+      "relay-runtime",
     ],
+    noDiscovery: true,
   },
-  plugins: [...reactWithStyleX(), stylexMangle({ classNamePrefix: STYLEX_CLASS_NAME_PREFIX })],
+  plugins: [reactRouter(), ...styleXTransform()],
   resolve: {
     alias: frontendAliases,
   },

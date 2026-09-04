@@ -1,7 +1,7 @@
 import { StrictMode, createElement } from "react";
 import { act, render } from "@testing-library/react";
 import { RelayEnvironmentProvider, loadQuery, type GraphQLTaggedNode } from "react-relay";
-import { RouterContextProvider } from "react-router-dom";
+import { RouterContextProvider } from "react-router";
 import { createRelayEnvironment } from "../../src/relay/environment";
 import productDetailRouteQuery, {
   type ProductDetailRouteQuery,
@@ -15,9 +15,10 @@ import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
   relayRouteQueryDescriptorIdentity,
+  setRelayEnvironmentOnRouterContext,
   useRoutePreloadedQuery,
 } from "../../src/relay/route-preload";
-import { dehydrateRelayEnvironment } from "../../src/relay/ssr";
+import { dehydrateRelayEnvironment, serializeRelayRecords } from "../../src/relay/ssr";
 
 vi.mock("../../src/relay/load-query", () => ({
   fetchAppQuery: vi.fn(),
@@ -111,6 +112,26 @@ test("dehydrateRelayEnvironment returns the populated record source", () => {
       "client:root": expect.objectContaining({ __id: "client:root" }),
     }),
   );
+});
+
+test("serializeRelayRecords emits JSON that is safe inside the Framework document script", () => {
+  const serialized = serializeRelayRecords({
+    "product:1": {
+      __id: "product:1",
+      __typename: "Product",
+      name: '</script><script>alert("relay injection")</script>\u2028&',
+    },
+  });
+
+  expect(serialized).not.toContain("</script>");
+  expect(serialized).not.toContain("\u2028");
+  expect(JSON.parse(serialized)).toEqual({
+    records: {
+      "product:1": expect.objectContaining({
+        name: '</script><script>alert("relay injection")</script>\u2028&',
+      }),
+    },
+  });
 });
 
 test("preloadRouteQuery fetches fresh data before retaining a store-only query ref", async () => {
@@ -581,10 +602,11 @@ test("createRelayRouterContext exposes the Relay environment to route loaders", 
   expect(getRelayEnvironmentFromRouterContext(context)).toBe(environment);
 });
 
-test("getRelayEnvironmentFromRouterContext throws when the provider has no Relay environment", () => {
+test("Framework middleware can attach a Relay environment to an existing route context", () => {
+  const environment = createRelayEnvironment();
   const context = new RouterContextProvider();
 
-  expect(() => getRelayEnvironmentFromRouterContext(context)).toThrow(
-    "Relay environment is missing from the route loader context",
-  );
+  setRelayEnvironmentOnRouterContext(context, environment);
+
+  expect(getRelayEnvironmentFromRouterContext(context)).toBe(environment);
 });

@@ -1,4 +1,3 @@
-import type { LoaderFunctionArgs } from "react-router-dom";
 import { expect, test, vi } from "vitest";
 import { createRelayEnvironment } from "../../../../../src/relay/environment";
 import {
@@ -93,10 +92,7 @@ test("conversionIngestionLoader observes a history rejection while the overview 
   }
 });
 
-function buildLoaderArgs(
-  environment: ReturnType<typeof createRelayEnvironment>,
-  request: Request,
-): LoaderFunctionArgs {
+function buildLoaderArgs(environment: ReturnType<typeof createRelayEnvironment>, request: Request) {
   return {
     context: createRelayRouterContext(environment),
     params: {},

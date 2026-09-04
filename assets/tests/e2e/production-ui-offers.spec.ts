@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { gotoClientRoute } from "./client-navigation";
 import { expectNoUnhandledGraphQLOperations, stubGraphQL } from "./production-ui-home-fixture";
 import { waitForFonts } from "./production-ui-home-interactions";
 import { OFFER_PRODUCT_ID, offerResponders } from "./production-ui-offers-fixture";
@@ -20,7 +21,7 @@ for (const viewport of OFFER_VIEWPORTS) {
   }) => {
     await page.setViewportSize({ height: viewport.height, width: viewport.width });
     await stubGraphQL(page, offerResponders());
-    await page.goto(`/offers?productId=${OFFER_PRODUCT_ID}`);
+    await gotoClientRoute(page, `/offers?productId=${OFFER_PRODUCT_ID}`);
     await waitForFonts(page);
 
     const scope = page.getByRole("region", { name: "Active offer filters" });

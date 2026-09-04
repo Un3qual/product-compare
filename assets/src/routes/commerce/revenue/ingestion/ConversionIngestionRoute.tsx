@@ -4,11 +4,11 @@ import {
   Link,
   useLoaderData,
   useRevalidator,
-  type LoaderFunctionArgs,
-} from "react-router-dom";
+} from "react-router";
 import { graphql, usePreloadedQuery, useRelayEnvironment } from "react-relay";
 import type { ConversionIngestionRouteQuery } from "$generated/ConversionIngestionRouteQuery.graphql";
 import type { ConversionSyncRunsQuery } from "$generated/ConversionSyncRunsQuery.graphql";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
@@ -18,6 +18,7 @@ import {
 } from "$relay/route-preload";
 import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { Button } from "$ui/primitives/Button";
@@ -28,8 +29,30 @@ import {
 } from "./ConversionIngestionStatus";
 import { ConversionSyncRunLedger } from "./ConversionSyncRunLedger";
 import { SYNC_RUN_PAGE_SIZE } from "./conversion-ingestion-data";
+import type { Route } from "./+types/ConversionIngestionRoute";
 
-export { SYNC_RUN_PAGE_SIZE };
+export {
+  ConversionIngestionRoute as default,
+  conversionIngestionLoader as loader,
+  SYNC_RUN_PAGE_SIZE,
+};
+
+export function meta() {
+  return staticRouteMetaDescriptors({
+    title: "Conversion ingestion",
+    description: "Monitor CJ commission ingestion freshness and control its bounded schedule.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary
+      error={error}
+      resourceName="conversion ingestion"
+      title="Conversion ingestion"
+    />
+  );
+}
 
 export const conversionIngestionRouteQuery = graphql`
   query ConversionIngestionRouteQuery {
@@ -55,7 +78,7 @@ export type ConversionIngestionLoaderData =
 export async function conversionIngestionLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<ConversionIngestionLoaderData> {
+}: Route.LoaderArgs): Promise<ConversionIngestionLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const after = new URL(request.url).searchParams.get("after");
   const runsVariables = { after, first: SYNC_RUN_PAGE_SIZE };
@@ -83,6 +106,9 @@ export async function conversionIngestionLoader({
     );
   }
 }
+
+// The deferred run ledger needs hydration; bind the flag here so the client transform preserves it.
+export const clientLoader = Object.assign(conversionIngestionLoader, { hydrate: true });
 
 export function ConversionIngestionRoute() {
   const loaderData = useLoaderData<typeof conversionIngestionLoader>();

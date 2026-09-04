@@ -1,14 +1,9 @@
 import { Suspense } from "react";
 import { create, props } from "@stylexjs/stylex";
-import {
-  Link,
-  useLoaderData,
-  useOutletContext,
-  useRevalidator,
-  type LoaderFunctionArgs,
-} from "react-router-dom";
+import { Link, useLoaderData, useOutletContext, useRevalidator } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { HomeRouteQuery } from "$generated/HomeRouteQuery.graphql";
+import type { Route } from "./+types/HomeRoute";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   getRelayEnvironmentFromRouterContext,
@@ -26,6 +21,9 @@ import { Button } from "$ui/primitives/Button";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { HomeDeals } from "./HomeDeals";
 import { HomeProductLedger } from "./HomeProductLedger";
+
+export { HomeRoute as default, homeLoader as clientLoader, homeLoader as loader };
+
 import { HomeSearch } from "./HomeSearch";
 import {
   homeCatalogSearchPath,
@@ -62,16 +60,7 @@ const homeWorkspaceRouteQuery = graphql`
   }
 `;
 
-export type HomeLoaderData = {
-  referenceTime: string;
-  selectedSlugs: string[];
-  workspace: RelayRouteQueryDescriptor<HomeRouteQuery["variables"]> | null;
-};
-
-export async function homeLoader({
-  context,
-  request,
-}: LoaderFunctionArgs): Promise<HomeLoaderData> {
+export async function homeLoader({ context, request }: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const referenceTime = new Date().toISOString();
   const selectedSlugs = selectedHomeCompareSlugs(new URL(request.url).search);
@@ -175,7 +164,7 @@ function HomeWorkspace({
   referenceTime,
 }: {
   hasViewer: boolean;
-  query: NonNullable<HomeLoaderData["workspace"]>;
+  query: RelayRouteQueryDescriptor<HomeRouteQuery["variables"]>;
   referenceTime: string;
 }) {
   const queryRef = useRoutePreloadedQuery<HomeRouteQuery>(homeWorkspaceRouteQuery, query);

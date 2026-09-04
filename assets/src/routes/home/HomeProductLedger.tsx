@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { graphql, useFragment } from "react-relay";
 import type {
   HomeProductLedger_products$data,

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import { gotoClientRoute, gotoHydratedRoute } from "./client-navigation";
 
 type GraphQLMockResponse = {
   data: Record<string, unknown>;
@@ -115,10 +116,7 @@ test("login redirects to the home route after a successful session mutation", as
   const requests = await mockGraphQL(page, {
     HomeDealsQuery: homeDealsResponse(),
     HomeRouteQuery: homeRouteResponse(),
-    RootRouteQuery: [
-      rootViewerResponse(),
-      rootViewerResponse({ id: "1", email: "person@example.com" }),
-    ],
+    RootRouteQuery: rootViewerResponse({ id: "1", email: "person@example.com" }),
     LoginRouteMutation: {
       data: {
         login: {
@@ -129,7 +127,7 @@ test("login redirects to the home route after a successful session mutation", as
     },
   });
 
-  await page.goto("/auth/login");
+  await gotoHydratedRoute(page, "/auth/login");
   await page.getByLabel("Email").fill("person@example.com");
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
@@ -167,7 +165,7 @@ test("login renders typed credential errors from the GraphQL payload", async ({ 
     },
   });
 
-  await page.goto("/auth/login");
+  await gotoHydratedRoute(page, "/auth/login");
   await page.getByLabel("Email").fill("person@example.com");
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
@@ -215,7 +213,7 @@ test("guest price-watch intent returns through login for review without automati
     },
   });
 
-  await page.goto("/products/field-camera");
+  await gotoClientRoute(page, "/products/field-camera");
   await page.getByRole("button", { name: "Watch price or availability" }).click();
   const amount = page.getByLabel("Target landed price");
   await amount.fill("125.00");
@@ -277,10 +275,7 @@ test("register redirects to the home route after a successful session mutation",
   const requests = await mockGraphQL(page, {
     HomeDealsQuery: homeDealsResponse(),
     HomeRouteQuery: homeRouteResponse(),
-    RootRouteQuery: [
-      rootViewerResponse(),
-      rootViewerResponse({ id: "2", email: "new@example.com" }),
-    ],
+    RootRouteQuery: rootViewerResponse({ id: "2", email: "new@example.com" }),
     RegisterRouteMutation: {
       data: {
         register: {
@@ -291,7 +286,7 @@ test("register redirects to the home route after a successful session mutation",
     },
   });
 
-  await page.goto("/auth/register");
+  await gotoHydratedRoute(page, "/auth/register");
   await page.getByLabel("Email").fill("new@example.com");
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
@@ -321,7 +316,7 @@ test("forgot password shows the privacy-safe success state", async ({ page }) =>
     },
   });
 
-  await page.goto("/auth/forgot-password");
+  await gotoHydratedRoute(page, "/auth/forgot-password");
   await page.getByLabel("Email").fill("person@example.com");
   await page.getByRole("button", { name: "Send reset link" }).click();
 
@@ -351,7 +346,7 @@ test("reset password consumes the token from the URL and shows the success state
     },
   });
 
-  await page.goto(`/auth/reset-password?token=${token}`);
+  await gotoHydratedRoute(page, `/auth/reset-password?token=${token}`);
   await page.getByRole("textbox", { name: "New password" }).fill(password);
   await page.getByRole("button", { name: "Update password" }).click();
 
@@ -372,11 +367,11 @@ test("reset password shows an invalid-token alert when the URL token is missing"
     RootRouteQuery: rootViewerResponse(),
   });
 
-  await page.goto("/auth/reset-password");
+  await gotoHydratedRoute(page, "/auth/reset-password");
 
   await expect(page.getByRole("alert")).toContainText("This reset link is missing or invalid.");
   await expect(page.getByRole("button", { name: "Update password" })).toBeDisabled();
-  expect(requests).toEqual([{ operationName: "RootRouteQuery", variables: {} }]);
+  expect(requests).toEqual([]);
 });
 
 test("verify email consumes the token from the URL and reports success", async ({ page }) => {
@@ -393,7 +388,7 @@ test("verify email consumes the token from the URL and reports success", async (
     },
   });
 
-  await page.goto(`/auth/verify-email?token=${token}`);
+  await gotoHydratedRoute(page, `/auth/verify-email?token=${token}`);
 
   await expect(page.getByRole("status")).toContainText("Your email address is verified.");
   expect(requests).toContainEqual({
@@ -409,22 +404,19 @@ test("verify email shows an invalid-token alert when the URL token is missing", 
     RootRouteQuery: rootViewerResponse(),
   });
 
-  await page.goto("/auth/verify-email");
+  await gotoHydratedRoute(page, "/auth/verify-email");
 
   await expect(page.getByRole("alert")).toContainText(
     "This verification link is missing or invalid.",
   );
-  expect(requests).toEqual([{ operationName: "RootRouteQuery", variables: {} }]);
+  expect(requests).toEqual([]);
 });
 
 test("logout clears the browser session through GraphQL and returns to sign in", async ({
   page,
 }) => {
   const requests = await mockGraphQL(page, {
-    RootRouteQuery: [
-      rootViewerResponse({ id: "viewer-1", email: "person@example.com" }),
-      rootViewerResponse(),
-    ],
+    RootRouteQuery: rootViewerResponse(),
     LogoutRouteMutation: {
       data: {
         logout: {
@@ -435,7 +427,7 @@ test("logout clears the browser session through GraphQL and returns to sign in",
     },
   });
 
-  await page.goto("/auth/logout");
+  await gotoHydratedRoute(page, "/auth/logout");
   await page.getByRole("button", { name: "Sign out" }).click();
 
   await expect(page).toHaveURL("/auth/login");

@@ -1,36 +1,23 @@
-import { StrictMode } from "react";
-import { createRoot, hydrateRoot } from "react-dom/client";
-import { createHead, UnheadProvider } from "@unhead/react/client";
-import { RouterProvider } from "react-router-dom";
-import { RelayEnvironmentProvider } from "react-relay";
 import "./ui/theme/tokens.stylex";
+import { startTransition, StrictMode } from "react";
+import { hydrateRoot } from "react-dom/client";
+import { HydratedRouter } from "react-router/dom";
+import { RelayEnvironmentProvider } from "react-relay";
 import { createRelayEnvironment } from "./relay/environment";
 import { readRelayRecordsFromDocument } from "./relay/ssr";
-import { createClientRouter } from "./router";
-
-const root = document.getElementById("root");
-
-if (!root) {
-  throw new Error("missing #root element");
-}
+import { createRelayRouterContext } from "./relay/route-preload";
 
 const relayEnvironment = createRelayEnvironment({
   records: readRelayRecordsFromDocument(),
 });
-const head = createHead();
 
-const app = (
-  <StrictMode>
-    <UnheadProvider head={head}>
+startTransition(() => {
+  hydrateRoot(
+    document,
+    <StrictMode>
       <RelayEnvironmentProvider environment={relayEnvironment}>
-        <RouterProvider router={createClientRouter(relayEnvironment)} />
+        <HydratedRouter getContext={() => createRelayRouterContext(relayEnvironment)} />
       </RelayEnvironmentProvider>
-    </UnheadProvider>
-  </StrictMode>
-);
-
-if (root.hasChildNodes()) {
-  hydrateRoot(root, app);
-} else {
-  createRoot(root).render(app);
-}
+    </StrictMode>,
+  );
+});

@@ -57,7 +57,7 @@ defmodule ProductCompare.ToolchainContractTest do
     assert "cmd --cd assets pnpm install --frozen-lockfile" in aliases[:setup]
   end
 
-  test "Phoenix owns the development Vite watcher" do
+  test "Phoenix owns the development Framework Mode watcher" do
     config = Config.Reader.read!(path("config/dev.exs"))
 
     endpoint =
@@ -65,7 +65,8 @@ defmodule ProductCompare.ToolchainContractTest do
 
     assert endpoint[:watchers] == [
              node: [
-               "node_modules/vite/bin/vite.js",
+               "node_modules/@react-router/dev/bin.cjs",
+               "dev",
                "--host",
                "127.0.0.1",
                cd: path("assets")

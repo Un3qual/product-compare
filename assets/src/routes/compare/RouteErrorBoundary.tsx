@@ -1,8 +1,9 @@
-import { isRouteErrorResponse, useRouteError } from "react-router-dom";
+import { isRouteErrorResponse } from "react-router";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 
 type RouteErrorBoundaryProps = {
+  error: unknown;
   resourceName?: string;
   title?: string;
 };
@@ -13,11 +14,14 @@ type RouteErrorContext =
   | { readonly kind: "unknown" };
 
 export function RouteErrorBoundary({
+  error,
   resourceName = "comparison",
   title = "Compare products",
-}: RouteErrorBoundaryProps = {}) {
-  const error = useRouteError();
-  const { errorMessage, retryGuidance } = routeErrorViewData(normalizeRouteError(error), resourceName);
+}: RouteErrorBoundaryProps) {
+  const { errorMessage, retryGuidance } = routeErrorViewData(
+    normalizeRouteError(error),
+    resourceName,
+  );
 
   return (
     <PageShell eyebrow="Page unavailable" title={title}>
@@ -38,10 +42,7 @@ function normalizeRouteError(error: unknown): RouteErrorContext {
   return { kind: "unknown" };
 }
 
-function routeErrorViewData(
-  error: ReturnType<typeof normalizeRouteError>,
-  resourceName: string,
-) {
+function routeErrorViewData(error: ReturnType<typeof normalizeRouteError>, resourceName: string) {
   if (error.kind === "response") {
     return responseErrorViewData(error.status, resourceName);
   }
@@ -95,7 +96,7 @@ function responseErrorViewData(status: number, resourceName: string) {
 }
 
 function isNetworkError(error: Error) {
-  const normalizedMessage = String(error.message).toLowerCase();
+  const normalizedMessage = error.message.toLowerCase();
 
   return (
     normalizedMessage.includes("network") ||

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "$ui/primitives/Popover";
 import { create, props, type StyleXStyles } from "@stylexjs/stylex";
 import { MenuIcon, SearchIcon } from "lucide-react";
-import { NavLink, useLocation, useMatch } from "react-router-dom";
+import { NavLink, useLocation, useMatch } from "react-router";
 import { CompareMark } from "$ui/components/brand/CompareMark";
 import { Button } from "$ui/primitives/Button";
 import { tokens } from "$ui/theme/tokens.stylex";

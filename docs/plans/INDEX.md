@@ -22,6 +22,7 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-11-base-ui-stylex-table-foundation-design.md`
 - `docs/superpowers/specs/2026-08-12-product-experience-and-code-simplification-design.md`
 - `docs/superpowers/specs/2026-08-27-cj-live-conversion-ingestion-design.md`
+- `docs/superpowers/specs/2026-09-02-react-router-8-framework-mode-design.md`
 
 ## Active Plan Catalog
 
@@ -40,7 +41,19 @@ automated verification; the 2026-08-27 preflight found credentials unavailable,
 so live evidence was not run and scheduling remains disabled. Final
 whole-branch review hardened durable action-level correction evidence, semantic
 CJ validation, nonterminal operator polling, and Relay settings reconciliation;
-  the final gates passed 1,674 backend tests and 1,530 frontend tests.
+the final gates passed 1,674 backend tests and 1,530 frontend tests.
+
+The approved React Router 8 Framework Mode migration is complete through:
+
+- `docs/superpowers/plans/2026-09-02-react-router-8-framework-mode-implementation-plan.md`
+
+It completed one frontend runtime simplification outcome: exact package alignment,
+framework route modules and generated types, document/SSR/metadata ownership,
+Relay and Phoenix boundary preservation, route-focused tests, and final
+verification were internal milestones rather than separately shippable rows.
+Exact verification, retained-boundary rationale, and the net-reduction
+measurement are recorded in
+`docs/work/frontend-react-router-framework-mode.md`.
 
 The approved Product Experience And Code Simplification program is planned as
 five immediately executable, path-disjoint outcomes plus one prerequisite-gated

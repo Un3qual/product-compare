@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 import { DataList, DataListItem } from "../../src/ui/components/data/DataList";
 import { FeedbackState } from "../../src/ui/components/feedback/FeedbackState";
 import { PageShell } from "../../src/ui/components/layout/PageShell";

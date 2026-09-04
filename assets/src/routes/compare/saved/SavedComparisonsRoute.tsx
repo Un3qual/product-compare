@@ -1,8 +1,10 @@
 import { Suspense } from "react";
-import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { Link, useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { GraphQLResponse } from "relay-runtime";
 import type { SavedComparisonsRouteQuery } from "$generated/SavedComparisonsRouteQuery.graphql";
+import type { Route } from "./+types/SavedComparisonsRoute";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { graphQLResponseHasErrorCode, RouteLoaderGraphQLError } from "$relay/environment";
 import {
   fetchRouteQuery,
@@ -13,8 +15,26 @@ import {
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { Button } from "$ui/primitives/Button";
 import { CompareShell } from "../CompareShell";
+import { RouteErrorBoundary } from "../RouteErrorBoundary";
 import { SavedComparisonSetList } from "./SavedComparisonSetList";
 import { buildSavedComparisonsPagination } from "./saved-comparisons-route";
+
+export {
+  SavedComparisonsRoute as default,
+  savedComparisonsLoader as clientLoader,
+  savedComparisonsLoader as loader,
+};
+
+export function meta() {
+  return staticRouteMetaDescriptors({
+    title: "Saved comparisons",
+    description: "Return to product comparisons saved to your account.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return <RouteErrorBoundary error={error} title="Saved comparisons" />;
+}
 
 const SAVED_COMPARISON_SETS_PAGE_SIZE = 20;
 const SAVED_COMPARISONS_AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED"]);
@@ -30,14 +50,6 @@ const savedComparisonsRouteQuery = graphql`
     }
   }
 `;
-
-export type SavedComparisonsRouteLoaderData =
-  | {
-      status: "ready";
-      after: string | null;
-      query: RelayRouteQueryDescriptor<SavedComparisonsRouteQuery["variables"]>;
-    }
-  | { status: "unauthorized" };
 
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>();
@@ -71,7 +83,7 @@ function SavedComparisonsPage({
   query,
 }: {
   after: string | null;
-  query: Extract<SavedComparisonsRouteLoaderData, { status: "ready" }>["query"];
+  query: RelayRouteQueryDescriptor<SavedComparisonsRouteQuery["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<SavedComparisonsRouteQuery>(
     savedComparisonsRouteQuery,
@@ -100,7 +112,7 @@ function SavedComparisonsPage({
 export async function savedComparisonsLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<SavedComparisonsRouteLoaderData> {
+}: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const after = nonBlankSearchParam(new URL(request.url).searchParams.get("after"));
   let fetchedPage: Awaited<ReturnType<typeof fetchRouteQuery<SavedComparisonsRouteQuery>>> | null =
@@ -126,12 +138,12 @@ export async function savedComparisonsLoader({
       throw new Error("Invalid pagination cursor");
     }
 
-    return { status: "ready", after, query: fetchedPage.descriptor };
+    return { status: "ready" as const, after, query: fetchedPage.descriptor };
   } catch (error) {
     fetchedPage?.dispose();
 
     if (isUnauthorizedSavedComparisonsError(error)) {
-      return { status: "unauthorized" };
+      return { status: "unauthorized" as const };
     }
 
     throw error;

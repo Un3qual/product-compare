@@ -55,10 +55,9 @@ same live-conversion lifecycle and share one enablement gate.
 - `assets/src/__generated__/`
 - `assets/src/routes/commerce/revenue/ingestion/`
 - `assets/src/routes/commerce/revenue/RevenueSummaryRoute.tsx`
-- `assets/src/routes/config/operator-routes.tsx`
+- `assets/src/routes.ts`
 - `assets/src/routes/RootDestinations.tsx`
 - `assets/test/routes/commerce/revenue/`
-- `assets/test/routes/config/`
 - `assets/test/routes/root/`
 - `assets/tests/e2e/production-ui-operations.spec.ts`
 - `test/product_compare/commerce_attribution/`

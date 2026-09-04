@@ -1,6 +1,6 @@
 import { Suspense, type FormEvent, useId, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router";
 import { useLazyLoadQuery, useMutation, usePaginationFragment } from "react-relay";
 import type { ComparisonSharingOperationsPublishComparisonSnapshotMutation } from "$generated/ComparisonSharingOperationsPublishComparisonSnapshotMutation.graphql";
 import type { ComparisonSharingOperationsQuery } from "$generated/ComparisonSharingOperationsQuery.graphql";

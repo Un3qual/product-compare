@@ -1,59 +1,80 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
 import { dirname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-interface ManifestChunk {
-  css?: string[];
-  dynamicImports?: string[];
-  file: string;
-  imports?: string[];
-  isDynamicEntry?: boolean;
-  isEntry?: boolean;
-  name?: string;
-  src?: string;
+interface RouteManifestEntry {
+  css: string[];
+  imports: string[];
+  module: string;
 }
 
-type Manifest = Record<string, ManifestChunk>;
+interface BrowserManifest {
+  entry: RouteManifestEntry;
+  routes: Record<string, RouteManifestEntry>;
+}
 
 const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
-const manifestPath = resolve(scriptDirectory, "../dist/.vite/manifest.json");
-const distPath = resolve(scriptDirectory, "../dist");
+const distPath = resolve(scriptDirectory, "../dist/client");
+const assetsPath = resolve(distPath, "assets");
+const manifestFiles = (await readdir(assetsPath)).filter(
+  (file) => file.startsWith("manifest-") && file.endsWith(".js"),
+);
 
-// The measured initial JS/CSS closure is 270,072 gzip bytes. The 300 KB
+if (manifestFiles.length !== 1) {
+  throw new Error(
+    `Expected exactly one React Router browser manifest in ${assetsPath}, found ${manifestFiles.length}.`,
+  );
+}
+
+const manifestPath = resolve(assetsPath, manifestFiles[0]);
+const manifestSource = await readFile(manifestPath, "utf8");
+const manifestPrefix = "window.__reactRouterManifest=";
+
+if (!manifestSource.startsWith(manifestPrefix)) {
+  throw new Error(`Unexpected React Router browser manifest format in ${manifestPath}.`);
+}
+
+const manifest = JSON.parse(
+  manifestSource.slice(manifestPrefix.length).replace(/;\s*$/, ""),
+) as BrowserManifest;
+
+// The measured initial JS/CSS closure is 288,389 gzip bytes. The 300 KB
 // ceiling leaves room for ordinary Vite and dependency patch drift.
 const INITIAL_GZIP_BUDGET_BYTES = 300_000;
 const INITIAL_FONT_BUDGET_BYTES = 44_800;
 
 const requiredDynamicRoutes = [
-  ["affiliate setup screen", "src/routes/affiliate/setup/AffiliateSetupRoute.tsx"],
-  ["CJ programs screen", "src/routes/ingestion/cj-programs/CJProgramsRoute.tsx"],
-  ["revenue screen", "src/routes/commerce/revenue/RevenueSummaryRoute.tsx"],
-  ["API tokens screen", "src/routes/account/api-tokens/ApiTokensRoute.tsx"],
+  ["affiliate setup screen", "routes/affiliate/setup/AffiliateSetupRoute"],
+  ["CJ programs screen", "routes/ingestion/cj-programs/CJProgramsRoute"],
+  ["conversion ingestion screen", "routes/commerce/revenue/ingestion/ConversionIngestionRoute"],
+  ["revenue screen", "routes/commerce/revenue/RevenueSummaryRoute"],
+  ["API tokens screen", "routes/account/api-tokens/ApiTokensRoute"],
 ] as const;
 
-const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Manifest;
-const manifestEntries = Object.entries(manifest);
-const clientEntries = manifestEntries.filter(([, chunk]) => chunk.isEntry);
+const rootRoute = manifest.routes.root;
+const indexRoute = manifest.routes["routes/home/HomeRoute"];
 
-if (clientEntries.length !== 1) {
-  throw new Error(
-    `Expected exactly one client entry in ${manifestPath}, found ${clientEntries.length}.`,
-  );
+if (!rootRoute) {
+  throw new Error(`React Router browser manifest ${manifestPath} has no root route.`);
 }
 
-const [entryKey] = clientEntries[0];
-const entryDynamicImports = new Set(manifest[entryKey]?.dynamicImports ?? []);
-const initialClosure = collectStaticImportClosure(manifest, entryKey);
-const initialFiles = [
-  ...new Set(
-    [...initialClosure].flatMap((key) => {
-      const chunk = manifest[key];
-      return chunk ? [chunk.file, ...(chunk.css ?? [])] : [];
-    }),
-  ),
-];
-const initialBundleFiles = initialFiles.filter(
+if (!indexRoute) {
+  throw new Error(`React Router browser manifest ${manifestPath} has no home index route.`);
+}
+
+const initialFiles = new Set([
+  manifest.entry.module,
+  ...manifest.entry.imports,
+  ...manifest.entry.css,
+  rootRoute.module,
+  ...rootRoute.imports,
+  ...rootRoute.css,
+  indexRoute.module,
+  ...indexRoute.imports,
+  ...indexRoute.css,
+]);
+const initialBundleFiles = [...initialFiles].filter(
   (file) => file.endsWith(".js") || file.endsWith(".css"),
 );
 const initialJavaScriptFiles = initialBundleFiles.filter((file) => file.endsWith(".js"));
@@ -62,7 +83,7 @@ let initialRawBytes = 0;
 let initialGzipBytes = 0;
 
 for (const file of initialBundleFiles) {
-  const contents = await readFile(resolve(distPath, file));
+  const contents = await readFile(resolveManifestAsset(file));
   initialRawBytes += contents.byteLength;
   initialGzipBytes += gzipSync(contents).byteLength;
 }
@@ -70,7 +91,8 @@ for (const file of initialBundleFiles) {
 const initialFontFiles = new Set<string>();
 
 for (const cssFile of initialCssFiles) {
-  const css = await readFile(resolve(distPath, cssFile), "utf8");
+  const relativeCssFile = cssFile.replace(/^\//, "");
+  const css = await readFile(resolveManifestAsset(cssFile), "utf8");
 
   for (const fontReference of css.matchAll(
     /url\(\s*["']?([^"')]+\.woff2(?:[?#][^"')]*)?)["']?\s*\)/gi,
@@ -79,7 +101,7 @@ for (const cssFile of initialCssFiles) {
     if (!reference || /^(?:data:|https?:|\/\/)/i.test(reference)) continue;
 
     const relativeFontPath = normalize(
-      reference.startsWith("/") ? reference.slice(1) : join(dirname(cssFile), reference),
+      reference.startsWith("/") ? reference.slice(1) : join(dirname(relativeCssFile), reference),
     );
     if (relativeFontPath.startsWith("..")) {
       throw new Error(`Initial CSS ${cssFile} references a font outside dist: ${reference}`);
@@ -110,20 +132,16 @@ if (initialFontBytes > INITIAL_FONT_BUDGET_BYTES) {
   );
 }
 
-for (const [label, expectedSource] of requiredDynamicRoutes) {
-  const match = findManifestEntry(expectedSource);
+for (const [label, routeId] of requiredDynamicRoutes) {
+  const route = manifest.routes[routeId];
 
-  if (!match) {
-    failures.push(`${label} route has no manifest chunk for ${expectedSource}`);
+  if (!route) {
+    failures.push(`${label} route has no React Router manifest entry for ${routeId}`);
     continue;
   }
 
-  const [chunkKey, chunk] = match;
-  if (!chunk.isDynamicEntry && !entryDynamicImports.has(chunkKey)) {
-    failures.push(`${label} route chunk ${chunk.file} is not reachable through a dynamic import`);
-  }
-  if (initialClosure.has(chunkKey)) {
-    failures.push(`${label} route chunk ${chunk.file} is in the initial static import closure`);
+  if (initialFiles.has(route.module)) {
+    failures.push(`${label} route chunk ${route.module} is in the initial static import closure`);
   }
 }
 
@@ -134,7 +152,7 @@ if (failures.length > 0) {
       ...failures.map((failure) => `- ${failure}`),
       `Initial closure: ${initialRawBytes.toLocaleString()} raw / ${initialGzipBytes.toLocaleString()} gzip bytes across ${initialJavaScriptFiles.length} JavaScript and ${initialCssFiles.length} CSS file(s).`,
       `Initial fonts: ${initialFontBytes.toLocaleString()} raw bytes across ${initialFontFiles.size} WOFF2 font file(s); font budget ${INITIAL_FONT_BUDGET_BYTES.toLocaleString()} bytes.`,
-      "Build the client after moving every non-root route behind a direct React Router lazy import.",
+      "Keep non-root routes in separate React Router route modules.",
     ].join("\n"),
   );
 }
@@ -148,32 +166,6 @@ process.stdout.write(
     `font budget ${INITIAL_FONT_BUDGET_BYTES.toLocaleString()} bytes.\n`,
 );
 
-function collectStaticImportClosure(manifest: Manifest, entryKey: string) {
-  const closure = new Set<string>();
-  const pending = [entryKey];
-
-  while (pending.length > 0) {
-    const key = pending.pop();
-    if (!key || closure.has(key)) continue;
-
-    const chunk = manifest[key];
-    if (!chunk) {
-      throw new Error(`Manifest import ${key} does not resolve to a chunk.`);
-    }
-
-    closure.add(key);
-    pending.push(...(chunk.imports ?? []));
-  }
-
-  return closure;
-}
-
-function normalizeSource(source: string) {
-  return source.replace(/\\/g, "/").replace(/^_+/, "");
-}
-
-function findManifestEntry(expectedSource: string) {
-  return manifestEntries.find(
-    ([key, chunk]) => normalizeSource(chunk.src ?? key) === expectedSource,
-  );
+function resolveManifestAsset(file: string) {
+  return resolve(distPath, file.replace(/^\//, ""));
 }

@@ -1,5 +1,4 @@
 import type { GraphQLResponse } from "relay-runtime";
-import type { LoaderFunctionArgs } from "react-router-dom";
 import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../src/relay/environment";
 import { createRelayRouterContext } from "../../../src/relay/route-preload";
 
@@ -48,15 +47,15 @@ export const buildCompareLoaderArgs = ({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): LoaderFunctionArgs => ({
+} = {}) => ({
   request,
   params: {},
-  context: environment ? createRelayRouterContext(environment) : undefined,
+  context: createRelayRouterContext(environment ?? createRelayEnvironment()),
   pattern: "/compare",
   url: new URL(request.url),
 });
 
-export const buildAbortableRequest = (url: string, signal: AbortSignal): Request =>
+export const buildAbortableRequest = (url: string, signal: AbortSignal) =>
   Object.defineProperty(
     new Request(url, {
       headers: new Headers(),
@@ -73,7 +72,7 @@ export const buildSavedComparisonsLoaderArgs = ({
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): LoaderFunctionArgs => ({
+} = {}) => ({
   request,
   params: {},
   context: createRelayRouterContext(environment),

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { ActiveFilterChips } from "$ui/components/filters/ActiveFilterChips";
 import { Button } from "$ui/primitives/Button";
 import { Checkbox } from "$ui/primitives/Checkbox";

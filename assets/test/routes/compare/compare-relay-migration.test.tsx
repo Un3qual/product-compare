@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Outlet, Route, Routes, useLoaderData } from "react-router-dom";
+import { MemoryRouter, Outlet, Route, Routes, useLoaderData } from "react-router";
 import {
   useFragment,
   useLazyLoadQuery,
@@ -65,8 +65,8 @@ vi.mock("react-relay", async () => {
   };
 });
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,

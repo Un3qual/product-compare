@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 import { CompareMark } from "../../src/ui/components/brand/CompareMark";
 import { ComparisonContinuity } from "../../src/ui/components/compare/ComparisonContinuity";
 import { ProductLedger } from "../../src/ui/components/products/ProductLedger";

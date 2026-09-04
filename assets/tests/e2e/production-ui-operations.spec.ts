@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { gotoClientRoute } from "./client-navigation";
 import {
   expectNoUnhandledGraphQLOperations,
   homeResponders,
@@ -20,7 +21,7 @@ for (const viewport of VIEWPORTS) {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await stubGraphQL(page, operatorResponders());
 
-    await page.goto("/affiliate/setup");
+    await gotoClientRoute(page, "/affiliate/setup");
     await expect(page.getByRole("heading", { name: "Affiliate setup" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "1. Network" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "2. Program" })).toBeVisible();
@@ -35,7 +36,7 @@ for (const viewport of VIEWPORTS) {
       testInfo.outputPath(`${viewport.name}-affiliate-workflow.png`),
     );
 
-    await page.goto("/ingestion/cj-programs");
+    await gotoClientRoute(page, "/ingestion/cj-programs");
     const cjLedger = page.getByRole("table", { name: "CJ program lifecycle ledger" });
     const unmatchedLedger = page.getByRole("table", { name: "Unmatched CJ feeds" });
     await expect(page.getByRole("heading", { name: "CJ program lifecycle summary" })).toBeVisible();
@@ -79,7 +80,7 @@ for (const viewport of VIEWPORTS) {
     await expectOperatorSurface(page, viewport.width);
     await captureOperatorWorkspace(page, testInfo.outputPath(`${viewport.name}-cj-lifecycle.png`));
 
-    await page.goto("/commerce/revenue?currency=USD&network=impact");
+    await gotoClientRoute(page, "/commerce/revenue?currency=USD&network=impact");
     const controls = page.getByRole("region", { name: "Revenue controls" });
     const performance = page.getByRole("region", { name: "Attribution performance" });
     const outcome = page.getByRole("region", { name: "Revenue outcome" });
@@ -273,7 +274,7 @@ test("affiliate mutations keep errors local and carry typed context through ever
   });
   const requests = await stubGraphQL(page, responders);
 
-  await page.goto("/affiliate/setup");
+  await gotoClientRoute(page, "/affiliate/setup");
   await page.getByLabel("Network name").fill("Impact Network");
   await page.getByRole("button", { name: "Save network" }).click();
   await expect(page.getByRole("region", { name: "Affiliate network result" })).toContainText(
@@ -330,7 +331,7 @@ test("CJ feed failures stay local and lifecycle updates remain usable", async ({
   });
   await stubGraphQL(page, responders);
 
-  await page.goto("/ingestion/cj-programs");
+  await gotoClientRoute(page, "/ingestion/cj-programs");
   await page.getByRole("button", { name: "Edit program Northwind Merchant" }).click();
   const editor = page.getByRole("region", { name: "Edit Northwind Merchant" });
   await editor.getByRole("button", { name: "Show feeds for Northwind Merchant" }).click();
@@ -356,7 +357,7 @@ test("an unmatched-feed failure does not hide the CJ lifecycle ledger", async ({
   });
   await stubGraphQL(page, responders);
 
-  await page.goto("/ingestion/cj-programs");
+  await gotoClientRoute(page, "/ingestion/cj-programs");
 
   await expect(page.getByRole("table", { name: "CJ program lifecycle ledger" })).toBeVisible();
   await expect(
@@ -396,19 +397,19 @@ test("revenue summary, ledger preload, and pagination failures recover independe
   });
   await stubGraphQL(page, responders);
 
-  await page.goto("/commerce/revenue?currency=USD");
+  await gotoClientRoute(page, "/commerce/revenue?currency=USD");
   await expect(page.getByText("Revenue summary unavailable.")).toBeVisible();
   await expect(page.getByRole("table", { name: "Attribution ledger" })).toBeVisible();
 
   failSummary = false;
   failLedger = true;
-  await page.reload();
+  await gotoClientRoute(page, "/commerce/revenue?currency=USD");
   await expect(page.getByRole("region", { name: "Attribution performance" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Revenue outcome" })).toBeVisible();
   await expect(page.getByText("Attribution ledger unavailable.")).toBeVisible();
 
   failLedger = false;
-  await page.reload();
+  await gotoClientRoute(page, "/commerce/revenue?currency=USD");
   await page.getByRole("button", { name: "Load more attribution clicks" }).click();
   await expect(page.getByRole("alert")).toContainText("Unable to load more attribution clicks.");
   await expect(page.getByText("operator@example.test").first()).toBeVisible();

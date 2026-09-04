@@ -1,15 +1,13 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { MemoryRouter, useLoaderData } from "react-router";
 import { useFragment, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import {
-  MerchantDirectoryRoute,
-  type MerchantDirectoryLoaderData,
-} from "../../../src/routes/merchants/MerchantDirectoryRoute";
+import { MerchantDirectoryRoute } from "../../../src/routes/merchants/MerchantDirectoryRoute";
 import {
   MerchantDirectoryControls,
   MerchantDirectoryView,
 } from "../../../src/routes/merchants/MerchantDirectoryView";
+import type { MerchantPagination } from "../../../src/routes/merchants/pagination";
 import { openSelect } from "../../helpers/base-select";
 
 const { useLoaderDataMock, useFragmentMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =
@@ -20,8 +18,8 @@ const { useLoaderDataMock, useFragmentMock, usePreloadedQueryMock, useRoutePrelo
     useRoutePreloadedQueryMock: vi.fn(),
   }));
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,
@@ -486,7 +484,7 @@ test("merchant directory renders the loader error state", () => {
       first: 20,
       after: null,
     },
-  } satisfies MerchantDirectoryLoaderData);
+  });
 
   renderMerchantDirectoryRoute();
 
@@ -552,7 +550,7 @@ function getMerchantListItem(name: string) {
 }
 
 function buildReadyLoaderData(
-  pagination: Extract<MerchantDirectoryLoaderData, { status: "ready" }>["pagination"] = {
+  pagination: MerchantPagination = {
     first: 20,
     after: null,
   },
@@ -561,7 +559,7 @@ function buildReadyLoaderData(
     status: "ready",
     pagination,
     query: MERCHANT_DIRECTORY_QUERY_DESCRIPTOR,
-  } satisfies MerchantDirectoryLoaderData;
+  };
 }
 
 function buildMerchantDirectoryData({

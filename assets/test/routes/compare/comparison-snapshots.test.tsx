@@ -6,7 +6,7 @@ import {
   fetchRouteQuery,
   useRoutePreloadedQuery,
 } from "../../../src/relay/route-preload";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { MemoryRouter, useLoaderData } from "react-router";
 import {
   useLazyLoadQuery,
   useMutation,
@@ -56,8 +56,8 @@ vi.mock("../../../src/relay/route-preload", async () => {
   };
 });
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
   return { ...actual, useLoaderData: useLoaderDataMock };
 });
 

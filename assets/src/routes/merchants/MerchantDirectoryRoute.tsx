@@ -1,7 +1,10 @@
 import { Suspense } from "react";
-import { useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { useLoaderData } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { MerchantDirectoryRouteQuery } from "$generated/MerchantDirectoryRouteQuery.graphql";
+import type { Route } from "./+types/MerchantDirectoryRoute";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
+import { RouteErrorBoundary as SharedRouteErrorBoundary } from "$routes/compare/RouteErrorBoundary";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   getRelayEnvironmentFromRouterContext,
@@ -15,6 +18,25 @@ import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { MerchantDirectoryControls, MerchantDirectoryView } from "./MerchantDirectoryView";
+
+export {
+  MerchantDirectoryRoute as default,
+  merchantDirectoryLoader as clientLoader,
+  merchantDirectoryLoader as loader,
+};
+
+export function meta() {
+  return staticRouteMetaDescriptors({
+    title: "Merchants",
+    description: "Browse merchants represented in current Product Compare offers.",
+  });
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return (
+    <SharedRouteErrorBoundary error={error} resourceName="merchant directory" title="Merchants" />
+  );
+}
 import {
   buildMerchantDirectoryPaginationData,
   merchantPaginationFromUrl,
@@ -35,14 +57,6 @@ const merchantDirectoryRouteQuery = graphql`
   }
 `;
 
-export type MerchantDirectoryLoaderData =
-  | {
-      status: "ready";
-      pagination: MerchantPagination;
-      query: RelayRouteQueryDescriptor<MerchantDirectoryRouteQuery["variables"]>;
-    }
-  | { status: "error"; pagination: MerchantPagination };
-
 export function MerchantDirectoryRoute() {
   const loaderData = useLoaderData<typeof merchantDirectoryLoader>();
 
@@ -57,7 +71,11 @@ export function MerchantDirectoryRoute() {
   );
 }
 
-function MerchantDirectoryContent({ loaderData }: { loaderData: MerchantDirectoryLoaderData }) {
+function MerchantDirectoryContent({
+  loaderData,
+}: {
+  loaderData: Awaited<ReturnType<typeof merchantDirectoryLoader>>;
+}) {
   return (
     <WorkspaceLayout
       context={
@@ -94,7 +112,7 @@ function MerchantDirectoryPanel({
   query,
 }: {
   pagination: MerchantPagination;
-  query: Extract<MerchantDirectoryLoaderData, { status: "ready" }>["query"];
+  query: RelayRouteQueryDescriptor<MerchantDirectoryRouteQuery["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<MerchantDirectoryRouteQuery>(
     merchantDirectoryRouteQuery,
@@ -132,13 +150,13 @@ function MerchantDirectoryUnavailableFallback() {
 export async function merchantDirectoryLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<MerchantDirectoryLoaderData> {
+}: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const pagination = merchantPaginationFromUrl(new URL(request.url));
 
   try {
     return {
-      status: "ready",
+      status: "ready" as const,
       pagination,
       query: await preloadRouteQuery<MerchantDirectoryRouteQuery>(
         environment,
@@ -148,10 +166,9 @@ export async function merchantDirectoryLoader({
       ),
     };
   } catch (error) {
-    return recoverRouteLoaderError<MerchantDirectoryLoaderData>(
-      error,
-      "Failed to preload merchant directory route query.",
-      { status: "error", pagination },
-    );
+    return recoverRouteLoaderError(error, "Failed to preload merchant directory route query.", {
+      status: "error" as const,
+      pagination,
+    });
   }
 }

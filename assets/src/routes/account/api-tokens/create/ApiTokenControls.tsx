@@ -1,6 +1,6 @@
 import type { FormEvent, RefObject } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { ActionDialog } from "$ui/components/overlays/ActionDialog";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";

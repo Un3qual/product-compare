@@ -1,7 +1,9 @@
 import { Suspense } from "react";
-import { useLoaderData, useLocation, type LoaderFunctionArgs } from "react-router-dom";
+import { useLoaderData, useLocation } from "react-router";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
+import type { Route } from "./+types/BrowseRoute";
+import { staticRouteMetaDescriptors } from "$frontend/seo";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   fetchRouteQuery,
@@ -17,6 +19,15 @@ import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Pagination } from "$ui/components/navigation/Pagination";
 import { MAX_COMPARE_PRODUCTS, buildComparePathFromSlugs } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
+
+export { BrowseRoute as default, browseLoader as clientLoader, browseLoader as loader };
+
+export function meta() {
+  return staticRouteMetaDescriptors({
+    title: "Browse products",
+    description: "Browse the product catalog and narrow the results by the attributes that matter.",
+  });
+}
 import { productOffersPath } from "../offers/paths";
 import { createBrowseRouteData } from "./browse-route-data";
 import {
@@ -105,15 +116,6 @@ const BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE = 12;
 const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
 type BrowseProductsPageSize = (typeof BROWSE_PRODUCTS_PAGE_SIZES)[number];
 
-export type BrowseProductsLoaderData =
-  | {
-      status: "ready";
-      filters: CatalogFilters;
-      pageSize: BrowseProductsPageSize;
-      query: RelayRouteQueryDescriptor<BrowseRouteQuery["variables"]>;
-    }
-  | { status: "error" };
-
 export function BrowseRoute() {
   const loaderData = useLoaderData<typeof browseLoader>();
 
@@ -158,9 +160,9 @@ function BrowseProducts({
   pageSize,
   query,
 }: {
-  filters: Extract<BrowseProductsLoaderData, { status: "ready" }>["filters"];
-  pageSize: Extract<BrowseProductsLoaderData, { status: "ready" }>["pageSize"];
-  query: Extract<BrowseProductsLoaderData, { status: "ready" }>["query"];
+  filters: CatalogFilters;
+  pageSize: BrowseProductsPageSize;
+  query: RelayRouteQueryDescriptor<BrowseRouteQuery["variables"]>;
 }) {
   const queryRef = useRoutePreloadedQuery<BrowseRouteQuery>(browseRouteQuery, query);
   const data = usePreloadedQuery<BrowseRouteQuery>(browseRouteQuery, queryRef);
@@ -270,7 +272,7 @@ function BrowseProducts({
 export async function browseLoader({
   context,
   request,
-}: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
+}: Route.LoaderArgs) {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const requestUrl = new URL(request.url);
   const filters = catalogFiltersFromUrl(requestUrl);
@@ -292,17 +294,15 @@ export async function browseLoader({
     );
 
     return {
-      status: "ready",
+      status: "ready" as const,
       filters,
       pageSize,
       query: queryResult.descriptor,
     };
   } catch (error) {
-    return recoverRouteLoaderError<BrowseProductsLoaderData>(
-      error,
-      "Failed to preload browse products route query.",
-      { status: "error" },
-    );
+    return recoverRouteLoaderError(error, "Failed to preload browse products route query.", {
+      status: "error" as const,
+    });
   }
 }
 

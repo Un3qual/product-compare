@@ -93,7 +93,7 @@ defmodule ProductCompare.Seo.Metadata do
           "@context" => "https://schema.org",
           "@type" => "Organization",
           "name" => merchant.name,
-          "url" => "/merchants/#{merchant.slug}"
+          "url" => public_url("/merchants/#{merchant.slug}")
         },
         else: nil
       )
@@ -135,7 +135,7 @@ defmodule ProductCompare.Seo.Metadata do
                 "item" => %{
                   "@type" => "Product",
                   "name" => field(product, :name),
-                  "url" => "/products/#{field(product, :slug)}"
+                  "url" => public_url("/products/#{field(product, :slug)}")
                 }
               }
             end)
@@ -172,7 +172,7 @@ defmodule ProductCompare.Seo.Metadata do
           "@type" => "CollectionPage",
           "name" => "Compare #{category.name}",
           "description" => category.description,
-          "url" => "/categories/#{category.slug}"
+          "url" => public_url("/categories/#{category.slug}")
         },
         else: nil
       )
@@ -225,11 +225,11 @@ defmodule ProductCompare.Seo.Metadata do
       "@type" => "Product",
       "name" => product.name,
       "description" => product.description,
-      "url" => "/products/#{product.slug}"
+      "url" => public_url("/products/#{product.slug}")
     }
     |> put_if("brand", product.brand && %{"@type" => "Brand", "name" => product.brand.name})
     |> put_if("model", product.model_number)
-    |> put_if("image", image_url)
+    |> put_if("image", public_url(image_url))
     |> put_if("offers", aggregate_offer(offer_truth))
     |> put_if("aggregateRating", aggregate_rating(rating))
   end
@@ -263,6 +263,15 @@ defmodule ProductCompare.Seo.Metadata do
 
   defp put_if(map, _key, nil), do: map
   defp put_if(map, key, value), do: Map.put(map, key, value)
+
+  defp public_url(nil), do: nil
+
+  defp public_url(path) do
+    :product_compare
+    |> Application.fetch_env!(:public_site_url)
+    |> URI.merge(path)
+    |> URI.to_string()
+  end
 
   defp field(map, key), do: Map.get(map, key, Map.get(map, Atom.to_string(key)))
 

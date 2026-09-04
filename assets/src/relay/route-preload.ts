@@ -5,7 +5,7 @@ import {
   type GraphQLTaggedNode,
   type PreloadedQuery,
 } from "react-relay";
-import { createContext, RouterContextProvider } from "react-router-dom";
+import { createContext, RouterContextProvider } from "react-router";
 import {
   createOperationDescriptor,
   getRequest,
@@ -19,7 +19,7 @@ import { fetchAppQuery, RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } from "./load-qu
 
 const ROUTE_QUERY_REF_CACHE_LIMIT = 50;
 
-const relayEnvironmentRouterContext = createContext<Environment | null>(null);
+const relayEnvironmentRouterContext = createContext<Environment>();
 const routeQueryRefs = new WeakMap<Environment, Map<string, RouteQueryRefEntry>>();
 const routeQueryLeaseHandles = new WeakMap<object, RouteQueryRefEntry>();
 const activeRouteQueryLeases = new WeakSet<object>();
@@ -147,23 +147,20 @@ export function useRoutePreloadedQuery<TQuery extends OperationType>(
 
 export function createRelayRouterContext(environment: Environment) {
   const context = new RouterContextProvider();
-  context.set(relayEnvironmentRouterContext, environment);
+  setRelayEnvironmentOnRouterContext(context, environment);
 
   return context;
 }
 
-export function getRelayEnvironmentFromRouterContext(context: unknown) {
-  if (!(context instanceof RouterContextProvider)) {
-    throw new Error("Relay environment is missing from the route loader context");
-  }
+export function setRelayEnvironmentOnRouterContext(
+  context: Readonly<RouterContextProvider>,
+  environment: Environment,
+) {
+  context.set(relayEnvironmentRouterContext, environment);
+}
 
-  const environment = context.get(relayEnvironmentRouterContext);
-
-  if (!environment) {
-    throw new Error("Relay environment is missing from the route loader context");
-  }
-
-  return environment;
+export function getRelayEnvironmentFromRouterContext(context: Readonly<RouterContextProvider>) {
+  return context.get(relayEnvironmentRouterContext);
 }
 
 function getRouteQueryRefEntry(environment: Environment, descriptorKey: string) {

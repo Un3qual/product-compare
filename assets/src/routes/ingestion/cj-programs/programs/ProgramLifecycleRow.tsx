@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { useRevalidator } from "react-router-dom";
+import { useRevalidator } from "react-router";
 import { graphql, useFragment, useMutation } from "react-relay";
 import type { ProgramLifecycleRow_program$key } from "$generated/ProgramLifecycleRow_program.graphql";
 import type { ProgramLifecycleRowUpdateCJProgramMutation } from "$generated/ProgramLifecycleRowUpdateCJProgramMutation.graphql";
