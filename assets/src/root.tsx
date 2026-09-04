@@ -105,11 +105,9 @@ export function Layout({ children }: { children: ReactNode }) {
       </head>
       <body>
         {children}
-        <script
-          dangerouslySetInnerHTML={{ __html: records }}
-          id={RELAY_RECORDS_SCRIPT_ID}
-          type="application/json"
-        />
+        <script id={RELAY_RECORDS_SCRIPT_ID} type="application/json">
+          {records}
+        </script>
         <ScrollRestoration />
         <Scripts />
       </body>
